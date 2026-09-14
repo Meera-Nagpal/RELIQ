@@ -1,0 +1,60 @@
+/* ============================================================
+   RELIQ — CSS Custom Properties & Design Tokens
+   ============================================================ */
+
+:root {
+  /* Colors */
+  --bg: #0A0A0A;
+  --bg-elevated: #141414;
+  --bg-surface: #1A1A1A;
+  --text: #F5F5F5;
+  --text-muted: #888888;
+  --text-dim: #555555;
+
+  /* Accent */
+  --accent: #FF6B35;
+  --accent-glow: #FF8C5A;
+  --accent-dim: rgba(255, 107, 53, 0.3);
+  --accent-subtle: rgba(255, 107, 53, 0.08);
+
+  /* Health States */
+  --healthy: #4ADE80;
+  --warning: #FBBF24;
+  --regression: #EF4444;
+  --recovered: #38BDF8;
+
+  /* Typography Scale */
+  --font-display: clamp(3rem, 10vw, 12rem);
+  --font-metric: clamp(2.5rem, 8vw, 10rem);
+  --font-heading: clamp(1.5rem, 4vw, 3.5rem);
+  --font-subheading: clamp(1rem, 2.5vw, 1.75rem);
+  --font-body: clamp(0.875rem, 1.5vw, 1.125rem);
+  --font-caption: clamp(0.75rem, 1vw, 0.875rem);
+  --font-label: clamp(0.625rem, 0.8vw, 0.75rem);
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+  --space-2xl: 8rem;
+
+  /* Layout */
+  --vh: 100vh;
+  --vw: 100vw;
+  --content-max: 1400px;
+
+  /* Animation */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Z-Index Scale */
+  --z-canvas: 0;
+  --z-content: 1;
+  --z-overlay: 10;
+  --z-progress: 20;
+  --z-nav: 30;
+  --z-modal: 40;
+}

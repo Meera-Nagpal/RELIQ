@@ -1,0 +1,26 @@
+{
+  "id": "run-test-persist-1789271725978",
+  "projectName": "Persistence Test",
+  "datasetId": "ds-checkout-golden",
+  "datasetName": "Checkout Suite",
+  "baselineVersion": {
+    "id": "v1",
+    "name": "Base",
+    "provider": "cerebras",
+    "modelIdentifier": "gpt-oss-120b"
+  },
+  "candidateVersion": {
+    "id": "v2",
+    "name": "Cand",
+    "provider": "groq",
+    "modelIdentifier": "openai/gpt-oss-20b"
+  },
+  "results": [],
+  "metrics": {
+    "totalCases": 5,
+    "evaluatedCases": 5
+  },
+  "timestamp": "2026-09-13T03:55:25.978Z",
+  "durationMs": 1200,
+  "datasetSnapshot": []
+}

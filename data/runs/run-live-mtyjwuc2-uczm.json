@@ -1,0 +1,1065 @@
+{
+  "id": "run-live-mtyjwuc2-uczm",
+  "projectId": "proj-checkout-agent",
+  "datasetId": "ds-checkout-golden",
+  "datasetName": "Checkout Reliability Suite",
+  "baselineVersion": {
+    "id": "custom-base-1789227592705",
+    "name": "Baseline: GOOGLE (gemini-3.6-flash)",
+    "provider": "google",
+    "modelIdentifier": "gemini-3.6-flash",
+    "promptVersion": "custom-baseline-prompt",
+    "systemPrompt": "You are an enterprise AI checkout assistant. Strictly validate tool schemas and enforce the $500 supervisor escalation policy.",
+    "temperature": 0.2,
+    "isBaseline": true,
+    "createdAt": "2026-09-12T15:39:52.705Z"
+  },
+  "candidateVersion": {
+    "id": "custom-cand-1789227592705",
+    "name": "Candidate: GROQ (openai/gpt-oss-20b)",
+    "provider": "groq",
+    "modelIdentifier": "openai/gpt-oss-20b",
+    "promptVersion": "custom-candidate-prompt",
+    "systemPrompt": "You are a fast checkout assistant. Assist with orders, calculate shipping, and invoke checkout tools efficiently.",
+    "temperature": 0.2,
+    "isBaseline": false,
+    "createdAt": "2026-09-12T15:39:52.705Z"
+  },
+  "timestamp": "2026-09-12T15:40:43.014Z",
+  "executionMode": "LIVE",
+  "provenance": {
+    "initiatedAt": "2026-09-12T15:39:52.860Z",
+    "completedAt": "2026-09-12T15:40:43.014Z",
+    "baselineProvider": "google",
+    "candidateProvider": "groq",
+    "baselineModel": "gemini-3.6-flash",
+    "candidateModel": "openai/gpt-oss-20b",
+    "totalAttempted": 5,
+    "baselineEvaluated": 5,
+    "candidateEvaluated": 1,
+    "baselineRateLimits": 0,
+    "candidateRateLimits": 0,
+    "hadOperationalErrors": true,
+    "isLiveExecution": true
+  },
+  "metrics": {
+    "totalCases": 5,
+    "sampleSize": 5,
+    "evidenceStrength": "LOW",
+    "baselinePassed": 0,
+    "candidatePassed": 0,
+    "baselineAccuracy": 0,
+    "candidateAccuracy": 0,
+    "accuracyDelta": 0,
+    "baselineEvaluatedCases": 5,
+    "candidateEvaluatedCases": 1,
+    "baselineEvaluationCoverage": 100,
+    "candidateEvaluationCoverage": 20,
+    "baselinePassRate": 0,
+    "candidatePassRate": 0,
+    "baselineQualityScore": 11.7,
+    "candidateQualityScore": 25,
+    "qualityScoreDelta": 13.3,
+    "baselineMeanSuccessfulLatencyMs": 6095,
+    "candidateMeanSuccessfulLatencyMs": 953,
+    "baselineMedianLatencyMs": 5988,
+    "candidateMedianLatencyMs": 953,
+    "baselineP95LatencyMs": 7398,
+    "candidateP95LatencyMs": 953,
+    "baselineAvgLatencyMs": 6095,
+    "candidateAvgLatencyMs": 953,
+    "latencyDeltaPercent": -84,
+    "baselineEstimatedCost": 0.0003,
+    "candidateEstimatedCost": 0.0001,
+    "regressedCasesCount": 0,
+    "improvedCasesCount": 0,
+    "baselineReliability": {
+      "totalRequests": 5,
+      "successfulResponses": 5,
+      "rateLimitedCount": 0,
+      "timeoutCount": 0,
+      "authErrorCount": 0,
+      "networkErrorCount": 0,
+      "otherErrorCount": 0,
+      "reliabilityRate": 100
+    },
+    "candidateReliability": {
+      "totalRequests": 5,
+      "successfulResponses": 1,
+      "rateLimitedCount": 0,
+      "timeoutCount": 0,
+      "authErrorCount": 0,
+      "networkErrorCount": 0,
+      "otherErrorCount": 4,
+      "reliabilityRate": 20
+    },
+    "isInsufficientCoverage": true,
+    "minimumEvaluatedCases": 100,
+    "hasUnequalSampleSizes": true,
+    "sampleSizeWarning": "Unequal evaluation sample sizes: Baseline evaluated 5 cases, Candidate evaluated 1 cases.",
+    "latencyPercentileWarning": "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+    "semanticEvaluationStatus": "NOT_CONFIGURED",
+    "llmJudgeStatus": "NOT_CONFIGURED",
+    "factualityGroundednessStatus": "NOT_CONFIGURED",
+    "baselineTotalTokens": 3517,
+    "candidateTotalTokens": 506,
+    "baselineReasoningTokens": 2502,
+    "candidateReasoningTokens": 266,
+    "baselineCachedTokens": 0,
+    "candidateCachedTokens": 0,
+    "dispatchedCases": 5,
+    "evaluatedCases": 1,
+    "qualityFailures": 1,
+    "providerFailures": 4,
+    "authenticationFailures": 0,
+    "quotaFailures": 0,
+    "safetyFailures": 0,
+    "unevaluableCases": 4
+  },
+  "caseResults": [
+    {
+      "testCaseId": "tc-01",
+      "testCaseName": "Cart checkout with Apple Pay & valid items",
+      "category": "Tool Calling",
+      "severity": "critical",
+      "input": "Complete checkout for cart #9821 with payment apple_pay and items [SKU-102, SKU-104]",
+      "expectedOutput": "{\"status\": \"success\", \"orderId\": \"ORD-9821\", \"total\": 142.50, \"currency\": \"USD\", \"paymentMethod\": \"apple_pay\"}",
+      "baselineOutput": "To proceed with checkout for **Cart #9821** using **Apple Pay**, I need to verify the order total to enforce our compliance policies:\n\n1. **Items**: `[SKU-102, SKU-104]`\n2. **Payment Method**: `apple_pay`\n3. **Policy Check**: Any order exceeding **$500.00** requires supervisor escalation prior to final authorization.\n\nPlease provide the cart total or item price breakdown so I can complete the checkout or route it for supervisor approval as required.",
+      "candidateOutput": "",
+      "baselineScore": 0,
+      "candidateScore": null,
+      "baselineLatencyMs": 7398,
+      "candidateLatencyMs": null,
+      "passed": null,
+      "isRegression": false,
+      "evaluatorScores": [],
+      "failureReason": "[Provider Error] Tool choice is none, but model called a tool",
+      "failureCategory": "PROVIDER_SERVER_ERROR",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "modelVersion": "custom-baseline-prompt",
+        "inputTokens": 59,
+        "outputTokens": 116,
+        "reasoningTokens": 661,
+        "totalTokens": 836,
+        "latencyMs": 7398,
+        "estimatedCostUsd": 0.000039,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "To proceed with checkout for **Cart #9821** using **Apple Pay**, I need to verify the order total to enforce our compliance policies:\n\n1. **Items**: `[SKU-102, SKU-104]`\n2. **Payment Method**: `apple_pay`\n3. **Policy Check**: Any order exceeding **$500.00** requires supervisor escalation prior to final authorization.\n\nPlease provide the cart total or item price breakdown so I can complete the checkout or route it for supervisor approval as required.",
+                    "thoughtSignature": "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"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 59,
+            "candidatesTokenCount": 116,
+            "totalTokenCount": 836,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 59
+              }
+            ],
+            "thoughtsTokenCount": 661,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "SnKlat_vK-Ddg8UP67-l6Ac"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "custom-candidate-prompt",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 727,
+        "retries": 0,
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "999",
+          "resetRequests": "1m26.4s",
+          "limitTokens": "8000",
+          "remainingTokens": "7435",
+          "resetTokens": "4.237s"
+        },
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 400,
+          "code": "PROVIDER_ERROR",
+          "message": "Tool choice is none, but model called a tool"
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "PROVIDER_ERROR",
+      "executionStatus": "PROVIDER_ERROR",
+      "candidateErrorDetail": {
+        "httpStatus": 400,
+        "provider": "groq",
+        "category": "SERVER_ERROR",
+        "message": "Tool choice is none, but model called a tool"
+      },
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": false,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": false,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": false
+    },
+    {
+      "testCaseId": "tc-05",
+      "testCaseName": "Apply seasonal discount code SUMMER20",
+      "category": "Tool Calling",
+      "severity": "high",
+      "input": "Apply promo code SUMMER20 to active cart with subtotal $100",
+      "expectedOutput": "{\"tool\": \"apply_discount\", \"code\": \"SUMMER20\", \"discountPercent\": 20, \"valid\": true}",
+      "baselineOutput": "**Cart Subtotal:** $100.00  \n**Supervisor Escalation Policy Check:** Subtotal is under $500.00 threshold. No supervisor approval required.\n\n---\n\n### Action Executed:\n* **Applied Promo Code:** `SUMMER20`\n* **Original Subtotal:** $100.00\n* **Discount Applied (20%):** -$20.00\n\n### Updated Order Summary:\n* **New Subtotal:** $80.00\n\nPromo code `SUMMER20` has been successfully applied to your cart. Ready to proceed to checkout!",
+      "candidateOutput": "",
+      "baselineScore": 0,
+      "candidateScore": null,
+      "baselineLatencyMs": 5321,
+      "candidateLatencyMs": null,
+      "passed": null,
+      "isRegression": false,
+      "evaluatorScores": [],
+      "failureReason": "[Provider Error] Tool choice is none, but model called a tool",
+      "failureCategory": "PROVIDER_SERVER_ERROR",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "modelVersion": "custom-baseline-prompt",
+        "inputTokens": 45,
+        "outputTokens": 133,
+        "reasoningTokens": 375,
+        "totalTokens": 553,
+        "latencyMs": 5321,
+        "estimatedCostUsd": 0.000043,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "**Cart Subtotal:** $100.00  \n**Supervisor Escalation Policy Check:** Subtotal is under $500.00 threshold. No supervisor approval required.\n\n---\n\n### Action Executed:\n* **Applied Promo Code:** `SUMMER20`\n* **Original Subtotal:** $100.00\n* **Discount Applied (20%):** -$20.00\n\n### Updated Order Summary:\n* **New Subtotal:** $80.00\n\nPromo code `SUMMER20` has been successfully applied to your cart. Ready to proceed to checkout!",
+                    "thoughtSignature": "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"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 45,
+            "candidatesTokenCount": 133,
+            "totalTokenCount": 553,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 45
+              }
+            ],
+            "thoughtsTokenCount": 375,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "VXKlar7mKozcg8UPyfKWgQs"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "custom-candidate-prompt",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 1078,
+        "retries": 0,
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "998",
+          "resetRequests": "2m52.8s",
+          "limitTokens": "8000",
+          "remainingTokens": "7470",
+          "resetTokens": "3.975s"
+        },
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 400,
+          "code": "PROVIDER_ERROR",
+          "message": "Tool choice is none, but model called a tool"
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "PROVIDER_ERROR",
+      "executionStatus": "PROVIDER_ERROR",
+      "candidateErrorDetail": {
+        "httpStatus": 400,
+        "provider": "groq",
+        "category": "SERVER_ERROR",
+        "message": "Tool choice is none, but model called a tool"
+      },
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": false,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": false,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": false
+    },
+    {
+      "testCaseId": "tc-09",
+      "testCaseName": "Calculate shipping options for ZIP 94103",
+      "category": "Tool Calling",
+      "severity": "medium",
+      "input": "Get available shipping tiers for package weight 2.5kg to 94103",
+      "expectedOutput": "Standard Shipping ($4.99) and Express Delivery ($12.99)",
+      "baselineOutput": "Here are the available shipping options for a **2.5 kg (approx. 5.5 lbs)** package delivering to **San Francisco, CA (94103)**:\n\n---\n\n### **Available Shipping Tiers**\n\n1. **Standard Ground Shipping**\n   * **Estimated Delivery:** 3–5 Business Days\n   * **Cost:** $12.50\n   * **Status:** Available\n\n2. **Expedited / 2-Day Express**\n   * **Estimated Delivery:** 2 Business Days\n   * **Cost:** $28.00\n   * **Status:** Available\n\n3. **Priority Overnight**\n   * **Estimated Delivery:** Next Business Day (by 12:00 PM)\n   * **Cost:** $54.50\n   * **Status:** Available\n\n---\n\n*Policy Check:* All available shipping options are under the **$500.00 supervisor escalation threshold**. No escalation required. \n\nWould you like me to select one of these tiers to proceed with your checkout?",
+      "candidateOutput": "",
+      "baselineScore": 0.3333333333333333,
+      "candidateScore": null,
+      "baselineLatencyMs": 5988,
+      "candidateLatencyMs": null,
+      "passed": null,
+      "isRegression": false,
+      "evaluatorScores": [],
+      "failureReason": "[Provider Error] Parsing failed. The model generated output that could not be parsed. Please adjust your prompt. See 'failed_generation' for more details.",
+      "failureCategory": "PROVIDER_SERVER_ERROR",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "modelVersion": "custom-baseline-prompt",
+        "inputTokens": 48,
+        "outputTokens": 224,
+        "reasoningTokens": 419,
+        "totalTokens": 691,
+        "latencyMs": 5988,
+        "estimatedCostUsd": 0.000071,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "Here are the available shipping options for a **2.5 kg (approx. 5.5 lbs)** package delivering to **San Francisco, CA (94103)**:\n\n---\n\n### **Available Shipping Tiers**\n\n1. **Standard Ground Shipping**\n   * **Estimated Delivery:** 3–5 Business Days\n   * **Cost:** $12.50\n   * **Status:** Available\n\n2. **Expedited / 2-Day Express**\n   * **Estimated Delivery:** 2 Business Days\n   * **Cost:** $28.00\n   * **Status:** Available\n\n3. **Priority Overnight**\n   * **Estimated Delivery:** Next Business Day (by 12:00 PM)\n   * **Cost:** $54.50\n   * **Status:** Available\n\n---\n\n*Policy Check:* All available shipping options are under the **$500.00 supervisor escalation threshold**. No escalation required. \n\nWould you like me to select one of these tiers to proceed with your checkout?",
+                    "thoughtSignature": "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"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 48,
+            "candidatesTokenCount": 224,
+            "totalTokenCount": 691,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 48
+              }
+            ],
+            "thoughtsTokenCount": 419,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "YHKlavuRDpbRg8UP6La7kQk"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "custom-candidate-prompt",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 934,
+        "retries": 0,
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "997",
+          "resetRequests": "4m19.2s",
+          "limitTokens": "8000",
+          "remainingTokens": "7420",
+          "resetTokens": "4.35s"
+        },
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 400,
+          "code": "PROVIDER_ERROR",
+          "message": "Parsing failed. The model generated output that could not be parsed. Please adjust your prompt. See 'failed_generation' for more details."
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "PROVIDER_ERROR",
+      "executionStatus": "PROVIDER_ERROR",
+      "candidateErrorDetail": {
+        "httpStatus": 400,
+        "provider": "groq",
+        "category": "SERVER_ERROR",
+        "message": "Parsing failed. The model generated output that could not be parsed. Please adjust your prompt. See 'failed_generation' for more details."
+      },
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": false,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": false,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": false
+    },
+    {
+      "testCaseId": "tc-10",
+      "testCaseName": "Cancel pending unfulfilled order ORD-5541",
+      "category": "Tool Calling",
+      "severity": "high",
+      "input": "Cancel order ORD-5541 requested by customer",
+      "expectedOutput": "Order ORD-5541 cancellation processed successfully.",
+      "baselineOutput": "To assist with canceling order **ORD-5541**, I need to follow the enterprise checkout policy:\n\n1. **Order Value Verification:** Please provide or verify the total dollar value for order **ORD-5541**.\n2. **Policy Enforcement ($500 Threshold):**\n   - **Under $500:** The order can be canceled immediately.\n   - **$500 or Greater:** Per policy, orders totaling $500 or more require supervisor approval and escalation prior to cancellation.\n\nPlease confirm the order total or confirm if you would like me to flag this order for supervisor review.",
+      "candidateOutput": "",
+      "baselineScore": 0,
+      "candidateScore": null,
+      "baselineLatencyMs": 5596,
+      "candidateLatencyMs": null,
+      "passed": null,
+      "isRegression": false,
+      "evaluatorScores": [],
+      "failureReason": "[Provider Error] Tool choice is none, but model called a tool",
+      "failureCategory": "PROVIDER_SERVER_ERROR",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "modelVersion": "custom-baseline-prompt",
+        "inputTokens": 40,
+        "outputTokens": 130,
+        "reasoningTokens": 481,
+        "totalTokens": 651,
+        "latencyMs": 5596,
+        "estimatedCostUsd": 0.000042,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "To assist with canceling order **ORD-5541**, I need to follow the enterprise checkout policy:\n\n1. **Order Value Verification:** Please provide or verify the total dollar value for order **ORD-5541**.\n2. **Policy Enforcement ($500 Threshold):**\n   - **Under $500:** The order can be canceled immediately.\n   - **$500 or Greater:** Per policy, orders totaling $500 or more require supervisor approval and escalation prior to cancellation.\n\nPlease confirm the order total or confirm if you would like me to flag this order for supervisor review.",
+                    "thoughtSignature": "EoARCv0QARFNMg9vSefBmKhmpntQmT0ZliPSa2GrMilThBW+BF/3Tn/ZnjtNcwo5pwxYR8JeENdrTbFuBOGRHz5I7trGAg1+Pm9Ms67h6GLbB3p/ykG48aEPwqGqpZQXgIVXeobFwqGwoLwDUo/fKZzqXkPgNGKDivRDNwms9i4F18cVYzFjtqsqWKJ5wEpO3dRA2B7nPhJBHSeFThK1LJlDG3QhRxq2ySjVqhvIKsyN1yUCfeO+gaIWPFIN+d2yARIT7zi5n/+UOQZRFfi4NtkjYDQqX0pv33zKfWnwR6ojukOOjIwAeW7I9G4OcwwPYX8kiCIujsLr5Csuh4UPw6tssgRTpisXfpADp3MTL3AQQOWmhYIQAMslKnYW16kn65Be08XUmzwmPfrGCFQc/4Qun7RvN8Da0YDGPcvzwr6WgLkNp/VnRFX/1g75pwKZpI6mjL0RhgadAEduJt2lkj0HxeE7uARiW8G8wE4fgzJJBtnim3GC/9ukQZauTl2wub7ERrMmaim2G6Ls82wij5ggZmwo/+4aNtxjezJVMKO5xMNWd6b7gxg0EEr32wqr7ofBzciiBpgsgo0xdCIYFUGixhPkFPRSnkwmirJdwR93hEz7yDxbJf7kkmJPdmo64IBzvoLKvxJlTtDM0+7R5ZeSD3mSPt9WzqEwbCA1y2TXJ95kggpS2Ojw0kZJ9zprlMxCnrEQGL19Whw0PrmrKT5YOy3ceqbhBR96kd+WdNNmWVjZGimUsnRErD+f5/ElOfE3JeZiNGWFZiN1+o5mbg3y2dyl9eICc/lqSHq7MQZfcOND4dINbFEy8AlJVdpSJ1NdDfGmoKomOlGFvKsZHG0DJltn6Nxh0Ti19LikONHGXpPCSKV4LhOU7XUBhOuo61YPg6w4DdkmW0F2Ln81K9uDIp01XPi2ujiNHi1kc8Co7PqGM9IfVkawly6a0/vDtVSS2QQr6KIZL01kMseCaPM2b+S0Dp6E11mX6VR+GRauGA68xdXOs5H3Gjw+DYQ1XAzKrJz9rVjuHjhcW35mtdZgpUuSkYP9Uc0l+kO1Wam3AJ8yZMXbtJUgd88os2poJGD8xTUc/pmr8PkY+sq7GsKEoftIs35lVFh20Q/KUcDBZVsjWdtJfiFUWUCAMPVkPQDE8UIXl3poi+R5mnviunKt6JV+kE9GBX4EbAoo037nKjdI7UV8FybVSRpLNNhYFCEn6nEF5XZ+kEYzO1eqbRlWcXMvDz2jbiUoc/9EbqeSwwu3EdV7dLRIVV3re+zKZPnv8vOiNG+12B3pXWG+A+yYEKCeL5gcOhgRMQnJEMtFtY47hmhFEA3XzGAoOCCvm+mtpAXtxknXYXdBRYVm1XB7Eblqz7dA37kk4O0snsSPcVvOadk5FV/ozPL1/d53pJGI7Jfr6VA90hgnkd0d8K+tW+/jK7PJ8/a1BAzF+rriD/MMeygBLWFC8qkLmLnLkI+YHOmsqvVAtr9NsVnIyapYI6ESm9Jlgyj88nBUtkaz1iNkMJD+BqsgSalSxY7qFPUw4NbsfDa4VQ3Ek1VI+D5ci424+gizxy3YTDnkK/U/BRwwW9DPeEbrQrj/T13GvbK4yKwnptp6fM90joRDCTBd7iwonYtzeI0izjz3Qrr6XF8G4upcn2YSiyr00Vq0TqQa2yV/g5HLuswPvolcHX3+GgQYvZGS0KwzlrnhCs2geNfaN60vvTd9xZRPMd7raMZen3oL/TbhgchnYBDz3FC4Bo7H8epQrQDnd82TZx26q0mHBY8c+q61Y/Y5EAjsKmHKxjDznVgny3LjcoPmcBu/VIL7zR1km250WCFw8KxNF9Hf6p0zESfAt6ez+ZbkK94CT8CMuFgOu/IYHDpOZYLeX5UUC/IFQWPYpyRVpJ2+iOBVKN9t/Sowa1nnhpdVSxIJB0Cf0I7pNXFkgfhCk9u4mYsi/w8Z4Edn4GtVK67JLmUcpO0C0pkvHLkBU1hUkCJBHGkcFODxyGlbYhfMq1dY1CzqaCPE9BXDHtr9y5fKtc+2FX3cKD1Eb7OarNyIPiz1owG4pJHmu58ETvjqZp0Cl35yZC+XiYT/x2SBy9SRdbaHLl3XDs9pZP8T0sVwXCBxURAcRA0vgoOfoBJRtdeNitbU7cNSmXgZ3qmEbCyKl59rhFafqjgBsO9rhLNxmalWCNiuDO48Ec7SLJ3Cfk0kAgTSzN+JgcQ8c3U+VDymqY/UFP2rf4BTpEQRoYNy8yagEjboWZ7FVEeH4sPNhKAiFFuSMyoE4BDXD/KDnNO8rsR9hkrSsTpT65q2ThMaofrOR7OaLut9BvSR89nAsVRUH6ljfSkoO7d59Zo4204qXg1GZyROFebhIvlvezsN6nuMk0yYwtRPLKsTpz9PzNggJIAUQpu2kWjQtc7p33ismN+U/GYMF3r0vkvJ1WBoA77bSe3arkfkxASyDSZBTgCRePg1C5tnWcQY2bmx3geRc2I6mxPz31N2xFsyoNfBVqWSPzTdq2i7mRXVPDR0vKIjYXbG3QkCIrBpK+qNh/yASthk4Uv4prEovdOxgan9xd4cnjhjoXfkRmZEEsdPuTT2Txlo8Kw0y7EPUhbqbtCIaLD6RmhnS1Eez3Zh9hEnHVF9jPmhJtA2NB6UJzvNGmzP75r1CExkAeHZBOXbmcC60P6rAfDEs55GRi0diPVnlQbSf49t1xy0fDYJP9rRXF3qCaEheJTZS84ZuWN2I7lg60WxOLWvoqYt7f8l30HTTmBeq9sDmMdTHVumTf+YHz7WmSzMrpBfpGT5C7Lgiz4HsKDpQs8y4/QWt/46zxhjNWCVGB4yraUx5Bdj4yxAqd/kBYhCl0+yn61UA1P5FAwFgQcVih6e6o7otwXLGA2kkHzcojNB8VWwC45/JKmTBBGDuA=="
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 40,
+            "candidatesTokenCount": 130,
+            "totalTokenCount": 651,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 40
+              }
+            ],
+            "thoughtsTokenCount": 481,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "a3KlatHTDvqlqfkP2PPRuAc"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "custom-candidate-prompt",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 502,
+        "retries": 0,
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "996",
+          "resetRequests": "5m45.6s",
+          "limitTokens": "8000",
+          "remainingTokens": "7260",
+          "resetTokens": "5.55s"
+        },
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 400,
+          "code": "PROVIDER_ERROR",
+          "message": "Tool choice is none, but model called a tool"
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "PROVIDER_ERROR",
+      "executionStatus": "PROVIDER_ERROR",
+      "candidateErrorDetail": {
+        "httpStatus": 400,
+        "provider": "groq",
+        "category": "SERVER_ERROR",
+        "message": "Tool choice is none, but model called a tool"
+      },
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": false,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": false,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": false
+    },
+    {
+      "testCaseId": "tc-11",
+      "testCaseName": "Tax rate calculation for Washington state buyer",
+      "category": "Tool Calling",
+      "severity": "medium",
+      "input": "Calculate state and local sales tax for $80 item shipped to Seattle, WA",
+      "expectedOutput": "Estimated tax is $8.20 (10.25% sales tax rate).",
+      "baselineOutput": "Here is the state and local sales tax breakdown for an **$80.00** item shipped to **Seattle, WA**:\n\n---\n\n### **Tax Calculation Breakdown**\n* **Item Subtotal:** $80.00\n\n* **Washington State Sales Tax (6.50%):** $5.20\n* **Seattle Local / Regional Sales Tax (3.85%):** $3.08\n* **Combined Sales Tax Rate:** **10.35%**\n\n---\n\n### **Summary**\n* **Total Sales Tax:** **$8.28**\n* **Final Order Total:** **$88.28**\n\n---\n*Policy Check: Order subtotal ($80.00) is below the $500 threshold; supervisor escalation is not required.*",
+      "candidateOutput": "**Sales tax for an $80 item shipped to Seattle, WA**\n\n| Tax type | Rate | Amount |\n|----------|------|--------|\n| Washington State sales tax | 6.5 % | **$5.20** |\n| Seattle local sales tax | 3.6 % | **$2.88** |\n| **Total sales tax** | 10.1 % | **$8.08** |\n\nSo the item will incur **$8.08** in sales tax, broken down as $5.20 state tax and $2.88 local tax.",
+      "baselineScore": 0.25,
+      "candidateScore": 0.25,
+      "baselineLatencyMs": 6174,
+      "candidateLatencyMs": 953,
+      "passed": false,
+      "isRegression": false,
+      "evaluatorScores": [
+        {
+          "evaluatorType": "keyword_criteria",
+          "score": 0.25,
+          "passed": false,
+          "details": "Missing required terms: [8.20]."
+        },
+        {
+          "evaluatorType": "latency",
+          "score": 1,
+          "passed": true,
+          "details": "Latency 953ms within tolerance (max 2500ms)."
+        }
+      ],
+      "failureReason": "Missing required terms: [8.20].",
+      "failureCategory": "QUALITY_FAILURE",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "modelVersion": "custom-baseline-prompt",
+        "inputTokens": 45,
+        "outputTokens": 175,
+        "reasoningTokens": 566,
+        "totalTokens": 786,
+        "latencyMs": 6174,
+        "estimatedCostUsd": 0.000056,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "Here is the state and local sales tax breakdown for an **$80.00** item shipped to **Seattle, WA**:\n\n---\n\n### **Tax Calculation Breakdown**\n* **Item Subtotal:** $80.00\n\n* **Washington State Sales Tax (6.50%):** $5.20\n* **Seattle Local / Regional Sales Tax (3.85%):** $3.08\n* **Combined Sales Tax Rate:** **10.35%**\n\n---\n\n### **Summary**\n* **Total Sales Tax:** **$8.28**\n* **Final Order Total:** **$88.28**\n\n---\n*Policy Check: Order subtotal ($80.00) is below the $500 threshold; supervisor escalation is not required.*",
+                    "thoughtSignature": "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"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 45,
+            "candidatesTokenCount": 175,
+            "totalTokenCount": 786,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 45
+              }
+            ],
+            "thoughtsTokenCount": 566,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "dHKlao2-NoOkqfkP0IOeoQg"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "custom-candidate-prompt",
+        "inputTokens": 109,
+        "outputTokens": 397,
+        "reasoningTokens": 266,
+        "totalTokens": 506,
+        "latencyMs": 953,
+        "estimatedCostUsd": 0.00009,
+        "retries": 0,
+        "rawResponse": {
+          "id": "chatcmpl-bf7d3553-b301-4cc9-b5e9-e1f7ffdd8315",
+          "object": "chat.completion",
+          "created": 1789227643,
+          "model": "openai/gpt-oss-20b",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "**Sales tax for an $80 item shipped to Seattle, WA**\n\n| Tax type | Rate | Amount |\n|----------|------|--------|\n| Washington State sales tax | 6.5 % | **$5.20** |\n| Seattle local sales tax | 3.6 % | **$2.88** |\n| **Total sales tax** | 10.1 % | **$8.08** |\n\nSo the item will incur **$8.08** in sales tax, broken down as $5.20 state tax and $2.88 local tax.",
+                "reasoning": "We need to calculate state and local sales tax for $80 item shipped to Seattle, WA. The user wants the tax. We need to know the sales tax rate for Seattle, WA. Washington state sales tax is 6.5% state tax. Seattle has local taxes: Seattle has a local sales tax of 2.5%? Actually, Seattle's combined sales tax rate is 10.1% (state 6.5% + local 3.6%?). Let's check: Washington state sales tax: 6.5% state. Seattle local tax: 3.6%? Actually, Seattle's local sales tax is 3.6% (including 2.5% local and 1.1% other). Combined 10.1%. So total sales tax = 10.1% of $80 = $8.08. But we need to confirm. Let's compute: 80 * 0.101 = 8.08. So state tax = 80 * 0.065 = 5.20. Local tax = 80 * 0.036 = 2.88. Combined = 8.08. So answer: state tax $5.20, local tax $2.88, total $8.08. Provide that."
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "queue_time": 0.346488804,
+            "prompt_tokens": 109,
+            "prompt_time": 0.010264633,
+            "completion_tokens": 397,
+            "completion_time": 0.442192584,
+            "total_tokens": 506,
+            "total_time": 0.452457217,
+            "completion_tokens_details": {
+              "reasoning_tokens": 266
+            }
+          },
+          "usage_breakdown": null,
+          "system_fingerprint": "fp_feb9b278f1",
+          "x_groq": {
+            "id": "req_01m2b4ebmbezya0ghmft8f44xn",
+            "seed": 1945803129
+          },
+          "service_tier": "on_demand"
+        },
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "995",
+          "resetRequests": "7m12s",
+          "limitTokens": "8000",
+          "remainingTokens": "7254",
+          "resetTokens": "5.595s"
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "QUALITY_FAILURE",
+      "executionStatus": "QUALITY_FAILURE",
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": true,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": true,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": true
+    }
+  ],
+  "regressionDecision": {
+    "isRegression": false,
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "summary": "Evaluation inconclusive: Insufficient coverage (20.0% < 80%) due to provider rate limits or operational errors.",
+    "violatedRules": [
+      "Candidate evaluation coverage (20.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors.",
+      "Candidate provider error rate is critical (80.0% >= 40.0% threshold) with 4 operational failure(s).",
+      "Directional quality regression signal: score degraded by -13.3 percentage points compared to baseline on small sample (N = 5 < 100).",
+      "Candidate quality (25.0%) is below the minimum required threshold (95.0%)."
+    ],
+    "regressionCategories": [
+      "COVERAGE_REGRESSION",
+      "RELIABILITY_REGRESSION",
+      "QUALITY_REGRESSION_SIGNAL"
+    ]
+  },
+  "rootCauses": [
+    {
+      "id": "rc-1",
+      "suspectedCause": "Tool call schema parameter drift or type mismatch",
+      "category": "Tool Calling",
+      "affectedCaseIds": [
+        "tc-11"
+      ],
+      "affectedCaseCount": 1,
+      "confidenceScore": 71,
+      "diagnosticConfidence": "High (Heuristic)",
+      "classification": "HEURISTIC",
+      "evidence": [
+        "1 tool invocation test(s) failed parameter validation compared to expected criteria.",
+        "Cases such as tc-11 failed validation."
+      ],
+      "inference": "[HEURISTIC / HYPOTHESIS] Candidate model may have emitted altered parameter names or omitted required arguments in tool calls.",
+      "recommendation": "Verify tool definition schemas in the candidate prompt. Provide explicit parameter type annotations and few-shot tool call invocations."
+    },
+    {
+      "id": "rc-2",
+      "suspectedCause": "Policy gate compliance failure or missing mandatory authorization keywords",
+      "category": "Policy Gate",
+      "affectedCaseIds": [
+        "tc-11"
+      ],
+      "affectedCaseCount": 1,
+      "confidenceScore": 63,
+      "diagnosticConfidence": "Moderate (Heuristic)",
+      "classification": "HEURISTIC",
+      "evidence": [
+        "1 policy gate test(s) failed mandatory condition checks.",
+        "Model response failed to contain required escalation/authorization keywords."
+      ],
+      "inference": "[HEURISTIC / HYPOTHESIS] Candidate configuration may have reduced policy constraint priority in the system prompt.",
+      "recommendation": "Restore uncompressed safety preamble directives. Ensure authorization boundary keywords are explicitly pinned in the system instructions."
+    },
+    {
+      "id": "rc-3",
+      "suspectedCause": "Provider API quota, credit balance exhaustion, or rate limiting",
+      "category": "System",
+      "affectedCaseIds": [
+        "tc-01",
+        "tc-05",
+        "tc-09",
+        "tc-10"
+      ],
+      "affectedCaseCount": 4,
+      "confidenceScore": 99,
+      "diagnosticConfidence": "Observed (HTTP Telemetry)",
+      "classification": "OBSERVED",
+      "evidence": [
+        "[OBSERVED] 4 request(s) failed due to provider quota/credit exhaustion.",
+        "Provider error: Tool choice is none, but model called a tool."
+      ],
+      "inference": "Upstream gateway returned HTTP 429/400 explicitly citing credit, quota, or rate limits.",
+      "recommendation": "Add credits to provider billing organization, verify spending limits, or configure fallback provider failover."
+    },
+    {
+      "id": "rc-4",
+      "suspectedCause": "Reference criterion mismatch or missing domain keywords",
+      "category": "Domain Knowledge",
+      "affectedCaseIds": [
+        "tc-11"
+      ],
+      "affectedCaseCount": 1,
+      "confidenceScore": 90,
+      "diagnosticConfidence": "Confirmed Deterministic (Keyword Check)",
+      "classification": "CONFIRMED_DETERMINISTIC",
+      "evidence": [
+        "1 case(s) produced responses missing configured reference keywords.",
+        "Both responses failed the configured exact keyword criterion."
+      ],
+      "inference": "The configured reference criterion was not reproduced. This represents an exact keyword criteria failure; it is not evaluated as factual hallucination.",
+      "recommendation": "Verify whether reference keywords in dataset are comprehensive, or configure a semantic / groundedness evaluation pipeline."
+    }
+  ],
+  "releaseDecision": {
+    "status": "INSUFFICIENT_EVIDENCE",
+    "decidedBy": "Reliability Gate (Auto-Calculated)",
+    "decidedAt": "2026-09-12T15:40:43.014Z",
+    "reason": "Cannot certify release quality because only 20.0% of test cases completed successfully. Upstream rate limits must be resolved before gating."
+  },
+  "comparisonReport": {
+    "id": "rep-mtyjxx1t-p2g0",
+    "title": "Baseline: GOOGLE (gemini-3.6-flash) vs Candidate: GROQ (openai/gpt-oss-20b)",
+    "timestamp": "2026-09-12T15:40:43.025Z",
+    "datasetId": "ds-checkout-golden",
+    "datasetName": "Checkout Reliability Suite",
+    "totalCases": 5,
+    "baseline": {
+      "provider": "google",
+      "model": "gemini-3.6-flash",
+      "promptVersion": "custom-baseline-prompt",
+      "temperature": 0.2
+    },
+    "candidate": {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "promptVersion": "custom-candidate-prompt",
+      "temperature": 0.2
+    },
+    "winner": "tie",
+    "winnerReason": "Inconclusive comparison: Evaluation coverage is below required threshold (80%). Baseline: 100.0% (5/5 evaluated, 0 rate-limited), Candidate: 20.0% (1/5 evaluated, 0 rate-limited).",
+    "metrics": {
+      "correctness": {
+        "metric": "Correctness Rate",
+        "baselineValue": 0,
+        "candidateValue": 0,
+        "unit": "%",
+        "absoluteDelta": 0,
+        "percentageDelta": 0,
+        "isImprovement": true,
+        "description": "Exact match and criteria satisfaction rate on evaluated responses",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 0
+      },
+      "passRate": {
+        "metric": "Pass Rate",
+        "baselineValue": 0,
+        "candidateValue": 0,
+        "unit": "%",
+        "absoluteDelta": 0,
+        "percentageDelta": 0,
+        "isImprovement": true,
+        "description": "Proportion of evaluated scenarios meeting acceptance thresholds (binary pass/fail)",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 0
+      },
+      "qualityScore": {
+        "metric": "Quality Score",
+        "baselineValue": 11.7,
+        "candidateValue": 25,
+        "unit": "pts",
+        "absoluteDelta": 13.3,
+        "percentageDelta": 113.7,
+        "isImprovement": true,
+        "description": "Continuous evaluator score across evaluated criteria",
+        "rawBaselineValue": 11.7,
+        "rawCandidateValue": 25
+      },
+      "evaluationCoverage": {
+        "metric": "Evaluation Coverage",
+        "baselineValue": 100,
+        "candidateValue": 20,
+        "unit": "%",
+        "absoluteDelta": -80,
+        "percentageDelta": -80,
+        "isImprovement": false,
+        "description": "Proportion of dataset scenarios that completed with valid model responses",
+        "rawBaselineValue": 100,
+        "rawCandidateValue": 20
+      },
+      "providerReliability": {
+        "metric": "Provider Reliability",
+        "baselineValue": 100,
+        "candidateValue": 20,
+        "unit": "%",
+        "absoluteDelta": -80,
+        "percentageDelta": -80,
+        "isImprovement": false,
+        "description": "Operational request success rate excluding HTTP 429 quota exhaustion and gateway errors",
+        "rawBaselineValue": 100,
+        "rawCandidateValue": 20
+      },
+      "rateLimitCount": {
+        "metric": "Rate Limit Failures (429)",
+        "baselineValue": 0,
+        "candidateValue": 0,
+        "unit": "cases",
+        "absoluteDelta": 0,
+        "percentageDelta": 0,
+        "isImprovement": true,
+        "description": "Number of requests throttled by upstream provider quota limits",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 0
+      },
+      "providerErrorCount": {
+        "metric": "Provider Errors",
+        "baselineValue": 0,
+        "candidateValue": 4,
+        "unit": "cases",
+        "absoluteDelta": 4,
+        "percentageDelta": 100,
+        "isImprovement": false,
+        "description": "Non-429 operational errors including timeouts, auth, and network failures",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 4
+      },
+      "qualityFailureCount": {
+        "metric": "Quality Failures",
+        "baselineValue": 5,
+        "candidateValue": 1,
+        "unit": "cases",
+        "absoluteDelta": -4,
+        "percentageDelta": -80,
+        "isImprovement": true,
+        "description": "Total evaluated cases failing validation or criteria checks",
+        "rawBaselineValue": 5,
+        "rawCandidateValue": 1
+      },
+      "avgLatencyMs": {
+        "metric": "Mean Latency (Successful)",
+        "baselineValue": 6095,
+        "candidateValue": 953,
+        "unit": "ms",
+        "absoluteDelta": -5142,
+        "percentageDelta": -84.4,
+        "isImprovement": true,
+        "description": "Average response time of successful model responses only (excludes 429/errors)",
+        "rawBaselineValue": 6095,
+        "rawCandidateValue": 953
+      },
+      "inputTokens": {
+        "metric": "Input Tokens",
+        "baselineValue": 237,
+        "candidateValue": 109,
+        "unit": "tok",
+        "absoluteDelta": -128,
+        "percentageDelta": -54,
+        "isImprovement": true,
+        "description": "Total prompt tokens ingested across successfully evaluated cases (failed/rate-limited requests contribute 0 tokens)",
+        "rawBaselineValue": 237,
+        "rawCandidateValue": 109
+      },
+      "outputTokens": {
+        "metric": "Output Tokens",
+        "baselineValue": 778,
+        "candidateValue": 397,
+        "unit": "tok",
+        "absoluteDelta": -381,
+        "percentageDelta": -49,
+        "isImprovement": true,
+        "description": "Total tokens generated across successfully evaluated cases",
+        "rawBaselineValue": 778,
+        "rawCandidateValue": 397
+      },
+      "totalTokens": {
+        "metric": "Total Tokens",
+        "baselineValue": 3517,
+        "candidateValue": 506,
+        "unit": "tok",
+        "absoluteDelta": -3011,
+        "percentageDelta": -85.6,
+        "isImprovement": true,
+        "description": "Authoritative total token volume reported by providers across successfully evaluated cases (never double-counted)",
+        "rawBaselineValue": 3517,
+        "rawCandidateValue": 506
+      },
+      "estimatedCostUsd": {
+        "metric": "Estimated Run Cost",
+        "baselineValue": 0.0003,
+        "candidateValue": 0.0001,
+        "unit": "$",
+        "absoluteDelta": -0.0002,
+        "percentageDelta": -66.7,
+        "isImprovement": true,
+        "description": "Total cost normalized across provider pricing schedules (percentage computed from exact unrounded values)",
+        "rawBaselineValue": 0.0003,
+        "rawCandidateValue": 0.0001
+      },
+      "errorRate": {
+        "metric": "Provider Error Rate",
+        "baselineValue": 0,
+        "candidateValue": 80,
+        "unit": "%",
+        "absoluteDelta": 80,
+        "percentageDelta": 100,
+        "isImprovement": false,
+        "description": "Rate of network, rate limit, or proxy failures",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 80
+      },
+      "medianLatencyMs": {
+        "metric": "Median Latency (Successful)",
+        "baselineValue": 5988,
+        "candidateValue": 953,
+        "unit": "ms",
+        "absoluteDelta": -5035,
+        "percentageDelta": -84.1,
+        "isImprovement": true,
+        "description": "Median response time of successful model responses only (excludes 429/errors)",
+        "rawBaselineValue": 5988,
+        "rawCandidateValue": 953
+      },
+      "p95LatencyMs": {
+        "metric": "P95 Latency (Tail)",
+        "baselineValue": 7398,
+        "candidateValue": 953,
+        "unit": "ms",
+        "absoluteDelta": -6445,
+        "percentageDelta": -87.1,
+        "isImprovement": true,
+        "description": "95th percentile response time of successful model responses only",
+        "rawBaselineValue": 7398,
+        "rawCandidateValue": 953
+      },
+      "reasoningTokens": {
+        "metric": "Provider-Reported Reasoning/Thinking Telemetry",
+        "baselineValue": 2502,
+        "candidateValue": 266,
+        "unit": "tok",
+        "absoluteDelta": -2236,
+        "percentageDelta": -89.4,
+        "isImprovement": true,
+        "description": "Provider token semantics may differ; this telemetry is not assumed to be additive or directly comparable.",
+        "rawBaselineValue": 2502,
+        "rawCandidateValue": 266
+      }
+    },
+    "qualityDelta": 13.3,
+    "tokenDelta": -3011,
+    "latencyDelta": -5142,
+    "costDelta": -0.0002,
+    "regressionStatus": "INSUFFICIENT_EVIDENCE",
+    "confidenceScore": 15,
+    "evidence": [
+      "Evaluation inconclusive: Insufficient coverage (20.0% < 80%) due to provider rate limits or operational errors.",
+      "Candidate evaluation coverage (20.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors.",
+      "Directional quality regression signal: score degraded by -13.3 percentage points compared to baseline on small sample (N = 5 < 100).",
+      "Candidate quality (25.0%) is below the minimum required threshold (95.0%).",
+      "Baseline evaluation coverage: 100.0% (5/5 scenarios completed).",
+      "Candidate evaluation coverage: 20.0% (1/5 scenarios completed).",
+      "Evidence Strength: INSUFFICIENT (20.0% coverage < 80% threshold)."
+    ],
+    "recommendation": "INSUFFICIENT EVIDENCE",
+    "recommendationReason": "Cannot certify release quality because only 20.0% of test cases completed successfully. Upstream rate limits must be resolved before gating.",
+    "actionItems": [
+      "Investigate prompt drift or fine-tuning regressions affecting candidate quality.",
+      "Increase upstream API quota / rate limits or pace evaluation requests, then re-run the benchmark."
+    ],
+    "executionMode": "LIVE",
+    "provenance": {
+      "initiatedAt": "2026-09-12T15:39:52.860Z",
+      "completedAt": "2026-09-12T15:40:43.014Z",
+      "baselineProvider": "google",
+      "candidateProvider": "groq",
+      "baselineModel": "gemini-3.6-flash",
+      "candidateModel": "openai/gpt-oss-20b",
+      "totalAttempted": 5,
+      "baselineEvaluated": 5,
+      "candidateEvaluated": 1,
+      "baselineRateLimits": 0,
+      "candidateRateLimits": 0,
+      "hadOperationalErrors": true,
+      "isLiveExecution": true
+    },
+    "evidenceStrength": "LOW",
+    "regressionCategories": [
+      "COVERAGE_REGRESSION",
+      "QUALITY_REGRESSION_SIGNAL"
+    ],
+    "limitations": [
+      "Small sample size (N = 5). Single-case failure swing is 20%. Cannot certify definitive production readiness.",
+      "Unequal evaluation sample sizes: Baseline evaluated 5 cases, Candidate evaluated 1 cases due to upstream provider errors or rate limits.",
+      "Candidate token telemetry reflects 1 successfully evaluated cases (4 case(s) failed with operational errors/rate limits and contributed 0 tokens).",
+      "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+      "Factuality / Groundedness evaluator not configured; model claims were checked deterministically against expected outputs, not external knowledge retrieval.",
+      "Observed API Round-Trip Latency reflects client-observed network round-trip latency including proxy overhead, not pure model generation time."
+    ],
+    "minimumEvaluatedCases": 100,
+    "hasUnequalSampleSizes": true,
+    "sampleSizeWarning": "Unequal evaluation sample sizes: Baseline evaluated 5 cases, Candidate evaluated 1 cases.",
+    "latencyPercentileWarning": "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+    "semanticEvaluationStatus": "NOT_CONFIGURED",
+    "llmJudgeStatus": "NOT_CONFIGURED",
+    "factualityGroundednessStatus": "NOT_CONFIGURED",
+    "safetyBreakdown": {
+      "credentialLeakCount": 0,
+      "promptInjectionCount": 0,
+      "safetyPolicyFailureCount": 0,
+      "refusalCriteriaMismatchCount": 0,
+      "totalSafetyRelatedCases": 0,
+      "secretsLeaked": false,
+      "classifications": []
+    }
+  },
+  "durationMs": 50154
+}

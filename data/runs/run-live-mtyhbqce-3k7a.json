@@ -1,0 +1,705 @@
+{
+  "id": "run-live-mtyhbqce-3k7a",
+  "projectId": "proj-checkout-agent",
+  "datasetId": "ds-checkout-golden",
+  "datasetName": "Checkout Reliability Suite",
+  "baselineVersion": {
+    "id": "base-gemini-live",
+    "name": "Google Gemini 3.6 Flash",
+    "provider": "google",
+    "modelIdentifier": "gemini-3.6-flash",
+    "temperature": 0.2,
+    "isBaseline": true,
+    "createdAt": "2026-09-12T14:27:28.668Z"
+  },
+  "candidateVersion": {
+    "id": "cand-groq-live",
+    "name": "Groq Llama 3.3 70B",
+    "provider": "groq",
+    "modelIdentifier": "llama-3.3-70b-versatile",
+    "temperature": 0.2,
+    "isBaseline": false,
+    "createdAt": "2026-09-12T14:27:28.668Z"
+  },
+  "timestamp": "2026-09-12T14:28:01.120Z",
+  "executionMode": "LIVE",
+  "provenance": {
+    "initiatedAt": "2026-09-12T14:27:28.691Z",
+    "completedAt": "2026-09-12T14:28:01.120Z",
+    "baselineProvider": "google",
+    "candidateProvider": "groq",
+    "baselineModel": "gemini-3.6-flash",
+    "candidateModel": "llama-3.3-70b-versatile",
+    "totalAttempted": 3,
+    "baselineEvaluated": 3,
+    "candidateEvaluated": 0,
+    "baselineRateLimits": 0,
+    "candidateRateLimits": 0,
+    "hadOperationalErrors": true,
+    "isLiveExecution": true
+  },
+  "metrics": {
+    "totalCases": 3,
+    "sampleSize": 3,
+    "evidenceStrength": "NONE",
+    "baselinePassed": 0,
+    "candidatePassed": 0,
+    "baselineAccuracy": 0,
+    "candidateAccuracy": null,
+    "accuracyDelta": null,
+    "baselineEvaluatedCases": 3,
+    "candidateEvaluatedCases": 0,
+    "baselineEvaluationCoverage": 100,
+    "candidateEvaluationCoverage": 0,
+    "baselinePassRate": 0,
+    "candidatePassRate": null,
+    "baselineQualityScore": 11.1,
+    "candidateQualityScore": null,
+    "qualityScoreDelta": null,
+    "baselineMeanSuccessfulLatencyMs": 7989,
+    "candidateMeanSuccessfulLatencyMs": null,
+    "baselineMedianLatencyMs": 6174,
+    "candidateMedianLatencyMs": null,
+    "baselineP95LatencyMs": 13508,
+    "candidateP95LatencyMs": null,
+    "baselineAvgLatencyMs": 7989,
+    "candidateAvgLatencyMs": null,
+    "latencyDeltaPercent": null,
+    "baselineEstimatedCost": 0.0003,
+    "candidateEstimatedCost": null,
+    "regressedCasesCount": 0,
+    "improvedCasesCount": 0,
+    "baselineReliability": {
+      "totalRequests": 3,
+      "successfulResponses": 3,
+      "rateLimitedCount": 0,
+      "timeoutCount": 0,
+      "authErrorCount": 0,
+      "networkErrorCount": 0,
+      "otherErrorCount": 0,
+      "reliabilityRate": 100
+    },
+    "candidateReliability": {
+      "totalRequests": 3,
+      "successfulResponses": 0,
+      "rateLimitedCount": 0,
+      "timeoutCount": 0,
+      "authErrorCount": 0,
+      "networkErrorCount": 0,
+      "otherErrorCount": 3,
+      "reliabilityRate": 0
+    },
+    "isInsufficientCoverage": true,
+    "minimumEvaluatedCases": 100,
+    "hasUnequalSampleSizes": true,
+    "sampleSizeWarning": "Unequal evaluation sample sizes: Baseline evaluated 3 cases, Candidate evaluated 0 cases.",
+    "latencyPercentileWarning": "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+    "semanticEvaluationStatus": "NOT_CONFIGURED",
+    "llmJudgeStatus": "NOT_CONFIGURED",
+    "factualityGroundednessStatus": "NOT_CONFIGURED",
+    "baselineTotalTokens": 2671,
+    "candidateTotalTokens": null,
+    "baselineReasoningTokens": 1691,
+    "candidateReasoningTokens": null,
+    "baselineCachedTokens": 0,
+    "candidateCachedTokens": null,
+    "dispatchedCases": 3,
+    "evaluatedCases": 0,
+    "qualityFailures": 0,
+    "providerFailures": 3,
+    "authenticationFailures": 0,
+    "quotaFailures": 0,
+    "safetyFailures": 0,
+    "unevaluableCases": 3
+  },
+  "caseResults": [
+    {
+      "testCaseId": "tc-01",
+      "testCaseName": "Cart checkout with Apple Pay & valid items",
+      "category": "Tool Calling",
+      "severity": "critical",
+      "input": "Complete checkout for cart #9821 with payment apple_pay and items [SKU-102, SKU-104]",
+      "expectedOutput": "{\"status\": \"success\", \"orderId\": \"ORD-9821\", \"total\": 142.50, \"currency\": \"USD\", \"paymentMethod\": \"apple_pay\"}",
+      "baselineOutput": "Checkout completed successfully for **Cart #9821**!\n\n### Order Summary:\n* **Cart ID:** #9821\n* **Items:** SKU-102, SKU-104\n* **Payment Method:** Apple Pay\n* **Status:** Confirmed & Processing\n\nA confirmation receipt and tracking details will be sent to your registered email address shortly. Thank you for your purchase!",
+      "candidateOutput": "",
+      "baselineScore": 0,
+      "candidateScore": null,
+      "baselineLatencyMs": 6174,
+      "candidateLatencyMs": null,
+      "passed": null,
+      "isRegression": false,
+      "evaluatorScores": [],
+      "failureReason": "[Provider Error] The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.",
+      "failureCategory": "PROVIDER_SERVER_ERROR",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "inputTokens": 31,
+        "outputTokens": 85,
+        "reasoningTokens": 452,
+        "totalTokens": 568,
+        "latencyMs": 6174,
+        "estimatedCostUsd": 0.000028,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "Checkout completed successfully for **Cart #9821**!\n\n### Order Summary:\n* **Cart ID:** #9821\n* **Items:** SKU-102, SKU-104\n* **Payment Method:** Apple Pay\n* **Status:** Confirmed & Processing\n\nA confirmation receipt and tracking details will be sent to your registered email address shortly. Thank you for your purchase!",
+                    "thoughtSignature": "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"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 31,
+            "candidatesTokenCount": 85,
+            "totalTokenCount": 568,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 31
+              }
+            ],
+            "thoughtsTokenCount": 452,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "UmGlaruiItasg8UPl7yc8A8"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 310,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 404,
+          "code": "PROVIDER_ERROR",
+          "message": "The model `llama-3.3-70b-versatile` does not exist or you do not have access to it."
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "PROVIDER_ERROR",
+      "executionStatus": "PROVIDER_ERROR",
+      "candidateErrorDetail": {
+        "httpStatus": 404,
+        "provider": "groq",
+        "category": "SERVER_ERROR",
+        "message": "The model `llama-3.3-70b-versatile` does not exist or you do not have access to it."
+      },
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": false,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": false,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": false
+    },
+    {
+      "testCaseId": "tc-05",
+      "testCaseName": "Apply seasonal discount code SUMMER20",
+      "category": "Tool Calling",
+      "severity": "high",
+      "input": "Apply promo code SUMMER20 to active cart with subtotal $100",
+      "expectedOutput": "{\"tool\": \"apply_discount\", \"code\": \"SUMMER20\", \"discountPercent\": 20, \"valid\": true}",
+      "baselineOutput": "Promo code **SUMMER20** applied!\n\n**Cart Summary:**\n* **Subtotal:** $100.00\n* **Discount (20% off):** -$20.00\n* **New Subtotal:** **$80.00**",
+      "candidateOutput": "",
+      "baselineScore": 0,
+      "candidateScore": null,
+      "baselineLatencyMs": 4285,
+      "candidateLatencyMs": null,
+      "passed": null,
+      "isRegression": false,
+      "evaluatorScores": [],
+      "failureReason": "[Provider Error] The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.",
+      "failureCategory": "PROVIDER_SERVER_ERROR",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "inputTokens": 17,
+        "outputTokens": 60,
+        "reasoningTokens": 396,
+        "totalTokens": 473,
+        "latencyMs": 4285,
+        "estimatedCostUsd": 0.000019,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "Promo code **SUMMER20** applied!\n\n**Cart Summary:**\n* **Subtotal:** $100.00\n* **Discount (20% off):** -$20.00\n* **New Subtotal:** **$80.00**",
+                    "thoughtSignature": "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"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 17,
+            "candidatesTokenCount": 60,
+            "totalTokenCount": 473,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 17
+              }
+            ],
+            "thoughtsTokenCount": 396,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "W2GlauLeLdeE4-EPm-DpyAg"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 133,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 404,
+          "code": "PROVIDER_ERROR",
+          "message": "The model `llama-3.3-70b-versatile` does not exist or you do not have access to it."
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "PROVIDER_ERROR",
+      "executionStatus": "PROVIDER_ERROR",
+      "candidateErrorDetail": {
+        "httpStatus": 404,
+        "provider": "groq",
+        "category": "SERVER_ERROR",
+        "message": "The model `llama-3.3-70b-versatile` does not exist or you do not have access to it."
+      },
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": false,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": false,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": false
+    },
+    {
+      "testCaseId": "tc-09",
+      "testCaseName": "Calculate shipping options for ZIP 94103",
+      "category": "Tool Calling",
+      "severity": "medium",
+      "input": "Get available shipping tiers for package weight 2.5kg to 94103",
+      "expectedOutput": "Standard Shipping ($4.99) and Express Delivery ($12.99)",
+      "baselineOutput": "To get exact real-time pricing and delivery dates, carriers require an **Origin ZIP code** and **Package Dimensions** (to check for dimensional weight). \n\nHowever, based on a **2.5 kg (5.51 lbs / billed at 6 lbs)** package delivering to **San Francisco, CA (94103)**, here are the standard shipping tiers available across the major US carriers:\n\n---\n\n### Standard Shipping Tiers Available\n\n#### **1. USPS (US Postal Service)**\n*   **USPS Ground Advantage:** 2–5 business days *(Best budget option)*\n*   **USPS Priority Mail:** 1–3 business days *(Includes standard insurance)*\n*   **USPS Priority Mail Express:** Next-day to 2-day guaranteed by 6 PM\n\n#### **2. UPS**\n*   **UPS Ground / Home Delivery:** 1–5 business days *(Standard ground service)*\n*   **UPS 3 Day Select:** 3 business days\n*   **UPS 2nd Day Air:** 2 business days\n*   **UPS Next Day Air Saver:** Next business day (afternoon)\n*   **UPS Next Day Air:** Next business day (morning delivery)\n\n#### **3. FedEx**\n*   **FedEx Ground / Home Delivery:** 1–5 business days\n*   **FedEx Express Saver:** 3 business days\n*   **FedEx 2Day:** 2 business days\n*   **FedEx Priority Overnight:** Next business day by 10:30 AM\n\n---\n\n### 💻 Developer / API JSON Representation\nIf you are building an e-commerce integration or calling a shipping API (like EasyPost, Shippo, or Pitney Bowes), here is how these tiers are typically returned:\n\n```json\n{\n  \"destination_zip\": \"94103\",\n  \"weight_kg\": 2.5,\n  \"billed_weight_lbs\": 6,\n  \"available_tiers\": [\n    {\n      \"carrier\": \"USPS\",\n      \"service_code\": \"usps_ground_advantage\",\n      \"tier_name\": \"Economy Ground\",\n      \"est_delivery_days\": \"3-5\"\n    },\n    {\n      \"carrier\": \"USPS\",\n      \"service_code\": \"usps_priority_mail\",\n      \"tier_name\": \"Standard Expedited\",\n      \"est_delivery_days\": \"2-3\"\n    },\n    {\n      \"carrier\": \"UPS\",\n      \"service_code\": \"ups_ground\",\n      \"tier_name\": \"Ground\",\n      \"est_delivery_days\": \"1-5\"\n    },\n    {\n      \"carrier\": \"FedEx\",\n      \"service_code\": \"fedex_2day\",\n      \"tier_name\": \"2-Day Express\",\n      \"est_delivery_days\": \"2\"\n    },\n    {\n      \"carrier\": \"UPS\",\n      \"service_code\": \"ups_next_day_air\",\n      \"tier_name\": \"Overnight\",\n      \"est_delivery_days\": \"1\"\n    }\n  ]\n}\n```\n\n---\n\n### Need Exact Rates?\nPlease provide:\n1. **Origin ZIP Code** (where the package is shipping from)\n2. **Dimensions** in cm or inches (Length × Width × Height)\n3. **Preferred Carrier** (USPS, UPS, FedEx, or All)",
+      "candidateOutput": "",
+      "baselineScore": 0.3333333333333333,
+      "candidateScore": null,
+      "baselineLatencyMs": 13508,
+      "candidateLatencyMs": null,
+      "passed": null,
+      "isRegression": false,
+      "evaluatorScores": [],
+      "failureReason": "[Provider Error] The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.",
+      "failureCategory": "PROVIDER_SERVER_ERROR",
+      "baselineUsage": {
+        "provider": "google",
+        "model": "gemini-3.6-flash",
+        "inputTokens": 20,
+        "outputTokens": 767,
+        "reasoningTokens": 843,
+        "totalTokens": 1630,
+        "latencyMs": 13508,
+        "estimatedCostUsd": 0.000232,
+        "retries": 0,
+        "rawResponse": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "To get exact real-time pricing and delivery dates, carriers require an **Origin ZIP code** and **Package Dimensions** (to check for dimensional weight). \n\nHowever, based on a **2.5 kg (5.51 lbs / billed at 6 lbs)** package delivering to **San Francisco, CA (94103)**, here are the standard shipping tiers available across the major US carriers:\n\n---\n\n### Standard Shipping Tiers Available\n\n#### **1. USPS (US Postal Service)**\n*   **USPS Ground Advantage:** 2–5 business days *(Best budget option)*\n*   **USPS Priority Mail:** 1–3 business days *(Includes standard insurance)*\n*   **USPS Priority Mail Express:** Next-day to 2-day guaranteed by 6 PM\n\n#### **2. UPS**\n*   **UPS Ground / Home Delivery:** 1–5 business days *(Standard ground service)*\n*   **UPS 3 Day Select:** 3 business days\n*   **UPS 2nd Day Air:** 2 business days\n*   **UPS Next Day Air Saver:** Next business day (afternoon)\n*   **UPS Next Day Air:** Next business day (morning delivery)\n\n#### **3. FedEx**\n*   **FedEx Ground / Home Delivery:** 1–5 business days\n*   **FedEx Express Saver:** 3 business days\n*   **FedEx 2Day:** 2 business days\n*   **FedEx Priority Overnight:** Next business day by 10:30 AM\n\n---\n\n### 💻 Developer / API JSON Representation\nIf you are building an e-commerce integration or calling a shipping API (like EasyPost, Shippo, or Pitney Bowes), here is how these tiers are typically returned:\n\n```json\n{\n  \"destination_zip\": \"94103\",\n  \"weight_kg\": 2.5,\n  \"billed_weight_lbs\": 6,\n  \"available_tiers\": [\n    {\n      \"carrier\": \"USPS\",\n      \"service_code\": \"usps_ground_advantage\",\n      \"tier_name\": \"Economy Ground\",\n      \"est_delivery_days\": \"3-5\"\n    },\n    {\n      \"carrier\": \"USPS\",\n      \"service_code\": \"usps_priority_mail\",\n      \"tier_name\": \"Standard Expedited\",\n      \"est_delivery_days\": \"2-3\"\n    },\n    {\n      \"carrier\": \"UPS\",\n      \"service_code\": \"ups_ground\",\n      \"tier_name\": \"Ground\",\n      \"est_delivery_days\": \"1-5\"\n    },\n    {\n      \"carrier\": \"FedEx\",\n      \"service_code\": \"fedex_2day\",\n      \"tier_name\": \"2-Day Express\",\n      \"est_delivery_days\": \"2\"\n    },\n    {\n      \"carrier\": \"UPS\",\n      \"service_code\": \"ups_next_day_air\",\n      \"tier_name\": \"Overnight\",\n      \"est_delivery_days\": \"1\"\n    }\n  ]\n}\n```\n\n---\n\n### Need Exact Rates?\nPlease provide:\n1. **Origin ZIP Code** (where the package is shipping from)\n2. **Dimensions** in cm or inches (Length × Width × Height)\n3. **Preferred Carrier** (USPS, UPS, FedEx, or All)",
+                    "thoughtSignature": "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"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 20,
+            "candidatesTokenCount": 767,
+            "totalTokenCount": 1630,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 20
+              }
+            ],
+            "thoughtsTokenCount": 843,
+            "serviceTier": "standard"
+          },
+          "modelVersion": "gemini-3.6-flash",
+          "responseId": "Y2GlaszZN6-GjuMP467lmAc"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 182,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 404,
+          "code": "PROVIDER_ERROR",
+          "message": "The model `llama-3.3-70b-versatile` does not exist or you do not have access to it."
+        }
+      },
+      "baselineExecutionStatus": "QUALITY_FAILURE",
+      "candidateExecutionStatus": "PROVIDER_ERROR",
+      "executionStatus": "PROVIDER_ERROR",
+      "candidateErrorDetail": {
+        "httpStatus": 404,
+        "provider": "groq",
+        "category": "SERVER_ERROR",
+        "message": "The model `llama-3.3-70b-versatile` does not exist or you do not have access to it."
+      },
+      "baselineTransportSuccess": true,
+      "candidateTransportSuccess": false,
+      "baselineEvaluationEligible": true,
+      "candidateEvaluationEligible": false,
+      "baselineQualityEvaluated": true,
+      "candidateQualityEvaluated": false
+    }
+  ],
+  "regressionDecision": {
+    "isRegression": false,
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "summary": "Evaluation inconclusive: Insufficient coverage (0.0% < 80%) due to provider rate limits or operational errors.",
+    "violatedRules": [
+      "Candidate evaluation coverage (0.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors.",
+      "Candidate provider error rate is critical (100.0% >= 40.0% threshold) with 3 operational failure(s)."
+    ],
+    "regressionCategories": [
+      "COVERAGE_REGRESSION",
+      "RELIABILITY_REGRESSION"
+    ]
+  },
+  "rootCauses": [],
+  "releaseDecision": {
+    "status": "INSUFFICIENT_EVIDENCE",
+    "decidedBy": "Reliability Gate (Auto-Calculated)",
+    "decidedAt": "2026-09-12T14:28:01.120Z",
+    "reason": "Cannot certify release quality because only 0.0% of test cases completed successfully. Upstream rate limits must be resolved before gating."
+  },
+  "comparisonReport": {
+    "id": "rep-mtyhcfdv-p9uv",
+    "title": "Google Gemini 3.6 Flash vs Groq Llama 3.3 70B",
+    "timestamp": "2026-09-12T14:28:01.123Z",
+    "datasetId": "ds-checkout-golden",
+    "datasetName": "Checkout Reliability Suite",
+    "totalCases": 3,
+    "baseline": {
+      "provider": "google",
+      "model": "gemini-3.6-flash",
+      "temperature": 0.2
+    },
+    "candidate": {
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.2
+    },
+    "winner": "tie",
+    "winnerReason": "Inconclusive comparison: One or both configurations produced zero evaluated responses due to provider failure or rate-limiting.",
+    "metrics": {
+      "correctness": {
+        "metric": "Correctness Rate",
+        "baselineValue": 0,
+        "candidateValue": null,
+        "unit": "%",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Exact match and criteria satisfaction rate on evaluated responses",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": null
+      },
+      "passRate": {
+        "metric": "Pass Rate",
+        "baselineValue": 0,
+        "candidateValue": null,
+        "unit": "%",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Proportion of evaluated scenarios meeting acceptance thresholds (binary pass/fail)",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": null
+      },
+      "qualityScore": {
+        "metric": "Quality Score",
+        "baselineValue": 11.1,
+        "candidateValue": null,
+        "unit": "pts",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Continuous evaluator score across evaluated criteria",
+        "rawBaselineValue": 11.1,
+        "rawCandidateValue": null
+      },
+      "evaluationCoverage": {
+        "metric": "Evaluation Coverage",
+        "baselineValue": 100,
+        "candidateValue": 0,
+        "unit": "%",
+        "absoluteDelta": -100,
+        "percentageDelta": -100,
+        "isImprovement": false,
+        "description": "Proportion of dataset scenarios that completed with valid model responses",
+        "rawBaselineValue": 100,
+        "rawCandidateValue": 0
+      },
+      "providerReliability": {
+        "metric": "Provider Reliability",
+        "baselineValue": 100,
+        "candidateValue": 0,
+        "unit": "%",
+        "absoluteDelta": -100,
+        "percentageDelta": -100,
+        "isImprovement": false,
+        "description": "Operational request success rate excluding HTTP 429 quota exhaustion and gateway errors",
+        "rawBaselineValue": 100,
+        "rawCandidateValue": 0
+      },
+      "rateLimitCount": {
+        "metric": "Rate Limit Failures (429)",
+        "baselineValue": 0,
+        "candidateValue": 0,
+        "unit": "cases",
+        "absoluteDelta": 0,
+        "percentageDelta": 0,
+        "isImprovement": true,
+        "description": "Number of requests throttled by upstream provider quota limits",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 0
+      },
+      "providerErrorCount": {
+        "metric": "Provider Errors",
+        "baselineValue": 0,
+        "candidateValue": 3,
+        "unit": "cases",
+        "absoluteDelta": 3,
+        "percentageDelta": 100,
+        "isImprovement": false,
+        "description": "Non-429 operational errors including timeouts, auth, and network failures",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 3
+      },
+      "qualityFailureCount": {
+        "metric": "Quality Failures",
+        "baselineValue": 3,
+        "candidateValue": 0,
+        "unit": "cases",
+        "absoluteDelta": -3,
+        "percentageDelta": -100,
+        "isImprovement": true,
+        "description": "Total evaluated cases failing validation or criteria checks",
+        "rawBaselineValue": 3,
+        "rawCandidateValue": 0
+      },
+      "avgLatencyMs": {
+        "metric": "Mean Latency (Successful)",
+        "baselineValue": 7989,
+        "candidateValue": null,
+        "unit": "ms",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Average response time of successful model responses only (excludes 429/errors)",
+        "rawBaselineValue": 7989,
+        "rawCandidateValue": null
+      },
+      "inputTokens": {
+        "metric": "Input Tokens",
+        "baselineValue": 68,
+        "candidateValue": null,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Total prompt tokens ingested across successfully evaluated cases (failed/rate-limited requests contribute 0 tokens)",
+        "rawBaselineValue": 68,
+        "rawCandidateValue": null
+      },
+      "outputTokens": {
+        "metric": "Output Tokens",
+        "baselineValue": 912,
+        "candidateValue": null,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Total tokens generated across successfully evaluated cases",
+        "rawBaselineValue": 912,
+        "rawCandidateValue": null
+      },
+      "totalTokens": {
+        "metric": "Total Tokens",
+        "baselineValue": 2671,
+        "candidateValue": null,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Authoritative total token volume reported by providers across successfully evaluated cases (never double-counted)",
+        "rawBaselineValue": 2671,
+        "rawCandidateValue": null
+      },
+      "estimatedCostUsd": {
+        "metric": "Estimated Run Cost",
+        "baselineValue": 0.0003,
+        "candidateValue": null,
+        "unit": "$",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Total cost normalized across provider pricing schedules (percentage computed from exact unrounded values)",
+        "rawBaselineValue": 0.0003,
+        "rawCandidateValue": null
+      },
+      "errorRate": {
+        "metric": "Provider Error Rate",
+        "baselineValue": 0,
+        "candidateValue": 100,
+        "unit": "%",
+        "absoluteDelta": 100,
+        "percentageDelta": 100,
+        "isImprovement": false,
+        "description": "Rate of network, rate limit, or proxy failures",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 100
+      },
+      "medianLatencyMs": {
+        "metric": "Median Latency (Successful)",
+        "baselineValue": 6174,
+        "candidateValue": null,
+        "unit": "ms",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Median response time of successful model responses only (excludes 429/errors)",
+        "rawBaselineValue": 6174,
+        "rawCandidateValue": null
+      },
+      "p95LatencyMs": {
+        "metric": "P95 Latency (Tail)",
+        "baselineValue": 13508,
+        "candidateValue": null,
+        "unit": "ms",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "95th percentile response time of successful model responses only",
+        "rawBaselineValue": 13508,
+        "rawCandidateValue": null
+      },
+      "reasoningTokens": {
+        "metric": "Provider-Reported Reasoning/Thinking Telemetry",
+        "baselineValue": 1691,
+        "candidateValue": null,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Provider token semantics may differ; this telemetry is not assumed to be additive or directly comparable.",
+        "rawBaselineValue": 1691,
+        "rawCandidateValue": null
+      }
+    },
+    "qualityDelta": null,
+    "tokenDelta": null,
+    "latencyDelta": null,
+    "costDelta": null,
+    "regressionStatus": "INSUFFICIENT_EVIDENCE",
+    "confidenceScore": 15,
+    "evidence": [
+      "Evaluation inconclusive: Insufficient coverage (0.0% < 80%) due to provider rate limits or operational errors.",
+      "Candidate evaluation coverage (0.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors.",
+      "Baseline evaluation coverage: 100.0% (3/3 scenarios completed).",
+      "Candidate evaluation coverage: 0.0% (0/3 scenarios completed).",
+      "Evidence Strength: INSUFFICIENT (0.0% coverage < 80% threshold)."
+    ],
+    "recommendation": "INSUFFICIENT EVIDENCE",
+    "recommendationReason": "Cannot certify release quality because only 0.0% of test cases completed successfully. Upstream rate limits must be resolved before gating.",
+    "actionItems": [
+      "Increase upstream API quota / rate limits or pace evaluation requests, then re-run the benchmark."
+    ],
+    "executionMode": "LIVE",
+    "provenance": {
+      "initiatedAt": "2026-09-12T14:27:28.691Z",
+      "completedAt": "2026-09-12T14:28:01.120Z",
+      "baselineProvider": "google",
+      "candidateProvider": "groq",
+      "baselineModel": "gemini-3.6-flash",
+      "candidateModel": "llama-3.3-70b-versatile",
+      "totalAttempted": 3,
+      "baselineEvaluated": 3,
+      "candidateEvaluated": 0,
+      "baselineRateLimits": 0,
+      "candidateRateLimits": 0,
+      "hadOperationalErrors": true,
+      "isLiveExecution": true
+    },
+    "evidenceStrength": "NONE",
+    "regressionCategories": [
+      "COVERAGE_REGRESSION"
+    ],
+    "limitations": [
+      "Small sample size (N = 3). Single-case failure swing is 33%. Cannot certify definitive production readiness.",
+      "Unequal evaluation sample sizes: Baseline evaluated 3 cases, Candidate evaluated 0 cases due to upstream provider errors or rate limits.",
+      "Candidate token telemetry reflects 0 successfully evaluated cases (3 case(s) failed with operational errors/rate limits and contributed 0 tokens).",
+      "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+      "Factuality / Groundedness evaluator not configured; model claims were checked deterministically against expected outputs, not external knowledge retrieval.",
+      "Observed API Round-Trip Latency reflects client-observed network round-trip latency including proxy overhead, not pure model generation time."
+    ],
+    "minimumEvaluatedCases": 100,
+    "hasUnequalSampleSizes": true,
+    "sampleSizeWarning": "Unequal evaluation sample sizes: Baseline evaluated 3 cases, Candidate evaluated 0 cases.",
+    "latencyPercentileWarning": "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+    "semanticEvaluationStatus": "NOT_CONFIGURED",
+    "llmJudgeStatus": "NOT_CONFIGURED",
+    "factualityGroundednessStatus": "NOT_CONFIGURED",
+    "safetyBreakdown": {
+      "credentialLeakCount": 0,
+      "promptInjectionCount": 0,
+      "safetyPolicyFailureCount": 0,
+      "refusalCriteriaMismatchCount": 0,
+      "totalSafetyRelatedCases": 0,
+      "secretsLeaked": false,
+      "classifications": []
+    }
+  },
+  "durationMs": 32429
+}

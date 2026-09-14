@@ -1,0 +1,98 @@
+/* ============================================================
+   RELIQ — Typography System
+   ============================================================ */
+
+/* Display — Giant hero text (RELIQ, RUN, DETECT, etc.) */
+.text-display {
+  font-size: var(--font-display);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* Metric — Giant numbers (96.8%, 47, etc.) */
+.text-metric {
+  font-size: var(--font-metric);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--text);
+}
+
+/* Metric Label — Text below metrics (ACCURACY, RELIABILITY, etc.) */
+.text-metric-label {
+  font-size: var(--font-caption);
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Heading */
+.text-heading {
+  font-size: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* Subheading */
+.text-subheading {
+  font-size: var(--font-subheading);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* Body */
+.text-body {
+  font-size: var(--font-body);
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* Caption */
+.text-caption {
+  font-size: var(--font-caption);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+/* Accent Highlight */
+.text-accent {
+  color: var(--accent);
+}
+
+/* Regression Red */
+.text-regression {
+  color: var(--regression);
+}
+
+/* State badge */
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--accent-dim);
+  border-radius: 2rem;
+  font-size: var(--font-label);
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+.state-badge--regression {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--regression);
+  background: rgba(239, 68, 68, 0.08);
+}

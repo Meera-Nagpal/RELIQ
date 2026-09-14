@@ -1,0 +1,1160 @@
+/* ============================================================
+   RELIQ — Evaluations & Cross-Provider Benchmark View
+   
+   Allows configuring and running evaluations across real AI providers:
+   - Google Gemini
+   - OpenAI
+   - Anthropic Claude
+   - Deterministic Demo
+   
+   Supports cross-provider benchmarking (Gemini vs OpenAI, Gemini vs Claude,
+   OpenAI vs Claude, version A vs B, prompt A vs B) against identical datasets,
+   and viewing full comparison reports with standardized recommendation verdicts.
+   ============================================================ */
+
+import React, { useEffect, useState } from 'react';
+import { ComparisonReportModal } from '../components/ComparisonReportModal';
+import {
+  Dataset,
+  EvaluationRun,
+  ModelVersion,
+  Project,
+} from '../../domain/types';
+import { ComparisonReport } from '../../evaluation/comparator';
+import { EvaluationRunner } from '../../evaluation/runner';
+import { generateBenchmarkDataset } from '../../data/datasetGenerator';
+import { providerRegistry, ServerProviderStatus } from '../../providers/registry';
+import { ProviderType } from '../../providers/types';
+import { useRouter } from '../../router/useRouter';
+import { localRepository } from '../../services/localRepository';
+
+interface EvaluationsViewProps {
+  project: Project;
+  datasets: Dataset[];
+  versions: ModelVersion[];
+  evaluationRuns: EvaluationRun[];
+  onSaveRun: (run: EvaluationRun) => Promise<void>;
+  onDeleteRun: (runId: string) => Promise<void>;
+  onSelectActiveRun: (run: EvaluationRun) => void;
+}
+
+const PROVIDER_MODELS: Record<ProviderType, { id: string; label: string }[]> = {
+  demo: [
+    { id: 'demo-claude-3-5-sonnet', label: 'Claude 3.5 Sonnet (Demo Calibration)' },
+    { id: 'demo-gemini-1-5-pro', label: 'Gemini 1.5 Pro (Demo Calibration)' },
+    { id: 'demo-gpt-4o', label: 'GPT-4o (Demo Calibration)' },
+    { id: 'demo-o3-mini', label: 'o3-mini (Demo Calibration)' },
+  ],
+  google: [
+    { id: 'gemini-3.6-flash', label: 'Gemini 3.6 Flash (Fast Tier)' },
+    { id: 'gemini-flash-latest', label: 'Gemini Flash Latest (Production Active)' },
+    { id: 'gemini-pro-latest', label: 'Gemini Pro Latest (Production Active)' },
+    { id: 'gemini-2.0-flash-thinking-exp', label: 'Gemini 2.0 Flash Thinking (🧠 Thinking Tokens)' },
+    { id: 'gemini-1.5-pro-002', label: 'Gemini 1.5 Pro (002)' },
+    { id: 'gemini-1.5-flash-002', label: 'Gemini 1.5 Flash (002)' },
+  ],
+  groq: [
+    { id: 'openai/gpt-oss-20b', label: 'OpenAI GPT-OSS 20B (Groq Fast Inference)' },
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile (Groq)' },
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant (Groq Ultra-Fast)' },
+    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B (Groq 32k)' },
+  ],
+  openai: [
+    { id: 'gpt-4o', label: 'GPT-4o (Flagship Multimodal)' },
+    { id: 'gpt-4o-mini', label: 'GPT-4o mini (Fast & Cost-Efficient)' },
+    { id: 'o3-mini', label: 'o3-mini (🧠 Advanced Reasoning)' },
+    { id: 'o1', label: 'o1 (🧠 Deep Complex Reasoning)' },
+    { id: 'o1-mini', label: 'o1-mini (Reasoning Compact)' },
+  ],
+  anthropic: [
+    { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet (⚡ Prompt Caching)' },
+    { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku (⚡ Fast Caching)' },
+    { id: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+  ],
+  cerebras: [
+    { id: 'gpt-oss-120b', label: 'Cerebras GPT-OSS 120B (Default Ultra-Fast)' },
+    { id: 'llama3.1-8b', label: 'Cerebras Llama 3.1 8B (Ultra-Low Latency)' },
+  ],
+  custom: [
+    { id: 'custom-model', label: 'Custom HTTP Proxy Model' },
+  ],
+};
+
+export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
+  project,
+  datasets,
+  versions,
+  evaluationRuns,
+  onSaveRun,
+  onDeleteRun,
+  onSelectActiveRun,
+}) => {
+  const { navigate } = useRouter();
+
+  // Mode: 'saved_versions' vs 'custom_benchmark'
+  const [configMode, setConfigMode] = useState<'saved_versions' | 'custom_benchmark'>('saved_versions');
+
+  // Server credentials status
+  const [serverStatus, setServerStatus] = useState<ServerProviderStatus>({
+    gemini: false,
+    openai: false,
+    anthropic: false,
+    groq: false,
+    cerebras: false,
+  });
+
+  useEffect(() => {
+    providerRegistry.checkServerStatus().then(setServerStatus);
+  }, []);
+
+  // Selection states (Mode 1: Saved Versions)
+  const [selectedDatasetId, setSelectedDatasetId] = useState<string>(datasets?.[0]?.id || '');
+  const [baselineVersionId, setBaselineVersionId] = useState<string>(project?.baselineVersionId || versions?.[0]?.id || '');
+  const [candidateVersionId, setCandidateVersionId] = useState<string>(project?.candidateVersionId || versions?.[1]?.id || versions?.[0]?.id || '');
+
+  // Selection states (Mode 2: Cross-Provider Benchmark - Real providers by default)
+  const [customBaselineProvider, setCustomBaselineProvider] = useState<ProviderType>('google');
+  const [customBaselineModel, setCustomBaselineModel] = useState<string>(PROVIDER_MODELS.google[0].id);
+  const [customBaselinePrompt, setCustomBaselinePrompt] = useState<string>(
+    'You are an enterprise AI checkout assistant. Enforce the $500 supervisor escalation policy, and formulate all responses as structured text or JSON.'
+  );
+  const [customBaselineTemp, setCustomBaselineTemp] = useState<number>(0.2);
+
+  const [customCandidateProvider, setCustomCandidateProvider] = useState<ProviderType>('groq');
+  const [customCandidateModel, setCustomCandidateModel] = useState<string>(PROVIDER_MODELS.groq[0].id);
+  const [customCandidatePrompt, setCustomCandidatePrompt] = useState<string>(
+    'You are a fast checkout assistant. Assist with orders, calculate shipping, and formulate responses as structured JSON or text.'
+  );
+  const [customCandidateTemp, setCustomCandidateTemp] = useState<number>(0.2);
+
+  // Execution states
+  const [isRunning, setIsRunning] = useState(false);
+  const [maxCasesToRun, setMaxCasesToRun] = useState<number>(5);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [currentProgressText, setCurrentProgressText] = useState('');
+  const [progressCounts, setProgressCounts] = useState<{ current: number; total: number } | null>(null);
+
+  // Active Comparison Report Modal
+  const [activeReport, setActiveReport] = useState<ComparisonReport | null>(null);
+
+  const handleOpenReport = async (run: EvaluationRun) => {
+    try {
+      const freshRun = await localRepository.getEvaluationRunById(run.id);
+      if (freshRun && freshRun.comparisonReport) {
+        setActiveReport(freshRun.comparisonReport);
+        return;
+      }
+    } catch {}
+    if (run.comparisonReport) {
+      setActiveReport(run.comparisonReport);
+    }
+  };
+
+  const selectedDataset = datasets.find((d) => d.id === selectedDatasetId) || datasets[0];
+  const baselineVersion = versions.find((v) => v.id === baselineVersionId) || versions[0];
+  const candidateVersion = versions.find((v) => v.id === candidateVersionId) || versions[1] || versions[0];
+
+  const handleStartEvaluation = async () => {
+    if (!selectedDataset || isRunning) return;
+
+    setIsRunning(true);
+    setProgressPercent(0);
+    setCurrentProgressText('Initializing model providers & telemetry harness...');
+
+    let bVer: ModelVersion = baselineVersion;
+    let cVer: ModelVersion = candidateVersion;
+
+    if (configMode === 'custom_benchmark') {
+      bVer = {
+        id: `custom-base-${Date.now()}`,
+        name: `Baseline: ${customBaselineProvider.toUpperCase()} (${customBaselineModel})`,
+        provider: customBaselineProvider,
+        modelIdentifier: customBaselineModel,
+        promptVersion: 'custom-baseline-prompt',
+        systemPrompt: customBaselinePrompt,
+        temperature: customBaselineTemp,
+        maxTokens: 4096,
+        isBaseline: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      cVer = {
+        id: `custom-cand-${Date.now()}`,
+        name: `Candidate: ${customCandidateProvider.toUpperCase()} (${customCandidateModel})`,
+        provider: customCandidateProvider,
+        modelIdentifier: customCandidateModel,
+        promptVersion: 'custom-candidate-prompt',
+        systemPrompt: customCandidatePrompt,
+        temperature: customCandidateTemp,
+        maxTokens: 4096,
+        isBaseline: false,
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    try {
+      let datasetToEvaluate = selectedDataset;
+      if (
+        maxCasesToRun > 0 &&
+        maxCasesToRun > (selectedDataset?.cases.length || 0) &&
+        selectedDataset.id.startsWith('ds-checkout')
+      ) {
+        datasetToEvaluate = generateBenchmarkDataset(
+          maxCasesToRun,
+          `${selectedDataset.name} (Scaled to ${maxCasesToRun})`
+        );
+      }
+
+      let run: EvaluationRun | null = null;
+
+      // Attempt server-side execution via POST /api/evaluations/run
+      try {
+        const payload = {
+          project,
+          dataset: datasetToEvaluate,
+          baselineVersion: bVer,
+          candidateVersion: cVer,
+          regressionSettings: project.regressionSettings,
+          maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
+          concurrency: 1,
+          async: true,
+        };
+
+        const response = await fetch('/api/evaluations/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          const initData = await response.json();
+          const runId = initData.runId;
+
+          // Poll /api/evaluations/status/:runId until completed or failed
+          let completed = false;
+          while (!completed) {
+            await new Promise((res) => setTimeout(res, 400));
+            const statusRes = await fetch(`/api/evaluations/status/${runId}`);
+            if (statusRes.ok) {
+              const statusData = await statusRes.json();
+              if (statusData.progress) {
+                const { current, total, caseName, percent } = statusData.progress;
+                setProgressPercent(percent);
+                setProgressCounts({ current, total });
+                setCurrentProgressText(
+                  `Evaluating scenario ${current}/${total}: ${caseName || ''}`
+                );
+              }
+
+              if (statusData.status === 'COMPLETED' && statusData.run) {
+                run = statusData.run;
+                completed = true;
+              } else if (statusData.status === 'FAILED') {
+                throw new Error(statusData.error || 'Server evaluation execution failed');
+              }
+            }
+          }
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `Server evaluation rejected (HTTP ${response.status})`);
+        }
+      } catch (serverErr: any) {
+        console.warn('[EvaluationsView] Server execution error:', serverErr.message);
+        if (
+          serverErr.message?.includes('Server evaluation') ||
+          serverErr.message?.includes('blocked') ||
+          serverErr.message?.includes('RATE LIMIT') ||
+          serverErr.message?.includes('QUOTA') ||
+          serverErr.message?.includes('quota')
+        ) {
+          throw serverErr;
+        }
+      }
+
+      // Fallback to in-browser runner if server endpoint was not available
+      if (!run) {
+        const runner = new EvaluationRunner();
+        run = await runner.run({
+          project,
+          dataset: datasetToEvaluate,
+          baselineVersion: bVer,
+          candidateVersion: cVer,
+          regressionSettings: project.regressionSettings,
+          maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
+          concurrency: 5,
+          onProgress: (current, total, latestCaseName) => {
+            const pct = Math.round((current / total) * 100);
+            setProgressPercent(pct);
+            setProgressCounts({ current, total });
+            setCurrentProgressText(
+              `Evaluating scenario ${current}/${total}: ${latestCaseName || ''}`
+            );
+          },
+        });
+      }
+
+      await onSaveRun(run);
+      onSelectActiveRun(run);
+      setIsRunning(false);
+
+      if (run.comparisonReport) {
+        setActiveReport(run.comparisonReport);
+      }
+    } catch (err: any) {
+      alert(`Evaluation failed: ${err.message}`);
+      setIsRunning(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1240px' }}>
+      {/* ── Page Header ── */}
+      <div>
+        <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+          HARNESS // MULTI-PROVIDER BENCHMARK
+        </div>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
+          Cross-Provider Evaluation Harness
+        </h1>
+        <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0 }}>
+          Benchmark real AI providers (Google Gemini, OpenAI, Anthropic Claude, Demo) against identical datasets to detect regressions and enforce deployment decisions.
+        </p>
+      </div>
+
+      {/* ── Server Credentials Readiness Bar ── */}
+      <div
+        style={{
+          background: '#161B22',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+          padding: '0.9rem 1.4rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.8rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#FFFFFF' }}>
+            Server Proxy Credentials:
+          </span>
+          <span style={{ fontSize: '0.72rem', color: '#888888' }}>
+            (Read strictly in Node.js from .env.local — zero client exposure)
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+          {/* Demo */}
+          <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.55rem', borderRadius: '4px', background: 'rgba(46, 204, 113, 0.15)', color: '#2ECC71', fontWeight: 700 }}>
+            DEMO: READY (ZERO COST)
+          </span>
+
+          {/* Gemini */}
+          <span
+            style={{
+              fontSize: '0.7rem',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '4px',
+              background: serverStatus.gemini ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
+              color: serverStatus.gemini ? '#2ECC71' : '#FFAA44',
+              fontWeight: 700,
+            }}
+          >
+            GEMINI: {serverStatus.gemini ? 'API READY' : 'KEY MISSING IN .env.local'}
+          </span>
+
+          {/* OpenAI */}
+          <span
+            style={{
+              fontSize: '0.7rem',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '4px',
+              background: serverStatus.openai ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
+              color: serverStatus.openai ? '#2ECC71' : '#FFAA44',
+              fontWeight: 700,
+            }}
+          >
+            OPENAI: {serverStatus.openai ? 'API READY' : 'KEY MISSING IN .env.local'}
+          </span>
+
+          {/* Anthropic */}
+          <span
+            style={{
+              fontSize: '0.7rem',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '4px',
+              background: serverStatus.anthropic ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
+              color: serverStatus.anthropic ? '#2ECC71' : '#FFAA44',
+              fontWeight: 700,
+            }}
+          >
+            CLAUDE: {serverStatus.anthropic ? 'API READY' : 'KEY MISSING IN .env.local'}
+          </span>
+
+          {/* Groq */}
+          <span
+            style={{
+              fontSize: '0.7rem',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '4px',
+              background: serverStatus.groq ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
+              color: serverStatus.groq ? '#2ECC71' : '#FFAA44',
+              fontWeight: 700,
+            }}
+          >
+            GROQ: {serverStatus.groq ? 'API READY' : 'KEY MISSING IN .env.local'}
+          </span>
+
+          {/* Cerebras */}
+          <span
+            style={{
+              fontSize: '0.7rem',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '4px',
+              background: serverStatus.cerebras ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
+              color: serverStatus.cerebras ? '#2ECC71' : '#FFAA44',
+              fontWeight: 700,
+            }}
+          >
+            CEREBRAS: {serverStatus.cerebras ? 'API READY' : 'KEY MISSING IN .env.local'}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Evaluation Launch Configuration Card ── */}
+      <div
+        style={{
+          background: '#161B22',
+          borderRadius: '12px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: '1.2rem' }}>
+              Configure Comparative Run
+            </h3>
+            <span style={{ fontSize: '0.8rem', color: '#888888' }}>
+              Select candidate configurations. Both will run against the exact same evaluation dataset.
+            </span>
+          </div>
+
+          {/* Mode Switcher */}
+          <div style={{ display: 'flex', background: '#0D1117', padding: '0.25rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <button
+              onClick={() => setConfigMode('saved_versions')}
+              style={{
+                background: configMode === 'saved_versions' ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+                border: 'none',
+                color: configMode === 'saved_versions' ? '#FFFFFF' : '#888888',
+                padding: '0.4rem 0.8rem',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Saved Project Versions
+            </button>
+            <button
+              onClick={() => setConfigMode('custom_benchmark')}
+              style={{
+                background: configMode === 'custom_benchmark' ? 'var(--accent, #FF6B35)' : 'transparent',
+                border: 'none',
+                color: configMode === 'custom_benchmark' ? '#000000' : '#888888',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Cross-Provider Comparator
+            </button>
+          </div>
+        </div>
+
+        {datasets.length === 0 && (
+          <div
+            style={{
+              background: 'rgba(255, 170, 68, 0.1)',
+              border: '1px solid rgba(255, 170, 68, 0.3)',
+              borderRadius: '8px',
+              padding: '1rem 1.2rem',
+              color: '#FFAA44',
+              fontSize: '0.85rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <span>No evaluation datasets found for this project. Create a test suite first before running benchmarks.</span>
+            <button
+              onClick={() => navigate('#/app/datasets')}
+              style={{
+                background: '#FFAA44',
+                color: '#000000',
+                border: 'none',
+                padding: '0.45rem 0.9rem',
+                borderRadius: '4px',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              Go to Datasets →
+            </button>
+          </div>
+        )}
+
+        {/* ── Dataset Selector ── */}
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
+            Evaluation Dataset (Identical Test Suite for Both Models)
+          </label>
+          <select
+            value={selectedDatasetId}
+            onChange={(e) => setSelectedDatasetId(e.target.value)}
+            disabled={isRunning}
+            style={{
+              width: '100%',
+              padding: '0.65rem',
+              background: '#0D1117',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              color: '#FFFFFF',
+              fontSize: '0.85rem',
+            }}
+          >
+            {datasets.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name} ({d.cases.length} scenarios) — {d.description}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* ── Mode 1: Saved Project Versions ── */}
+        {configMode === 'saved_versions' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            {/* Baseline Version */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#AAAAAA', marginBottom: '0.4rem' }}>
+                Baseline Model Version (Standard Reference)
+              </label>
+              <select
+                value={baselineVersionId}
+                onChange={(e) => setBaselineVersionId(e.target.value)}
+                disabled={isRunning}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem',
+                  background: '#0D1117',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '6px',
+                  color: '#FFFFFF',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {versions.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+              <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#888888', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ textTransform: 'uppercase', color: '#2ECC71', fontWeight: 600 }}>{baselineVersion?.provider}</span>
+                <span>•</span>
+                <span style={{ fontFamily: 'monospace' }}>{baselineVersion?.modelIdentifier}</span>
+              </div>
+            </div>
+
+            {/* Candidate Version */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#AAAAAA', marginBottom: '0.4rem' }}>
+                Candidate Model Version (Under Test)
+              </label>
+              <select
+                value={candidateVersionId}
+                onChange={(e) => setCandidateVersionId(e.target.value)}
+                disabled={isRunning}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem',
+                  background: '#0D1117',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '6px',
+                  color: '#FFFFFF',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {versions.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+              <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#888888', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ textTransform: 'uppercase', color: '#4DA6FF', fontWeight: 600 }}>{candidateVersion?.provider}</span>
+                <span>•</span>
+                <span style={{ fontFamily: 'monospace' }}>{candidateVersion?.modelIdentifier}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ── Mode 2: Cross-Provider Benchmark / Custom Comparator ── */
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            {/* Baseline Configuration Panel */}
+            <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(46, 204, 113, 0.3)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2ECC71', textTransform: 'uppercase' }}>
+                Baseline Model Configuration
+              </div>
+
+              {/* Provider Selection */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  Provider
+                </label>
+                <select
+                  value={customBaselineProvider}
+                  onChange={(e) => {
+                    const p = e.target.value as ProviderType;
+                    setCustomBaselineProvider(p);
+                    setCustomBaselineModel(PROVIDER_MODELS[p][0].id);
+                  }}
+                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                >
+                  <option value="demo">Deterministic Demo (Zero Cost)</option>
+                  <option value="groq">Groq (LPU Inference)</option>
+                  <option value="cerebras">Cerebras (CS-3 Inference)</option>
+                  <option value="google">Google Gemini (Server Proxy)</option>
+                  <option value="openai">OpenAI (Server Proxy)</option>
+                  <option value="anthropic">Anthropic Claude (Server Proxy)</option>
+                </select>
+              </div>
+
+              {/* Model Selection */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  Model Identifier
+                </label>
+                <select
+                  value={customBaselineModel}
+                  onChange={(e) => setCustomBaselineModel(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                >
+                  {PROVIDER_MODELS[customBaselineProvider].map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* System Prompt */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  System Prompt Directive
+                </label>
+                <textarea
+                  rows={3}
+                  value={customBaselinePrompt}
+                  onChange={(e) => setCustomBaselinePrompt(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Temperature */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  <span>Temperature</span>
+                  <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{customBaselineTemp}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.05"
+                  value={customBaselineTemp}
+                  onChange={(e) => setCustomBaselineTemp(Number(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+            </div>
+
+            {/* Candidate Configuration Panel */}
+            <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(77, 166, 255, 0.3)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4DA6FF', textTransform: 'uppercase' }}>
+                Candidate Model Configuration
+              </div>
+
+              {/* Provider Selection */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  Provider
+                </label>
+                <select
+                  value={customCandidateProvider}
+                  onChange={(e) => {
+                    const p = e.target.value as ProviderType;
+                    setCustomCandidateProvider(p);
+                    setCustomCandidateModel(PROVIDER_MODELS[p][0].id);
+                  }}
+                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                >
+                  <option value="demo">Deterministic Demo (Zero Cost)</option>
+                  <option value="groq">Groq (LPU Inference)</option>
+                  <option value="cerebras">Cerebras (CS-3 Inference)</option>
+                  <option value="google">Google Gemini (Server Proxy)</option>
+                  <option value="openai">OpenAI (Server Proxy)</option>
+                  <option value="anthropic">Anthropic Claude (Server Proxy)</option>
+                </select>
+              </div>
+
+              {/* Model Selection */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  Model Identifier
+                </label>
+                <select
+                  value={customCandidateModel}
+                  onChange={(e) => setCustomCandidateModel(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                >
+                  {PROVIDER_MODELS[customCandidateProvider].map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* System Prompt */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  System Prompt Directive
+                </label>
+                <textarea
+                  rows={3}
+                  value={customCandidatePrompt}
+                  onChange={(e) => setCustomCandidatePrompt(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Temperature */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                  <span>Temperature</span>
+                  <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{customCandidateTemp}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.05"
+                  value={customCandidateTemp}
+                  onChange={(e) => setCustomCandidateTemp(Number(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Progress Bar (Visible while running) */}
+        {isRunning && (
+          <div
+            style={{
+              background: 'rgba(0, 0, 0, 0.4)',
+              padding: '1.2rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 107, 53, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.6rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', flexWrap: 'wrap', gap: '0.4rem' }}>
+              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{currentProgressText}</span>
+              <span style={{ color: 'var(--accent, #FF6B35)', fontWeight: 800 }}>{progressPercent}%</span>
+            </div>
+            {progressCounts && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#8899AA' }}>
+                <span>{progressCounts.current} of {progressCounts.total} scenarios processed</span>
+                <span>{progressCounts.total - progressCounts.current} remaining</span>
+              </div>
+            )}
+            <div style={{ height: '8px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  height: '100%',
+                  width: `${progressPercent}%`,
+                  background: 'var(--accent, #FF6B35)',
+                  transition: 'width 0.15s ease',
+                  boxShadow: '0 0 12px rgba(255, 107, 53, 0.6)',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Action Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '0.8rem', color: '#8899AA', fontWeight: 600 }}>
+              Test Scale:
+            </span>
+            <select
+              value={maxCasesToRun}
+              onChange={(e) => setMaxCasesToRun(Number(e.target.value))}
+              disabled={isRunning}
+              style={{
+                padding: '0.45rem 0.8rem',
+                background: '#0D1117',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '6px',
+                color: '#FFFFFF',
+                fontSize: '0.82rem',
+              }}
+            >
+              <option value={5}>Validation Smoke Test (5 scenarios)</option>
+              <option value={10}>Targeted Benchmark (10 scenarios)</option>
+              <option value={20}>Standard Suite (20 scenarios)</option>
+              <option value={100}>Scale Validation (100 scenarios)</option>
+              <option value={500}>High-Capacity Benchmark (500 scenarios)</option>
+              <option value={1000}>Stress Benchmark (1,000 scenarios)</option>
+              <option value={0}>Full Suite ({selectedDataset?.cases.length || 0} scenarios)</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '0.8rem', color: '#888888' }}>
+              Will benchmark {maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases.length || 0)} scenarios
+            </span>
+          <button
+            onClick={handleStartEvaluation}
+            disabled={isRunning || !selectedDataset || selectedDataset.cases.length === 0}
+            style={{
+              background: isRunning ? '#444444' : 'var(--accent, #FF6B35)',
+              color: isRunning ? '#AAAAAA' : '#000000',
+              border: 'none',
+              padding: '0.75rem 2rem',
+              borderRadius: '6px',
+              fontSize: '0.88rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              cursor: isRunning ? 'wait' : 'pointer',
+              boxShadow: isRunning ? 'none' : '0 4px 15px rgba(255, 107, 53, 0.35)',
+            }}
+          >
+            {isRunning ? 'Running Benchmark...' : 'Run Comparative Benchmark →'}
+          </button>
+        </div>
+      </div>
+    </div>
+
+      {/* ── Historical Runs Table ── */}
+      <div>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '1rem' }}>
+          Evaluation Run History ({evaluationRuns.length})
+        </h2>
+
+        <div
+          style={{
+            background: '#161B22',
+            borderRadius: '10px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            overflowX: 'auto',
+          }}
+        >
+          <div style={{ minWidth: '820px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '120px 105px 1.4fr 1.1fr 85px 85px 140px 170px',
+                padding: '0.8rem 1.2rem',
+                background: '#0D1117',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                fontSize: '0.72rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#888888',
+                fontWeight: 600,
+              }}
+            >
+              <div>Run ID</div>
+              <div>Mode</div>
+              <div>Versions / Models</div>
+              <div>Dataset</div>
+              <div>Accuracy</div>
+              <div>Latency</div>
+              <div>Recommendation</div>
+              <div style={{ textAlign: 'right' }}>Actions</div>
+            </div>
+
+            {evaluationRuns.length === 0 ? (
+              <div
+                style={{
+                  padding: '3.5rem 1.5rem',
+                  textAlign: 'center',
+                  color: '#888888',
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>⏱</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>
+                  No Evaluation Runs Executed Yet
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#8899AA', maxWidth: '440px', margin: '0 auto', lineHeight: 1.5 }}>
+                  Configure your baseline and candidate models above, select a test dataset, and trigger your first comparative evaluation.
+                </div>
+              </div>
+            ) : (
+              evaluationRuns.map((run) => {
+                if (!run) return null;
+                const report = run.comparisonReport;
+                const isReg = Boolean(run.regressionDecision?.isRegression);
+                const rec = report?.recommendation || (isReg ? 'BLOCK RELEASE' : 'NO REGRESSION');
+
+            return (
+              <div
+                key={run.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '120px 105px 1.4fr 1.1fr 85px 85px 140px 170px',
+                  padding: '1rem 1.2rem',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                  fontSize: '0.82rem',
+                  alignItems: 'center',
+                }}
+              >
+                <div>
+                  <div style={{ fontFamily: 'monospace', color: '#FFFFFF', fontWeight: 600 }}>
+                    {run.id.slice(0, 12)}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#888888' }}>
+                    {new Date(run.timestamp).toLocaleDateString()} {new Date(run.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+
+                <div>
+                  {(() => {
+                    const mode = run.executionMode || run.comparisonReport?.executionMode || 'SAVED';
+                    const isLive = mode === 'LIVE';
+                    const isRef = mode === 'REFERENCE';
+                    const color = isLive ? '#10B981' : isRef ? '#A78BFA' : '#38BDF8';
+                    const bg = isLive ? 'rgba(16, 185, 129, 0.15)' : isRef ? 'rgba(167, 139, 250, 0.15)' : 'rgba(56, 189, 248, 0.15)';
+                    const border = isLive ? 'rgba(16, 185, 129, 0.4)' : isRef ? 'rgba(167, 139, 250, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+                    const label = isLive ? 'LIVE' : isRef ? 'REFERENCE' : 'SAVED';
+
+                    return (
+                      <span
+                        style={{
+                          fontSize: '0.66rem',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          background: bg,
+                          color,
+                          border: `1px solid ${border}`,
+                          fontWeight: 800,
+                          letterSpacing: '0.06em',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                        }}
+                      >
+                        {isLive && (
+                          <span
+                            style={{
+                              width: '5px',
+                              height: '5px',
+                              borderRadius: '50%',
+                              background: '#10B981',
+                              boxShadow: '0 0 5px #10B981',
+                            }}
+                          />
+                        )}
+                        {label}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                <div>
+                  <div style={{ color: '#CCCCCC', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(46, 204, 113, 0.15)', color: '#2ECC71', fontWeight: 700 }}>
+                      {(run.baselineVersion?.provider || 'BASELINE').toUpperCase()}
+                    </span>
+                    <span>{run.baselineVersion?.name || 'Baseline'}</span>
+                  </div>
+                  <div style={{ color: '#4DA6FF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(77, 166, 255, 0.15)', color: '#4DA6FF', fontWeight: 700 }}>
+                      {(run.candidateVersion?.provider || 'CANDIDATE').toUpperCase()}
+                    </span>
+                    <span>{run.candidateVersion?.name || 'Candidate'}</span>
+                  </div>
+                </div>
+
+                <div style={{ color: '#AAAAAA' }}>{run.datasetName || 'Dataset'}</div>
+
+                <div>
+                  <div style={{ color: isReg ? '#FF4422' : run.metrics?.candidateAccuracy !== null && run.metrics?.candidateAccuracy !== undefined ? '#2ECC71' : '#888888', fontWeight: 700, fontSize: '0.9rem' }}>
+                    {run.metrics?.candidateAccuracy !== null && run.metrics?.candidateAccuracy !== undefined ? `${run.metrics.candidateAccuracy}%` : '—'}
+                  </div>
+                  {run.metrics?.accuracyDelta !== null && run.metrics?.accuracyDelta !== undefined ? (
+                    <div style={{ fontSize: '0.7rem', color: run.metrics.accuracyDelta < 0 ? '#FF4422' : '#2ECC71' }}>
+                      {run.metrics.accuracyDelta > 0 ? `+${run.metrics.accuracyDelta}%` : `${run.metrics.accuracyDelta}%`}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.7rem', color: '#888888' }}>—</div>
+                  )}
+                </div>
+
+                <div style={{ color: '#DDDDDD' }}>
+                  {run.metrics?.candidateAvgLatencyMs !== null && run.metrics?.candidateAvgLatencyMs !== undefined ? `${run.metrics.candidateAvgLatencyMs}ms` : '—'}
+                </div>
+
+                <div>
+                  {(() => {
+                    const isShip = rec === 'SHIP' || rec === 'NO REGRESSION';
+                    const isBlock = rec === 'BLOCK RELEASE' || rec === 'BLOCK' || rec === 'REGRESSION DETECTED';
+                    const isCond = rec === 'SHIP WITH CONDITIONS';
+                    const isInsuff = rec === 'INSUFFICIENT EVIDENCE' || rec === 'INSUFFICIENT_EVIDENCE';
+                    const badgeBg = isShip
+                      ? 'rgba(46, 204, 113, 0.15)'
+                      : isBlock
+                      ? 'rgba(255, 51, 17, 0.15)'
+                      : isCond
+                      ? 'rgba(243, 156, 18, 0.15)'
+                      : isInsuff
+                      ? 'rgba(245, 158, 11, 0.15)'
+                      : 'rgba(77, 166, 255, 0.15)';
+                    const badgeColor = isShip
+                      ? '#2ECC71'
+                      : isBlock
+                      ? '#FF4422'
+                      : isCond
+                      ? '#F39C12'
+                      : isInsuff
+                      ? '#F59E0B'
+                      : '#4DA6FF';
+                    const badgeBorder = isShip
+                      ? '#2ECC71'
+                      : isBlock
+                      ? '#FF3311'
+                      : isCond
+                      ? '#F39C12'
+                      : isInsuff
+                      ? '#F59E0B'
+                      : '#4DA6FF';
+                    const evidence = report?.evidenceStrength || run.metrics?.evidenceStrength;
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                        <span
+                          style={{
+                            padding: '0.25rem 0.55rem',
+                            borderRadius: '4px',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            background: badgeBg,
+                            color: badgeColor,
+                            border: `1px solid ${badgeBorder}`,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {rec}
+                        </span>
+                        {evidence && (
+                          <span
+                            style={{
+                              fontSize: '0.62rem',
+                              fontWeight: 700,
+                              color: evidence === 'STRONG' ? '#10B981' : evidence === 'GOOD' ? '#38BDF8' : evidence === 'MODERATE' ? '#F59E0B' : '#EF4444',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            EV: {evidence}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                  {report && (
+                    <button
+                      onClick={() => handleOpenReport(run)}
+                      style={{
+                        background: 'rgba(77, 166, 255, 0.12)',
+                        border: '1px solid #4DA6FF',
+                        color: '#4DA6FF',
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: '4px',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Report
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      onSelectActiveRun(run);
+                      navigate('#/app/regressions');
+                    }}
+                    style={{
+                      background: 'rgba(255, 107, 53, 0.12)',
+                      border: '1px solid var(--accent, #FF6B35)',
+                      color: 'var(--accent, #FF6B35)',
+                      padding: '0.3rem 0.6rem',
+                      borderRadius: '4px',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Failures
+                  </button>
+                  {evaluationRuns.length > 1 && (
+                    <button
+                      onClick={() => onDeleteRun(run.id)}
+                      title="Delete run"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#666666',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        padding: '0 0.3rem',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Comparison Report Modal ── */}
+      {activeReport && (
+        <ComparisonReportModal
+          report={activeReport}
+          onClose={() => setActiveReport(null)}
+        />
+      )}
+    </div>
+  );
+};

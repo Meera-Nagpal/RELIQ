@@ -1,0 +1,1029 @@
+{
+  "id": "run-live-mtz0szio-yb0w",
+  "projectId": "proj-checkout-agent",
+  "datasetId": "ds-checkout-golden",
+  "datasetName": "Checkout Reliability Suite",
+  "baselineVersion": {
+    "id": "v-cerebras-live",
+    "name": "Baseline: Cerebras (gpt-oss-120b)",
+    "provider": "cerebras",
+    "modelIdentifier": "gpt-oss-120b",
+    "promptVersion": "prod-baseline-v1",
+    "systemPrompt": "You are an enterprise AI checkout assistant. Enforce the $500 supervisor escalation policy, and formulate all responses as structured text or JSON.",
+    "temperature": 0,
+    "maxTokens": 2048,
+    "isBaseline": true
+  },
+  "candidateVersion": {
+    "id": "v-groq-live",
+    "name": "Candidate: Groq (openai/gpt-oss-20b)",
+    "provider": "groq",
+    "modelIdentifier": "openai/gpt-oss-20b",
+    "promptVersion": "prod-candidate-v1",
+    "systemPrompt": "You are an enterprise AI checkout assistant. Enforce the $500 supervisor escalation policy, and formulate all responses as structured text or JSON.",
+    "temperature": 0,
+    "maxTokens": 2048,
+    "isBaseline": false
+  },
+  "timestamp": "2026-09-12T23:33:05.325Z",
+  "executionMode": "LIVE",
+  "provenance": {
+    "initiatedAt": "2026-09-12T23:32:46.433Z",
+    "completedAt": "2026-09-12T23:33:05.325Z",
+    "baselineProvider": "cerebras",
+    "candidateProvider": "groq",
+    "baselineModel": "gpt-oss-120b",
+    "candidateModel": "openai/gpt-oss-20b",
+    "totalAttempted": 5,
+    "baselineEvaluated": 0,
+    "candidateEvaluated": 5,
+    "baselineRateLimits": 0,
+    "candidateRateLimits": 0,
+    "hadOperationalErrors": true,
+    "isLiveExecution": true
+  },
+  "metrics": {
+    "totalCases": 5,
+    "sampleSize": 5,
+    "evidenceStrength": "LOW",
+    "baselinePassed": 0,
+    "candidatePassed": 5,
+    "baselineAccuracy": null,
+    "candidateAccuracy": 100,
+    "accuracyDelta": null,
+    "baselineEvaluatedCases": 0,
+    "candidateEvaluatedCases": 5,
+    "baselineEvaluationCoverage": 0,
+    "candidateEvaluationCoverage": 100,
+    "baselinePassRate": null,
+    "candidatePassRate": 100,
+    "baselineQualityScore": null,
+    "candidateQualityScore": 100,
+    "qualityScoreDelta": null,
+    "baselineMeanSuccessfulLatencyMs": null,
+    "candidateMeanSuccessfulLatencyMs": 687,
+    "baselineMedianLatencyMs": null,
+    "candidateMedianLatencyMs": 606,
+    "baselineP95LatencyMs": null,
+    "candidateP95LatencyMs": 921,
+    "baselineAvgLatencyMs": null,
+    "candidateAvgLatencyMs": 687,
+    "latencyDeltaPercent": null,
+    "baselineEstimatedCost": null,
+    "candidateEstimatedCost": 0.0004,
+    "regressedCasesCount": 0,
+    "improvedCasesCount": 0,
+    "baselineReliability": {
+      "totalRequests": 5,
+      "successfulResponses": 0,
+      "rateLimitedCount": 0,
+      "timeoutCount": 0,
+      "authErrorCount": 5,
+      "networkErrorCount": 0,
+      "otherErrorCount": 0,
+      "reliabilityRate": 0
+    },
+    "candidateReliability": {
+      "totalRequests": 5,
+      "successfulResponses": 5,
+      "rateLimitedCount": 0,
+      "timeoutCount": 0,
+      "authErrorCount": 0,
+      "networkErrorCount": 0,
+      "otherErrorCount": 0,
+      "reliabilityRate": 100
+    },
+    "isInsufficientCoverage": true,
+    "minimumEvaluatedCases": 100,
+    "hasUnequalSampleSizes": true,
+    "sampleSizeWarning": "Unequal evaluation sample sizes: Baseline evaluated 0 cases, Candidate evaluated 5 cases.",
+    "latencyPercentileWarning": "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+    "semanticEvaluationStatus": "NOT_CONFIGURED",
+    "llmJudgeStatus": "NOT_CONFIGURED",
+    "factualityGroundednessStatus": "NOT_CONFIGURED",
+    "baselineTotalTokens": null,
+    "candidateTotalTokens": 2271,
+    "baselineReasoningTokens": null,
+    "candidateReasoningTokens": 1212,
+    "baselineCachedTokens": null,
+    "candidateCachedTokens": 0,
+    "dispatchedCases": 5,
+    "evaluatedCases": 5,
+    "qualityFailures": 0,
+    "providerFailures": 0,
+    "authenticationFailures": 0,
+    "quotaFailures": 0,
+    "safetyFailures": 0,
+    "unevaluableCases": 0
+  },
+  "caseResults": [
+    {
+      "testCaseId": "tc-01",
+      "testCaseName": "Standard single-item checkout",
+      "category": "Happy Path",
+      "severity": "critical",
+      "input": "Process checkout for cart #1042 with payment method visa and items [SKU-001]",
+      "expectedOutput": "{\"orderId\":\"ORD-1042-01\",\"currency\":\"USD\",\"paymentMethod\":\"visa\"}",
+      "baselineOutput": "",
+      "candidateOutput": "{\"status\":\"pending\",\"message\":\"Please provide the total cost of the items in cart #1042 to determine if supervisor approval is required for amounts exceeding $500.\",\"next_step\":\"awaiting_total_cost\"}",
+      "baselineScore": null,
+      "candidateScore": 1,
+      "baselineLatencyMs": null,
+      "candidateLatencyMs": 921,
+      "passed": true,
+      "isRegression": false,
+      "evaluatorScores": [
+        {
+          "evaluatorType": "json_validity",
+          "score": 1,
+          "passed": true,
+          "details": "Valid JSON object with all required schema keys present."
+        },
+        {
+          "evaluatorType": "latency",
+          "score": 1,
+          "passed": true,
+          "details": "Latency 921ms within tolerance (max 2500ms)."
+        }
+      ],
+      "baselineUsage": {
+        "provider": "cerebras",
+        "model": "gpt-oss-120b",
+        "modelVersion": "prod-baseline-v1",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 315,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 401,
+          "code": "AUTH_FAILED",
+          "message": "Cerebras API returned HTTP 401"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "prod-candidate-v1",
+        "inputTokens": 170,
+        "outputTokens": 415,
+        "reasoningTokens": 362,
+        "totalTokens": 585,
+        "latencyMs": 921,
+        "estimatedCostUsd": 0.0001,
+        "retries": 0,
+        "rawResponse": {
+          "id": "chatcmpl-bb3aeeaf-c2f2-4297-b746-d6e960cfbbac",
+          "object": "chat.completion",
+          "created": 1789255967,
+          "model": "openai/gpt-oss-20b",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "{\"status\":\"pending\",\"message\":\"Please provide the total cost of the items in cart #1042 to determine if supervisor approval is required for amounts exceeding $500.\",\"next_step\":\"awaiting_total_cost\"}",
+                "reasoning": "We need to respond with JSON only. The user wants to process checkout for cart #1042 with payment method visa and items [SKU-001]. We need to enforce $500 supervisor escalation policy. The user didn't provide any amount. We need to check if the total cost of items is > $500. We don't have price info. We might need to ask for more info or we might need to assume. But the policy says we must enforce $500 supervisor escalation policy. That means if the total cost is > $500, we must ask for supervisor approval. But we don't know the total. We could respond with a request for price or total. But the user didn't provide. We could ask for the total cost. But the policy says we must enforce the $500 supervisor escalation policy. So we should ask for the total cost or confirm if it's > $500. But we can also respond with a partial checkout? The policy might require that if the total is > $500, we need supervisor. But we don't know. So we should ask for the total cost. But the user didn't provide. So we should ask for the total cost. But the user might want to proceed. We can respond with a JSON object that says we need supervisor approval if total > $500. But we don't know. So we can ask for the total. The policy says \"enforce the $500 supervisor escalation policy\". That means we must check if the total > $500. If yes, we must ask for supervisor. If not, we can proceed. But we don't know. So we should ask for the total. So we respond with a JSON object asking for the total cost. The JSON should have keys like \"status\", \"message\", \"next_step\". Let's produce a JSON object."
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "queue_time": 0.316989133,
+            "prompt_tokens": 170,
+            "prompt_time": 0.008754756,
+            "completion_tokens": 415,
+            "completion_time": 0.431786677,
+            "total_tokens": 585,
+            "total_time": 0.440541433,
+            "completion_tokens_details": {
+              "reasoning_tokens": 362
+            }
+          },
+          "usage_breakdown": null,
+          "system_fingerprint": "fp_d3e146e1a5",
+          "x_groq": {
+            "id": "req_01m2bzeqwnekdv69x494mpa313",
+            "seed": 1532674477
+          },
+          "service_tier": "on_demand"
+        },
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "999",
+          "resetRequests": "1m26.4s",
+          "limitTokens": "8000",
+          "remainingTokens": "6773",
+          "resetTokens": "9.202s"
+        }
+      },
+      "baselineExecutionStatus": "AUTHENTICATION_ERROR",
+      "candidateExecutionStatus": "PASS",
+      "executionStatus": "PASS",
+      "baselineErrorDetail": {
+        "httpStatus": 401,
+        "provider": "cerebras",
+        "category": "AUTHENTICATION",
+        "message": "Cerebras API returned HTTP 401"
+      },
+      "baselineTransportSuccess": false,
+      "candidateTransportSuccess": true,
+      "baselineEvaluationEligible": false,
+      "candidateEvaluationEligible": true,
+      "baselineQualityEvaluated": false,
+      "candidateQualityEvaluated": true
+    },
+    {
+      "testCaseId": "tc-02",
+      "testCaseName": "Refund authorization threshold check",
+      "category": "Policy Gate",
+      "severity": "critical",
+      "input": "Process refund request for order #8821 in amount $650 without supervisor override",
+      "expectedOutput": "Refund denied: transactions exceeding $500 require supervisor escalation.",
+      "baselineOutput": "",
+      "candidateOutput": "{\"status\":\"error\",\"message\":\"Refund amount exceeds $500 limit. Supervisor approval required.\"}",
+      "baselineScore": null,
+      "candidateScore": 1,
+      "baselineLatencyMs": null,
+      "candidateLatencyMs": 603,
+      "passed": true,
+      "isRegression": false,
+      "evaluatorScores": [
+        {
+          "evaluatorType": "json_validity",
+          "score": 1,
+          "passed": true,
+          "details": "Valid JSON object with all required schema keys present."
+        },
+        {
+          "evaluatorType": "latency",
+          "score": 1,
+          "passed": true,
+          "details": "Latency 603ms within tolerance (max 2500ms)."
+        }
+      ],
+      "baselineUsage": {
+        "provider": "cerebras",
+        "model": "gpt-oss-120b",
+        "modelVersion": "prod-baseline-v1",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 298,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 401,
+          "code": "AUTH_FAILED",
+          "message": "Cerebras API returned HTTP 401"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "prod-candidate-v1",
+        "inputTokens": 167,
+        "outputTokens": 215,
+        "reasoningTokens": 187,
+        "totalTokens": 382,
+        "latencyMs": 603,
+        "estimatedCostUsd": 0.00006,
+        "retries": 0,
+        "rawResponse": {
+          "id": "chatcmpl-663eb693-a92a-45d8-aac9-54c8093f9e41",
+          "object": "chat.completion",
+          "created": 1789255971,
+          "model": "openai/gpt-oss-20b",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "{\"status\":\"error\",\"message\":\"Refund amount exceeds $500 limit. Supervisor approval required.\"}",
+                "reasoning": "The user requests a refund of $650 for order #8821 without supervisor override. The policy says $500 supervisor escalation policy. So we must enforce that. The user is requesting a refund above $500. We must refuse or require supervisor override. According to policy, we must enforce $500 supervisor escalation policy. So we must refuse or ask for supervisor. The user says \"without supervisor override\". We must refuse. We must respond in JSON. The JSON must be a single object. We need to include maybe a status and message. The schema: \"You must respond ONLY with a single valid standard RFC 8259 JSON object.\" So we need to produce a JSON object. Let's produce something like:\n\n{\n  \"status\": \"error\",\n  \"message\": \"Refund amount exceeds $500 limit. Supervisor approval required.\"\n}\n\nWe must not include any comments or trailing commas. Ensure no duplicate keys. That is fine."
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "queue_time": 0.308593063,
+            "prompt_tokens": 167,
+            "prompt_time": 0.009505247,
+            "completion_tokens": 215,
+            "completion_time": 0.219001542,
+            "total_tokens": 382,
+            "total_time": 0.228506789,
+            "completion_tokens_details": {
+              "reasoning_tokens": 187
+            }
+          },
+          "usage_breakdown": null,
+          "system_fingerprint": "fp_3cdd24b83b",
+          "x_groq": {
+            "id": "req_01m2bzewffeepb7g9pgf236s04",
+            "seed": 503823554
+          },
+          "service_tier": "on_demand"
+        },
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "997",
+          "resetRequests": "4m19.2s",
+          "limitTokens": "8000",
+          "remainingTokens": "6521",
+          "resetTokens": "11.092s"
+        }
+      },
+      "baselineExecutionStatus": "AUTHENTICATION_ERROR",
+      "candidateExecutionStatus": "PASS",
+      "executionStatus": "PASS",
+      "baselineErrorDetail": {
+        "httpStatus": 401,
+        "provider": "cerebras",
+        "category": "AUTHENTICATION",
+        "message": "Cerebras API returned HTTP 401"
+      },
+      "baselineTransportSuccess": false,
+      "candidateTransportSuccess": true,
+      "baselineEvaluationEligible": false,
+      "candidateEvaluationEligible": true,
+      "baselineQualityEvaluated": false,
+      "candidateQualityEvaluated": true
+    },
+    {
+      "testCaseId": "tc-03",
+      "testCaseName": "Expired session recovery",
+      "category": "Edge Case",
+      "severity": "high",
+      "input": "Customer attempts checkout with session token expired 45 minutes ago",
+      "expectedOutput": "Session expired. Please re-authenticate to continue checkout.",
+      "baselineOutput": "",
+      "candidateOutput": "{\"status\":\"error\",\"message\":\"Your session token has expired. Please log in again to continue with your checkout.\",\"action\":\"1. Sign out of your account.\\n2. Clear your browser cookies or use a private/incognito window.\\n3. Log in with your credentials.\\n4. Retry the checkout process. If you encounter further issues, let us know.\"}",
+      "baselineScore": null,
+      "candidateScore": 1,
+      "baselineLatencyMs": null,
+      "candidateLatencyMs": 606,
+      "passed": true,
+      "isRegression": false,
+      "evaluatorScores": [
+        {
+          "evaluatorType": "json_validity",
+          "score": 1,
+          "passed": true,
+          "details": "Valid JSON object with all required schema keys present."
+        },
+        {
+          "evaluatorType": "latency",
+          "score": 1,
+          "passed": true,
+          "details": "Latency 606ms within tolerance (max 2500ms)."
+        }
+      ],
+      "baselineUsage": {
+        "provider": "cerebras",
+        "model": "gpt-oss-120b",
+        "modelVersion": "prod-baseline-v1",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 296,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 401,
+          "code": "AUTH_FAILED",
+          "message": "Cerebras API returned HTTP 401"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "prod-candidate-v1",
+        "inputTokens": 163,
+        "outputTokens": 317,
+        "reasoningTokens": 232,
+        "totalTokens": 480,
+        "latencyMs": 606,
+        "estimatedCostUsd": 0.00008,
+        "retries": 0,
+        "rawResponse": {
+          "id": "chatcmpl-43120f46-4e9e-406d-8f60-f73033469e8f",
+          "object": "chat.completion",
+          "created": 1789255976,
+          "model": "openai/gpt-oss-20b",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "{\"status\":\"error\",\"message\":\"Your session token has expired. Please log in again to continue with your checkout.\",\"action\":\"1. Sign out of your account.\\n2. Clear your browser cookies or use a private/incognito window.\\n3. Log in with your credentials.\\n4. Retry the checkout process. If you encounter further issues, let us know.\"}",
+                "reasoning": "We need to respond as JSON only. The user says \"Customer attempts checkout with session token expired 45 minutes ago\". We need to enforce $500 supervisor escalation policy. That means if the issue is beyond the assistant's scope, we need to ask for supervisor. But we can handle session token expiration. The user is trying to checkout but session token expired. We can advise to log in again. But the policy says $500 supervisor escalation policy. That might mean if the issue is beyond $500? Actually the policy: \"Enforce the $500 supervisor escalation policy\". That likely means if the issue involves a transaction over $500, we need to involve a supervisor. But we don't know transaction amount. The user just says session token expired. So we can handle it. We can respond with instructions: log out, log in again, clear cookies, etc. No supervisor needed. So we can respond with JSON containing a message. The schema: single JSON object. Let's include keys: \"status\", \"message\", \"action\". Provide structured text. Ensure no duplicate keys. Use double quotes. No comments. No trailing commas. Let's produce."
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "queue_time": 0.21086145,
+            "prompt_tokens": 163,
+            "prompt_time": 0.00802656,
+            "completion_tokens": 317,
+            "completion_time": 0.329686329,
+            "total_tokens": 480,
+            "total_time": 0.337712889,
+            "completion_tokens_details": {
+              "reasoning_tokens": 232
+            }
+          },
+          "usage_breakdown": null,
+          "system_fingerprint": "fp_75c733514d",
+          "x_groq": {
+            "id": "req_01m2bzf0sner3r4pjg4ah46gyj",
+            "seed": 736814785
+          },
+          "service_tier": "on_demand"
+        },
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "996",
+          "resetRequests": "5m45.6s",
+          "limitTokens": "8000",
+          "remainingTokens": "7572",
+          "resetTokens": "3.21s"
+        }
+      },
+      "baselineExecutionStatus": "AUTHENTICATION_ERROR",
+      "candidateExecutionStatus": "PASS",
+      "executionStatus": "PASS",
+      "baselineErrorDetail": {
+        "httpStatus": 401,
+        "provider": "cerebras",
+        "category": "AUTHENTICATION",
+        "message": "Cerebras API returned HTTP 401"
+      },
+      "baselineTransportSuccess": false,
+      "candidateTransportSuccess": true,
+      "baselineEvaluationEligible": false,
+      "candidateEvaluationEligible": true,
+      "baselineQualityEvaluated": false,
+      "candidateQualityEvaluated": true
+    },
+    {
+      "testCaseId": "tc-04",
+      "testCaseName": "International address formatting",
+      "category": "Boundary Condition",
+      "severity": "medium",
+      "input": "Format shipping address for Munich, Germany with postal code 80331",
+      "expectedOutput": "Address verified: Munich, Germany, 80331",
+      "baselineOutput": "",
+      "candidateOutput": "{\"formatted_address\":\"Munich, 80331, Germany\"}",
+      "baselineScore": null,
+      "candidateScore": 1,
+      "baselineLatencyMs": null,
+      "candidateLatencyMs": 591,
+      "passed": true,
+      "isRegression": false,
+      "evaluatorScores": [
+        {
+          "evaluatorType": "json_validity",
+          "score": 1,
+          "passed": true,
+          "details": "Valid JSON object with all required schema keys present."
+        },
+        {
+          "evaluatorType": "latency",
+          "score": 1,
+          "passed": true,
+          "details": "Latency 591ms within tolerance (max 2500ms)."
+        }
+      ],
+      "baselineUsage": {
+        "provider": "cerebras",
+        "model": "gpt-oss-120b",
+        "modelVersion": "prod-baseline-v1",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 377,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 401,
+          "code": "AUTH_FAILED",
+          "message": "Cerebras API returned HTTP 401"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "prod-candidate-v1",
+        "inputTokens": 165,
+        "outputTokens": 197,
+        "reasoningTokens": 172,
+        "totalTokens": 362,
+        "latencyMs": 591,
+        "estimatedCostUsd": 0.000056,
+        "retries": 0,
+        "rawResponse": {
+          "id": "chatcmpl-49563660-1761-4901-b159-0ec3ce7750c6",
+          "object": "chat.completion",
+          "created": 1789255980,
+          "model": "openai/gpt-oss-20b",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "{\"formatted_address\":\"Munich, 80331, Germany\"}",
+                "reasoning": "We need to respond with JSON object only. The user wants \"Format shipping address for Munich, Germany with postal code 80331\". Likely we need to output a JSON object with formatted address. The instructions: \"You are an enterprise AI checkout assistant. Enforce the $500 supervisor escalation policy, and formulate all responses as structured text or JSON.\" So we need to produce JSON. The user didn't request escalation. So we can provide shipping address. The JSON should contain maybe \"address\" field. Let's produce:\n\n{\n  \"address\": \"Munich, 80331, Germany\"\n}\n\nBut maybe include street? Not provided. So just city, postal code, country. Provide as \"formatted_address\". Let's produce:\n\n{\n  \"formatted_address\": \"Munich, 80331, Germany\"\n}\n\nThat's fine. Ensure no trailing commas."
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "queue_time": 0.309062583,
+            "prompt_tokens": 165,
+            "prompt_time": 0.009351666,
+            "completion_tokens": 197,
+            "completion_time": 0.20591422,
+            "total_tokens": 362,
+            "total_time": 0.215265886,
+            "completion_tokens_details": {
+              "reasoning_tokens": 172
+            }
+          },
+          "usage_breakdown": null,
+          "system_fingerprint": "fp_37c9245f64",
+          "x_groq": {
+            "id": "req_01m2bzf56he3vbfyn941mfjefx",
+            "seed": 1236459050
+          },
+          "service_tier": "on_demand"
+        },
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "995",
+          "resetRequests": "7m12s",
+          "limitTokens": "8000",
+          "remainingTokens": "7302",
+          "resetTokens": "5.234s"
+        }
+      },
+      "baselineExecutionStatus": "AUTHENTICATION_ERROR",
+      "candidateExecutionStatus": "PASS",
+      "executionStatus": "PASS",
+      "baselineErrorDetail": {
+        "httpStatus": 401,
+        "provider": "cerebras",
+        "category": "AUTHENTICATION",
+        "message": "Cerebras API returned HTTP 401"
+      },
+      "baselineTransportSuccess": false,
+      "candidateTransportSuccess": true,
+      "baselineEvaluationEligible": false,
+      "candidateEvaluationEligible": true,
+      "baselineQualityEvaluated": false,
+      "candidateQualityEvaluated": true
+    },
+    {
+      "testCaseId": "tc-05",
+      "testCaseName": "Apply seasonal discount code SUMMER20",
+      "category": "Tool Calling",
+      "severity": "high",
+      "input": "Apply promo code SUMMER20 to active cart with subtotal $100",
+      "expectedOutput": "{\"tool\":\"apply_discount\",\"code\":\"SUMMER20\",\"discountPercent\":20,\"valid\":true}",
+      "baselineOutput": "",
+      "candidateOutput": "{\"status\":\"success\",\"message\":\"Promo code SUMMER20 applied successfully.\",\"originalSubtotal\":100,\"discount\":20,\"newSubtotal\":80}",
+      "baselineScore": null,
+      "candidateScore": 1,
+      "baselineLatencyMs": null,
+      "candidateLatencyMs": 716,
+      "passed": true,
+      "isRegression": false,
+      "evaluatorScores": [
+        {
+          "evaluatorType": "json_validity",
+          "score": 1,
+          "passed": true,
+          "details": "Valid JSON object with all required schema keys present."
+        },
+        {
+          "evaluatorType": "latency",
+          "score": 1,
+          "passed": true,
+          "details": "Latency 716ms within tolerance (max 2500ms)."
+        }
+      ],
+      "baselineUsage": {
+        "provider": "cerebras",
+        "model": "gpt-oss-120b",
+        "modelVersion": "prod-baseline-v1",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "latencyMs": 283,
+        "retries": 0,
+        "rateLimit": {},
+        "estimatedCostUsd": 0,
+        "error": {
+          "status": 401,
+          "code": "AUTH_FAILED",
+          "message": "Cerebras API returned HTTP 401"
+        }
+      },
+      "candidateUsage": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "modelVersion": "prod-candidate-v1",
+        "inputTokens": 165,
+        "outputTokens": 297,
+        "reasoningTokens": 259,
+        "totalTokens": 462,
+        "latencyMs": 716,
+        "estimatedCostUsd": 0.000076,
+        "retries": 0,
+        "rawResponse": {
+          "id": "chatcmpl-93edf545-95ce-4ed5-9ac2-3799054b5e3f",
+          "object": "chat.completion",
+          "created": 1789255985,
+          "model": "openai/gpt-oss-20b",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "{\"status\":\"success\",\"message\":\"Promo code SUMMER20 applied successfully.\",\"originalSubtotal\":100,\"discount\":20,\"newSubtotal\":80}",
+                "reasoning": "We need to respond with JSON only. The user wants to apply promo code SUMMER20 to active cart with subtotal $100. We need to enforce $500 supervisor escalation policy. The policy: \"You are an enterprise AI checkout assistant. Enforce the $500 supervisor escalation policy\". That likely means if the total is above $500, we need to ask for supervisor. But here subtotal is $100, so below $500. So we can apply promo code. We need to respond with JSON object. The schema? Not specified. We need to produce a JSON object with relevant fields: maybe status, message, new subtotal, discount applied, etc. We should not include comments. So produce something like:\n\n{\n  \"status\": \"success\",\n  \"message\": \"Promo code SUMMER20 applied successfully.\",\n  \"originalSubtotal\": 100,\n  \"discount\": 20,\n  \"newSubtotal\": 80\n}\n\nBut we need to consider that SUMMER20 is 20% discount? Usually SUMMER20 is 20% off. So 20% of 100 = 20. So new subtotal 80. So we can produce that. Ensure no trailing commas. Use double quotes. No duplicate keys. Provide single JSON object. That should satisfy."
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "queue_time": 0.341033492,
+            "prompt_tokens": 165,
+            "prompt_time": 0.007923048,
+            "completion_tokens": 297,
+            "completion_time": 0.303615,
+            "total_tokens": 462,
+            "total_time": 0.311538048,
+            "completion_tokens_details": {
+              "reasoning_tokens": 259
+            }
+          },
+          "usage_breakdown": null,
+          "system_fingerprint": "fp_7d448090ba",
+          "x_groq": {
+            "id": "req_01m2bzf9gwezjtd7v34t4tnz10",
+            "seed": 159943952
+          },
+          "service_tier": "on_demand"
+        },
+        "rateLimit": {
+          "limitRequests": "1000",
+          "remainingRequests": "994",
+          "resetRequests": "8m38.4s",
+          "limitTokens": "8000",
+          "remainingTokens": "7302",
+          "resetTokens": "5.234s"
+        }
+      },
+      "baselineExecutionStatus": "AUTHENTICATION_ERROR",
+      "candidateExecutionStatus": "PASS",
+      "executionStatus": "PASS",
+      "baselineErrorDetail": {
+        "httpStatus": 401,
+        "provider": "cerebras",
+        "category": "AUTHENTICATION",
+        "message": "Cerebras API returned HTTP 401"
+      },
+      "baselineTransportSuccess": false,
+      "candidateTransportSuccess": true,
+      "baselineEvaluationEligible": false,
+      "candidateEvaluationEligible": true,
+      "baselineQualityEvaluated": false,
+      "candidateQualityEvaluated": true
+    }
+  ],
+  "regressionDecision": {
+    "isRegression": false,
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "summary": "Evaluation inconclusive: Insufficient coverage (0.0% < 80%) due to provider rate limits or operational errors.",
+    "violatedRules": [
+      "Candidate evaluation coverage (100.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors.",
+      "Baseline evaluation coverage (0.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors."
+    ],
+    "regressionCategories": [
+      "COVERAGE_REGRESSION",
+      "COVERAGE_REGRESSION"
+    ]
+  },
+  "rootCauses": [],
+  "releaseDecision": {
+    "status": "INSUFFICIENT_EVIDENCE",
+    "decidedBy": "Reliability Gate (Auto-Calculated)",
+    "decidedAt": "2026-09-12T23:33:05.325Z",
+    "reason": "Cannot certify release quality because only 0.0% of test cases completed successfully. Upstream rate limits must be resolved before gating."
+  },
+  "comparisonReport": {
+    "id": "rep-mtz0te49-rbcw",
+    "title": "Baseline: Cerebras (gpt-oss-120b) vs Candidate: Groq (openai/gpt-oss-20b)",
+    "timestamp": "2026-09-12T23:33:05.337Z",
+    "datasetId": "ds-checkout-golden",
+    "datasetName": "Checkout Reliability Suite",
+    "totalCases": 5,
+    "baseline": {
+      "provider": "cerebras",
+      "model": "gpt-oss-120b",
+      "promptVersion": "prod-baseline-v1",
+      "temperature": 0
+    },
+    "candidate": {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "promptVersion": "prod-candidate-v1",
+      "temperature": 0
+    },
+    "winner": "tie",
+    "winnerReason": "Inconclusive comparison: One or both configurations produced zero evaluated responses due to provider failure or rate-limiting.",
+    "metrics": {
+      "correctness": {
+        "metric": "Correctness Rate",
+        "baselineValue": null,
+        "candidateValue": 100,
+        "unit": "%",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Exact match and criteria satisfaction rate on evaluated responses",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 100
+      },
+      "passRate": {
+        "metric": "Pass Rate",
+        "baselineValue": null,
+        "candidateValue": 100,
+        "unit": "%",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Proportion of evaluated scenarios meeting acceptance thresholds (binary pass/fail)",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 100
+      },
+      "qualityScore": {
+        "metric": "Quality Score",
+        "baselineValue": null,
+        "candidateValue": 100,
+        "unit": "pts",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Continuous evaluator score across evaluated criteria",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 100
+      },
+      "evaluationCoverage": {
+        "metric": "Evaluation Coverage",
+        "baselineValue": 0,
+        "candidateValue": 100,
+        "unit": "%",
+        "absoluteDelta": 100,
+        "percentageDelta": 100,
+        "isImprovement": true,
+        "description": "Proportion of dataset scenarios that completed with valid model responses",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 100
+      },
+      "providerReliability": {
+        "metric": "Provider Reliability",
+        "baselineValue": 0,
+        "candidateValue": 100,
+        "unit": "%",
+        "absoluteDelta": 100,
+        "percentageDelta": 100,
+        "isImprovement": true,
+        "description": "Operational request success rate excluding HTTP 429 quota exhaustion and gateway errors",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 100
+      },
+      "rateLimitCount": {
+        "metric": "Rate Limit Failures (429)",
+        "baselineValue": 0,
+        "candidateValue": 0,
+        "unit": "cases",
+        "absoluteDelta": 0,
+        "percentageDelta": 0,
+        "isImprovement": true,
+        "description": "Number of requests throttled by upstream provider quota limits",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 0
+      },
+      "providerErrorCount": {
+        "metric": "Provider Errors",
+        "baselineValue": 5,
+        "candidateValue": 0,
+        "unit": "cases",
+        "absoluteDelta": -5,
+        "percentageDelta": -100,
+        "isImprovement": true,
+        "description": "Non-429 operational errors including timeouts, auth, and network failures",
+        "rawBaselineValue": 5,
+        "rawCandidateValue": 0
+      },
+      "qualityFailureCount": {
+        "metric": "Quality Failures",
+        "baselineValue": 0,
+        "candidateValue": 0,
+        "unit": "cases",
+        "absoluteDelta": 0,
+        "percentageDelta": 0,
+        "isImprovement": true,
+        "description": "Total evaluated cases failing validation or criteria checks",
+        "rawBaselineValue": 0,
+        "rawCandidateValue": 0
+      },
+      "avgLatencyMs": {
+        "metric": "Mean Latency (Successful)",
+        "baselineValue": null,
+        "candidateValue": 687,
+        "unit": "ms",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Average response time of successful model responses only (excludes 429/errors)",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 687
+      },
+      "inputTokens": {
+        "metric": "Input Tokens",
+        "baselineValue": null,
+        "candidateValue": 830,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Total prompt tokens ingested across successfully evaluated cases (failed/rate-limited requests contribute 0 tokens)",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 830
+      },
+      "outputTokens": {
+        "metric": "Output Tokens",
+        "baselineValue": null,
+        "candidateValue": 1441,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Total tokens generated across successfully evaluated cases",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 1441
+      },
+      "totalTokens": {
+        "metric": "Total Tokens",
+        "baselineValue": null,
+        "candidateValue": 2271,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Authoritative total token volume reported by providers across successfully evaluated cases (never double-counted)",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 2271
+      },
+      "estimatedCostUsd": {
+        "metric": "Estimated Run Cost",
+        "baselineValue": null,
+        "candidateValue": 0.0004,
+        "unit": "$",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Total cost normalized across provider pricing schedules (percentage computed from exact unrounded values)",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 0.0004
+      },
+      "errorRate": {
+        "metric": "Provider Error Rate",
+        "baselineValue": 100,
+        "candidateValue": 0,
+        "unit": "%",
+        "absoluteDelta": -100,
+        "percentageDelta": -100,
+        "isImprovement": true,
+        "description": "Rate of network, rate limit, or proxy failures",
+        "rawBaselineValue": 100,
+        "rawCandidateValue": 0
+      },
+      "medianLatencyMs": {
+        "metric": "Median Latency (Successful)",
+        "baselineValue": null,
+        "candidateValue": 606,
+        "unit": "ms",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Median response time of successful model responses only (excludes 429/errors)",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 606
+      },
+      "p95LatencyMs": {
+        "metric": "P95 Latency (Tail)",
+        "baselineValue": null,
+        "candidateValue": 921,
+        "unit": "ms",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "95th percentile response time of successful model responses only",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 921
+      },
+      "reasoningTokens": {
+        "metric": "Provider-Reported Reasoning/Thinking Telemetry",
+        "baselineValue": null,
+        "candidateValue": 1212,
+        "unit": "tok",
+        "absoluteDelta": null,
+        "percentageDelta": null,
+        "isImprovement": null,
+        "description": "Provider token semantics may differ; this telemetry is not assumed to be additive or directly comparable.",
+        "rawBaselineValue": null,
+        "rawCandidateValue": 1212
+      }
+    },
+    "qualityDelta": null,
+    "tokenDelta": null,
+    "latencyDelta": null,
+    "costDelta": null,
+    "regressionStatus": "INSUFFICIENT_EVIDENCE",
+    "confidenceScore": 15,
+    "evidence": [
+      "Evaluation inconclusive: Insufficient coverage (0.0% < 80%) due to provider rate limits or operational errors.",
+      "Candidate evaluation coverage (100.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors.",
+      "Baseline evaluation coverage (0.0%) is below minimum threshold (80.0%) due to provider rate-limiting or errors.",
+      "Baseline evaluation coverage: 0.0% (0/5 scenarios completed).",
+      "Candidate evaluation coverage: 100.0% (5/5 scenarios completed).",
+      "Evidence Strength: INSUFFICIENT (0.0% coverage < 80% threshold)."
+    ],
+    "recommendation": "INSUFFICIENT EVIDENCE",
+    "recommendationReason": "Cannot certify release quality because only 0.0% of test cases completed successfully. Upstream rate limits must be resolved before gating.",
+    "actionItems": [
+      "Increase upstream API quota / rate limits or pace evaluation requests, then re-run the benchmark."
+    ],
+    "executionMode": "LIVE",
+    "provenance": {
+      "initiatedAt": "2026-09-12T23:32:46.433Z",
+      "completedAt": "2026-09-12T23:33:05.325Z",
+      "baselineProvider": "cerebras",
+      "candidateProvider": "groq",
+      "baselineModel": "gpt-oss-120b",
+      "candidateModel": "openai/gpt-oss-20b",
+      "totalAttempted": 5,
+      "baselineEvaluated": 0,
+      "candidateEvaluated": 5,
+      "baselineRateLimits": 0,
+      "candidateRateLimits": 0,
+      "hadOperationalErrors": true,
+      "isLiveExecution": true
+    },
+    "evidenceStrength": "LOW",
+    "regressionCategories": [
+      "COVERAGE_REGRESSION",
+      "COVERAGE_REGRESSION"
+    ],
+    "limitations": [
+      "Small sample size (N = 5). Single-case failure swing is 20%. Cannot certify definitive production readiness.",
+      "Unequal evaluation sample sizes: Baseline evaluated 0 cases, Candidate evaluated 5 cases due to upstream provider errors or rate limits.",
+      "Baseline token telemetry reflects 0 successfully evaluated cases (5 case(s) failed with operational errors/rate limits and contributed 0 tokens).",
+      "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+      "Factuality / Groundedness evaluator not configured; model claims were checked deterministically against expected outputs, not external knowledge retrieval.",
+      "Observed API Round-Trip Latency reflects client-observed network round-trip latency including proxy overhead, not pure model generation time."
+    ],
+    "minimumEvaluatedCases": 100,
+    "hasUnequalSampleSizes": true,
+    "sampleSizeWarning": "Unequal evaluation sample sizes: Baseline evaluated 0 cases, Candidate evaluated 5 cases.",
+    "latencyPercentileWarning": "Low sample size for percentile interpretation (N < 20). Tail latency is unstable.",
+    "semanticEvaluationStatus": "NOT_CONFIGURED",
+    "llmJudgeStatus": "NOT_CONFIGURED",
+    "factualityGroundednessStatus": "NOT_CONFIGURED",
+    "safetyBreakdown": {
+      "credentialLeakCount": 0,
+      "promptInjectionCount": 0,
+      "safetyPolicyFailureCount": 0,
+      "refusalCriteriaMismatchCount": 0,
+      "totalSafetyRelatedCases": 0,
+      "secretsLeaked": false,
+      "classifications": []
+    }
+  },
+  "durationMs": 18892
+}

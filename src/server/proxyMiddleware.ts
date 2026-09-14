@@ -1,0 +1,678 @@
+/* ============================================================
+   RELIQ — Server-Side AI Provider Proxy & Evaluation Middleware
+   
+   Secure Node.js HTTP middleware mounted in Vite dev/preview server.
+   Reads credentials strictly from server environment (process.env / .env.local).
+   
+   SECURITY PROTOCOLS:
+   - Credentials NEVER sent to browser/client bundle.
+   - Credentials NEVER logged in console, terminal, or output records.
+   - Status endpoint only exposes boolean readiness (true/false).
+   - Retries on transient 429 rate limits with exponential backoff.
+   - Hosts full server-side evaluation execution layer (/api/evaluations/*).
+   ============================================================ */
+
+import type { IncomingMessage, ServerResponse } from 'http';
+import {
+  deleteRunFromDisk,
+  getJobStatus,
+  getRunFromDisk,
+  getRunsFromDisk,
+  runServerEvaluation,
+  startEvaluationJob,
+} from './evaluationService';
+import {
+  fetchWithRetry,
+  getApiKey,
+  parseJsonBody,
+  sendJson,
+} from './serverUtils';
+import { providerScheduler } from './providerScheduler';
+
+export { getApiKey, fetchWithRetry, parseJsonBody, sendJson };
+
+export function createReliqProxyMiddleware() {
+  return async function reliqProxyMiddleware(
+    req: IncomingMessage,
+    res: ServerResponse,
+    next: () => void
+  ) {
+    const parsedUrl = req.url?.split('?')[0] || '';
+
+    // Safe local development CORS headers
+    const origin = req.headers.origin;
+    if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Reliq-Provider');
+
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+
+    // ── Status Endpoint: GET /api/providers/status ───────────────
+    if (req.method === 'GET' && parsedUrl === '/api/providers/status') {
+      sendJson(res, 200, {
+        gemini: Boolean(getApiKey('GEMINI_API_KEY')),
+        openai: Boolean(getApiKey('OPENAI_API_KEY')),
+        anthropic: Boolean(getApiKey('ANTHROPIC_API_KEY')),
+        groq: Boolean(getApiKey('GROQ_API_KEY')),
+        cerebras: Boolean(getApiKey('CEREBRAS_API_KEY')),
+        Gemini: getApiKey('GEMINI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+        Groq: getApiKey('GROQ_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+        Cerebras: getApiKey('CEREBRAS_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+        OpenAI: getApiKey('OPENAI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+        Anthropic: getApiKey('ANTHROPIC_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+        quotaStatus: providerScheduler.getAllProviderStatuses(),
+      });
+      return;
+    }
+
+    // ── Quota & Rate Limit Diagnostics: GET /api/providers/quota-status ──
+    if (req.method === 'GET' && parsedUrl === '/api/providers/quota-status') {
+      sendJson(res, 200, {
+        providers: providerScheduler.getAllProviderStatuses(),
+      });
+      return;
+    }
+
+    // ── Platform Health Endpoint: GET /api/health ───────────────
+    if (req.method === 'GET' && parsedUrl === '/api/health') {
+      sendJson(res, 200, {
+        status: 'healthy',
+        service: 'RELIQ Evaluation Platform',
+        version: '2.7.5',
+        backendExecution: 'enabled',
+        providers: {
+          gemini: getApiKey('GEMINI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+          groq: getApiKey('GROQ_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+          cerebras: getApiKey('CEREBRAS_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+          openai: getApiKey('OPENAI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+          anthropic: getApiKey('ANTHROPIC_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+        },
+        quotaStatus: providerScheduler.getAllProviderStatuses(),
+      });
+      return;
+    }
+
+    // ── Evaluations API: POST /api/evaluations/run ──────────────
+    if (req.method === 'POST' && parsedUrl === '/api/evaluations/run') {
+      try {
+        const body = await parseJsonBody(req);
+        const isAsync = body.async !== false; // Default to asynchronous execution
+
+        console.log('[BACKEND] Evaluation request received');
+        if (body.dataset?.name) {
+          console.log(`[BACKEND] Dataset: ${body.dataset.name}`);
+        }
+        const scenarioCount = body.maxCases || body.dataset?.cases?.length || 'all';
+        console.log(`[BACKEND] Scenarios: ${scenarioCount}`);
+        if (body.baselineVersion) {
+          console.log(`[BACKEND] Baseline: ${body.baselineVersion.provider} / ${body.baselineVersion.modelIdentifier}`);
+        }
+        if (body.candidateVersion) {
+          console.log(`[BACKEND] Candidate: ${body.candidateVersion.provider} / ${body.candidateVersion.modelIdentifier}`);
+        }
+
+        if (isAsync) {
+          const { runId } = startEvaluationJob(body);
+          sendJson(res, 202, {
+            runId,
+            status: 'RUNNING',
+            message: 'Evaluation initiated on RELIQ server.',
+          });
+          return;
+        } else {
+          // Synchronous execution path
+          const run = await runServerEvaluation(body);
+          sendJson(res, 200, run);
+          return;
+        }
+      } catch (err: any) {
+        console.error(`[BACKEND ERROR]\nRoute: POST /api/evaluations/run\nError: ${err.message}`);
+        sendJson(res, 400, {
+          error: err.message || 'Failed to execute evaluation on server',
+        });
+        return;
+      }
+    }
+
+    // ── Evaluations API: GET /api/evaluations/status/:runId ─────
+    if (req.method === 'GET' && parsedUrl.startsWith('/api/evaluations/status/')) {
+      const runId = parsedUrl.replace('/api/evaluations/status/', '').trim();
+      const job = getJobStatus(runId);
+
+      if (!job) {
+        sendJson(res, 404, {
+          error: `Evaluation run '${runId}' not found.`,
+          runId,
+        });
+        return;
+      }
+
+      sendJson(res, 200, {
+        runId: job.runId,
+        status: job.status,
+        progress: job.progress,
+        startTime: job.startTime,
+        endTime: job.endTime,
+        run: job.run,
+        error: job.error,
+      });
+      return;
+    }
+
+    // ── Evaluations API: GET /api/evaluations/runs ──────────────
+    if (req.method === 'GET' && parsedUrl === '/api/evaluations/runs') {
+      try {
+        const runs = getRunsFromDisk();
+        sendJson(res, 200, { runs });
+      } catch (err: any) {
+        sendJson(res, 500, { error: err.message, runs: [] });
+      }
+      return;
+    }
+
+    // ── Evaluations API: GET /api/evaluations/runs/:id ──────────
+    if (req.method === 'GET' && parsedUrl.startsWith('/api/evaluations/runs/')) {
+      const runId = parsedUrl.replace('/api/evaluations/runs/', '').trim();
+      const run = getRunFromDisk(runId);
+      if (!run) {
+        sendJson(res, 404, { error: `Evaluation run '${runId}' not found on disk.` });
+        return;
+      }
+      sendJson(res, 200, run);
+      return;
+    }
+
+    // ── Evaluations API: DELETE /api/evaluations/runs/:id ───────
+    if (req.method === 'DELETE' && parsedUrl.startsWith('/api/evaluations/runs/')) {
+      const runId = parsedUrl.replace('/api/evaluations/runs/', '').trim();
+      const deleted = deleteRunFromDisk(runId);
+      if (!deleted) {
+        sendJson(res, 404, { error: `Evaluation run '${runId}' not found.` });
+        return;
+      }
+      sendJson(res, 200, { success: true, runId });
+      return;
+    }
+
+    // ── Foreign API Boundary Notice: /api/v1/* ──────────────────
+    if (parsedUrl.startsWith('/api/v1/')) {
+      sendJson(res, 404, {
+        error: 'Not Found: /api/v1/* endpoints belong to the separate iTantra backend, not RELIQ.',
+        service: 'RELIQ Evaluation Platform (v2.7.5)',
+        supportedEndpoints: [
+          '/api/health',
+          '/api/providers/status',
+          '/api/evaluations/run',
+          '/api/evaluations/status/:runId',
+          '/api/evaluations/runs',
+          '/api/providers/gemini',
+          '/api/providers/groq',
+          '/api/providers/openai',
+          '/api/providers/anthropic',
+        ],
+      });
+      return;
+    }
+
+    // ── Google Gemini: POST /api/providers/gemini ───────────────
+    if (req.method === 'POST' && parsedUrl === '/api/providers/gemini') {
+      const apiKey = getApiKey('GEMINI_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 401, {
+          error: 'GEMINI_API_KEY is not configured in server-side environment (.env.local).',
+          provider: 'google',
+        });
+        return;
+      }
+
+      try {
+        const body = await parseJsonBody(req);
+        const model = body.model || 'gemini-1.5-pro-002';
+        const caseId = body.metadata?.testCaseId || 'n/a';
+        const maxOut = body.generationConfig?.maxOutputTokens ?? 'default';
+        console.log(`[RELIQ Proxy] -> GEMINI POST model=${model} maxOutputTokens=${maxOut} (case=${caseId})`);
+
+        let contents = body.contents || [];
+        const sysText =
+          typeof body.systemInstruction === 'string'
+            ? body.systemInstruction
+            : body.systemInstruction?.parts?.[0]?.text;
+
+        if (sysText && contents.length > 0 && contents[0].parts?.[0]?.text) {
+          const userText = contents[0].parts[0].text;
+          if (!userText.includes(sysText)) {
+            contents = [
+              {
+                role: 'user',
+                parts: [{ text: `[System Directive: ${sysText}]\n\n${userText}` }],
+              },
+              ...contents.slice(1),
+            ];
+          }
+        }
+
+        const { response, retries, latencyMs } = await fetchWithRetry({
+          url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+            model
+          )}:generateContent?key=${apiKey}`,
+          init: {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents,
+              generationConfig: body.generationConfig,
+            }),
+          },
+          maxRetries: 1,
+          baseDelayMs: 1000,
+          timeoutMs: 30000,
+        });
+
+        const data = await response.json().catch(() => ({
+          error: { message: `Non-JSON HTTP ${response.status} response from Google Gemini API` },
+        }));
+
+        if (!response.ok) {
+          const errMsg = data.error?.message || data.error || 'Google Gemini API returned error';
+          console.log(`[RELIQ Proxy] <- GEMINI ${response.status} ERROR: ${errMsg} (latency=${latencyMs}ms, retries=${retries})`);
+          sendJson(res, response.status, {
+            error: errMsg,
+            rawResponse: data,
+            latencyMs,
+            retries,
+            provider: 'google',
+          });
+          return;
+        }
+
+        const usageMetadata = data.usageMetadata || {};
+        const inTok = usageMetadata.promptTokenCount ?? 0;
+        const outTok = usageMetadata.candidatesTokenCount ?? 0;
+        const thinkTok = usageMetadata.thoughtsTokenCount ?? usageMetadata.thoughtTokenCount;
+        console.log(
+          `[RELIQ Proxy] <- GEMINI 200 OK | Latency: ${latencyMs}ms | Retries: ${retries} | In: ${inTok} | Out: ${outTok}${
+            thinkTok !== undefined ? ` | Thinking: ${thinkTok}` : ''
+          }`
+        );
+
+        sendJson(res, 200, {
+          ...data,
+          _reliq_telemetry: {
+            latencyMs,
+            retries,
+          },
+        });
+      } catch (err: any) {
+        sendJson(res, 500, {
+          error: `Internal server proxy error: ${err.message}`,
+          provider: 'google',
+        });
+      }
+      return;
+    }
+
+    // ── OpenAI: POST /api/providers/openai ──────────────────────
+    if (req.method === 'POST' && parsedUrl === '/api/providers/openai') {
+      const apiKey = getApiKey('OPENAI_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 401, {
+          error: 'OPENAI_API_KEY is not configured in server-side environment (.env.local).',
+          provider: 'openai',
+        });
+        return;
+      }
+
+      try {
+        const body = await parseJsonBody(req);
+
+        const { response, retries, latencyMs } = await fetchWithRetry({
+          url: 'https://api.openai.com/v1/chat/completions',
+          init: {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(body),
+          },
+          maxRetries: 3,
+          baseDelayMs: 1000,
+          timeoutMs: 30000,
+        });
+
+        const data = await response.json().catch(() => ({
+          error: { message: `Non-JSON HTTP ${response.status} response from OpenAI API` },
+        }));
+
+        if (!response.ok) {
+          sendJson(res, response.status, {
+            error: data.error?.message || data.error || 'OpenAI API returned error',
+            rawResponse: data,
+            latencyMs,
+            retries,
+            provider: 'openai',
+          });
+          return;
+        }
+
+        sendJson(res, 200, {
+          ...data,
+          _reliq_telemetry: {
+            latencyMs,
+            retries,
+          },
+        });
+      } catch (err: any) {
+        sendJson(res, 500, {
+          error: `Internal server proxy error: ${err.message}`,
+          provider: 'openai',
+        });
+      }
+      return;
+    }
+
+    // ── Anthropic: POST /api/providers/anthropic ────────────────
+    if (req.method === 'POST' && parsedUrl === '/api/providers/anthropic') {
+      const apiKey = getApiKey('ANTHROPIC_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 401, {
+          error: 'ANTHROPIC_API_KEY is not configured in server-side environment (.env.local).',
+          provider: 'anthropic',
+        });
+        return;
+      }
+
+      try {
+        const body = await parseJsonBody(req);
+
+        const { response, retries, latencyMs } = await fetchWithRetry({
+          url: 'https://api.anthropic.com/v1/messages',
+          init: {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify(body),
+          },
+          maxRetries: 3,
+          baseDelayMs: 1000,
+          timeoutMs: 30000,
+        });
+
+        const data = await response.json().catch(() => ({
+          error: { message: `Non-JSON HTTP ${response.status} response from Anthropic API` },
+        }));
+
+        if (!response.ok) {
+          sendJson(res, response.status, {
+            error: data.error?.message || data.error || 'Anthropic API returned error',
+            rawResponse: data,
+            latencyMs,
+            retries,
+            provider: 'anthropic',
+          });
+          return;
+        }
+
+        sendJson(res, 200, {
+          ...data,
+          _reliq_telemetry: {
+            latencyMs,
+            retries,
+          },
+        });
+      } catch (err: any) {
+        sendJson(res, 500, {
+          error: `Internal server proxy error: ${err.message}`,
+          provider: 'anthropic',
+        });
+      }
+      return;
+    }
+
+    // ── Groq Models List: GET /api/providers/groq/models ─────────
+    if (req.method === 'GET' && parsedUrl === '/api/providers/groq/models') {
+      const apiKey = getApiKey('GROQ_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 401, {
+          error: 'GROQ_API_KEY is not configured in server-side environment (.env.local).',
+          provider: 'groq',
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const models = (data.data || [])
+            .filter((m: any) => m.active !== false)
+            .map((m: any) => m.id);
+          sendJson(res, 200, { models, configured: true });
+          return;
+        }
+        sendJson(res, response.status, { error: 'Failed to fetch Groq models', models: [] });
+      } catch (err: any) {
+        sendJson(res, 500, { error: err.message, models: [] });
+      }
+      return;
+    }
+
+    // ── Groq: POST /api/providers/groq ──────────────────────────
+    if (req.method === 'POST' && parsedUrl === '/api/providers/groq') {
+      const apiKey = getApiKey('GROQ_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 401, {
+          error: 'GROQ_API_KEY is not configured in server-side environment (.env.local).',
+          provider: 'groq',
+        });
+        return;
+      }
+
+      try {
+        const body = await parseJsonBody(req);
+        const { metadata, ...groqPayload } = body;
+        const caseId = metadata?.testCaseId || 'n/a';
+        console.log(`[RELIQ Proxy] -> GROQ POST model=${groqPayload.model} (case=${caseId})`);
+
+        const { response, retries, latencyMs } = await fetchWithRetry({
+          url: 'https://api.groq.com/openai/v1/chat/completions',
+          init: {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(groqPayload),
+          },
+          maxRetries: 3,
+          baseDelayMs: 1000,
+          timeoutMs: 30000,
+        });
+
+        const rateLimits = {
+          limitRequests: response.headers.get('x-ratelimit-limit-requests') || undefined,
+          remainingRequests: response.headers.get('x-ratelimit-remaining-requests') || undefined,
+          resetRequests: response.headers.get('x-ratelimit-reset-requests') || undefined,
+          limitTokens: response.headers.get('x-ratelimit-limit-tokens') || undefined,
+          remainingTokens: response.headers.get('x-ratelimit-remaining-tokens') || undefined,
+          resetTokens: response.headers.get('x-ratelimit-reset-tokens') || undefined,
+          retryAfter: response.headers.get('retry-after') || undefined,
+        };
+
+        const data = await response.json().catch(() => ({
+          error: { message: `Non-JSON HTTP ${response.status} response from Groq API` },
+        }));
+
+        if (!response.ok) {
+          const errMsg = data.error?.message || data.error || 'Groq API returned error';
+          console.log(`[RELIQ Proxy] <- GROQ ${response.status} ERROR: ${errMsg} (latency=${latencyMs}ms, retries=${retries})`);
+          sendJson(res, response.status, {
+            error: errMsg,
+            rawResponse: data,
+            latencyMs,
+            retries,
+            rateLimits,
+            provider: 'groq',
+          });
+          return;
+        }
+
+        const usage = data.usage || {};
+        const inTok = usage.prompt_tokens ?? 0;
+        const outTok = usage.completion_tokens ?? 0;
+        console.log(
+          `[RELIQ Proxy] <- GROQ 200 OK | Latency: ${latencyMs}ms | Retries: ${retries} | In: ${inTok} | Out: ${outTok}`
+        );
+
+        sendJson(res, 200, {
+          ...data,
+          _reliq_telemetry: {
+            latencyMs,
+            retries,
+            rateLimits,
+          },
+        });
+      } catch (err: any) {
+        sendJson(res, 500, {
+          error: `Internal server proxy error: ${err.message}`,
+          provider: 'groq',
+        });
+      }
+      return;
+    }
+
+    // ── Cerebras Models List: GET /api/providers/cerebras/models ─
+    if (req.method === 'GET' && parsedUrl === '/api/providers/cerebras/models') {
+      const apiKey = getApiKey('CEREBRAS_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 401, {
+          error: 'CEREBRAS_API_KEY is not configured in server-side environment (.env.local).',
+          provider: 'cerebras',
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch('https://api.cerebras.ai/v1/models', {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const models = (data.data || [])
+            .filter((m: any) => m.active !== false)
+            .map((m: any) => m.id);
+          sendJson(res, 200, { models, configured: true });
+          return;
+        }
+        sendJson(res, response.status, { error: 'Failed to fetch Cerebras models', models: ['gpt-oss-120b', 'llama3.1-8b'] });
+      } catch (err: any) {
+        sendJson(res, 500, { error: err.message, models: ['gpt-oss-120b', 'llama3.1-8b'] });
+      }
+      return;
+    }
+
+    // ── Cerebras: POST /api/providers/cerebras ──────────────────
+    if (req.method === 'POST' && parsedUrl === '/api/providers/cerebras') {
+      const apiKey = getApiKey('CEREBRAS_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 401, {
+          error: 'CEREBRAS_API_KEY is not configured in server-side environment (.env.local).',
+          provider: 'cerebras',
+        });
+        return;
+      }
+
+      try {
+        const body = await parseJsonBody(req);
+        const { metadata, ...cerebrasPayload } = body;
+        const caseId = metadata?.testCaseId || 'n/a';
+        console.log(`[RELIQ Proxy] -> CEREBRAS POST model=${cerebrasPayload.model} (case=${caseId})`);
+
+        const { response, retries, latencyMs } = await fetchWithRetry({
+          url: 'https://api.cerebras.ai/v1/chat/completions',
+          init: {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(cerebrasPayload),
+          },
+          maxRetries: 3,
+          baseDelayMs: 1000,
+          timeoutMs: 30000,
+        });
+
+        const rateLimits = {
+          limitRequests: response.headers.get('x-ratelimit-limit-requests-day') || undefined,
+          remainingRequests: response.headers.get('x-ratelimit-remaining-requests-day') || undefined,
+          resetRequests: response.headers.get('x-ratelimit-reset-requests-day') || undefined,
+          limitTokens: response.headers.get('x-ratelimit-limit-tokens-minute') || undefined,
+          remainingTokens: response.headers.get('x-ratelimit-remaining-tokens-minute') || undefined,
+          resetTokens: response.headers.get('x-ratelimit-reset-tokens-minute') || undefined,
+          retryAfter: response.headers.get('retry-after') || undefined,
+        };
+
+        const data = await response.json().catch(() => ({
+          error: { message: `Non-JSON HTTP ${response.status} response from Cerebras API` },
+        }));
+
+        if (!response.ok) {
+          const errMsg = data.error?.message || data.error || 'Cerebras API returned error';
+          console.log(`[RELIQ Proxy] <- CEREBRAS ${response.status} ERROR: ${errMsg} (latency=${latencyMs}ms, retries=${retries})`);
+          sendJson(res, response.status, {
+            error: errMsg,
+            rawResponse: data,
+            latencyMs,
+            retries,
+            rateLimits,
+            provider: 'cerebras',
+          });
+          return;
+        }
+
+        const usage = data.usage || {};
+        const inTok = usage.prompt_tokens ?? 0;
+        const outTok = usage.completion_tokens ?? 0;
+        console.log(
+          `[RELIQ Proxy] <- CEREBRAS 200 OK | Latency: ${latencyMs}ms | Retries: ${retries} | In: ${inTok} | Out: ${outTok}`
+        );
+
+        sendJson(res, 200, {
+          ...data,
+          _reliq_telemetry: {
+            latencyMs,
+            retries,
+            rateLimits,
+          },
+        });
+      } catch (err: any) {
+        sendJson(res, 500, {
+          error: `Internal server proxy error: ${err.message}`,
+          provider: 'cerebras',
+        });
+      }
+      return;
+    }
+
+    next();
+  };
+}
