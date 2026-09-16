@@ -35,6 +35,8 @@ import { handleSettingsRoutes } from './routes/settingsRoutes';
 import { handleEvaluationDbRoutes } from './routes/evaluationDbRoutes';
 import { evaluationDbService } from './services/evaluationDbService';
 import { sendError } from './routes/httpUtils';
+import { getDatabase } from './db/database';
+import { seedDatabase } from './db/seed';
 
 export { getApiKey, fetchWithRetry, parseJsonBody, sendJson };
 
@@ -129,7 +131,6 @@ export function createReliqProxyMiddleware() {
     if (req.method === 'GET' && parsedUrl === '/api/health') {
       let databaseStatus = 'disconnected';
       try {
-        const { getDatabase } = await import('./db/database');
         const db = getDatabase();
         const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
         if (row && row.alive === 1) {
@@ -253,7 +254,6 @@ export function createReliqProxyMiddleware() {
       const runId = parsedUrl.replace('/api/evaluations/runs/', '').trim();
       let deletedFromDb = false;
       try {
-        const { getDatabase } = await import('./db/database');
         const db = getDatabase();
         const delRes = db.prepare('DELETE FROM evaluation_runs WHERE id = ?').run(runId);
         deletedFromDb = delRes.changes > 0;
@@ -270,8 +270,6 @@ export function createReliqProxyMiddleware() {
     // ── Seed Reset API: POST /api/seed/reset or /api/reset ──────
     if (req.method === 'POST' && (parsedUrl === '/api/seed/reset' || parsedUrl === '/api/reset')) {
       try {
-        const { getDatabase } = await import('./db/database');
-        const { seedDatabase } = await import('./db/seed');
         const db = getDatabase();
         const result = seedDatabase(db);
         sendJson(res, 200, { success: true, result });
