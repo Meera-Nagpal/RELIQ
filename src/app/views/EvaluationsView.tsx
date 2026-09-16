@@ -107,8 +107,28 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     providerRegistry.checkServerStatus().then(setServerStatus);
   }, []);
 
+  // Initial dataset selection helper (prioritize golden suite or populated dataset)
+  const selectInitialDataset = (dsets: Dataset[]): string => {
+    if (!dsets || dsets.length === 0) return '';
+    const golden = dsets.find((d) => d.id === 'ds-checkout-golden');
+    if (golden) return golden.id;
+    const populated = dsets.find((d) => (d.cases?.length || 0) > 0);
+    if (populated) return populated.id;
+    return dsets[0].id;
+  };
+
   // Selection states (Mode 1: Saved Versions)
-  const [selectedDatasetId, setSelectedDatasetId] = useState<string>(datasets?.[0]?.id || '');
+  const [selectedDatasetId, setSelectedDatasetId] = useState<string>(() => selectInitialDataset(datasets));
+
+  useEffect(() => {
+    if (datasets && datasets.length > 0) {
+      const current = datasets.find((d) => d.id === selectedDatasetId);
+      if (!current) {
+        setSelectedDatasetId(selectInitialDataset(datasets));
+      }
+    }
+  }, [datasets, selectedDatasetId]);
+
   const [baselineVersionId, setBaselineVersionId] = useState<string>(project?.baselineVersionId || versions?.[0]?.id || '');
   const [candidateVersionId, setCandidateVersionId] = useState<string>(project?.candidateVersionId || versions?.[1]?.id || versions?.[0]?.id || '');
 
@@ -129,10 +149,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
   // Execution states
   const [isRunning, setIsRunning] = useState(false);
-  const [maxCasesToRun, setMaxCasesToRun] = useState<number>(5);
+  const [maxCasesToRun, setMaxCasesToRun] = useState<number>(0);
   const [progressPercent, setProgressPercent] = useState(0);
   const [currentProgressText, setCurrentProgressText] = useState('');
   const [progressCounts, setProgressCounts] = useState<{ current: number; total: number } | null>(null);
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
+  const [currentRunId, setCurrentRunId] = useState<string | null>(null);
 
   // Active Comparison Report Modal
   const [activeReport, setActiveReport] = useState<ComparisonReport | null>(null);
@@ -150,17 +172,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     }
   };
 
-  const selectedDataset = datasets.find((d) => d.id === selectedDatasetId) || datasets[0];
+  const selectedDataset = datasets.find((d) => d.id === selectedDatasetId) || datasets.find((d) => d.id === 'ds-checkout-golden') || datasets[0];
   const baselineVersion = versions.find((v) => v.id === baselineVersionId) || versions[0];
   const candidateVersion = versions.find((v) => v.id === candidateVersionId) || versions[1] || versions[0];
 
   const handleStartEvaluation = async () => {
-    if (!selectedDataset || isRunning) return;
-
-    setIsRunning(true);
-    setProgressPercent(0);
-    setCurrentProgressText('Initializing model providers & telemetry harness...');
-
     let bVer: ModelVersion = baselineVersion;
     let cVer: ModelVersion = candidateVersion;
 
@@ -192,6 +208,28 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       };
     }
 
+    // Required RELIQ UI Console Logging
+    console.log('[RELIQ UI] Run Evaluation clicked');
+    console.log('[RELIQ UI] Dataset:', selectedDataset ? selectedDataset.name : 'None');
+    console.log('[RELIQ UI] Test cases:', selectedDataset ? (selectedDataset.cases?.length || 0) : 0);
+    console.log('[RELIQ UI] Baseline:', `${bVer?.provider || 'none'} / ${bVer?.modelIdentifier || bVer?.name || 'none'}`);
+    console.log('[RELIQ UI] Candidate:', `${cVer?.provider || 'none'} / ${cVer?.modelIdentifier || cVer?.name || 'none'}`);
+
+    // Validation for datasets with 0 test cases
+    if (!selectedDataset || !selectedDataset.cases || selectedDataset.cases.length === 0) {
+      setEvaluationError('Cannot run evaluation: selected dataset contains 0 test cases.');
+      return;
+    }
+
+    if (isRunning) return;
+
+    setEvaluationError(null);
+    setIsRunning(true);
+    setCurrentRunId(null);
+    setProgressPercent(0);
+    setProgressCounts(null);
+    setCurrentProgressText('Initializing model providers & telemetry harness...');
+
     try {
       let datasetToEvaluate = selectedDataset;
       if (
@@ -205,104 +243,78 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         );
       }
 
-      let run: EvaluationRun | null = null;
+      const payload = {
+        project,
+        dataset: datasetToEvaluate,
+        baselineVersion: bVer,
+        candidateVersion: cVer,
+        regressionSettings: project.regressionSettings,
+        maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
+        concurrency: 1,
+        async: true,
+      };
 
-      // Attempt server-side execution via POST /api/evaluations/run
-      try {
-        const payload = {
-          project,
-          dataset: datasetToEvaluate,
-          baselineVersion: bVer,
-          candidateVersion: cVer,
-          regressionSettings: project.regressionSettings,
-          maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
-          concurrency: 1,
-          async: true,
-        };
+      console.log('[RELIQ UI] POST /api/evaluations/run');
+      const response = await fetch('/api/evaluations/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-        const response = await fetch('/api/evaluations/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+      console.log('[RELIQ UI] Response:', response.status, response.statusText);
 
-        if (response.ok) {
-          const initData = await response.json();
-          const runId = initData.runId;
-
-          // Poll /api/evaluations/status/:runId until completed or failed
-          let completed = false;
-          while (!completed) {
-            await new Promise((res) => setTimeout(res, 400));
-            const statusRes = await fetch(`/api/evaluations/status/${runId}`);
-            if (statusRes.ok) {
-              const statusData = await statusRes.json();
-              if (statusData.progress) {
-                const { current, total, caseName, percent } = statusData.progress;
-                setProgressPercent(percent);
-                setProgressCounts({ current, total });
-                setCurrentProgressText(
-                  `Evaluating scenario ${current}/${total}: ${caseName || ''}`
-                );
-              }
-
-              if (statusData.status === 'COMPLETED' && statusData.run) {
-                run = statusData.run;
-                completed = true;
-              } else if (statusData.status === 'FAILED') {
-                throw new Error(statusData.error || 'Server evaluation execution failed');
-              }
-            }
-          }
-        } else {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || `Server evaluation rejected (HTTP ${response.status})`);
-        }
-      } catch (serverErr: any) {
-        console.warn('[EvaluationsView] Server execution error:', serverErr.message);
-        if (
-          serverErr.message?.includes('Server evaluation') ||
-          serverErr.message?.includes('blocked') ||
-          serverErr.message?.includes('RATE LIMIT') ||
-          serverErr.message?.includes('QUOTA') ||
-          serverErr.message?.includes('quota')
-        ) {
-          throw serverErr;
-        }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Server evaluation rejected (HTTP ${response.status} ${response.statusText})`);
       }
 
-      // Fallback to in-browser runner if server endpoint was not available
-      if (!run) {
-        const runner = new EvaluationRunner();
-        run = await runner.run({
-          project,
-          dataset: datasetToEvaluate,
-          baselineVersion: bVer,
-          candidateVersion: cVer,
-          regressionSettings: project.regressionSettings,
-          maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
-          concurrency: 5,
-          onProgress: (current, total, latestCaseName) => {
-            const pct = Math.round((current / total) * 100);
-            setProgressPercent(pct);
+      const initData = await response.json();
+      const runId = initData.runId;
+      console.log('[RELIQ UI] runId:', runId);
+      setCurrentRunId(runId);
+
+      // Poll /api/evaluations/status/:runId until completed or failed
+      let run: EvaluationRun | null = null;
+      let completed = false;
+      while (!completed) {
+        await new Promise((res) => setTimeout(res, 400));
+        const statusRes = await fetch(`/api/evaluations/status/${runId}`);
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.progress) {
+            const { current, total, caseName, percent } = statusData.progress;
+            setProgressPercent(percent);
             setProgressCounts({ current, total });
             setCurrentProgressText(
-              `Evaluating scenario ${current}/${total}: ${latestCaseName || ''}`
+              `Evaluating scenario ${current}/${total}: ${caseName || ''}`
             );
-          },
-        });
+          }
+
+          if (statusData.status === 'COMPLETED' && statusData.run) {
+            run = statusData.run;
+            completed = true;
+          } else if (statusData.status === 'FAILED') {
+            throw new Error(statusData.error || 'Server evaluation execution failed');
+          }
+        } else {
+          const errText = await statusRes.text().catch(() => '');
+          throw new Error(`Failed to check evaluation status (${statusRes.status}): ${errText}`);
+        }
       }
 
-      await onSaveRun(run);
-      onSelectActiveRun(run);
+      if (run) {
+        await onSaveRun(run);
+        onSelectActiveRun(run);
+        if (run.comparisonReport) {
+          setActiveReport(run.comparisonReport);
+        }
+      }
       setIsRunning(false);
-
-      if (run.comparisonReport) {
-        setActiveReport(run.comparisonReport);
-      }
     } catch (err: any) {
-      alert(`Evaluation failed: ${err.message}`);
+      console.error('[RELIQ UI] Evaluation error:', err);
+      setEvaluationError(err.message || 'Evaluation run failed');
       setIsRunning(false);
+      setCurrentRunId(null);
     }
   };
 
@@ -512,6 +524,41 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           </div>
         )}
 
+        {/* ── Evaluation Error Banner ── */}
+        {evaluationError && (
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '8px',
+              padding: '0.85rem 1.2rem',
+              color: '#EF4444',
+              fontSize: '0.88rem',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span>⚠️</span>
+              <span>{evaluationError}</span>
+            </div>
+            <button
+              onClick={() => setEvaluationError(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#EF4444',
+                cursor: 'pointer',
+                fontSize: '1rem',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* ── Dataset Selector ── */}
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
@@ -519,7 +566,10 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           </label>
           <select
             value={selectedDatasetId}
-            onChange={(e) => setSelectedDatasetId(e.target.value)}
+            onChange={(e) => {
+              setSelectedDatasetId(e.target.value);
+              setEvaluationError(null);
+            }}
             disabled={isRunning}
             style={{
               width: '100%',
@@ -533,7 +583,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           >
             {datasets.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.name} ({d.cases.length} scenarios) — {d.description}
+                {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
               </option>
             ))}
           </select>
@@ -781,7 +831,23 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{currentProgressText}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{currentProgressText}</span>
+                {currentRunId && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'rgba(255, 107, 53, 0.2)',
+                      color: 'var(--accent, #FF6B35)',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    Run ID: {currentRunId}
+                  </span>
+                )}
+              </div>
               <span style={{ color: 'var(--accent, #FF6B35)', fontWeight: 800 }}>{progressPercent}%</span>
             </div>
             {progressCounts && (
@@ -823,23 +889,23 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 fontSize: '0.82rem',
               }}
             >
+              <option value={0}>Full Suite ({selectedDataset?.cases?.length || 0} scenarios)</option>
               <option value={5}>Validation Smoke Test (5 scenarios)</option>
               <option value={10}>Targeted Benchmark (10 scenarios)</option>
               <option value={20}>Standard Suite (20 scenarios)</option>
               <option value={100}>Scale Validation (100 scenarios)</option>
               <option value={500}>High-Capacity Benchmark (500 scenarios)</option>
               <option value={1000}>Stress Benchmark (1,000 scenarios)</option>
-              <option value={0}>Full Suite ({selectedDataset?.cases.length || 0} scenarios)</option>
             </select>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontSize: '0.8rem', color: '#888888' }}>
-              Will benchmark {maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases.length || 0)} scenarios
+              Will benchmark {maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 0)} scenarios
             </span>
           <button
             onClick={handleStartEvaluation}
-            disabled={isRunning || !selectedDataset || selectedDataset.cases.length === 0}
+            disabled={isRunning || !selectedDataset}
             style={{
               background: isRunning ? '#444444' : 'var(--accent, #FF6B35)',
               color: isRunning ? '#AAAAAA' : '#000000',
@@ -853,7 +919,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               boxShadow: isRunning ? 'none' : '0 4px 15px rgba(255, 107, 53, 0.35)',
             }}
           >
-            {isRunning ? 'Running Benchmark...' : 'Run Comparative Benchmark →'}
+            {isRunning ? 'Running Evaluation...' : 'Run Evaluation →'}
           </button>
         </div>
       </div>

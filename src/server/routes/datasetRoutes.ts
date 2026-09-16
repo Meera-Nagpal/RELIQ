@@ -87,6 +87,11 @@ export async function handleDatasetRoutes(
           category: body.category,
           input: body.input,
           expectedBehavior,
+          evaluatorType: typeof body.evaluatorType === 'string' ? body.evaluatorType : undefined,
+          evaluatorConfig: body.evaluatorConfig && typeof body.evaluatorConfig === 'object' ? body.evaluatorConfig : undefined,
+          severity: typeof body.severity === 'string' ? body.severity : undefined,
+          tags: Array.isArray(body.tags) ? body.tags : undefined,
+          metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata : undefined,
         });
 
         if (!updated) {
@@ -168,6 +173,11 @@ export async function handleDatasetRoutes(
           category: body.category,
           input: body.input,
           expectedBehavior,
+          evaluatorType: typeof body.evaluatorType === 'string' ? body.evaluatorType : undefined,
+          evaluatorConfig: body.evaluatorConfig && typeof body.evaluatorConfig === 'object' ? body.evaluatorConfig : undefined,
+          severity: typeof body.severity === 'string' ? body.severity : undefined,
+          tags: Array.isArray(body.tags) ? body.tags : undefined,
+          metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata : undefined,
         });
         sendJson(res, 201, created);
       } catch (err: any) {

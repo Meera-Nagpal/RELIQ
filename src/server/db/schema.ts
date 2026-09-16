@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS test_cases (
   category TEXT NOT NULL,
   input TEXT NOT NULL,
   expected_behavior TEXT NOT NULL,
+  evaluator_type TEXT NOT NULL DEFAULT 'normalized_text',
+  evaluator_config TEXT,
+  tags TEXT,
+  severity TEXT NOT NULL DEFAULT 'medium',
+  metadata TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
@@ -153,4 +158,24 @@ CREATE INDEX IF NOT EXISTS idx_release_decision_audit_run_id ON release_decision
 export function initSchema(db: Database.Database): void {
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA_SQL);
+
+  // Backward-compatible migration for databases created before evaluator
+  // metadata became part of the authoritative SQLite dataset model.
+  const columns = new Set(
+    (db.prepare('PRAGMA table_info(test_cases)').all() as Array<{ name: string }>).map((c) => c.name)
+  );
+  const migrations: Array<[string, string]> = [
+    ['evaluator_type', "TEXT NOT NULL DEFAULT 'normalized_text'"],
+    ['evaluator_config', 'TEXT'],
+    ['tags', 'TEXT'],
+    ['severity', "TEXT NOT NULL DEFAULT 'medium'"],
+    ['metadata', 'TEXT'],
+  ];
+
+  for (const [name, definition] of migrations) {
+    if (!columns.has(name)) {
+      db.exec(`ALTER TABLE test_cases ADD COLUMN ${name} ${definition}`);
+    }
+  }
 }
+

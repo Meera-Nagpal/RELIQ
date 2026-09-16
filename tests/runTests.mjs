@@ -5545,6 +5545,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runEvaluationPersistenceTests } = await import('./evaluationPersistence.test.mjs');
     await runEvaluationPersistenceTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Evaluation Dataset & Run Button Verification Tests
+    // -------------------------------------------------------------
+    const { runDatasetFixTests } = await import('./evalDatasetFix.test.mjs');
+    await runDatasetFixTests({ test, asyncTest }, server);
   } finally {
     await server.close();
   }

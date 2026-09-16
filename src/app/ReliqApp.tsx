@@ -63,7 +63,10 @@ export const ReliqApp: React.FC = () => {
       setProjects(projs);
       setActiveProjectId(currentActiveId);
       setDatasets(dsets);
-      setActiveDatasetId(dsets[0]?.id || '');
+      const preferredInitialDataset = dsets.find((d) => d.id === 'ds-checkout-golden')
+        || dsets.find((d) => (d.cases?.length || 0) > 0)
+        || dsets[0];
+      setActiveDatasetId(preferredInitialDataset?.id || '');
       setVersions(vers);
       setEvaluationRuns(runs);
       setActiveRunId(runs[0]?.id || '');
@@ -90,7 +93,10 @@ export const ReliqApp: React.FC = () => {
     const dsets = await repository.getDatasets(projectId);
     const runs = await repository.getEvaluationRuns(projectId);
     setDatasets(dsets);
-    setActiveDatasetId(dsets[0]?.id || '');
+    const preferredProjectDataset = dsets.find((d) => d.id === 'ds-checkout-golden')
+      || dsets.find((d) => (d.cases?.length || 0) > 0)
+      || dsets[0];
+    setActiveDatasetId(preferredProjectDataset?.id || '');
     setEvaluationRuns(runs);
     setActiveRunId(runs[0]?.id || '');
   };

@@ -25,8 +25,33 @@ export interface TestCaseRecord {
   category: string;
   input: string;
   expected_behavior: string;
+  evaluator_type?: string;
+  evaluator_config?: string | null;
+  tags?: string | null;
+  severity?: string;
+  metadata?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+function parseJsonObject(value: unknown): Record<string, any> | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseJsonArray(value: unknown): string[] {
+  if (!value) return [];
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 export class DatasetService {
@@ -37,11 +62,24 @@ export class DatasetService {
     const db = getDatabase();
     if (projectId) {
       return db
-        .prepare('SELECT id, project_id, name, description, case_count, created_at, updated_at FROM datasets WHERE project_id = ? ORDER BY created_at DESC')
+        .prepare(`
+          SELECT d.id, d.project_id, d.name, d.description, 
+                 (SELECT count(*) FROM test_cases tc WHERE tc.dataset_id = d.id) as case_count, 
+                 d.created_at, d.updated_at 
+          FROM datasets d 
+          WHERE d.project_id = ? 
+          ORDER BY CASE WHEN d.id = 'ds-checkout-golden' THEN 0 WHEN (SELECT count(*) FROM test_cases tc WHERE tc.dataset_id = d.id) > 0 THEN 1 ELSE 2 END, d.created_at DESC
+        `)
         .all(projectId) as DatasetRecord[];
     }
     return db
-      .prepare('SELECT id, project_id, name, description, case_count, created_at, updated_at FROM datasets ORDER BY created_at DESC')
+      .prepare(`
+        SELECT d.id, d.project_id, d.name, d.description, 
+               (SELECT count(*) FROM test_cases tc WHERE tc.dataset_id = d.id) as case_count, 
+               d.created_at, d.updated_at 
+        FROM datasets d 
+        ORDER BY CASE WHEN d.id = 'ds-checkout-golden' THEN 0 WHEN (SELECT count(*) FROM test_cases tc WHERE tc.dataset_id = d.id) > 0 THEN 1 ELSE 2 END, d.created_at DESC
+      `)
       .all() as DatasetRecord[];
   }
 
@@ -51,7 +89,13 @@ export class DatasetService {
   getDatasetById(id: string): DatasetRecord | null {
     const db = getDatabase();
     const row = db
-      .prepare('SELECT id, project_id, name, description, case_count, created_at, updated_at FROM datasets WHERE id = ?')
+      .prepare(`
+        SELECT d.id, d.project_id, d.name, d.description, 
+               (SELECT count(*) FROM test_cases tc WHERE tc.dataset_id = d.id) as case_count, 
+               d.created_at, d.updated_at 
+        FROM datasets d 
+        WHERE d.id = ?
+      `)
       .get(id) as DatasetRecord | undefined;
     return row || null;
   }
@@ -140,7 +184,7 @@ export class DatasetService {
   getDatasetCases(datasetId: string): TestCaseRecord[] {
     const db = getDatabase();
     return db
-      .prepare('SELECT id, dataset_id, name, category, input, expected_behavior, created_at, updated_at FROM test_cases WHERE dataset_id = ? ORDER BY created_at ASC')
+      .prepare('SELECT id, dataset_id, name, category, input, expected_behavior, evaluator_type, evaluator_config, tags, severity, metadata, created_at, updated_at FROM test_cases WHERE dataset_id = ? ORDER BY created_at ASC')
       .all(datasetId) as TestCaseRecord[];
   }
 
@@ -150,7 +194,7 @@ export class DatasetService {
   getTestCase(datasetId: string, caseId: string): TestCaseRecord | null {
     const db = getDatabase();
     const row = db
-      .prepare('SELECT id, dataset_id, name, category, input, expected_behavior, created_at, updated_at FROM test_cases WHERE id = ? AND dataset_id = ?')
+      .prepare('SELECT id, dataset_id, name, category, input, expected_behavior, evaluator_type, evaluator_config, tags, severity, metadata, created_at, updated_at FROM test_cases WHERE id = ? AND dataset_id = ?')
       .get(caseId, datasetId) as TestCaseRecord | undefined;
     return row || null;
   }
@@ -166,6 +210,11 @@ export class DatasetService {
       category: string;
       input: string;
       expectedBehavior: string;
+      evaluatorType?: string;
+      evaluatorConfig?: Record<string, any>;
+      tags?: string[];
+      severity?: string;
+      metadata?: Record<string, any>;
     }
   ): TestCaseRecord {
     const db = getDatabase();
@@ -181,8 +230,12 @@ export class DatasetService {
 
     const result = db.transaction(() => {
       db.prepare(`
-        INSERT INTO test_cases (id, dataset_id, name, category, input, expected_behavior, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO test_cases (
+          id, dataset_id, name, category, input, expected_behavior,
+          evaluator_type, evaluator_config, tags, severity, metadata,
+          created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
         datasetId,
@@ -190,6 +243,11 @@ export class DatasetService {
         data.category.trim(),
         data.input,
         data.expectedBehavior,
+        data.evaluatorType || 'normalized_text',
+        data.evaluatorConfig ? JSON.stringify(data.evaluatorConfig) : null,
+        JSON.stringify(data.tags || []),
+        data.severity || 'medium',
+        data.metadata ? JSON.stringify(data.metadata) : null,
         now,
         now
       );
@@ -208,6 +266,11 @@ export class DatasetService {
         category: data.category.trim(),
         input: data.input,
         expected_behavior: data.expectedBehavior,
+        evaluator_type: data.evaluatorType || 'normalized_text',
+        evaluator_config: data.evaluatorConfig ? JSON.stringify(data.evaluatorConfig) : null,
+        tags: JSON.stringify(data.tags || []),
+        severity: data.severity || 'medium',
+        metadata: data.metadata ? JSON.stringify(data.metadata) : null,
         created_at: now,
         updated_at: now,
       };
@@ -227,6 +290,11 @@ export class DatasetService {
       category?: string;
       input?: string;
       expectedBehavior?: string;
+      evaluatorType?: string;
+      evaluatorConfig?: Record<string, any>;
+      tags?: string[];
+      severity?: string;
+      metadata?: Record<string, any>;
     }
   ): TestCaseRecord | null {
     const db = getDatabase();
@@ -237,13 +305,27 @@ export class DatasetService {
     const category = data.category !== undefined ? data.category.trim() : existing.category;
     const input = data.input !== undefined ? data.input : existing.input;
     const expectedBehavior = data.expectedBehavior !== undefined ? data.expectedBehavior : existing.expected_behavior;
+    const evaluatorType = data.evaluatorType !== undefined ? data.evaluatorType : (existing.evaluator_type || 'normalized_text');
+    const evaluatorConfig = data.evaluatorConfig !== undefined ? data.evaluatorConfig : parseJsonObject(existing.evaluator_config);
+    const tags = data.tags !== undefined ? data.tags : parseJsonArray(existing.tags);
+    const severity = data.severity !== undefined ? data.severity : (existing.severity || 'medium');
+    const metadata = data.metadata !== undefined ? data.metadata : parseJsonObject(existing.metadata);
     const now = new Date().toISOString();
 
     db.prepare(`
       UPDATE test_cases
-      SET name = ?, category = ?, input = ?, expected_behavior = ?, updated_at = ?
+      SET name = ?, category = ?, input = ?, expected_behavior = ?,
+          evaluator_type = ?, evaluator_config = ?, tags = ?, severity = ?, metadata = ?, updated_at = ?
       WHERE id = ? AND dataset_id = ?
-    `).run(name, category, input, expectedBehavior, now, caseId, datasetId);
+    `).run(
+      name, category, input, expectedBehavior,
+      evaluatorType,
+      evaluatorConfig ? JSON.stringify(evaluatorConfig) : null,
+      JSON.stringify(tags || []),
+      severity,
+      metadata ? JSON.stringify(metadata) : null,
+      now, caseId, datasetId
+    );
 
     // Touch dataset updated_at
     db.prepare('UPDATE datasets SET updated_at = ? WHERE id = ?').run(now, datasetId);
@@ -255,6 +337,11 @@ export class DatasetService {
       category,
       input,
       expected_behavior: expectedBehavior,
+      evaluator_type: evaluatorType,
+      evaluator_config: evaluatorConfig ? JSON.stringify(evaluatorConfig) : null,
+      tags: JSON.stringify(tags || []),
+      severity,
+      metadata: metadata ? JSON.stringify(metadata) : null,
       created_at: existing.created_at,
       updated_at: now,
     };

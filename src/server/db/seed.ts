@@ -106,8 +106,10 @@ export function seedDatabase(db: Database.Database): SeedResult {
 
     const insertTestCase = db.prepare(`
       INSERT OR IGNORE INTO test_cases (
-        id, dataset_id, name, category, input, expected_behavior, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, dataset_id, name, category, input, expected_behavior,
+        evaluator_type, evaluator_config, tags, severity, metadata,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const datasetsToSeed = [SEED_DATASET, SEED_DATASET_100];
@@ -132,8 +134,37 @@ export function seedDatabase(db: Database.Database): SeedResult {
           tc.category,
           tc.input,
           tc.expectedOutput,
+          tc.evaluatorType,
+          tc.evaluatorConfig ? JSON.stringify(tc.evaluatorConfig) : null,
+          JSON.stringify(tc.tags || []),
+          tc.severity || 'medium',
+          tc.metadata ? JSON.stringify(tc.metadata) : null,
           tc.createdAt || ds.createdAt,
           tc.createdAt || ds.updatedAt
+        );
+
+        // INSERT OR IGNORE preserves user-created rows, but seed rows already
+        // present in an older database need their evaluator metadata restored.
+        db.prepare(`
+          UPDATE test_cases
+          SET evaluator_type = ?,
+              evaluator_config = ?,
+              tags = ?,
+              severity = ?,
+              metadata = ?,
+              updated_at = ?
+          WHERE id = ? AND dataset_id = ?
+            AND evaluator_config IS NULL
+            AND tags IS NULL
+        `).run(
+          tc.evaluatorType,
+          tc.evaluatorConfig ? JSON.stringify(tc.evaluatorConfig) : null,
+          JSON.stringify(tc.tags || []),
+          tc.severity || 'medium',
+          tc.metadata ? JSON.stringify(tc.metadata) : null,
+          tc.updatedAt || ds.updatedAt,
+          tc.id,
+          ds.id
         );
         result.testCasesSeeded += tcInfo.changes;
       }
