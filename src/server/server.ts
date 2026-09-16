@@ -43,11 +43,52 @@ function loadLocalEnv() {
   }
 }
 
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.wasm': 'application/wasm',
+  '.txt': 'text/plain; charset=utf-8',
+};
+
+function serveStaticFile(res: http.ServerResponse, filePath: string) {
+  try {
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    const stat = fs.statSync(filePath);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
+    if (ext !== '.html') {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+  } catch {
+    res.statusCode = 500;
+    res.end('Internal Server Error');
+  }
+}
+
 async function startServer() {
   loadLocalEnv();
 
-  const PORT = Number(process.env.RELIQ_SERVER_PORT || process.env.PORT || 3001);
-  const HOST = '127.0.0.1';
+  const PORT = Number(process.env.PORT || process.env.RELIQ_SERVER_PORT || 3001);
+  const HOST = process.env.HOST || '0.0.0.0';
   const ENV_NAME = process.env.NODE_ENV || 'development';
 
   // Use programmatic Vite SSR server for seamless TypeScript module resolution
@@ -78,6 +119,36 @@ async function startServer() {
     console.log(`[BACKEND] ${method} ${url}`);
 
     reliqMiddleware(req, res, () => {
+      // 1. If this is an unhandled /api/* route, return JSON 404
+      if (url.startsWith('/api')) {
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: `Cannot ${method} ${url}` }));
+        return;
+      }
+
+      // 2. For GET/HEAD requests, serve static assets or SPA index.html fallback
+      if (method === 'GET' || method === 'HEAD') {
+        const distDir = path.resolve(process.cwd(), 'dist');
+        if (fs.existsSync(distDir)) {
+          // Normalize requested path to prevent directory traversal
+          const safePath = path.normalize(url).replace(/^(\.\.[\/\\])+/, '');
+          const candidatePath = path.join(distDir, safePath);
+
+          if (fs.existsSync(candidatePath) && fs.statSync(candidatePath).isFile()) {
+            serveStaticFile(res, candidatePath);
+            return;
+          }
+
+          // SPA Fallback: serve dist/index.html
+          const indexPath = path.join(distDir, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            serveStaticFile(res, indexPath);
+            return;
+          }
+        }
+      }
+
       res.statusCode = 404;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ error: `Cannot ${method} ${url}` }));

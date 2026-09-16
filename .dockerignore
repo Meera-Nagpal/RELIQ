@@ -1,0 +1,7 @@
+﻿node_modules
+.env.local
+.git
+dist
+tests
+data/test_*
+npm-debug.log

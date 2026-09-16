@@ -323,7 +323,11 @@ export class EvaluationRunner {
       onProgress,
     } = options;
 
-    const allCases = dataset.cases || [];
+    const allCases = (dataset.cases || []).map((tc: any) => ({
+      ...tc,
+      expectedOutput: tc.expectedOutput ?? tc.expected_behavior ?? tc.expectedBehavior ?? '',
+      evaluatorType: tc.evaluatorType ?? tc.evaluator_type ?? 'normalized_text',
+    }));
     const cases = maxCases && maxCases > 0 ? allCases.slice(0, maxCases) : allCases;
     const totalCases = cases.length;
 

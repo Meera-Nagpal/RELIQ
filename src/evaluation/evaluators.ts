@@ -22,6 +22,7 @@ export interface Evaluator {
  * Normalizes text by trimming whitespace, lowercasing, and stripping punct.
  */
 export function normalizeText(text: string): string {
+  if (!text) return '';
   return text
     .toLowerCase()
     .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, '')
@@ -75,7 +76,8 @@ export const KeywordCriteriaEvaluator: Evaluator = {
   evaluate: (actual: string, testCase: TestCase): EvaluatorScore => {
     const lowerActual = actual.toLowerCase();
     const config = testCase.evaluatorConfig || {};
-    const required = config.requiredKeywords || [testCase.expectedOutput.toLowerCase()];
+    const expected = testCase.expectedOutput || (testCase as any).expected_behavior || (testCase as any).expectedBehavior || '';
+    const required = config.requiredKeywords || (expected ? [expected.toLowerCase()] : []);
     const forbidden = config.forbiddenKeywords || [];
 
     const missingKeywords = required.filter(

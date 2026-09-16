@@ -1,0 +1,36 @@
+﻿services:
+  - type: web
+    name: reliq-evaluation-platform
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: reliq-disk
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: RELIQ_DB_PATH
+        value: /data/reliq.db
+      - key: EVALUATION_CONCURRENCY
+        value: 1
+      - key: PROVIDER_REQUEST_DELAY_MS
+        value: 500
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

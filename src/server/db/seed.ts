@@ -162,7 +162,7 @@ export function seedDatabase(db: Database.Database): SeedResult {
           JSON.stringify(tc.tags || []),
           tc.severity || 'medium',
           tc.metadata ? JSON.stringify(tc.metadata) : null,
-          tc.updatedAt || ds.updatedAt,
+          (tc as any).updatedAt || tc.createdAt || ds.updatedAt,
           tc.id,
           ds.id
         );

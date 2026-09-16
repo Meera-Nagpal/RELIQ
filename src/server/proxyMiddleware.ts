@@ -127,8 +127,22 @@ export function createReliqProxyMiddleware() {
 
     // ── Platform Health Endpoint: GET /api/health ───────────────
     if (req.method === 'GET' && parsedUrl === '/api/health') {
-      sendJson(res, 200, {
-        status: 'healthy',
+      let databaseStatus = 'disconnected';
+      try {
+        const { getDatabase } = await import('./db/database');
+        const db = getDatabase();
+        const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
+        if (row && row.alive === 1) {
+          databaseStatus = 'connected';
+        }
+      } catch (dbErr: any) {
+        databaseStatus = `error: ${dbErr.message}`;
+      }
+
+      const isHealthy = databaseStatus === 'connected';
+      sendJson(res, isHealthy ? 200 : 503, {
+        status: isHealthy ? 'healthy' : 'unhealthy',
+        database: databaseStatus,
         service: 'RELIQ Evaluation Platform',
         version: '2.7.5',
         backendExecution: 'enabled',
