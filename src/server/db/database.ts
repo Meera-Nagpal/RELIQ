@@ -31,6 +31,9 @@ export function getDefaultDbPath(): string {
   if (process.env.RELIQ_DB_PATH) {
     return path.resolve(process.cwd(), process.env.RELIQ_DB_PATH);
   }
+  if (process.env.VERCEL) {
+    return '/tmp/reliq.db';
+  }
   return path.resolve(process.cwd(), 'data', 'reliq.db');
 }
 
@@ -72,10 +75,23 @@ export function initializeDatabase(options: InitializeDatabaseOptions = {}): Dat
   }
 
   try {
-    // Ensure parent directory exists (e.g. data/)
+    // Ensure parent directory exists (e.g. data/ or /tmp)
     const dir = path.dirname(resolvedPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // On Vercel, copy pre-bundled database if available and /tmp/reliq.db does not exist
+    if (process.env.VERCEL && !fs.existsSync(resolvedPath)) {
+      const bundledDb = path.resolve(process.cwd(), 'data', 'reliq.db');
+      if (fs.existsSync(bundledDb)) {
+        try {
+          fs.copyFileSync(bundledDb, resolvedPath);
+          console.log(`[RELIQ DB] Copied bundled database to ${resolvedPath}`);
+        } catch (copyErr: any) {
+          console.warn(`[RELIQ DB] Notice: initializing fresh database at ${resolvedPath} (${copyErr.message})`);
+        }
+      }
     }
 
     const db = new Database(resolvedPath);

@@ -26,9 +26,10 @@ dist-ssr/
 *.sln
 *.sw?
 
-# Logs
+# Logs & Local Platforms
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.vercel
 data/

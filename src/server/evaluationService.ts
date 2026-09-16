@@ -63,6 +63,16 @@ const jobs = new Map<string, EvaluationJob>();
  * Returns the directory path used to persist evaluation run artifacts on the server.
  */
 export function getRunsDirectory(): string {
+  if (process.env.RELIQ_RUNS_DIR) {
+    const dir = path.resolve(process.cwd(), process.env.RELIQ_RUNS_DIR);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  }
+  if (process.env.VERCEL) {
+    const dir = '/tmp/reliq_runs';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  }
   const dir = path.resolve(process.cwd(), 'data', 'runs');
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -78,7 +88,7 @@ export function saveRunToDisk(run: EvaluationRun): void {
     const dir = getRunsDirectory();
     const filePath = path.join(dir, `${run.id}.json`);
     fs.writeFileSync(filePath, JSON.stringify(run, null, 2), 'utf8');
-    const relPath = path.join('data', 'runs', `${run.id}.json`);
+    const relPath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
     console.log(`[RELIQ] Run persisted: ${relPath}`);
   } catch (err: any) {
     console.error(`[RELIQ Storage] Failed to persist run ${run.id}:`, err.message);
@@ -90,57 +100,69 @@ export function saveRunToDisk(run: EvaluationRun): void {
  */
 export function getRunsFromDisk(): EvaluationRun[] {
   try {
-    const dir = getRunsDirectory();
-    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+    const activeDir = getRunsDirectory();
+    const dirsToCheck = [activeDir];
+    const defaultDataDir = path.resolve(process.cwd(), 'data', 'runs');
+    if (defaultDataDir !== activeDir && fs.existsSync(defaultDataDir)) {
+      dirsToCheck.push(defaultDataDir);
+    }
+
+    const seenIds = new Set<string>();
     const runs: EvaluationRun[] = [];
 
-    for (const file of files) {
-      try {
-        const content = fs.readFileSync(path.join(dir, file), 'utf8');
-        const parsed = JSON.parse(content) as any;
-        if (parsed?.id) {
-          const isReg = Boolean(parsed.regressionDecision?.isRegression);
-          const normalized: EvaluationRun = {
-            ...parsed,
-            projectId: parsed.projectId || 'proj-checkout-agent',
-            datasetId: parsed.datasetId || 'ds-checkout-golden',
-            datasetName: parsed.datasetName || 'Checkout Reliability Suite',
-            caseResults: Array.isArray(parsed.caseResults) ? parsed.caseResults : Array.isArray(parsed.results) ? parsed.results : [],
-            regressionDecision: parsed.regressionDecision || {
-              isRegression: isReg,
-              verdict: isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
-              summary: isReg ? 'Regression detected in evaluation' : 'No regressions detected',
-              violatedRules: [],
-              regressionCategories: [],
-            },
-            releaseDecision: parsed.releaseDecision || {
-              status: isReg ? 'BLOCK' : 'PASS',
-              decidedBy: 'System',
-              decidedAt: parsed.timestamp || new Date().toISOString(),
-            },
-            metrics: {
-              ...(parsed.metrics || {}),
-              totalCases: parsed.metrics?.totalCases ?? 0,
-              candidateAccuracy: parsed.metrics?.candidateAccuracy ?? null,
-              accuracyDelta: parsed.metrics?.accuracyDelta ?? null,
-              candidateAvgLatencyMs: parsed.metrics?.candidateAvgLatencyMs ?? null,
-            } as any,
-            baselineVersion: parsed.baselineVersion || {
-              id: 'ver-base',
-              name: 'Production Baseline',
-              provider: 'cerebras',
-              modelIdentifier: 'gpt-oss-120b',
-            },
-            candidateVersion: parsed.candidateVersion || {
-              id: 'ver-cand',
-              name: 'Candidate Release',
-              provider: 'groq',
-              modelIdentifier: 'openai/gpt-oss-20b',
-            },
-          };
-          runs.push(normalized);
-        }
-      } catch {}
+    for (const dir of dirsToCheck) {
+      if (!fs.existsSync(dir)) continue;
+      const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+
+      for (const file of files) {
+        try {
+          const content = fs.readFileSync(path.join(dir, file), 'utf8');
+          const parsed = JSON.parse(content) as any;
+          if (parsed?.id && !seenIds.has(parsed.id)) {
+            seenIds.add(parsed.id);
+            const isReg = Boolean(parsed.regressionDecision?.isRegression);
+            const normalized: EvaluationRun = {
+              ...parsed,
+              projectId: parsed.projectId || 'proj-checkout-agent',
+              datasetId: parsed.datasetId || 'ds-checkout-golden',
+              datasetName: parsed.datasetName || 'Checkout Reliability Suite',
+              caseResults: Array.isArray(parsed.caseResults) ? parsed.caseResults : Array.isArray(parsed.results) ? parsed.results : [],
+              regressionDecision: parsed.regressionDecision || {
+                isRegression: isReg,
+                verdict: isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+                summary: isReg ? 'Regression detected in evaluation' : 'No regressions detected',
+                violatedRules: [],
+                regressionCategories: [],
+              },
+              releaseDecision: parsed.releaseDecision || {
+                status: isReg ? 'BLOCK' : 'PASS',
+                decidedBy: 'System',
+                decidedAt: parsed.timestamp || new Date().toISOString(),
+              },
+              metrics: {
+                ...(parsed.metrics || {}),
+                totalCases: parsed.metrics?.totalCases ?? 0,
+                candidateAccuracy: parsed.metrics?.candidateAccuracy ?? null,
+                accuracyDelta: parsed.metrics?.accuracyDelta ?? null,
+                candidateAvgLatencyMs: parsed.metrics?.candidateAvgLatencyMs ?? null,
+              } as any,
+              baselineVersion: parsed.baselineVersion || {
+                id: 'ver-base',
+                name: 'Production Baseline',
+                provider: 'cerebras',
+                modelIdentifier: 'gpt-oss-120b',
+              },
+              candidateVersion: parsed.candidateVersion || {
+                id: 'ver-cand',
+                name: 'Candidate Release',
+                provider: 'groq',
+                modelIdentifier: 'openai/gpt-oss-20b',
+              },
+            };
+            runs.push(normalized);
+          }
+        } catch {}
+      }
     }
 
     return runs.sort(
@@ -156,11 +178,16 @@ export function getRunsFromDisk(): EvaluationRun[] {
  */
 export function getRunFromDisk(id: string): EvaluationRun | null {
   try {
-    const dir = getRunsDirectory();
-    const filePath = path.join(dir, `${id}.json`);
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf8');
-      return JSON.parse(content) as EvaluationRun;
+    const activeDir = getRunsDirectory();
+    const candidatePaths = [
+      path.join(activeDir, `${id}.json`),
+      path.join(process.cwd(), 'data', 'runs', `${id}.json`),
+    ];
+    for (const filePath of candidatePaths) {
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(content) as EvaluationRun;
+      }
     }
   } catch {}
   return null;
@@ -171,12 +198,19 @@ export function getRunFromDisk(id: string): EvaluationRun | null {
  */
 export function deleteRunFromDisk(id: string): boolean {
   try {
-    const dir = getRunsDirectory();
-    const filePath = path.join(dir, `${id}.json`);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      return true;
+    const activeDir = getRunsDirectory();
+    const candidatePaths = [
+      path.join(activeDir, `${id}.json`),
+      path.join(process.cwd(), 'data', 'runs', `${id}.json`),
+    ];
+    let deleted = false;
+    for (const filePath of candidatePaths) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        deleted = true;
+      }
     }
+    return deleted;
   } catch {}
   return false;
 }
@@ -195,15 +229,35 @@ export function getJobStatus(runId: string): EvaluationJob | undefined {
       runId,
       status: 'COMPLETED',
       progress: {
-        current: diskRun.metrics.totalCases,
-        total: diskRun.metrics.totalCases,
+        current: diskRun.metrics?.totalCases ?? 0,
+        total: diskRun.metrics?.totalCases ?? 0,
         percent: 100,
       },
       startTime: new Date(diskRun.timestamp).getTime(),
-      endTime: new Date(diskRun.timestamp).getTime() + diskRun.durationMs,
+      endTime: new Date(diskRun.timestamp).getTime() + (diskRun.durationMs || 0),
       run: diskRun,
     };
   }
+
+  // Check authoritative SQLite store
+  try {
+    const dbRun = evaluationDbService.getEvaluationRunById(runId);
+    if (dbRun) {
+      return {
+        runId,
+        status: dbRun.status === 'COMPLETED' ? 'COMPLETED' : dbRun.status === 'FAILED' ? 'FAILED' : 'RUNNING',
+        progress: {
+          current: dbRun.metrics?.totalCases ?? 0,
+          total: dbRun.metrics?.totalCases ?? 0,
+          percent: dbRun.status === 'COMPLETED' ? 100 : 0,
+        },
+        startTime: new Date(dbRun.timestamp).getTime(),
+        endTime: new Date(dbRun.timestamp).getTime() + (dbRun.durationMs || 0),
+        run: dbRun,
+        error: dbRun.status === 'FAILED' ? (dbRun.releaseDecision?.justification || 'Evaluation run failed') : undefined,
+      };
+    }
+  } catch {}
 
   return undefined;
 }
