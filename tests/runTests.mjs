@@ -5521,6 +5521,30 @@ async function runTests() {
 
       assert.strictEqual(blocked, true);
     });
+
+    // -------------------------------------------------------------
+    // Database & Persistence Tests
+    // -------------------------------------------------------------
+    const { runDatabaseTests } = await import('./database.test.mjs');
+    await runDatabaseTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // REST API Integration Tests
+    // -------------------------------------------------------------
+    const { runApiTests } = await import('./api.test.mjs');
+    await runApiTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // ApiRepository Frontend Storage Tests
+    // -------------------------------------------------------------
+    const { runApiRepositoryTests } = await import('./apiRepository.test.mjs');
+    await runApiRepositoryTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Authoritative Evaluation Persistence Tests (Step 4)
+    // -------------------------------------------------------------
+    const { runEvaluationPersistenceTests } = await import('./evaluationPersistence.test.mjs');
+    await runEvaluationPersistenceTests({ test, asyncTest }, server);
   } finally {
     await server.close();
   }

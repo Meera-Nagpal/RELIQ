@@ -28,6 +28,13 @@ import {
   sendJson,
 } from './serverUtils';
 import { providerScheduler } from './providerScheduler';
+import { handleProjectRoutes } from './routes/projectRoutes';
+import { handleDatasetRoutes } from './routes/datasetRoutes';
+import { handleVersionRoutes } from './routes/versionRoutes';
+import { handleSettingsRoutes } from './routes/settingsRoutes';
+import { handleEvaluationDbRoutes } from './routes/evaluationDbRoutes';
+import { evaluationDbService } from './services/evaluationDbService';
+import { sendError } from './routes/httpUtils';
 
 export { getApiKey, fetchWithRetry, parseJsonBody, sendJson };
 
@@ -37,7 +44,8 @@ export function createReliqProxyMiddleware() {
     res: ServerResponse,
     next: () => void
   ) {
-    const parsedUrl = req.url?.split('?')[0] || '';
+    const [parsedUrl, rawQuery] = (req.url || '').split('?');
+    const query = new URLSearchParams(rawQuery || '');
 
     // Safe local development CORS headers
     const origin = req.headers.origin;
@@ -47,13 +55,48 @@ export function createReliqProxyMiddleware() {
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Reliq-Provider');
 
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;
       res.end();
       return;
+    }
+
+    // ── Database REST Endpoints: Projects & Settings ────────────
+    if (parsedUrl.startsWith('/api/projects')) {
+      if (parsedUrl.includes('/settings')) {
+        const handled = await handleSettingsRoutes(req, res, parsedUrl);
+        if (handled) return;
+      } else {
+        const handled = await handleProjectRoutes(req, res, parsedUrl);
+        if (handled) return;
+      }
+    }
+
+    // ── Database REST Endpoints: Datasets & Test Cases ──────────
+    if (parsedUrl.startsWith('/api/datasets')) {
+      const handled = await handleDatasetRoutes(req, res, parsedUrl, query);
+      if (handled) return;
+    }
+
+    // ── Database REST Endpoints: Model Versions ─────────────────
+    if (parsedUrl.startsWith('/api/versions')) {
+      const handled = await handleVersionRoutes(req, res, parsedUrl, query);
+      if (handled) return;
+    }
+
+    // ── Database REST Endpoints: Evaluation Runs Extensions ─────
+    if (parsedUrl.startsWith('/api/evaluations/runs/')) {
+      if (
+        parsedUrl.endsWith('/release-decision') ||
+        parsedUrl.endsWith('/results') ||
+        parsedUrl.endsWith('/failures')
+      ) {
+        const handled = await handleEvaluationDbRoutes(req, res, parsedUrl);
+        if (handled) return;
+      }
     }
 
     // ── Status Endpoint: GET /api/providers/status ───────────────
@@ -171,7 +214,7 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: GET /api/evaluations/runs ──────────────
     if (req.method === 'GET' && parsedUrl === '/api/evaluations/runs') {
       try {
-        const runs = getRunsFromDisk();
+        const runs = evaluationDbService.getEvaluationRuns();
         sendJson(res, 200, { runs });
       } catch (err: any) {
         sendJson(res, 500, { error: err.message, runs: [] });
@@ -182,9 +225,9 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: GET /api/evaluations/runs/:id ──────────
     if (req.method === 'GET' && parsedUrl.startsWith('/api/evaluations/runs/')) {
       const runId = parsedUrl.replace('/api/evaluations/runs/', '').trim();
-      const run = getRunFromDisk(runId);
+      const run = evaluationDbService.getEvaluationRunById(runId);
       if (!run) {
-        sendJson(res, 404, { error: `Evaluation run '${runId}' not found on disk.` });
+        sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run '${runId}' not found`);
         return;
       }
       sendJson(res, 200, run);
@@ -194,12 +237,33 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: DELETE /api/evaluations/runs/:id ───────
     if (req.method === 'DELETE' && parsedUrl.startsWith('/api/evaluations/runs/')) {
       const runId = parsedUrl.replace('/api/evaluations/runs/', '').trim();
-      const deleted = deleteRunFromDisk(runId);
-      if (!deleted) {
-        sendJson(res, 404, { error: `Evaluation run '${runId}' not found.` });
+      let deletedFromDb = false;
+      try {
+        const { getDatabase } = await import('./db/database');
+        const db = getDatabase();
+        const delRes = db.prepare('DELETE FROM evaluation_runs WHERE id = ?').run(runId);
+        deletedFromDb = delRes.changes > 0;
+      } catch {}
+      const deletedFromDisk = deleteRunFromDisk(runId);
+      if (!deletedFromDisk && !deletedFromDb) {
+        sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run '${runId}' not found`);
         return;
       }
       sendJson(res, 200, { success: true, runId });
+      return;
+    }
+
+    // ── Seed Reset API: POST /api/seed/reset or /api/reset ──────
+    if (req.method === 'POST' && (parsedUrl === '/api/seed/reset' || parsedUrl === '/api/reset')) {
+      try {
+        const { getDatabase } = await import('./db/database');
+        const { seedDatabase } = await import('./db/seed');
+        const db = getDatabase();
+        const result = seedDatabase(db);
+        sendJson(res, 200, { success: true, result });
+      } catch (err: any) {
+        sendError(res, 500, 'SEED_RESET_FAILED', err.message);
+      }
       return;
     }
 

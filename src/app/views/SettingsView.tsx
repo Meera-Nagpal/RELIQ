@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { Project, RegressionSettings } from '../../domain/types';
 import { providerRegistry } from '../../providers/registry';
-import { localRepository } from '../../services/localRepository';
+import { apiRepository } from '../../services/apiRepository';
 
 interface SettingsViewProps {
   project: Project;
@@ -22,7 +22,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onResetSeedData,
 }) => {
   const [storeRawOutputs, setStoreRawOutputs] = useState<boolean>(
-    localRepository.getStoreRawOutputs()
+    apiRepository.getStoreRawOutputs()
   );
   const [minAccuracy, setMinAccuracy] = useState(
     project.regressionSettings.minAccuracyPercent
@@ -407,7 +407,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               onChange={(e) => {
                 const nextVal = e.target.checked;
                 setStoreRawOutputs(nextVal);
-                localRepository.setStoreRawOutputs(nextVal);
+                apiRepository.setStoreRawOutputs(nextVal);
               }}
               style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--accent, #FF6B35)' }}
             />

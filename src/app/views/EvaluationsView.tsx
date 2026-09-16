@@ -26,7 +26,7 @@ import { generateBenchmarkDataset } from '../../data/datasetGenerator';
 import { providerRegistry, ServerProviderStatus } from '../../providers/registry';
 import { ProviderType } from '../../providers/types';
 import { useRouter } from '../../router/useRouter';
-import { localRepository } from '../../services/localRepository';
+import { apiRepository } from '../../services/apiRepository';
 
 interface EvaluationsViewProps {
   project: Project;
@@ -139,7 +139,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
   const handleOpenReport = async (run: EvaluationRun) => {
     try {
-      const freshRun = await localRepository.getEvaluationRunById(run.id);
+      const freshRun = await apiRepository.getEvaluationRunById(run.id);
       if (freshRun && freshRun.comparisonReport) {
         setActiveReport(freshRun.comparisonReport);
         return;

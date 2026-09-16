@@ -19,7 +19,7 @@ import {
   ReleaseDecisionStatus,
 } from '../domain/types';
 import { useRouter } from '../router/useRouter';
-import { localRepository } from '../services/localRepository';
+import { apiRepository as repository } from '../services/apiRepository';
 import { AppHeader } from './components/AppHeader';
 import { AppNav } from './components/AppNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -36,6 +36,7 @@ export const ReliqApp: React.FC = () => {
   const { appView, navigate } = useRouter();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string>('');
   const [datasets, setDatasets] = useState<Dataset[]>([]);
@@ -47,11 +48,17 @@ export const ReliqApp: React.FC = () => {
   // Initial load from storage
   const loadData = async () => {
     try {
-      const projs = await localRepository.getProjects();
-      const currentActiveId = localRepository.getActiveProjectId() || projs[0]?.id;
-      const dsets = await localRepository.getDatasets(currentActiveId);
-      const vers = await localRepository.getVersions();
-      const runs = await localRepository.getEvaluationRuns(currentActiveId);
+      setLoadError(null);
+      const projs = await repository.getProjects();
+      const storedActiveId = repository.getActiveProjectId();
+      const validActiveProject = projs.find((p) => p.id === storedActiveId);
+      const currentActiveId = validActiveProject ? validActiveProject.id : (projs[0]?.id || '');
+      if (currentActiveId) {
+        repository.setActiveProjectId(currentActiveId);
+      }
+      const dsets = await repository.getDatasets(currentActiveId);
+      const vers = await repository.getVersions();
+      const runs = await repository.getEvaluationRuns(currentActiveId);
 
       setProjects(projs);
       setActiveProjectId(currentActiveId);
@@ -61,8 +68,9 @@ export const ReliqApp: React.FC = () => {
       setEvaluationRuns(runs);
       setActiveRunId(runs[0]?.id || '');
       setIsLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load RELIQ repository data:', err);
+      setLoadError(err.message || 'Failed to connect to backend service');
       setIsLoading(false);
     }
   };
@@ -77,10 +85,10 @@ export const ReliqApp: React.FC = () => {
 
   // Project Switch
   const handleSelectProject = async (projectId: string) => {
-    localRepository.setActiveProjectId(projectId);
+    repository.setActiveProjectId(projectId);
     setActiveProjectId(projectId);
-    const dsets = await localRepository.getDatasets(projectId);
-    const runs = await localRepository.getEvaluationRuns(projectId);
+    const dsets = await repository.getDatasets(projectId);
+    const runs = await repository.getEvaluationRuns(projectId);
     setDatasets(dsets);
     setActiveDatasetId(dsets[0]?.id || '');
     setEvaluationRuns(runs);
@@ -88,14 +96,14 @@ export const ReliqApp: React.FC = () => {
   };
 
   const handleSaveProject = async (project: Project) => {
-    await localRepository.saveProject(project);
-    const projs = await localRepository.getProjects();
+    await repository.saveProject(project);
+    const projs = await repository.getProjects();
     setProjects(projs);
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    await localRepository.deleteProject(projectId);
-    const projs = await localRepository.getProjects();
+    await repository.deleteProject(projectId);
+    const projs = await repository.getProjects();
     setProjects(projs);
     if (activeProjectId === projectId && projs[0]) {
       handleSelectProject(projs[0].id);
@@ -104,14 +112,14 @@ export const ReliqApp: React.FC = () => {
 
   // Datasets
   const handleSaveDataset = async (dataset: Dataset) => {
-    await localRepository.saveDataset(dataset);
-    const dsets = await localRepository.getDatasets(activeProjectId);
+    await repository.saveDataset(dataset);
+    const dsets = await repository.getDatasets(activeProjectId);
     setDatasets(dsets);
   };
 
   const handleDeleteDataset = async (datasetId: string) => {
-    await localRepository.deleteDataset(datasetId);
-    const dsets = await localRepository.getDatasets(activeProjectId);
+    await repository.deleteDataset(datasetId);
+    const dsets = await repository.getDatasets(activeProjectId);
     setDatasets(dsets);
     if (activeDatasetId === datasetId && dsets[0]) {
       setActiveDatasetId(dsets[0].id);
@@ -120,45 +128,62 @@ export const ReliqApp: React.FC = () => {
 
   // Evaluation Runs
   const handleSaveRun = async (run: EvaluationRun) => {
-    await localRepository.saveEvaluationRun(run);
-    const runs = await localRepository.getEvaluationRuns(activeProjectId);
+    await repository.saveEvaluationRun(run);
+    const runs = await repository.getEvaluationRuns(activeProjectId);
     setEvaluationRuns(runs);
     setActiveRunId(run.id);
   };
 
   const handleDeleteRun = async (runId: string) => {
-    await localRepository.deleteEvaluationRun(runId);
-    const runs = await localRepository.getEvaluationRuns(activeProjectId);
-    setEvaluationRuns(runs);
-    if (activeRunId === runId && runs[0]) {
-      setActiveRunId(runs[0].id);
+    try {
+      await repository.deleteEvaluationRun(runId);
+      const runs = await repository.getEvaluationRuns(activeProjectId);
+      setEvaluationRuns(runs);
+      if (activeRunId === runId && runs[0]) {
+        setActiveRunId(runs[0].id);
+      }
+    } catch (err: any) {
+      alert(`Failed to delete evaluation run: ${err.message}`);
     }
   };
 
   // Settings
   const handleSaveSettings = async (settings: RegressionSettings) => {
     if (!activeProject) return;
+    if (repository.saveProjectSettings) {
+      await repository.saveProjectSettings(activeProject.id, settings);
+    }
     const updated = { ...activeProject, regressionSettings: settings };
-    await handleSaveProject(updated);
+    await repository.saveProject(updated);
+    const projs = await repository.getProjects();
+    setProjects(projs);
   };
 
   // Release Decision
   const handleUpdateReleaseDecision = async (status: ReleaseDecisionStatus, reason: string) => {
     if (!activeRun) return;
-    const updatedRun: EvaluationRun = {
-      ...activeRun,
-      releaseDecision: {
-        status,
-        decidedBy: 'Supervisor / Release Engineer',
-        decidedAt: new Date().toISOString(),
-        reason,
-      },
-    };
-    await handleSaveRun(updatedRun);
+    try {
+      if (repository.updateReleaseDecision) {
+        await repository.updateReleaseDecision(activeRun.id, status, reason);
+      }
+      const updatedRun: EvaluationRun = {
+        ...activeRun,
+        releaseDecision: {
+          status,
+          decidedBy: 'Supervisor / Release Engineer',
+          decidedAt: new Date().toISOString(),
+          reason,
+        },
+      };
+      await handleSaveRun(updatedRun);
+    } catch (err: any) {
+      alert(`Failed to update release decision: ${err.message}`);
+      throw err;
+    }
   };
 
   const handleResetSeedData = async () => {
-    await localRepository.resetToSeedData();
+    await repository.resetToSeedData();
     await loadData();
   };
 
@@ -177,6 +202,52 @@ export const ReliqApp: React.FC = () => {
         }}
       >
         Initializing RELIQ Workspace...
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div
+        style={{
+          width: '100vw',
+          height: '100vh',
+          background: '#0D1117',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#FF6B35',
+          fontFamily: 'sans-serif',
+          gap: '1rem',
+          padding: '2rem',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: '2.5rem' }}>⚠️</div>
+        <h2 style={{ color: '#FFFFFF', margin: 0 }}>Backend Service Unavailable</h2>
+        <p style={{ color: '#8899AA', maxWidth: '480px', margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>
+          {loadError}. Please ensure the RELIQ backend service is running on port 3001.
+        </p>
+        <button
+          onClick={() => {
+            setIsLoading(true);
+            loadData();
+          }}
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: '#FFFFFF',
+            padding: '0.6rem 1.4rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '0.85rem',
+            marginTop: '0.5rem',
+          }}
+        >
+          Retry Connection
+        </button>
       </div>
     );
   }

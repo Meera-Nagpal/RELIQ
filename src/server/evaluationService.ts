@@ -21,6 +21,7 @@ import {
 import { EvaluationRunner } from '../evaluation/runner';
 import { resolveServerProvider } from './serverProviders';
 import { providerScheduler } from './providerScheduler';
+import { evaluationDbService } from './services/evaluationDbService';
 
 export interface ServerEvaluationOptions {
   project: Project;
@@ -46,6 +47,14 @@ export interface EvaluationJob {
   endTime?: number;
   run?: EvaluationRun;
   error?: string;
+}
+
+/**
+ * Canonical run ID generator for all RELIQ evaluation runs.
+ * Exactly one canonical runId is generated per evaluation execution and propagated across all layers.
+ */
+export function generateCanonicalRunId(): string {
+  return `run-live-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
 }
 
 const jobs = new Map<string, EvaluationJob>();
@@ -223,9 +232,7 @@ export function validateEvaluationOptions(options: ServerEvaluationOptions): voi
 export async function runServerEvaluation(options: ServerEvaluationOptions): Promise<EvaluationRun> {
   validateEvaluationOptions(options);
 
-  const runId =
-    options.runId ||
-    `run-live-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+  const runId = options.runId || generateCanonicalRunId();
 
   // Deduplicate scenarios to prevent duplicate execution
   const seenCaseIds = new Set<string>();
@@ -259,6 +266,31 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
   };
   jobs.set(runId, job);
 
+  const effectiveProject = options.project || {
+    id: 'proj-checkout-agent',
+    name: 'Checkout Agent',
+    description: 'Checkout Agent Evaluation',
+    baselineVersionId: options.baselineVersion.id,
+    candidateVersionId: options.candidateVersion.id,
+    regressionSettings: {
+      minAccuracyPercent: 95.0,
+      maxAccuracyDegradationPercent: 2.0,
+      maxLatencyIncreasePercent: 20.0,
+      maxFailureRatePercent: 5.0,
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // 1. Authoritative SQLite persistence: Insert RUNNING record on start
+  evaluationDbService.createEvaluationRun({
+    id: runId,
+    projectId: effectiveProject.id,
+    datasetId: safeDataset.id,
+    totalCases,
+    startedAt: new Date(job.startTime).toISOString(),
+  });
+
   // Determine safe concurrency: option -> EVALUATION_CONCURRENCY env -> default 1
   const envConcurrency = process.env.EVALUATION_CONCURRENCY
     ? parseInt(process.env.EVALUATION_CONCURRENCY, 10)
@@ -284,6 +316,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     job.status = 'FAILED';
     job.endTime = Date.now();
     job.error = errMsg;
+    evaluationDbService.failEvaluationRun(runId, errMsg);
     console.warn(`[RELIQ Server Service] Pre-flight rejection: ${errMsg}`);
     throw new Error(errMsg);
   }
@@ -293,6 +326,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     job.status = 'FAILED';
     job.endTime = Date.now();
     job.error = errMsg;
+    evaluationDbService.failEvaluationRun(runId, errMsg);
     console.warn(`[RELIQ Server Service] Pre-flight rejection: ${errMsg}`);
     throw new Error(errMsg);
   }
@@ -320,6 +354,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       job.status = 'FAILED';
       job.endTime = Date.now();
       job.error = errMsg;
+      evaluationDbService.failEvaluationRun(runId, errMsg);
       console.warn(`[RELIQ Server Service] Pre-flight large-run rejection: ${errMsg}`);
       throw new Error(errMsg);
     }
@@ -334,22 +369,6 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
 
     const runner = new EvaluationRunner();
 
-    const effectiveProject = options.project || {
-      id: 'proj-checkout-agent',
-      name: 'Checkout Agent',
-      description: 'Checkout Agent Evaluation',
-      baselineVersionId: options.baselineVersion.id,
-      candidateVersionId: options.candidateVersion.id,
-      regressionSettings: {
-        minAccuracyPercent: 95.0,
-        maxAccuracyDegradationPercent: 2.0,
-        maxLatencyIncreasePercent: 20.0,
-        maxFailureRatePercent: 5.0,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
     const run = await runner.run({
       project: effectiveProject,
       dataset: safeDataset,
@@ -360,6 +379,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       regressionSettings: options.regressionSettings || effectiveProject.regressionSettings,
       maxCases: options.maxCases,
       concurrency: resolvedConcurrency,
+      runId,
       onProgress: (current, total, latestCaseName) => {
         const currentJob = jobs.get(runId);
         if (currentJob) {
@@ -371,9 +391,13 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
           };
         }
       },
+      onCaseCompleted: (caseResult, current, total) => {
+        // Authoritative per-case persistence into SQLite evaluation_results table
+        evaluationDbService.recordCaseResult(runId, options.candidateVersion, caseResult);
+      },
     });
 
-    // Ensure the returned run uses the established runId
+    // Ensure the returned run uses the established canonical runId
     const finalRun: EvaluationRun = {
       ...run,
       id: runId,
@@ -385,7 +409,10 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     job.endTime = Date.now();
     job.run = finalRun;
 
-    // Persist completed evaluation to disk
+    // Authoritative finalization into SQLite evaluation_runs table
+    evaluationDbService.finalizeEvaluationRun(finalRun);
+
+    // Persist completed evaluation to disk for legacy JSON compatibility
     saveRunToDisk(finalRun);
 
     console.log(`[RELIQ Server Service] Evaluation Run ${runId} COMPLETED successfully in ${Date.now() - job.startTime}ms`);
@@ -394,6 +421,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     job.status = 'FAILED';
     job.endTime = Date.now();
     job.error = err.message || 'Evaluation run failed';
+    evaluationDbService.failEvaluationRun(runId, err.message || 'Evaluation run failed');
     console.error(`[RELIQ Server Service] Evaluation Run ${runId} FAILED:`, err.message);
     throw err;
   } finally {
@@ -408,9 +436,7 @@ export function startEvaluationJob(options: ServerEvaluationOptions): {
   runId: string;
   jobPromise: Promise<EvaluationRun>;
 } {
-  const runId =
-    options.runId ||
-    `run-live-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+  const runId = options.runId || generateCanonicalRunId();
 
   const jobPromise = runServerEvaluation({ ...options, runId });
   // Attach error handler to avoid unhandled rejection in background

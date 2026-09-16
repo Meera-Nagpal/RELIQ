@@ -56,6 +56,17 @@ async function startServer() {
     appType: 'custom',
   });
 
+  // Initialize SQLite database
+  let closeDb: (() => void) | null = null;
+  try {
+    const dbModule = await vite.ssrLoadModule('/src/server/db/database.ts');
+    dbModule.initializeDatabase();
+    closeDb = dbModule.closeDatabase;
+  } catch (err: any) {
+    console.error(`[RELIQ DB] Fatal: Failed to initialize SQLite database:`, err.message);
+    process.exit(1);
+  }
+
   const { createReliqProxyMiddleware } = await vite.ssrLoadModule('/src/server/proxyMiddleware.ts');
   const reliqMiddleware = createReliqProxyMiddleware();
 
@@ -107,6 +118,9 @@ async function startServer() {
     if (isShuttingDown) return;
     isShuttingDown = true;
     console.log('\n[BACKEND] Shutdown requested');
+    try {
+      closeDb?.();
+    } catch {}
     server.close(async () => {
       try {
         await vite.close();

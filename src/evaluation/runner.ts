@@ -31,6 +31,9 @@ import { DEFAULT_REGRESSION_SETTINGS, detectRegression } from './regressionDetec
 import { analyzeRootCauses } from './rootCauseAnalyzer';
 import { generateComparisonReport } from './comparator';
 import { evaluateReleaseDecision, calculateEvidenceStrength, classifySafetyResult } from './releaseEngine';
+import { normalizeProviderError } from '../server/serverUtils';
+
+export { normalizeProviderError };
 
 export function calculateMedian(arr: number[]): number {
   if (arr.length === 0) return 0;
@@ -56,7 +59,9 @@ export interface EvaluationOptions {
   regressionSettings?: RegressionSettings;
   maxCases?: number;
   concurrency?: number;
+  runId?: string;
   onProgress?: (current: number, total: number, latestCaseName?: string) => void;
+  onCaseCompleted?: (result: TestCaseResult, current: number, total: number) => void | Promise<void>;
 }
 
 /**
@@ -97,6 +102,7 @@ export function classifyResponseStatus(
     if (
       status === 429 ||
       code === 'RATE_LIMIT_EXCEEDED' ||
+      code === 'PROVIDER_RATE_LIMIT' ||
       lower.includes('quota') ||
       lower.includes('rate limit') ||
       lower.includes('rate_limit') ||
@@ -119,12 +125,60 @@ export function classifyResponseStatus(
       };
     }
 
-    // State B: HTTP 401 / 403 / authentication failure
+    // HTTP 402 / credits exhausted / payment required
+    if (
+      status === 402 ||
+      code === 'PROVIDER_CREDITS_EXHAUSTED' ||
+      code === 'PAYMENT_REQUIRED' ||
+      lower.includes('payment required') ||
+      lower.includes('credits exhausted') ||
+      lower.includes('insufficient credits')
+    ) {
+      return {
+        status: code === 'PAYMENT_REQUIRED' ? 'PAYMENT_REQUIRED' : 'PROVIDER_CREDITS_EXHAUSTED',
+        isEvaluated: false,
+        transportSuccess: false,
+        evaluationEligible: false,
+        qualityEvaluated: false,
+        failureCategory: 'PROVIDER_QUOTA',
+        errorDetail: {
+          httpStatus: status || 402,
+          provider,
+          category: 'RATE_LIMIT',
+          message: msg || 'Provider credits exhausted or payment required (HTTP 402)',
+        },
+      };
+    }
+
+    // HTTP 403 / permission forbidden
+    if (
+      status === 403 ||
+      code === 'PROVIDER_FORBIDDEN' ||
+      code === 'FORBIDDEN' ||
+      lower.includes('forbidden')
+    ) {
+      return {
+        status: code === 'PROVIDER_FORBIDDEN' ? 'PROVIDER_FORBIDDEN' : 'AUTHENTICATION_ERROR',
+        isEvaluated: false,
+        transportSuccess: false,
+        evaluationEligible: false,
+        qualityEvaluated: false,
+        failureCategory: 'PROVIDER_AUTHENTICATION',
+        errorDetail: {
+          httpStatus: status || 403,
+          provider,
+          category: 'AUTHENTICATION',
+          message: msg || 'Provider request forbidden or permission denied (HTTP 403)',
+        },
+      };
+    }
+
+    // State B: HTTP 401 / authentication failure
     if (
       status === 401 ||
-      status === 403 ||
       code === 'AUTH_FAILED' ||
       code === 'AUTH_MISSING_KEY' ||
+      code === 'AUTHENTICATION_ERROR' ||
       lower.includes('api key') ||
       lower.includes('unauthorized') ||
       lower.includes('permission')
@@ -150,11 +204,12 @@ export function classifyResponseStatus(
       status === 408 ||
       status === 504 ||
       code === 'TIMEOUT' ||
+      code === 'PROVIDER_TIMEOUT' ||
       lower.includes('timeout') ||
       lower.includes('aborted')
     ) {
       return {
-        status: 'TIMEOUT',
+        status: code === 'PROVIDER_TIMEOUT' ? 'PROVIDER_TIMEOUT' : 'TIMEOUT',
         isEvaluated: false,
         transportSuccess: false,
         evaluationEligible: false,
@@ -171,6 +226,8 @@ export function classifyResponseStatus(
 
     // State E: Network failure
     if (
+      code === 'NETWORK_ERROR' ||
+      code === 'PROVIDER_NETWORK_ERROR' ||
       lower.includes('network') ||
       lower.includes('econnrefused') ||
       lower.includes('socket') ||
@@ -178,7 +235,7 @@ export function classifyResponseStatus(
       lower.includes('und_err')
     ) {
       return {
-        status: 'NETWORK_ERROR',
+        status: code === 'PROVIDER_NETWORK_ERROR' ? 'PROVIDER_NETWORK_ERROR' : 'NETWORK_ERROR',
         isEvaluated: false,
         transportSuccess: false,
         evaluationEligible: false,
@@ -195,7 +252,7 @@ export function classifyResponseStatus(
 
     // State D: HTTP 500 / provider server failure
     return {
-      status: 'PROVIDER_ERROR',
+      status: code === 'PROVIDER_SERVER_ERROR' ? 'PROVIDER_SERVER_ERROR' : 'PROVIDER_ERROR',
       isEvaluated: false,
       transportSuccess: false,
       evaluationEligible: false,
@@ -251,7 +308,9 @@ export class EvaluationRunner {
 
   async run(options: EvaluationOptions): Promise<EvaluationRun> {
     const startTime = Date.now();
-    const runId = `run-live-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const runId =
+      options.runId ||
+      `run-live-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
 
     const {
       project,
@@ -585,6 +644,14 @@ export class EvaluationRunner {
       // Aggregate chunk outcomes
       for (const item of chunkResults) {
         caseResults.push(item.result);
+
+        if (options.onCaseCompleted) {
+          try {
+            await options.onCaseCompleted(item.result, caseResults.length, totalCases);
+          } catch (err: any) {
+            console.error(`[RELIQ] Error in onCaseCompleted for case ${item.result.testCaseId}:`, err.message);
+          }
+        }
 
         if (item.baselineClassification.isEvaluated && item.result.baselineScore !== null) {
           baselineEvaluatedCount++;

@@ -81,7 +81,7 @@ export function getApiKey(name: string): string | undefined {
 }
 
 export const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504, 529]);
-export const PERMANENT_STATUS_CODES = new Set([400, 401, 403, 404]);
+export const PERMANENT_STATUS_CODES = new Set([400, 401, 402, 403, 404]);
 
 export interface FetchWithRetryOptions {
   url: string;
@@ -334,3 +334,158 @@ export function findDuplicateJsonKeys(raw: string): string[] {
 
   return duplicates;
 }
+
+export interface NormalizedProviderError {
+  normalizedCode: string;
+  category: 'AUTHENTICATION' | 'RATE_LIMIT' | 'TIMEOUT' | 'NETWORK' | 'SERVER_ERROR' | 'UNKNOWN';
+  message: string;
+  httpStatus?: number;
+}
+
+/**
+ * Authoritative provider boundary error normalizer.
+ * Normalizes HTTP status codes and operational exceptions into canonical domain error types:
+ * - HTTP 401: AUTHENTICATION_ERROR
+ * - HTTP 402: PROVIDER_CREDITS_EXHAUSTED / PAYMENT_REQUIRED
+ * - HTTP 403: PROVIDER_FORBIDDEN
+ * - HTTP 429: PROVIDER_RATE_LIMIT
+ * - HTTP 5xx: PROVIDER_SERVER_ERROR
+ * - Timeout:  PROVIDER_TIMEOUT
+ * - Network:  PROVIDER_NETWORK_ERROR
+ */
+export function normalizeProviderError(
+  status?: number,
+  errorOrMsg?: any
+): NormalizedProviderError {
+  const code = typeof errorOrMsg === 'object' ? errorOrMsg?.code : undefined;
+  const msg = typeof errorOrMsg === 'string' ? errorOrMsg : (errorOrMsg?.message || '');
+  const lower = String(msg).toLowerCase();
+
+  // 401: AUTHENTICATION_ERROR
+  if (
+    status === 401 ||
+    code === 'AUTHENTICATION_ERROR' ||
+    code === 'AUTH_FAILED' ||
+    code === 'AUTH_MISSING_KEY' ||
+    lower.includes('api key') ||
+    lower.includes('unauthorized')
+  ) {
+    return {
+      normalizedCode: 'AUTHENTICATION_ERROR',
+      category: 'AUTHENTICATION',
+      message: msg || 'Provider authentication failed or API key missing (HTTP 401)',
+      httpStatus: status || 401,
+    };
+  }
+
+  // 402: PROVIDER_CREDITS_EXHAUSTED / PAYMENT_REQUIRED
+  if (
+    status === 402 ||
+    code === 'PROVIDER_CREDITS_EXHAUSTED' ||
+    code === 'PAYMENT_REQUIRED' ||
+    lower.includes('payment required') ||
+    lower.includes('credits exhausted') ||
+    lower.includes('insufficient credits') ||
+    lower.includes('insufficient funds')
+  ) {
+    return {
+      normalizedCode: 'PROVIDER_CREDITS_EXHAUSTED',
+      category: 'RATE_LIMIT',
+      message: msg || 'Provider credits exhausted / payment required (HTTP 402)',
+      httpStatus: status || 402,
+    };
+  }
+
+  // 403: PROVIDER_FORBIDDEN
+  if (
+    status === 403 ||
+    code === 'PROVIDER_FORBIDDEN' ||
+    code === 'FORBIDDEN' ||
+    lower.includes('forbidden') ||
+    lower.includes('permission denied') ||
+    lower.includes('access denied')
+  ) {
+    return {
+      normalizedCode: 'PROVIDER_FORBIDDEN',
+      category: 'AUTHENTICATION',
+      message: msg || 'Provider request forbidden / permission denied (HTTP 403)',
+      httpStatus: status || 403,
+    };
+  }
+
+  // 429: PROVIDER_RATE_LIMIT
+  if (
+    status === 429 ||
+    code === 'PROVIDER_RATE_LIMIT' ||
+    code === 'RATE_LIMIT_EXCEEDED' ||
+    lower.includes('quota') ||
+    lower.includes('rate limit') ||
+    lower.includes('too many requests')
+  ) {
+    return {
+      normalizedCode: 'PROVIDER_RATE_LIMIT',
+      category: 'RATE_LIMIT',
+      message: msg || 'Provider rate limit or quota exceeded (HTTP 429)',
+      httpStatus: status || 429,
+    };
+  }
+
+  // 5xx: PROVIDER_SERVER_ERROR
+  if (
+    (status !== undefined && status >= 500 && status < 600) ||
+    code === 'PROVIDER_SERVER_ERROR' ||
+    code === 'SERVER_ERROR' ||
+    code === 'PROVIDER_ERROR'
+  ) {
+    return {
+      normalizedCode: 'PROVIDER_SERVER_ERROR',
+      category: 'SERVER_ERROR',
+      message: msg || `Provider server error (HTTP ${status || 500})`,
+      httpStatus: status || 500,
+    };
+  }
+
+  // Timeout: PROVIDER_TIMEOUT
+  if (
+    status === 408 ||
+    status === 504 ||
+    code === 'PROVIDER_TIMEOUT' ||
+    code === 'TIMEOUT' ||
+    lower.includes('timeout') ||
+    lower.includes('timed out') ||
+    lower.includes('aborted')
+  ) {
+    return {
+      normalizedCode: 'PROVIDER_TIMEOUT',
+      category: 'TIMEOUT',
+      message: msg || 'Provider request timed out',
+      httpStatus: status || 504,
+    };
+  }
+
+  // Network: PROVIDER_NETWORK_ERROR
+  if (
+    code === 'PROVIDER_NETWORK_ERROR' ||
+    code === 'NETWORK_ERROR' ||
+    lower.includes('network') ||
+    lower.includes('econnrefused') ||
+    lower.includes('socket') ||
+    lower.includes('fetch failed') ||
+    lower.includes('und_err')
+  ) {
+    return {
+      normalizedCode: 'PROVIDER_NETWORK_ERROR',
+      category: 'NETWORK',
+      message: msg || 'Provider network socket or connectivity error',
+      httpStatus: status,
+    };
+  }
+
+  return {
+    normalizedCode: 'PROVIDER_ERROR',
+    category: 'UNKNOWN',
+    message: msg || 'Provider returned operational error',
+    httpStatus: status,
+  };
+}
+

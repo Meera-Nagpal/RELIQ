@@ -1,0 +1,38 @@
+{
+  "id": "run-live-mu3x0m1u-pl3k",
+  "projectId": "proj-checkout-agent",
+  "projectName": "Checkout Agent",
+  "datasetId": "ds-checkout-golden",
+  "datasetName": "Checkout Golden Dataset",
+  "baselineVersionId": "v-gemini-3.6",
+  "baselineVersionName": "Gemini 3.6 Flash",
+  "candidateVersionId": "v-groq-gpt-oss",
+  "candidateVersionName": "GPT OSS 20B",
+  "timestamp": "2026-09-16T09:45:34.626Z",
+  "durationMs": 450,
+  "metrics": {
+    "totalCases": 1,
+    "evaluatedCases": 1,
+    "baselinePassed": 1,
+    "candidatePassed": 1,
+    "baselinePassRate": 100,
+    "candidatePassRate": 100,
+    "candidateQualityScore": 1
+  },
+  "caseResults": [
+    {
+      "testCaseId": "tc-chk-001",
+      "testCaseName": "Basic Checkout",
+      "category": "Checkout",
+      "severity": "critical",
+      "passed": true,
+      "candidateScore": 1
+    }
+  ],
+  "releaseDecision": {
+    "status": "GO",
+    "reason": "All checks passed",
+    "thresholdsMet": true,
+    "safetyGatePassed": true
+  }
+}
