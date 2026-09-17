@@ -6,7 +6,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
-      "includeFiles": "node_modules/{better-sqlite3,bindings}/**"
+      "includeFiles": "node_modules/better-sqlite3/**"
     }
   },
   "rewrites": [
@@ -15,11 +15,7 @@
       "destination": "/api?reliq_path=$1"
     },
     {
-      "source": "/api",
-      "destination": "/api"
-    },
-    {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api).*)",
       "destination": "/index.html"
     }
   ]
