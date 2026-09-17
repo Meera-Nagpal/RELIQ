@@ -11,12 +11,16 @@
   },
   "rewrites": [
     {
+      "source": "/api/ping",
+      "destination": "/api/ping"
+    },
+    {
       "source": "/api/(.*)",
-      "destination": "/api/index.js?reliq_path=$1"
+      "destination": "/api/index?reliq_path=$1"
     },
     {
       "source": "/api",
-      "destination": "/api/index.js"
+      "destination": "/api/index"
     },
     {
       "source": "/((?!api/).*)",
