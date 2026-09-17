@@ -1,5 +1,5 @@
 // src/server/db/database.ts
-import Database from "better-sqlite3";
+import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -11894,6 +11894,19 @@ function seedDatabase(db) {
 }
 
 // src/server/db/database.ts
+var require2 = createRequire(import.meta.url);
+var DatabaseConstructor = null;
+function getDatabaseConstructor() {
+  if (!DatabaseConstructor) {
+    try {
+      DatabaseConstructor = require2("better-sqlite3");
+    } catch (err) {
+      console.error("[RELIQ DB] Failed to load better-sqlite3 native addon:", err?.message || err);
+      throw err;
+    }
+  }
+  return DatabaseConstructor;
+}
 var dbInstance = null;
 var currentDbPath = null;
 function getDefaultDbPath() {
@@ -11935,7 +11948,19 @@ function initializeDatabase(options = {}) {
         }
       }
     }
-    const db = new Database(resolvedPath);
+    const Database = getDatabaseConstructor();
+    const bindingOptions = {};
+    const candidateBindings = [
+      path.resolve(process.cwd(), "node_modules/better-sqlite3/build/Release/better_sqlite3.node"),
+      path.resolve("/var/task/node_modules/better-sqlite3/build/Release/better_sqlite3.node")
+    ];
+    for (const cand of candidateBindings) {
+      if (fs.existsSync(cand)) {
+        bindingOptions.nativeBinding = cand;
+        break;
+      }
+    }
+    const db = new Database(resolvedPath, bindingOptions);
     db.pragma("foreign_keys = ON");
     db.pragma("journal_mode = WAL");
     initSchema(db);
@@ -18105,28 +18130,48 @@ ${userText}` }]
 }
 
 // src/server/vercelEntry.ts
+var initError = null;
 try {
   initializeDatabase();
 } catch (err) {
   console.error("[VERCEL API] Failed to initialize SQLite database:", err?.message || err);
+  initError = {
+    message: err?.message || String(err),
+    stack: err?.stack
+  };
 }
 var reliqMiddleware = createReliqProxyMiddleware();
 async function handler(req, res) {
-  const rawUrl = req.url || "";
-  const [pathname, rawQuery] = rawUrl.split("?");
-  const query = new URLSearchParams(rawQuery || "");
-  const reliqPath = query.get("reliq_path");
-  if (reliqPath !== null) {
-    query.delete("reliq_path");
-    const remainingQuery = query.toString();
-    const cleanPath = reliqPath.replace(/^\/+/, "");
-    req.url = `/api/${cleanPath}` + (remainingQuery ? `?${remainingQuery}` : "");
-  }
-  await reliqMiddleware(req, res, () => {
-    res.statusCode = 404;
+  try {
+    const rawUrl = req.url || "";
+    const [pathname, rawQuery] = rawUrl.split("?");
+    const query = new URLSearchParams(rawQuery || "");
+    const reliqPath = query.get("reliq_path");
+    if (reliqPath !== null) {
+      query.delete("reliq_path");
+      const remainingQuery = query.toString();
+      const cleanPath = reliqPath.replace(/^\/+/, "");
+      req.url = `/api/${cleanPath}` + (remainingQuery ? `?${remainingQuery}` : "");
+    } else if (rawUrl.startsWith("/api/index.js")) {
+      req.url = rawUrl.replace(/^\/api\/index\.js/, "/api");
+    }
+    await reliqMiddleware(req, res, () => {
+      res.statusCode = 404;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: `Route not found: ${req.method || "GET"} ${req.url}` }));
+    });
+  } catch (err) {
+    console.error("[VERCEL API ERROR]", err);
+    res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ error: `Route not found: ${req.method || "GET"} ${req.url}` }));
-  });
+    res.end(JSON.stringify({
+      error: "Internal Server Error in Vercel Gateway",
+      message: err?.message || String(err),
+      stack: err?.stack,
+      initError,
+      url: req.url
+    }));
+  }
 }
 export {
   handler as default

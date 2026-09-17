@@ -11,7 +11,8 @@
    - Clean shutdown helpers
    ============================================================ */
 
-import Database from 'better-sqlite3';
+import type DatabaseType from 'better-sqlite3';
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { initSchema } from './schema';
@@ -20,7 +21,22 @@ import { seedDatabase, SeedResult } from './seed';
 export { initSchema, seedDatabase };
 export type { SeedResult };
 
-let dbInstance: Database.Database | null = null;
+const require = createRequire(import.meta.url);
+let DatabaseConstructor: typeof DatabaseType | null = null;
+
+export function getDatabaseConstructor(): typeof DatabaseType {
+  if (!DatabaseConstructor) {
+    try {
+      DatabaseConstructor = require('better-sqlite3');
+    } catch (err: any) {
+      console.error('[RELIQ DB] Failed to load better-sqlite3 native addon:', err?.message || err);
+      throw err;
+    }
+  }
+  return DatabaseConstructor!;
+}
+
+let dbInstance: DatabaseType.Database | null = null;
 let currentDbPath: string | null = null;
 
 /**
@@ -45,7 +61,7 @@ export interface InitializeDatabaseOptions {
 /**
  * Returns the currently active Database instance, opening it if not yet open.
  */
-export function getDatabase(customPath?: string): Database.Database {
+export function getDatabase(customPath?: string): DatabaseType.Database {
   if (dbInstance && (!customPath || currentDbPath === path.resolve(customPath))) {
     return dbInstance;
   }
@@ -61,7 +77,7 @@ export function getDatabase(customPath?: string): Database.Database {
  * 
  * Safe to call multiple times; idempotent.
  */
-export function initializeDatabase(options: InitializeDatabaseOptions = {}): Database.Database {
+export function initializeDatabase(options: InitializeDatabaseOptions = {}): DatabaseType.Database {
   const resolvedPath = path.resolve(options.dbPath || getDefaultDbPath());
 
   // Return existing open connection if pointing to the same file
@@ -94,7 +110,20 @@ export function initializeDatabase(options: InitializeDatabaseOptions = {}): Dat
       }
     }
 
-    const db = new Database(resolvedPath);
+    const Database = getDatabaseConstructor();
+    const bindingOptions: DatabaseType.Options = {};
+    const candidateBindings = [
+      path.resolve(process.cwd(), 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'),
+      path.resolve('/var/task/node_modules/better-sqlite3/build/Release/better_sqlite3.node'),
+    ];
+    for (const cand of candidateBindings) {
+      if (fs.existsSync(cand)) {
+        bindingOptions.nativeBinding = cand;
+        break;
+      }
+    }
+
+    const db = new Database(resolvedPath, bindingOptions);
 
     // Enforce foreign key constraints and enable WAL mode for high concurrency
     db.pragma('foreign_keys = ON');
