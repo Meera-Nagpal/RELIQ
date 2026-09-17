@@ -9,8 +9,8 @@
    ============================================================ */
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { initializeDatabase } from '../src/server/db/database';
-import { createReliqProxyMiddleware } from '../src/server/proxyMiddleware';
+import { initializeDatabase } from './db/database';
+import { createReliqProxyMiddleware } from './proxyMiddleware';
 
 // Initialize SQLite database singleton for this serverless instance
 try {

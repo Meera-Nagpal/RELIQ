@@ -4,15 +4,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/index.ts": {
+    "api/index.js": {
       "maxDuration": 60,
       "includeFiles": "node_modules/{better-sqlite3,bindings}/**"
     },
-    "api/*.ts": {
-      "maxDuration": 60,
-      "includeFiles": "node_modules/{better-sqlite3,bindings}/**"
-    },
-    "api/**/*.ts": {
+    "api/*.js": {
       "maxDuration": 60,
       "includeFiles": "node_modules/{better-sqlite3,bindings}/**"
     }

@@ -8,7 +8,8 @@
     "start": "node src/server/server.ts",
     "dev:server": "node src/server/server.ts",
     "server": "node src/server/server.ts",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run build:api",
+    "build:api": "esbuild src/server/vercelEntry.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=api/index.js",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "node tests/runTests.mjs",
@@ -33,6 +34,7 @@
     "@types/react-dom": "^18.2.18",
     "@types/three": "^0.160.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "esbuild": "^0.21.5",
     "typescript": "^5.3.3",
     "vite": "^5.0.12"
   }
