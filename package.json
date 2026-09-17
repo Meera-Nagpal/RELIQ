@@ -8,7 +8,7 @@
     "start": "node src/server/server.ts",
     "dev:server": "node src/server/server.ts",
     "server": "node src/server/server.ts",
-    "build": "tsc && vite build && npm run build:api",
+    "build": "vite build && npm run build:api",
     "build:api": "esbuild src/server/vercelEntry.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=api/index.js",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -19,6 +19,11 @@
   "dependencies": {
     "@react-three/drei": "^9.88.0",
     "@react-three/fiber": "^8.15.0",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.4.1",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/three": "^0.160.0",
     "@vitejs/plugin-react": "^4.2.1",
     "better-sqlite3": "^12.11.1",
     "bindings": "^1.5.0",
@@ -32,11 +37,5 @@
     "vite": "^5.0.12",
     "zustand": "^4.5.0"
   },
-  "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^26.4.1",
-    "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18",
-    "@types/three": "^0.160.0"
-  }
+  "devDependencies": {}
 }

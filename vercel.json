@@ -6,21 +6,17 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
-      "includeFiles": "node_modules/better-sqlite3/**"
+      "includeFiles": "node_modules/{better-sqlite3,bindings}/**"
     }
   },
   "rewrites": [
     {
-      "source": "/api/ping",
-      "destination": "/api/ping"
-    },
-    {
       "source": "/api/(.*)",
-      "destination": "/api/index?reliq_path=$1"
+      "destination": "/api?reliq_path=$1"
     },
     {
       "source": "/api",
-      "destination": "/api/index"
+      "destination": "/api"
     },
     {
       "source": "/((?!api/).*)",
