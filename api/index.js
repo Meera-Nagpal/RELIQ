@@ -18131,18 +18131,25 @@ ${userText}` }]
 
 // src/server/vercelEntry.ts
 var initError = null;
-try {
-  initializeDatabase();
-} catch (err) {
-  console.error("[VERCEL API] Failed to initialize SQLite database:", err?.message || err);
-  initError = {
-    message: err?.message || String(err),
-    stack: err?.stack
-  };
+var reliqMiddleware = null;
+function getMiddleware() {
+  if (!reliqMiddleware) {
+    try {
+      initializeDatabase();
+    } catch (err) {
+      console.error("[VERCEL API] Failed to initialize SQLite database:", err?.message || err);
+      initError = {
+        message: err?.message || String(err),
+        stack: err?.stack
+      };
+    }
+    reliqMiddleware = createReliqProxyMiddleware();
+  }
+  return reliqMiddleware;
 }
-var reliqMiddleware = createReliqProxyMiddleware();
 async function handler(req, res) {
   try {
+    const middleware = getMiddleware();
     const rawUrl = req.url || "";
     const [pathname, rawQuery] = rawUrl.split("?");
     const query = new URLSearchParams(rawQuery || "");
@@ -18155,7 +18162,7 @@ async function handler(req, res) {
     } else if (rawUrl.startsWith("/api/index.js")) {
       req.url = rawUrl.replace(/^\/api\/index\.js/, "/api");
     }
-    await reliqMiddleware(req, res, () => {
+    await middleware(req, res, () => {
       res.statusCode = 404;
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ error: `Route not found: ${req.method || "GET"} ${req.url}` }));
