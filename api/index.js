@@ -1,3 +1,6 @@
+// src/server/vercelEntry.ts
+import { createRequire as createRequire2 } from "node:module";
+
 // src/server/db/database.ts
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -18149,8 +18152,40 @@ function getMiddleware() {
 }
 async function handler(req, res) {
   try {
-    const middleware = getMiddleware();
     const rawUrl = req.url || "";
+    if (rawUrl.includes("/diag") || rawUrl.includes("/ping") || rawUrl === "/api/debug") {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      let sqliteInfo = null;
+      try {
+        const reqMod = createRequire2(import.meta.url);
+        const DB = reqMod("better-sqlite3");
+        sqliteInfo = { loaded: true, type: typeof DB };
+      } catch (sqErr) {
+        sqliteInfo = { loaded: false, message: sqErr.message, stack: sqErr.stack };
+      }
+      res.end(JSON.stringify({
+        status: "ok",
+        node: process.version,
+        platform: process.platform,
+        arch: process.arch,
+        cwd: process.cwd(),
+        url: req.url,
+        rawUrl,
+        initError,
+        sqliteInfo,
+        env: {
+          VERCEL: process.env.VERCEL,
+          NODE_ENV: process.env.NODE_ENV,
+          RELIQ_DB_PATH: process.env.RELIQ_DB_PATH,
+          hasGemini: Boolean(process.env.GEMINI_API_KEY),
+          hasGroq: Boolean(process.env.GROQ_API_KEY),
+          hasCerebras: Boolean(process.env.CEREBRAS_API_KEY)
+        }
+      }, null, 2));
+      return;
+    }
+    const middleware = getMiddleware();
     const [pathname, rawQuery] = rawUrl.split("?");
     const query = new URLSearchParams(rawQuery || "");
     const reliqPath = query.get("reliq_path");
