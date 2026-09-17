@@ -19,13 +19,17 @@
   "dependencies": {
     "@react-three/drei": "^9.88.0",
     "@react-three/fiber": "^8.15.0",
+    "@vitejs/plugin-react": "^4.2.1",
     "better-sqlite3": "^12.11.1",
     "bindings": "^1.5.0",
     "detect-gpu": "^5.0.70",
+    "esbuild": "^0.21.5",
     "gsap": "^3.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.160.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
@@ -33,10 +37,6 @@
     "@types/node": "^26.4.1",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
-    "@types/three": "^0.160.0",
-    "@vitejs/plugin-react": "^4.2.1",
-    "esbuild": "^0.21.5",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.12"
+    "@types/three": "^0.160.0"
   }
 }
