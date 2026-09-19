@@ -288,11 +288,10 @@ export function generateComparisonReport(
         severity: r.severity || 'medium',
         input: r.input || '',
         expectedOutput: r.expectedOutput || '',
+        evaluatorType: 'exact_match',
         evaluatorConfig: (r as any).evaluatorConfig,
-        datasetId: options.datasetId || '',
         tags: [],
         createdAt: '',
-        updatedAt: '',
       };
       try {
         r.groundednessEvaluation = evaluateGroundedness({

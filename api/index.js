@@ -783,7 +783,7 @@ function getEvidenceStrengthReason(sampleSize, requiredCases = 27, strongEvidenc
     return `Preliminary subset (${sampleSize}/${requiredCases} scenarios evaluated). Insufficient sample for production release gating.`;
   }
   if (sampleSize < strongEvidenceCases) {
-    return `${sampleSize}/${requiredCases} benchmark scenarios evaluated; larger sample sizes (>= ${strongEvidenceCases}) may provide additional statistical stability.`;
+    return `${sampleSize}/${requiredCases} benchmark scenarios evaluated. Evidence strength is MODERATE under the configured evidence calibration. Larger samples may provide greater statistical stability.`;
   }
   return `High statistical sample (N = ${sampleSize} >= ${strongEvidenceCases} scenarios evaluated).`;
 }
@@ -894,7 +894,7 @@ function evaluateReleaseDecision(input) {
     );
   } else if (candidateEvaluated < strongEvidenceCases) {
     limitations.push(
-      `Full ${requiredCases}-scenario benchmark complete (Evidence Strength: MODERATE). Larger sample sizes (>= ${strongEvidenceCases}) may provide additional statistical stability.`
+      `${candidateEvaluated}/${requiredCases} benchmark scenarios evaluated. Evidence strength is MODERATE under the configured evidence calibration. Larger samples may provide greater statistical stability.`
     );
   }
   if (baselineEvaluated !== candidateEvaluated) {
@@ -1187,7 +1187,9 @@ function evaluateReleaseDecision(input) {
   let reason = "";
   let isRegression = false;
   const minEvaluatedCases = settings.minimumEvaluatedCases ?? settings.minEvaluatedCases ?? metrics.minimumEvaluatedCases;
-  const isCheckoutSuite = Boolean(datasetName && datasetName.includes("Checkout Reliability"));
+  const isCheckoutSuite = Boolean(
+    datasetName && datasetName.includes("Checkout Reliability") || metrics.datasetName && metrics.datasetName.includes("Checkout Reliability") || metrics.datasetId && metrics.datasetId.includes("checkout")
+  );
   const minCasesTarget = minEvaluatedCases ?? 100;
   const isSmallSampleGeneric = !isCheckoutSuite && candidateEvaluated < minCasesTarget;
   if (actualSafetyViolations.length > 0 || candidateAuthCount > 0) {
@@ -1263,15 +1265,15 @@ function evaluateReleaseDecision(input) {
     }
     if (!passesMinAccuracy) {
       conditionReasons.push(
-        `candidate accuracy (${candidateQuality?.toFixed(1)}%) is below absolute production target (${minRequiredAccuracy.toFixed(1)}%)`
+        `candidate quality (${candidateQuality?.toFixed(1)}%) is below absolute production target (${minRequiredAccuracy.toFixed(1)}%)`
       );
     }
     if (isSmallSampleGeneric && !isLatencySpike && !regressionCategories.includes("COST_REGRESSION") && passesMinAccuracy) {
       summary = `Preliminary smoke test passed: 0 regressions across ${candidateEvaluated} test cases (N = ${candidateEvaluated} < ${minCasesTarget}). Gating requires larger sample size for unconditioned production release.`;
       reason = `Preliminary smoke test (N = ${candidateEvaluated} < ${minCasesTarget}): staging/smoke test only. Sample size is insufficient to certify unconditioned production release.`;
     } else {
-      summary = isCheckoutSuite ? `Full ${requiredCases}-case benchmark completed with quality improvement (+${qualityDelta?.toFixed(1)} pts), but operational condition(s) require monitoring: ${conditionReasons.join("; ")}.` : `Benchmark evaluated with condition(s) requiring monitoring: ${conditionReasons.join("; ")}.`;
-      reason = isCheckoutSuite ? `Quality criteria satisfied (+${qualityDelta?.toFixed(1)} pts vs baseline), but release conditions require engineering sign-off: ${conditionReasons.join("; ")}.` : `Release conditions require engineering sign-off: ${conditionReasons.join("; ")}.`;
+      summary = isCheckoutSuite ? `Full ${requiredCases}-case benchmark completed with relative quality improvement (+${qualityDelta?.toFixed(1)} pts), but operational condition(s) require monitoring: ${conditionReasons.join("; ")}.` : `Benchmark evaluated with condition(s) requiring monitoring: ${conditionReasons.join("; ")}.`;
+      reason = isCheckoutSuite ? `Relative quality improved (+${qualityDelta?.toFixed(1)} pts vs baseline), but production release gates require sign-off: ${conditionReasons.join("; ")}.` : `Release conditions require engineering sign-off: ${conditionReasons.join("; ")}.`;
     }
     actionItems.push("Verify that latency, cost, or sample size conditions are acceptable before promoting to production.");
   } else {
@@ -1583,6 +1585,139 @@ function analyzeRootCauses(results) {
   return findings;
 }
 
+// src/evaluation/groundednessEvaluator.ts
+function extractNumericEntities(text) {
+  if (!text) return [];
+  const matches = text.match(/(?:\$\s*\d+(?:\.\d{2})?|\b\d+(?:\.\d{2})?%|\b\d+(?:\.\d+)?\b)/g);
+  return matches ? Array.from(new Set(matches.map((m) => m.replace(/\s+/g, "")))) : [];
+}
+function extractIdentifierEntities(text) {
+  if (!text) return [];
+  const matches = text.match(/(?:#[a-zA-Z0-9_-]{3,}|\b[A-Z0-9_-]{5,}\b)/g);
+  return matches ? Array.from(new Set(matches)) : [];
+}
+function hasGroundingEvidence(testCase) {
+  if (!testCase) return false;
+  const expected = (testCase.expectedOutput || "").trim();
+  if (expected.length < 5) return false;
+  const isGenericRefusal = expected.toLowerCase().startsWith("i cannot") || expected.toLowerCase().startsWith("i am unable") || expected.toLowerCase().startsWith("sorry, i cannot");
+  const numericEntities = extractNumericEntities(expected);
+  const idEntities = extractIdentifierEntities(expected);
+  const hasKeywords = Boolean(
+    testCase.evaluatorConfig?.requiredKeywords && testCase.evaluatorConfig.requiredKeywords.length > 0
+  );
+  const hasJsonKeys = Boolean(
+    testCase.evaluatorConfig?.requiredJsonKeys && testCase.evaluatorConfig.requiredJsonKeys.length > 0
+  );
+  if (isGenericRefusal && numericEntities.length === 0 && idEntities.length === 0 && !hasKeywords) {
+    return false;
+  }
+  const groundedCategories = /* @__PURE__ */ new Set([
+    "Tool Calling",
+    "Policy Gate",
+    "Retrieval",
+    "Structured Output",
+    "Domain Knowledge",
+    "Edge Cases"
+  ]);
+  return groundedCategories.has(testCase.category) || numericEntities.length > 0 || idEntities.length > 0 || hasKeywords || hasJsonKeys || expected.length > 15;
+}
+function evaluateGroundedness(options) {
+  const { testCase, actualOutput, judgeScore } = options;
+  if (!hasGroundingEvidence(testCase)) {
+    return {
+      applicable: false,
+      status: "NOT_APPLICABLE",
+      score: null,
+      passed: null,
+      contradictions: [],
+      unsupportedClaims: [],
+      details: "Test case does not provide explicit grounding evidence (N/A)."
+    };
+  }
+  try {
+    const actual = (actualOutput || "").trim();
+    const lowerActual = actual.toLowerCase();
+    const expected = (testCase.expectedOutput || "").trim();
+    const lowerExpected = expected.toLowerCase();
+    const input = (testCase.input || "").trim();
+    const contradictions = [];
+    const unsupportedClaims = [];
+    const expectedNumbers = extractNumericEntities(expected);
+    const actualNumbers = extractNumericEntities(actual);
+    let matchedNumbers = 0;
+    for (const num of expectedNumbers) {
+      if (actualNumbers.includes(num) || lowerActual.includes(num.toLowerCase())) {
+        matchedNumbers++;
+      } else {
+        contradictions.push(`Missing or altered numeric fact: expected '${num}'`);
+      }
+    }
+    const expectedIds = extractIdentifierEntities(expected);
+    let matchedIds = 0;
+    for (const id of expectedIds) {
+      if (actual.includes(id) || lowerActual.includes(id.toLowerCase())) {
+        matchedIds++;
+      } else {
+        contradictions.push(`Missing or altered identifier: expected '${id}'`);
+      }
+    }
+    const requiredKeywords = testCase.evaluatorConfig?.requiredKeywords || [];
+    let matchedKeywords = 0;
+    for (const kw of requiredKeywords) {
+      if (lowerActual.includes(kw.toLowerCase())) {
+        matchedKeywords++;
+      } else {
+        unsupportedClaims.push(`Omitted required grounded constraint: '${kw}'`);
+      }
+    }
+    const totalChecks = (expectedNumbers.length > 0 ? expectedNumbers.length : 0) + (expectedIds.length > 0 ? expectedIds.length : 0) + (requiredKeywords.length > 0 ? requiredKeywords.length : 0);
+    let deterministicScore = 1;
+    if (totalChecks > 0) {
+      const successfulChecks = matchedNumbers + matchedIds + matchedKeywords;
+      deterministicScore = Math.max(0, Math.min(1, successfulChecks / totalChecks));
+    } else {
+      const normExpWords = lowerExpected.split(/\s+/).filter((w) => w.length > 3);
+      if (normExpWords.length > 0) {
+        const found = normExpWords.filter((w) => lowerActual.includes(w)).length;
+        deterministicScore = Math.max(0, Math.min(1, found / normExpWords.length));
+      }
+    }
+    let finalScore = deterministicScore;
+    if (judgeScore && !judgeScore.error && typeof judgeScore.groundedness === "number") {
+      const normJudgeGroundedness = Math.max(0, Math.min(1, judgeScore.groundedness / 5));
+      finalScore = Math.round((0.6 * deterministicScore + 0.4 * normJudgeGroundedness) * 100) / 100;
+    }
+    const passed = finalScore >= 0.7 && contradictions.length === 0;
+    let details = passed ? "Response is grounded in provided evidence: numeric facts, identifiers, and constraints verified." : `Groundedness inconsistencies detected (${contradictions.length} contradiction(s), ${unsupportedClaims.length} omission(s)).`;
+    if (contradictions.length > 0) {
+      details += ` Contradictions: ${contradictions.slice(0, 2).join("; ")}.`;
+    }
+    if (unsupportedClaims.length > 0) {
+      details += ` Omissions: ${unsupportedClaims.slice(0, 2).join("; ")}.`;
+    }
+    return {
+      applicable: true,
+      status: "EXECUTED",
+      score: Math.round(finalScore * 100) / 100,
+      passed,
+      contradictions,
+      unsupportedClaims,
+      details
+    };
+  } catch (err) {
+    return {
+      applicable: true,
+      status: "FAILED",
+      score: 0,
+      passed: false,
+      contradictions: [],
+      unsupportedClaims: [],
+      details: `Groundedness evaluation failed with exception: ${err.message}`
+    };
+  }
+}
+
 // src/evaluation/comparator.ts
 function calculateDelta(metric, baselineValue, candidateValue, unit, higherIsBetter, description, decimalsArg) {
   const decimals = decimalsArg !== void 0 ? decimalsArg : unit === "$" ? 6 : 4;
@@ -1662,6 +1797,30 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
   const totalCases = caseResults.length;
   if (totalCases === 0) {
     return createEmptyReport(datasetId, datasetName, baselineVersion, candidateVersion);
+  }
+  for (const r of caseResults) {
+    if (!r.groundednessEvaluation && (r.candidateOutput || r.expectedOutput)) {
+      const syntheticCase = {
+        id: r.testCaseId,
+        name: r.testCaseName || r.testCaseId,
+        category: r.category || "Tool Calling",
+        severity: r.severity || "medium",
+        input: r.input || "",
+        expectedOutput: r.expectedOutput || "",
+        evaluatorType: "exact_match",
+        evaluatorConfig: r.evaluatorConfig,
+        tags: [],
+        createdAt: ""
+      };
+      try {
+        r.groundednessEvaluation = evaluateGroundedness({
+          testCase: syntheticCase,
+          actualOutput: r.candidateOutput || "",
+          judgeScore: r.llmJudgeEvaluation || null
+        });
+      } catch {
+      }
+    }
   }
   let bPassed = 0;
   let cPassed = 0;
@@ -1951,6 +2110,12 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
     caseResults,
     datasetName
   });
+  const failedGates = releaseOutcome.gates.filter((g) => g.status === "FAIL");
+  const tempQualityDelta = bQualityScore !== null && cQualityScore !== null ? Number((cQualityScore - bQualityScore).toFixed(1)) : null;
+  if (winner === "candidate" && failedGates.length > 0 && tempQualityDelta !== null && tempQualityDelta > 0) {
+    const failedGateNames = failedGates.map((g) => g.gate).join(", ");
+    winnerReason = `Candidate achieved relative quality improvement (+${tempQualityDelta.toFixed(1)} pts vs baseline), but failed production release gates (${failedGateNames}).`;
+  }
   let recommendation;
   switch (releaseOutcome.decision) {
     case "BLOCK":
@@ -2014,12 +2179,15 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
   const tokenDelta = bTokensVal !== null && cTokensVal !== null ? cTokensVal - bTokensVal : null;
   const latencyDelta = bAvgLatency !== null && cAvgLatency !== null ? Math.round(cAvgLatency - bAvgLatency) : null;
   const costDelta = bCostVal !== null && cCostVal !== null ? Number((cCostVal - bCostVal).toFixed(6)) : null;
-  const groundednessApplicableCases = options.runMetrics?.groundednessApplicableCases ?? caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status !== "NOT_APPLICABLE").length;
-  const groundednessEvaluatedCases = options.runMetrics?.groundednessEvaluatedCases ?? caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status === "EXECUTED").length;
-  const groundednessFailedCases = options.runMetrics?.groundednessFailedCases ?? caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status === "EXECUTED" && !r.groundednessEvaluation.passed).length;
+  const caseApplicableGroundedness = caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status !== "NOT_APPLICABLE").length;
+  const groundednessApplicableCases = caseApplicableGroundedness > 0 ? caseApplicableGroundedness : options.runMetrics?.groundednessApplicableCases ?? 0;
+  const caseEvaluatedGroundedness = caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status === "EXECUTED").length;
+  const groundednessEvaluatedCases = caseEvaluatedGroundedness > 0 ? caseEvaluatedGroundedness : options.runMetrics?.groundednessEvaluatedCases ?? 0;
+  const caseFailedGroundedness = caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status === "EXECUTED" && !r.groundednessEvaluation.passed).length;
+  const groundednessFailedCases = caseFailedGroundedness > 0 ? caseFailedGroundedness : options.runMetrics?.groundednessFailedCases ?? 0;
   const validGroundednessScores = caseResults.filter((r) => r.groundednessEvaluation?.score !== null && r.groundednessEvaluation?.score !== void 0).map((r) => r.groundednessEvaluation.score);
-  const groundednessAvgScore = options.runMetrics?.groundednessAvgScore !== void 0 ? options.runMetrics.groundednessAvgScore : validGroundednessScores.length > 0 ? Number((validGroundednessScores.reduce((a, b) => a + b, 0) / validGroundednessScores.length).toFixed(3)) : null;
-  const factualityGroundednessStatus = options.runMetrics?.factualityGroundednessStatus || (groundednessEvaluatedCases > 0 ? "EXECUTED" : caseResults.some((r) => r.groundednessEvaluation?.status === "NOT_APPLICABLE") ? "NOT_APPLICABLE" : "NOT_CONFIGURED");
+  const groundednessAvgScore = validGroundednessScores.length > 0 ? Number((validGroundednessScores.reduce((a, b) => a + b, 0) / validGroundednessScores.length).toFixed(3)) : options.runMetrics?.groundednessAvgScore !== void 0 ? options.runMetrics.groundednessAvgScore : null;
+  const factualityGroundednessStatus = groundednessEvaluatedCases > 0 ? "EXECUTED" : options.runMetrics?.factualityGroundednessStatus === "EXECUTED" ? "EXECUTED" : caseResults.some((r) => r.groundednessEvaluation?.status === "NOT_APPLICABLE") ? "NOT_APPLICABLE" : options.runMetrics?.factualityGroundednessStatus && options.runMetrics.factualityGroundednessStatus !== "NOT_CONFIGURED" ? options.runMetrics.factualityGroundednessStatus : "NOT_CONFIGURED";
   return {
     id: `rep-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
     title: `${baselineVersion.name} vs ${candidateVersion.name}`,
@@ -14413,139 +14581,6 @@ Return ONLY valid JSON matching this exact structure:
   }
 };
 
-// src/evaluation/groundednessEvaluator.ts
-function extractNumericEntities(text) {
-  if (!text) return [];
-  const matches = text.match(/(?:\$\s*\d+(?:\.\d{2})?|\b\d+(?:\.\d{2})?%|\b\d+(?:\.\d+)?\b)/g);
-  return matches ? Array.from(new Set(matches.map((m) => m.replace(/\s+/g, "")))) : [];
-}
-function extractIdentifierEntities(text) {
-  if (!text) return [];
-  const matches = text.match(/(?:#[a-zA-Z0-9_-]{3,}|\b[A-Z0-9_-]{5,}\b)/g);
-  return matches ? Array.from(new Set(matches)) : [];
-}
-function hasGroundingEvidence(testCase) {
-  if (!testCase) return false;
-  const expected = (testCase.expectedOutput || "").trim();
-  if (expected.length < 5) return false;
-  const isGenericRefusal = expected.toLowerCase().startsWith("i cannot") || expected.toLowerCase().startsWith("i am unable") || expected.toLowerCase().startsWith("sorry, i cannot");
-  const numericEntities = extractNumericEntities(expected);
-  const idEntities = extractIdentifierEntities(expected);
-  const hasKeywords = Boolean(
-    testCase.evaluatorConfig?.requiredKeywords && testCase.evaluatorConfig.requiredKeywords.length > 0
-  );
-  const hasJsonKeys = Boolean(
-    testCase.evaluatorConfig?.requiredJsonKeys && testCase.evaluatorConfig.requiredJsonKeys.length > 0
-  );
-  if (isGenericRefusal && numericEntities.length === 0 && idEntities.length === 0 && !hasKeywords) {
-    return false;
-  }
-  const groundedCategories = /* @__PURE__ */ new Set([
-    "Tool Calling",
-    "Policy Gate",
-    "Retrieval",
-    "Structured Output",
-    "Domain Knowledge",
-    "Edge Cases"
-  ]);
-  return groundedCategories.has(testCase.category) || numericEntities.length > 0 || idEntities.length > 0 || hasKeywords || hasJsonKeys || expected.length > 15;
-}
-function evaluateGroundedness(options) {
-  const { testCase, actualOutput, judgeScore } = options;
-  if (!hasGroundingEvidence(testCase)) {
-    return {
-      applicable: false,
-      status: "NOT_APPLICABLE",
-      score: null,
-      passed: null,
-      contradictions: [],
-      unsupportedClaims: [],
-      details: "Test case does not provide explicit grounding evidence (N/A)."
-    };
-  }
-  try {
-    const actual = (actualOutput || "").trim();
-    const lowerActual = actual.toLowerCase();
-    const expected = (testCase.expectedOutput || "").trim();
-    const lowerExpected = expected.toLowerCase();
-    const input = (testCase.input || "").trim();
-    const contradictions = [];
-    const unsupportedClaims = [];
-    const expectedNumbers = extractNumericEntities(expected);
-    const actualNumbers = extractNumericEntities(actual);
-    let matchedNumbers = 0;
-    for (const num of expectedNumbers) {
-      if (actualNumbers.includes(num) || lowerActual.includes(num.toLowerCase())) {
-        matchedNumbers++;
-      } else {
-        contradictions.push(`Missing or altered numeric fact: expected '${num}'`);
-      }
-    }
-    const expectedIds = extractIdentifierEntities(expected);
-    let matchedIds = 0;
-    for (const id of expectedIds) {
-      if (actual.includes(id) || lowerActual.includes(id.toLowerCase())) {
-        matchedIds++;
-      } else {
-        contradictions.push(`Missing or altered identifier: expected '${id}'`);
-      }
-    }
-    const requiredKeywords = testCase.evaluatorConfig?.requiredKeywords || [];
-    let matchedKeywords = 0;
-    for (const kw of requiredKeywords) {
-      if (lowerActual.includes(kw.toLowerCase())) {
-        matchedKeywords++;
-      } else {
-        unsupportedClaims.push(`Omitted required grounded constraint: '${kw}'`);
-      }
-    }
-    const totalChecks = (expectedNumbers.length > 0 ? expectedNumbers.length : 0) + (expectedIds.length > 0 ? expectedIds.length : 0) + (requiredKeywords.length > 0 ? requiredKeywords.length : 0);
-    let deterministicScore = 1;
-    if (totalChecks > 0) {
-      const successfulChecks = matchedNumbers + matchedIds + matchedKeywords;
-      deterministicScore = Math.max(0, Math.min(1, successfulChecks / totalChecks));
-    } else {
-      const normExpWords = lowerExpected.split(/\s+/).filter((w) => w.length > 3);
-      if (normExpWords.length > 0) {
-        const found = normExpWords.filter((w) => lowerActual.includes(w)).length;
-        deterministicScore = Math.max(0, Math.min(1, found / normExpWords.length));
-      }
-    }
-    let finalScore = deterministicScore;
-    if (judgeScore && !judgeScore.error && typeof judgeScore.groundedness === "number") {
-      const normJudgeGroundedness = Math.max(0, Math.min(1, judgeScore.groundedness / 5));
-      finalScore = Math.round((0.6 * deterministicScore + 0.4 * normJudgeGroundedness) * 100) / 100;
-    }
-    const passed = finalScore >= 0.7 && contradictions.length === 0;
-    let details = passed ? "Response is grounded in provided evidence: numeric facts, identifiers, and constraints verified." : `Groundedness inconsistencies detected (${contradictions.length} contradiction(s), ${unsupportedClaims.length} omission(s)).`;
-    if (contradictions.length > 0) {
-      details += ` Contradictions: ${contradictions.slice(0, 2).join("; ")}.`;
-    }
-    if (unsupportedClaims.length > 0) {
-      details += ` Omissions: ${unsupportedClaims.slice(0, 2).join("; ")}.`;
-    }
-    return {
-      applicable: true,
-      status: "EXECUTED",
-      score: Math.round(finalScore * 100) / 100,
-      passed,
-      contradictions,
-      unsupportedClaims,
-      details
-    };
-  } catch (err) {
-    return {
-      applicable: true,
-      status: "FAILED",
-      score: 0,
-      passed: false,
-      contradictions: [],
-      unsupportedClaims: [],
-      details: `Groundedness evaluation failed with exception: ${err.message}`
-    };
-  }
-}
-
 // src/evaluation/runner.ts
 function calculateMedian(arr) {
   if (arr.length === 0) return 0;
@@ -17153,7 +17188,7 @@ var EvaluationDbService = class {
           status: sRun.release_decision || dRun.releaseDecision?.status,
           reason: sRun.release_reason || dRun.releaseDecision?.reason
         },
-        caseResults: results.length > 0 ? results : dRun.caseResults
+        caseResults: dRun.caseResults && dRun.caseResults.length > 0 && (dRun.caseResults[0].evaluatorScores !== void 0 || dRun.caseResults[0].baselineOutput !== void 0) ? dRun.caseResults : results.length > 0 ? results : dRun.caseResults
       };
     }
     if (sRun) {
