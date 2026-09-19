@@ -9,7 +9,9 @@ export type EvaluatorType =
   | 'json_validity'
   | 'response_length'
   | 'latency'
-  | 'behavioral_safety';
+  | 'behavioral_safety'
+  | 'llm_judge'
+  | 'semantic_similarity';
 
 export type EvaluatorCategory =
   | 'DETERMINISTIC'
@@ -131,6 +133,7 @@ export interface Dataset {
   name: string;
   description: string;
   cases: TestCase[];
+  requiredCases?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -149,6 +152,7 @@ export interface ModelVersion {
   maxTokens?: number;
   isBaseline?: boolean;
   createdAt: string;
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 
 export interface RegressionSettings {
@@ -157,7 +161,9 @@ export interface RegressionSettings {
   maxLatencyIncreasePercent: number;    // e.g. 20%
   maxFailureRatePercent: number;        // e.g. 5%
   minEvaluationCoveragePercent?: number; // e.g. 80.0% (default 80%)
-  minimumEvaluatedCases?: number;        // e.g. 100 cases (default 100)
+  minimumEvaluatedCases?: number;        // e.g. 100 cases (legacy)
+  requiredBenchmarkCases?: number;       // e.g. 27 for Checkout Reliability Suite
+  strongEvidenceCases?: number;          // e.g. 100 cases for strong statistical evidence
 }
 
 export type ReleaseDecisionStatus =
@@ -257,6 +263,76 @@ export interface TestCaseResult {
   candidateQualityEvaluated?: boolean;
   safetyClassification?: SafetyFailureClassification;
   safetyDetails?: string;
+  // Traceable Separate Evaluation Layers
+  modelResponse?: string | null;
+  deterministicEvaluation?: DeterministicEvaluationResult;
+  semanticEvaluation?: SemanticEvaluationResult | null;
+  groundednessEvaluation?: GroundednessResult | null;
+  llmJudgeEvaluation?: LLMJudgeScore | null;
+  finalEvaluation?: FinalEvaluationResult;
+}
+
+export interface GroundednessResult {
+  applicable: boolean;
+  status: 'EXECUTED' | 'NOT_APPLICABLE' | 'FAILED';
+  score: number | null; // 0.0 to 1.0 or null if NOT_APPLICABLE
+  passed: boolean | null;
+  contradictions: string[];
+  unsupportedClaims: string[];
+  details: string;
+}
+
+export interface DeterministicEvaluationResult {
+  score: number;
+  passed: boolean;
+  details: string;
+  evaluatorType: string;
+}
+
+export interface SemanticEvaluationResult {
+  similarityScore: number;
+  passed: boolean;
+  method: string;
+  details: string;
+}
+
+export interface LLMJudgeScore {
+  correctness: number;
+  instructionAdherence: number;
+  relevance: number;
+  completeness: number;
+  groundedness: number;
+  safety: number;
+  overall: number;
+  reason: string;
+  judgeModel: string;
+  latencyMs?: number;
+  tokens?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
+  costUsd?: number;
+  error?: string;
+}
+
+export interface FinalEvaluationResult {
+  passed: boolean | null;
+  score: number | null;
+  status?: 'PASS' | 'FAIL' | 'ERROR';
+  decisionLayer?: 'SAFETY_VETO' | 'DETERMINISTIC' | 'SEMANTIC' | 'LLM_JUDGE';
+  isSafetyVetoed?: boolean;
+  summary?: string;
+  failureReason?: string;
+  failureCategory?: FailureCategory;
+}
+
+export interface JudgeConfig {
+  enabled: boolean;
+  provider: 'groq';
+  modelIdentifier: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 export interface RegressionDecision {
@@ -287,10 +363,42 @@ export interface RootCauseFinding {
   recommendation: string;
 }
 
+export type EvaluationEvidenceState = 'NOT_CONFIGURED' | 'CONFIGURED' | 'EXECUTED' | 'FAILED' | 'NOT_APPLICABLE';
+
+export interface BenchmarkCompletionSummary {
+  status: 'FULL_BENCHMARK_COMPLETE' | 'PRELIMINARY_SUBSET';
+  evaluatedCases: number;
+  requiredCases: number;
+  isComplete: boolean;
+  label: string;
+}
+
+export interface ReleaseGateResult {
+  gate: string;
+  category: 'COMPLETION' | 'COVERAGE' | 'RELIABILITY' | 'QUALITY' | 'SAFETY' | 'LATENCY' | 'COST' | 'EVALUATOR';
+  status: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'NOT_APPLICABLE' | 'WARNING';
+  observed: string;
+  threshold?: string;
+  details: string;
+  isBlocking: boolean;
+}
+
+export interface DimensionalTradeoffs {
+  quality: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY';
+  latency: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY';
+  cost: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY';
+  reliability: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY';
+}
+
 export interface MetricSummary {
   totalCases: number;
   sampleSize?: number;
   evidenceStrength?: EvidenceStrength;
+  evidenceStrengthReason?: string;
+  benchmarkCompletion?: BenchmarkCompletionSummary;
+  releaseGates?: ReleaseGateResult[];
+  overallGateStatus?: 'PASS' | 'FAIL' | 'INCONCLUSIVE';
+  dimensions?: DimensionalTradeoffs;
   baselinePassed: number;
   candidatePassed: number;
   baselineAccuracy: number | null; // 0.0 to 100.0 or null if 0 evaluated
@@ -326,9 +434,13 @@ export interface MetricSummary {
   hasUnequalSampleSizes?: boolean;
   sampleSizeWarning?: string;
   latencyPercentileWarning?: string;
-  factualityGroundednessStatus?: 'NOT_CONFIGURED' | 'CONFIGURED' | 'EVALUATED';
-  semanticEvaluationStatus?: 'NOT_CONFIGURED' | 'CONFIGURED' | 'EVALUATED';
-  llmJudgeStatus?: 'NOT_CONFIGURED' | 'CONFIGURED' | 'EVALUATED';
+  factualityGroundednessStatus?: EvaluationEvidenceState;
+  groundednessApplicableCases?: number;
+  groundednessEvaluatedCases?: number;
+  groundednessFailedCases?: number;
+  groundednessAvgScore?: number | null;
+  semanticEvaluationStatus?: EvaluationEvidenceState;
+  llmJudgeStatus?: EvaluationEvidenceState;
   // Token telemetry aggregations (reasoning tokens are a breakdown, not added to total)
   baselineTotalTokens?: number | null;
   candidateTotalTokens?: number | null;
@@ -345,6 +457,15 @@ export interface MetricSummary {
   quotaFailures?: number;
   safetyFailures?: number;
   unevaluableCases?: number;
+  // Judge Usage & Cost Telemetry (Strictly separate from benchmark models)
+  judgeModel?: string;
+  judgeEvaluatedCases?: number;
+  judgeInputTokens?: number;
+  judgeOutputTokens?: number;
+  judgeTotalTokens?: number;
+  judgeEstimatedCost?: number | null;
+  judgeAvgLatencyMs?: number | null;
+  totalInfrastructureCost?: number | null;
 }
 
 export type RunExecutionMode = 'LIVE' | 'SAVED' | 'REFERENCE';
@@ -372,6 +493,7 @@ export interface EvaluationRun {
   datasetName: string;
   baselineVersion: ModelVersion;
   candidateVersion: ModelVersion;
+  judgeConfig?: JudgeConfig;
   timestamp: string;
   executionMode?: RunExecutionMode; // 'LIVE' | 'SAVED' | 'REFERENCE'
   provenance?: RunProvenance;

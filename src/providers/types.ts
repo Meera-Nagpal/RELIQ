@@ -58,6 +58,7 @@ export interface ModelRequest {
   promptVersion?: string;
   temperature?: number;
   maxTokens?: number;
+  reasoningEffort?: 'low' | 'medium' | 'high';
   expectedOutput?: string;
   evaluatorType?: string;
   metadata?: Record<string, any>;

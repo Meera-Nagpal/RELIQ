@@ -14,6 +14,7 @@ import path from 'path';
 import {
   Dataset,
   EvaluationRun,
+  JudgeConfig,
   ModelVersion,
   Project,
   RegressionSettings,
@@ -22,12 +23,14 @@ import { EvaluationRunner } from '../evaluation/runner';
 import { resolveServerProvider } from './serverProviders';
 import { providerScheduler } from './providerScheduler';
 import { evaluationDbService } from './services/evaluationDbService';
+import { validateJudgeConfiguration } from '../evaluation/judgeRegistry';
 
 export interface ServerEvaluationOptions {
   project: Project;
   dataset: Dataset;
   baselineVersion: ModelVersion;
   candidateVersion: ModelVersion;
+  judgeConfig?: JudgeConfig;
   regressionSettings?: RegressionSettings;
   maxCases?: number;
   concurrency?: number;
@@ -278,6 +281,18 @@ export function validateEvaluationOptions(options: ServerEvaluationOptions): voi
   if (!options.candidateVersion || !options.candidateVersion.provider) {
     throw new Error('Invalid or missing candidateVersion specification');
   }
+
+  // Validate Judge Configuration & Model Independence
+  if (options.judgeConfig?.enabled) {
+    const judgeValidation = validateJudgeConfiguration(
+      options.judgeConfig,
+      options.baselineVersion.modelIdentifier,
+      options.candidateVersion.modelIdentifier
+    );
+    if (!judgeValidation.valid) {
+      throw new Error(judgeValidation.error || 'Invalid LLM judge configuration');
+    }
+  }
 }
 
 /**
@@ -430,6 +445,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       candidateVersion: options.candidateVersion,
       baselineProvider,
       candidateProvider,
+      judgeConfig: options.judgeConfig,
       regressionSettings: options.regressionSettings || effectiveProject.regressionSettings,
       maxCases: options.maxCases,
       concurrency: resolvedConcurrency,

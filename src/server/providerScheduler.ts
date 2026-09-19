@@ -193,6 +193,21 @@ export class ProviderScheduler {
   }
 
   /**
+   * Explicitly clears any active cooldown or quota exhaustion state for testing or admin override.
+   */
+  public clearProviderCooldown(providerId: string): void {
+    const norm = this.normalizeProvider(providerId);
+    const state = this.states.get(norm);
+    if (state) {
+      state.status = 'AVAILABLE';
+      state.coolingDownUntil = 0;
+      state.cooldownRemainingMs = 0;
+      state.consecutiveRateLimits = 0;
+      state.lastError = undefined;
+    }
+  }
+
+  /**
    * Returns current status snapshot for a single provider.
    */
   public getProviderStatus(providerId: string): ProviderRateLimitState {

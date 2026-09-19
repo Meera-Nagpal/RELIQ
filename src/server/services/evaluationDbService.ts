@@ -422,7 +422,14 @@ export class EvaluationDbService {
           status: sRun.release_decision || dRun.releaseDecision?.status,
           reason: sRun.release_reason || dRun.releaseDecision?.reason,
         },
-        caseResults: results.length > 0 ? results : dRun.caseResults,
+        caseResults:
+          dRun.caseResults &&
+          dRun.caseResults.length > 0 &&
+          (dRun.caseResults[0].evaluatorScores !== undefined || dRun.caseResults[0].baselineOutput !== undefined)
+            ? dRun.caseResults
+            : results.length > 0
+            ? results
+            : dRun.caseResults,
       };
     }
 
@@ -565,6 +572,25 @@ export class EvaluationDbService {
         `).run(decision, reasonText, runId);
       } else {
         // First sync to evaluation_runs if was only on disk
+        const pId = existingRun.projectId || 'proj-checkout-agent';
+        const dId = existingRun.datasetId || 'ds-checkout-golden';
+
+        const proj = db.prepare('SELECT id FROM projects WHERE id = ?').get(pId);
+        if (!proj) {
+          db.prepare(`
+            INSERT OR IGNORE INTO projects (id, name, description, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+          `).run(pId, pId, 'Auto-created project for evaluation run', now, now);
+        }
+
+        const ds = db.prepare('SELECT id FROM datasets WHERE id = ?').get(dId);
+        if (!ds) {
+          db.prepare(`
+            INSERT OR IGNORE INTO datasets (id, project_id, name, description, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(dId, pId, dId, 'Auto-created dataset for evaluation run', now, now);
+        }
+
         db.prepare(`
           INSERT INTO evaluation_runs (
             id, project_id, dataset_id, status, total_cases, evaluated_cases,
@@ -573,8 +599,8 @@ export class EvaluationDbService {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           runId,
-          existingRun.projectId || 'proj-checkout-agent',
-          existingRun.datasetId || 'ds-checkout-golden',
+          pId,
+          dId,
           existingRun.status || 'COMPLETED',
           existingRun.metrics?.totalCases ?? 0,
           existingRun.metrics?.evaluatedCases ?? existingRun.metrics?.candidateEvaluatedCases ?? 0,

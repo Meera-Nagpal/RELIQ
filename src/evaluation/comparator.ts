@@ -15,10 +15,12 @@ import {
   RegressionSettings,
   RunExecutionMode,
   RunProvenance,
+  TestCase,
   TestCaseResult,
 } from '../domain/types';
 import { ProviderType } from '../providers/types';
-import { evaluateReleaseDecision, calculateEvidenceStrength } from './releaseEngine';
+import { evaluateReleaseDecision, calculateEvidenceStrength, getEvidenceStrengthReason } from './releaseEngine';
+import { evaluateGroundedness } from './groundednessEvaluator';
 
 export type RecommendationVerdict =
   | 'SHIP'
@@ -41,6 +43,7 @@ export interface MetricDelta {
   absoluteDelta: number | null;
   percentageDelta: number | null;
   isImprovement: boolean | null;
+  assessment?: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY';
   description: string;
   rawBaselineValue?: number | null;
   rawCandidateValue?: number | null;
@@ -103,15 +106,30 @@ export interface ComparisonReport {
   executionMode?: RunExecutionMode; // 'LIVE' | 'SAVED' | 'REFERENCE'
   provenance?: RunProvenance;
   evidenceStrength?: EvidenceStrength;
+  evidenceStrengthReason?: string;
+  benchmarkCompletion?: import('../domain/types').BenchmarkCompletionSummary;
+  releaseGates?: import('../domain/types').ReleaseGateResult[];
+  overallGateStatus?: 'PASS' | 'FAIL' | 'INCONCLUSIVE';
+  dimensions?: import('../domain/types').DimensionalTradeoffs;
+  isPreliminary?: boolean;
   regressionCategories?: RegressionCategory[];
   limitations?: string[];
   minimumEvaluatedCases?: number;
   hasUnequalSampleSizes?: boolean;
   sampleSizeWarning?: string;
   latencyPercentileWarning?: string;
-  semanticEvaluationStatus?: 'NOT_CONFIGURED' | 'CONFIGURED' | 'EVALUATED';
-  llmJudgeStatus?: 'NOT_CONFIGURED' | 'CONFIGURED' | 'EVALUATED';
-  factualityGroundednessStatus?: 'NOT_CONFIGURED' | 'CONFIGURED' | 'EVALUATED';
+  semanticEvaluationStatus?: import('../domain/types').EvaluationEvidenceState;
+  llmJudgeStatus?: import('../domain/types').EvaluationEvidenceState;
+  factualityGroundednessStatus?: import('../domain/types').EvaluationEvidenceState;
+  groundednessApplicableCases?: number;
+  groundednessEvaluatedCases?: number;
+  groundednessFailedCases?: number;
+  groundednessAvgScore?: number | null;
+  judgeCostUsd?: number | null;
+  benchmarkCostUsd?: number | null;
+  totalInfrastructureCostUsd?: number | null;
+  judgeModel?: string;
+  judgeEvaluatedCases?: number;
   safetyBreakdown?: import('../domain/types').SafetyBreakdownSummary;
 }
 
@@ -180,7 +198,22 @@ export function calculateDelta(
   const absoluteDelta = Number(rawDiff.toFixed(decimals));
   const percentageDelta = Number(rawPercentage.toFixed(1));
 
-  const isImprovement = higherIsBetter ? absoluteDelta >= 0 : absoluteDelta <= 0;
+  const isZeroDelta = rawDiff === 0 || absoluteDelta === 0;
+  const isImprovement = isZeroDelta
+    ? false
+    : higherIsBetter
+    ? absoluteDelta > 0
+    : absoluteDelta < 0;
+
+  const assessment: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY' = isZeroDelta
+    ? 'PARITY'
+    : higherIsBetter
+    ? absoluteDelta > 0
+      ? 'IMPROVEMENT'
+      : 'REGRESSION'
+    : absoluteDelta < 0
+    ? 'IMPROVEMENT'
+    : 'REGRESSION';
 
   return {
     metric,
@@ -190,6 +223,7 @@ export function calculateDelta(
     absoluteDelta,
     percentageDelta,
     isImprovement,
+    assessment,
     description,
     rawBaselineValue: baselineValue,
     rawCandidateValue: candidateValue,
@@ -242,6 +276,34 @@ export function generateComparisonReport(
 
   if (totalCases === 0) {
     return createEmptyReport(datasetId, datasetName, baselineVersion, candidateVersion);
+  }
+
+  // Ensure every case in caseResults has groundednessEvaluation populated if missing
+  for (const r of caseResults) {
+    if (!r.groundednessEvaluation && (r.candidateOutput || r.expectedOutput)) {
+      const syntheticCase: TestCase = {
+        id: r.testCaseId,
+        name: r.testCaseName || r.testCaseId,
+        category: r.category || 'Tool Calling',
+        severity: r.severity || 'medium',
+        input: r.input || '',
+        expectedOutput: r.expectedOutput || '',
+        evaluatorConfig: (r as any).evaluatorConfig,
+        datasetId: options.datasetId || '',
+        tags: [],
+        createdAt: '',
+        updatedAt: '',
+      };
+      try {
+        r.groundednessEvaluation = evaluateGroundedness({
+          testCase: syntheticCase,
+          actualOutput: r.candidateOutput || '',
+          judgeScore: r.llmJudgeEvaluation || null,
+        });
+      } catch {
+        // ignore
+      }
+    }
   }
 
   // 1. Compute aggregations
@@ -550,9 +612,17 @@ export function generateComparisonReport(
   let winner: ComparisonWinner = 'tie';
   let winnerReason = '';
 
+  const datasetRequiredCases =
+    settings.requiredBenchmarkCases ??
+    (datasetName?.toLowerCase().includes('checkout reliability') ? 27 : totalCases);
+  const isPreliminary = cEvaluatedCount < datasetRequiredCases;
+
   if (bEvaluatedCount === 0 || cEvaluatedCount === 0) {
     winner = 'tie';
     winnerReason = 'Inconclusive comparison: One or both configurations produced zero evaluated responses due to provider failure or rate-limiting.';
+  } else if (isPreliminary) {
+    winner = 'tie';
+    winnerReason = `Preliminary subset (${cEvaluatedCount}/${datasetRequiredCases} scenarios evaluated). No comparison winner is certified until the full benchmark completes.`;
   } else if (isInsufficientCoverage) {
     winner = 'tie';
     winnerReason = `Inconclusive comparison: Evaluation coverage is below required threshold (${minCoverage}%). Baseline: ${bCoverage.toFixed(1)}% (${bEvaluatedCount}/${totalCases} evaluated, ${bRateLimitCount} rate-limited), Candidate: ${cCoverage.toFixed(1)}% (${cEvaluatedCount}/${totalCases} evaluated, ${cRateLimitCount} rate-limited).`;
@@ -610,6 +680,7 @@ export function generateComparisonReport(
       totalCases,
       sampleSize: totalCases,
       evidenceStrength: calculateEvidenceStrength(cEvaluatedCount),
+      evidenceStrengthReason: getEvidenceStrengthReason(cEvaluatedCount, datasetRequiredCases, 100),
       baselinePassed: bPassed,
       candidatePassed: cPassed,
       baselineAccuracy: bPassRate,
@@ -644,6 +715,16 @@ export function generateComparisonReport(
     caseResults,
     datasetName,
   });
+
+  const failedGates = releaseOutcome.gates.filter((g) => g.status === 'FAIL');
+  const tempQualityDelta =
+    bQualityScore !== null && cQualityScore !== null
+      ? Number((cQualityScore - bQualityScore).toFixed(1))
+      : null;
+  if (winner === 'candidate' && failedGates.length > 0 && tempQualityDelta !== null && tempQualityDelta > 0) {
+    const failedGateNames = failedGates.map((g) => g.gate).join(', ');
+    winnerReason = `Candidate achieved relative quality improvement (+${tempQualityDelta.toFixed(1)} pts vs baseline), but failed production release gates (${failedGateNames}).`;
+  }
 
   // Map recommendation directly from canonical release decision outcome
   let recommendation: RecommendationVerdict;
@@ -693,23 +774,20 @@ export function generateComparisonReport(
     evidence.push(`Candidate evaluation coverage: ${cCoverage.toFixed(1)}% (${cEvaluatedCount}/${totalCases} scenarios completed).`);
   }
 
-  // Sample-Size Aware Confidence Score Scaling:
+  // Benchmark-Completion & Evidence Strength Aware Confidence Score Scaling:
   let sampleConfidence = 0;
   if (isInsufficientCoverage || cEvaluatedCount === 0) {
     sampleConfidence = 15;
     evidence.push(`Evidence Strength: INSUFFICIENT (${Math.min(bCoverage, cCoverage).toFixed(1)}% coverage < ${minCoverage}% threshold).`);
-  } else if (totalCases < 10) {
-    sampleConfidence = Math.min(42, totalCases * 4.2);
-    evidence.push(`Evidence Strength: LOW (N = ${totalCases} < 10 cases). Indicative signal only.`);
-  } else if (totalCases < 100) {
-    sampleConfidence = 50 + ((totalCases - 10) / 90) * 28;
-    evidence.push(`Evidence Strength: MODERATE (N = ${totalCases} cases).`);
-  } else if (totalCases < 500) {
-    sampleConfidence = 80 + ((totalCases - 100) / 400) * 14;
-    evidence.push(`Evidence Strength: HIGH / MEANINGFUL (N = ${totalCases} >= 100 cases).`);
+  } else if (isPreliminary) {
+    sampleConfidence = Math.min(48, Math.round((cEvaluatedCount / datasetRequiredCases) * 45));
+    evidence.push(`Evidence Strength: LOW — ${releaseOutcome.evidenceStrengthReason}`);
+  } else if (releaseOutcome.evidenceStrength === 'MODERATE') {
+    sampleConfidence = 78 + Math.min(10, Math.round(((cEvaluatedCount - datasetRequiredCases) / 73) * 10));
+    evidence.push(`Evidence Strength: MODERATE — ${releaseOutcome.evidenceStrengthReason}`);
   } else {
-    sampleConfidence = 94 + Math.min(5, ((totalCases - 500) / 500) * 5);
-    evidence.push(`Evidence Strength: VERY HIGH / STRONG (N = ${totalCases} >= 500 cases).`);
+    sampleConfidence = 92 + Math.min(6, Math.round(((cEvaluatedCount - 100) / 400) * 6));
+    evidence.push(`Evidence Strength: STRONG — ${releaseOutcome.evidenceStrengthReason}`);
   }
 
   const penalty = isInsufficientCoverage ? 0 : cErrorRate * 0.8;
@@ -729,6 +807,43 @@ export function generateComparisonReport(
     bCostVal !== null && cCostVal !== null
       ? Number((cCostVal - bCostVal).toFixed(6))
       : null;
+
+  const caseApplicableGroundedness = caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status !== 'NOT_APPLICABLE').length;
+  const groundednessApplicableCases =
+    caseApplicableGroundedness > 0
+      ? caseApplicableGroundedness
+      : (options.runMetrics?.groundednessApplicableCases ?? 0);
+
+  const caseEvaluatedGroundedness = caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status === 'EXECUTED').length;
+  const groundednessEvaluatedCases =
+    caseEvaluatedGroundedness > 0
+      ? caseEvaluatedGroundedness
+      : (options.runMetrics?.groundednessEvaluatedCases ?? 0);
+
+  const caseFailedGroundedness = caseResults.filter((r) => r.groundednessEvaluation && r.groundednessEvaluation.status === 'EXECUTED' && !r.groundednessEvaluation.passed).length;
+  const groundednessFailedCases =
+    caseFailedGroundedness > 0
+      ? caseFailedGroundedness
+      : (options.runMetrics?.groundednessFailedCases ?? 0);
+
+  const validGroundednessScores = caseResults
+    .filter((r) => r.groundednessEvaluation?.score !== null && r.groundednessEvaluation?.score !== undefined)
+    .map((r) => r.groundednessEvaluation!.score!);
+  const groundednessAvgScore =
+    validGroundednessScores.length > 0
+      ? Number((validGroundednessScores.reduce((a, b) => a + b, 0) / validGroundednessScores.length).toFixed(3))
+      : (options.runMetrics?.groundednessAvgScore !== undefined ? options.runMetrics.groundednessAvgScore : null);
+
+  const factualityGroundednessStatus: import('../domain/types').EvaluationEvidenceState =
+    groundednessEvaluatedCases > 0
+      ? 'EXECUTED'
+      : options.runMetrics?.factualityGroundednessStatus === 'EXECUTED'
+      ? 'EXECUTED'
+      : caseResults.some((r) => r.groundednessEvaluation?.status === 'NOT_APPLICABLE')
+      ? 'NOT_APPLICABLE'
+      : (options.runMetrics?.factualityGroundednessStatus && options.runMetrics.factualityGroundednessStatus !== 'NOT_CONFIGURED'
+          ? options.runMetrics.factualityGroundednessStatus
+          : 'NOT_CONFIGURED');
 
   return {
     id: `rep-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
@@ -765,15 +880,30 @@ export function generateComparisonReport(
     executionMode: options.executionMode || 'SAVED',
     provenance: options.provenance,
     evidenceStrength: releaseOutcome.evidenceStrength,
+    evidenceStrengthReason: releaseOutcome.evidenceStrengthReason,
+    benchmarkCompletion: releaseOutcome.benchmarkCompletion,
+    releaseGates: releaseOutcome.gates,
+    overallGateStatus: releaseOutcome.overallGateStatus,
+    dimensions: releaseOutcome.dimensions,
+    isPreliminary,
     regressionCategories: releaseOutcome.regressionCategories,
     limitations: releaseOutcome.limitations,
     minimumEvaluatedCases: settings.minimumEvaluatedCases ?? 100,
     hasUnequalSampleSizes,
     sampleSizeWarning,
     latencyPercentileWarning,
-    semanticEvaluationStatus: 'NOT_CONFIGURED',
-    llmJudgeStatus: 'NOT_CONFIGURED',
-    factualityGroundednessStatus: 'NOT_CONFIGURED',
+    semanticEvaluationStatus: options.runMetrics?.semanticEvaluationStatus || (caseResults.some((r) => r.semanticEvaluation) ? 'EXECUTED' : 'NOT_CONFIGURED'),
+    llmJudgeStatus: options.runMetrics?.llmJudgeStatus || (caseResults.some((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error) ? 'EXECUTED' : 'NOT_CONFIGURED'),
+    factualityGroundednessStatus,
+    groundednessApplicableCases,
+    groundednessEvaluatedCases,
+    groundednessFailedCases,
+    groundednessAvgScore,
+    judgeCostUsd: options.runMetrics?.judgeEstimatedCost ?? null,
+    benchmarkCostUsd: ((options.runMetrics?.baselineEstimatedCost || 0) + (options.runMetrics?.candidateEstimatedCost || 0)) || null,
+    totalInfrastructureCostUsd: options.runMetrics?.totalInfrastructureCost ?? null,
+    judgeModel: options.runMetrics?.judgeModel || caseResults.find((r) => r.llmJudgeEvaluation)?.llmJudgeEvaluation?.judgeModel,
+    judgeEvaluatedCases: options.runMetrics?.judgeEvaluatedCases ?? caseResults.filter((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error).length,
     safetyBreakdown: releaseOutcome.safetyBreakdown,
   };
 }
@@ -792,6 +922,7 @@ export function createEmptyReport(
     absoluteDelta: null,
     percentageDelta: null,
     isImprovement: null,
+    assessment: 'PARITY',
     description: '',
   });
 
@@ -839,7 +970,24 @@ export function createEmptyReport(
     recommendationReason: 'Empty dataset.',
     actionItems: ['Add test cases to dataset.'],
     executionMode: 'SAVED',
-    evidenceStrength: 'LOW',
+    evidenceStrength: 'NONE',
+    evidenceStrengthReason: 'Zero test scenarios evaluated.',
+    benchmarkCompletion: {
+      status: 'PRELIMINARY_SUBSET',
+      evaluatedCases: 0,
+      requiredCases: 27,
+      isComplete: false,
+      label: '0/27 scenarios evaluated',
+    },
+    releaseGates: [],
+    overallGateStatus: 'INCONCLUSIVE',
+    dimensions: {
+      quality: 'PARITY',
+      latency: 'PARITY',
+      cost: 'PARITY',
+      reliability: 'PARITY',
+    },
+    isPreliminary: true,
     regressionCategories: [],
     limitations: [
       'Empty dataset; 0 scenarios evaluated.',
@@ -850,5 +998,9 @@ export function createEmptyReport(
     semanticEvaluationStatus: 'NOT_CONFIGURED',
     llmJudgeStatus: 'NOT_CONFIGURED',
     factualityGroundednessStatus: 'NOT_CONFIGURED',
+    groundednessApplicableCases: 0,
+    groundednessEvaluatedCases: 0,
+    groundednessFailedCases: 0,
+    groundednessAvgScore: null,
   };
 }

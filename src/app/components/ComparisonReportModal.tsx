@@ -89,7 +89,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           border: '#F39C12',
           color: '#F39C12',
           glow: 'rgba(243, 156, 18, 0.25)',
-          label: '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
+          label: report.totalCases < 27
+            ? `⚡ PRELIMINARY SUBSET (N = ${report.totalCases}/27 SCENARIOS — REQUIRES 27 CASES FOR PRODUCTION RELEASE)`
+            : '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
         };
       case 'NO REGRESSION':
       case 'NO_REGRESSION':
@@ -514,27 +516,124 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8899AA' }}>
                 FACTUALITY / GROUNDEDNESS
               </span>
-              <span style={{ fontSize: '0.65rem', padding: '0.12rem 0.45rem', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.06)', color: '#CCCCCC', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
-                NOT CONFIGURED
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  padding: '0.12rem 0.45rem',
+                  borderRadius: '3px',
+                  fontWeight: 700,
+                  background:
+                    report.factualityGroundednessStatus === 'EXECUTED'
+                      ? 'rgba(46, 204, 113, 0.15)'
+                      : report.factualityGroundednessStatus === 'CONFIGURED'
+                      ? 'rgba(77, 166, 255, 0.15)'
+                      : report.factualityGroundednessStatus === 'NOT_APPLICABLE'
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : report.factualityGroundednessStatus === 'FAILED'
+                      ? 'rgba(255, 51, 17, 0.15)'
+                      : 'rgba(255, 255, 255, 0.06)',
+                  color:
+                    report.factualityGroundednessStatus === 'EXECUTED'
+                      ? '#2ECC71'
+                      : report.factualityGroundednessStatus === 'CONFIGURED'
+                      ? '#4DA6FF'
+                      : report.factualityGroundednessStatus === 'NOT_APPLICABLE'
+                      ? '#A0AEC0'
+                      : report.factualityGroundednessStatus === 'FAILED'
+                      ? '#FF4422'
+                      : '#CCCCCC',
+                  border: `1px solid ${
+                    report.factualityGroundednessStatus === 'EXECUTED'
+                      ? 'rgba(46, 204, 113, 0.3)'
+                      : report.factualityGroundednessStatus === 'CONFIGURED'
+                      ? 'rgba(77, 166, 255, 0.3)'
+                      : report.factualityGroundednessStatus === 'FAILED'
+                      ? 'rgba(255, 51, 17, 0.3)'
+                      : 'rgba(255, 255, 255, 0.12)'
+                  }`,
+                }}
+              >
+                {report.factualityGroundednessStatus === 'EXECUTED'
+                  ? 'EXECUTED'
+                  : report.factualityGroundednessStatus === 'NOT_APPLICABLE'
+                  ? 'N/A'
+                  : report.factualityGroundednessStatus || 'NOT CONFIGURED'}
               </span>
             </div>
             <div style={{ fontSize: '0.76rem', color: '#A0B0C0', lineHeight: 1.45 }}>
-              Deterministic keyword presence/absence indicates exact criteria compliance, not factual hallucination. Grounded evaluation requires a retrieval corpus.
+              {report.factualityGroundednessStatus === 'EXECUTED' ? (
+                <div>
+                  <div>Active. Verifies responses against explicit benchmark evidence (numbers, currencies, order IDs, discount codes, dates, and checkout policies). Non-applicable cases are explicitly marked N/A.</div>
+                  <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.8rem', fontSize: '0.72rem', color: '#38BDF8', flexWrap: 'wrap' }}>
+                    <span>Applicable: <strong style={{ color: '#FFFFFF' }}>{report.groundednessApplicableCases || 0}</strong></span>
+                    <span>Evaluated: <strong style={{ color: '#FFFFFF' }}>{report.groundednessEvaluatedCases || 0}</strong></span>
+                    <span>Not Applicable: <strong style={{ color: '#FFFFFF' }}>{Math.max(0, (report.totalCases || 0) - (report.groundednessApplicableCases || 0))}</strong></span>
+                    <span>Inconsistencies: <strong style={{ color: (report.groundednessFailedCases || 0) > 0 ? '#EF4444' : '#10B981' }}>{report.groundednessFailedCases || 0}</strong></span>
+                    {report.groundednessAvgScore !== null && report.groundednessAvgScore !== undefined && (
+                      <span>Avg Score: <strong style={{ color: '#FFFFFF' }}>{(report.groundednessAvgScore * 100).toFixed(1)}%</strong></span>
+                    )}
+                  </div>
+                </div>
+              ) : report.factualityGroundednessStatus === 'NOT_APPLICABLE' ? (
+                'Test scenarios in this suite do not contain explicit grounding facts or reference constraints to verify (marked N/A, not failed).'
+              ) : report.factualityGroundednessStatus === 'CONFIGURED' ? (
+                'Local factual consistency engine configured to check candidate outputs against benchmark reference evidence.'
+              ) : (
+                'Deterministic keyword presence/absence indicates exact criteria compliance, not factual hallucination. Grounded evaluation requires explicit evidence.'
+              )}
             </div>
           </div>
 
-          {/* Semantic Evaluation */}
+          {/* Semantic Evaluation (Local Lexical / Semantic Similarity) */}
           <div style={{ background: '#0D1117', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8899AA' }}>
-                SEMANTIC EVALUATION (NLI)
+                LOCAL LEXICAL / SEMANTIC SIMILARITY
               </span>
-              <span style={{ fontSize: '0.65rem', padding: '0.12rem 0.45rem', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.06)', color: '#CCCCCC', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
-                NOT CONFIGURED
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  padding: '0.12rem 0.45rem',
+                  borderRadius: '3px',
+                  fontWeight: 700,
+                  background:
+                    report.semanticEvaluationStatus === 'EXECUTED'
+                      ? 'rgba(46, 204, 113, 0.15)'
+                      : report.semanticEvaluationStatus === 'CONFIGURED'
+                      ? 'rgba(77, 166, 255, 0.15)'
+                      : report.semanticEvaluationStatus === 'FAILED'
+                      ? 'rgba(255, 51, 17, 0.15)'
+                      : 'rgba(255, 255, 255, 0.06)',
+                  color:
+                    report.semanticEvaluationStatus === 'EXECUTED'
+                      ? '#2ECC71'
+                      : report.semanticEvaluationStatus === 'CONFIGURED'
+                      ? '#4DA6FF'
+                      : report.semanticEvaluationStatus === 'FAILED'
+                      ? '#FF4422'
+                      : '#CCCCCC',
+                  border: `1px solid ${
+                    report.semanticEvaluationStatus === 'EXECUTED'
+                      ? 'rgba(46, 204, 113, 0.3)'
+                      : report.semanticEvaluationStatus === 'CONFIGURED'
+                      ? 'rgba(77, 166, 255, 0.3)'
+                      : report.semanticEvaluationStatus === 'FAILED'
+                      ? 'rgba(255, 51, 17, 0.3)'
+                      : 'rgba(255, 255, 255, 0.12)'
+                  }`,
+                }}
+              >
+                {report.semanticEvaluationStatus || 'NOT CONFIGURED'}
               </span>
             </div>
             <div style={{ fontSize: '0.76rem', color: '#A0B0C0', lineHeight: 1.45 }}>
-              Evaluators verify exact phrasing and deterministic patterns. Embedding similarity and Natural Language Inference (NLI) are not configured.
+              {report.semanticEvaluationStatus === 'EXECUTED'
+                ? 'Active. Local 3-gram character and token cosine similarity vectors evaluated locally. 100% deterministic local computation, zero external API dependencies (not neural NLI).'
+                : report.semanticEvaluationStatus === 'CONFIGURED'
+                ? 'Configured. Local lexical/semantic similarity analyzer ready for scenario execution.'
+                : report.semanticEvaluationStatus === 'FAILED'
+                ? 'Semantic similarity evaluation encountered an execution failure.'
+                : 'Evaluators verify exact phrasing and deterministic patterns. Embedding similarity and external neural Natural Language Inference (NLI) are not configured.'}
             </div>
           </div>
 
@@ -544,12 +643,60 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8899AA' }}>
                 LLM-AS-A-JUDGE
               </span>
-              <span style={{ fontSize: '0.65rem', padding: '0.12rem 0.45rem', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.06)', color: '#CCCCCC', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
-                NOT CONFIGURED
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  padding: '0.12rem 0.45rem',
+                  borderRadius: '3px',
+                  fontWeight: 700,
+                  background:
+                    report.llmJudgeStatus === 'EXECUTED'
+                      ? 'rgba(46, 204, 113, 0.15)'
+                      : report.llmJudgeStatus === 'CONFIGURED'
+                      ? 'rgba(77, 166, 255, 0.15)'
+                      : report.llmJudgeStatus === 'FAILED'
+                      ? 'rgba(255, 51, 17, 0.15)'
+                      : 'rgba(255, 255, 255, 0.06)',
+                  color:
+                    report.llmJudgeStatus === 'EXECUTED'
+                      ? '#2ECC71'
+                      : report.llmJudgeStatus === 'CONFIGURED'
+                      ? '#4DA6FF'
+                      : report.llmJudgeStatus === 'FAILED'
+                      ? '#FF4422'
+                      : '#CCCCCC',
+                  border: `1px solid ${
+                    report.llmJudgeStatus === 'EXECUTED'
+                      ? 'rgba(46, 204, 113, 0.3)'
+                      : report.llmJudgeStatus === 'CONFIGURED'
+                      ? 'rgba(77, 166, 255, 0.3)'
+                      : report.llmJudgeStatus === 'FAILED'
+                      ? 'rgba(255, 51, 17, 0.3)'
+                      : 'rgba(255, 255, 255, 0.12)'
+                  }`,
+                }}
+              >
+                {report.llmJudgeStatus || 'NOT CONFIGURED'}
               </span>
             </div>
             <div style={{ fontSize: '0.76rem', color: '#A0B0C0', lineHeight: 1.45 }}>
-              No secondary evaluator model or subjective qualitative scoring rubric is configured for this benchmark suite.
+              {report.llmJudgeStatus === 'EXECUTED' ? (
+                <div>
+                  <div>Active ({report.judgeModel || 'Independent Groq Model'}). Qualitative evaluation executed across correctness, adherence, relevance, completeness, and safety.</div>
+                  <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.8rem', fontSize: '0.72rem', color: '#4DA6FF' }}>
+                    <span>Cases Evaluated: <strong style={{ color: '#FFFFFF' }}>{report.judgeEvaluatedCases || 0}</strong></span>
+                    {report.judgeCostUsd !== null && report.judgeCostUsd !== undefined && (
+                      <span>Judge Cost: <strong style={{ color: '#FFFFFF' }}>${report.judgeCostUsd.toFixed(4)}</strong></span>
+                    )}
+                  </div>
+                </div>
+              ) : report.llmJudgeStatus === 'CONFIGURED' ? (
+                `Configured with model ${report.judgeModel || 'Groq'}. Awaiting test scenarios for qualitative judging.`
+              ) : report.llmJudgeStatus === 'FAILED' ? (
+                `Judge evaluation failed for model ${report.judgeModel || 'Groq'}. Execution safely fell back to deterministic scoring without masking provider errors.`
+              ) : (
+                'No independent secondary judge model is configured for qualitative scoring.'
+              )}
             </div>
           </div>
         </div>
@@ -796,10 +943,34 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           {/* Winner Card */}
           <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
-              Comparison Winner
+              {report.isPreliminary || report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' || (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+                ? 'Evaluation Status'
+                : (report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK')
+                ? 'Relative Comparison'
+                : 'Comparison Winner'}
             </div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: report.winner === 'candidate' ? '#4DA6FF' : report.winner === 'baseline' ? '#2ECC71' : '#FFAA44', margin: '0.3rem 0' }}>
-              {report.winner === 'candidate'
+            <div
+              style={{
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                color:
+                  report.isPreliminary || report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' || (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+                    ? '#F59E0B'
+                    : ((report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK'))
+                    ? (report.qualityDelta !== null && report.qualityDelta > 0 ? '#4DA6FF' : report.qualityDelta !== null && report.qualityDelta < 0 ? '#EF4444' : '#FFAA44')
+                    : report.winner === 'candidate'
+                    ? '#4DA6FF'
+                    : report.winner === 'baseline'
+                    ? '#2ECC71'
+                    : '#FFAA44',
+                margin: '0.3rem 0',
+              }}
+            >
+              {report.isPreliminary || report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' || (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+                ? 'PRELIMINARY RESULT'
+                : ((report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK'))
+                ? (report.qualityDelta !== null && report.qualityDelta > 0 ? 'Relative Quality: Improvement' : report.qualityDelta !== null && report.qualityDelta < 0 ? 'Relative Quality: Regression' : 'Relative Quality: Parity')
+                : report.winner === 'candidate'
                 ? 'Release Candidate'
                 : report.winner === 'baseline'
                 ? 'Production Baseline'
@@ -865,6 +1036,371 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
         </div>
 
+        {/* ── Dimensional Tradeoffs (Decoupled Audit) ── */}
+        {report.dimensions && (
+          <div
+            style={{
+              background: '#0D1117',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              padding: '1rem 1.2rem',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: '#8899AA',
+                marginBottom: '0.7rem',
+              }}
+            >
+              DIMENSIONAL TRADEOFFS (STRICTLY DECOUPLED AUDIT)
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '0.8rem',
+              }}
+            >
+              {/* Quality Dimension */}
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '6px',
+                  padding: '0.75rem 0.9rem',
+                }}
+              >
+                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Quality Dimension</div>
+                <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      background:
+                        report.dimensions.quality === 'IMPROVEMENT'
+                          ? 'rgba(46, 204, 113, 0.15)'
+                          : report.dimensions.quality === 'REGRESSION'
+                          ? 'rgba(255, 51, 17, 0.15)'
+                          : 'rgba(255, 255, 255, 0.08)',
+                      color:
+                        report.dimensions.quality === 'IMPROVEMENT'
+                          ? '#2ECC71'
+                          : report.dimensions.quality === 'REGRESSION'
+                          ? '#FF4422'
+                          : '#8899AA',
+                    }}
+                  >
+                    {report.dimensions.quality}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                  Net criteria accuracy & benchmark answer quality
+                </div>
+              </div>
+
+              {/* Latency Dimension */}
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '6px',
+                  padding: '0.75rem 0.9rem',
+                }}
+              >
+                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Latency Dimension</div>
+                <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      background:
+                        report.dimensions.latency === 'IMPROVEMENT'
+                          ? 'rgba(46, 204, 113, 0.15)'
+                          : report.dimensions.latency === 'REGRESSION'
+                          ? 'rgba(243, 156, 18, 0.15)'
+                          : 'rgba(255, 255, 255, 0.08)',
+                      color:
+                        report.dimensions.latency === 'IMPROVEMENT'
+                          ? '#2ECC71'
+                          : report.dimensions.latency === 'REGRESSION'
+                          ? '#F39C12'
+                          : '#8899AA',
+                    }}
+                  >
+                    {report.dimensions.latency}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                  Round-trip API response times (successful calls only)
+                </div>
+              </div>
+
+              {/* Cost Dimension */}
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '6px',
+                  padding: '0.75rem 0.9rem',
+                }}
+              >
+                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Cost Dimension</div>
+                <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      background:
+                        report.dimensions.cost === 'IMPROVEMENT'
+                          ? 'rgba(46, 204, 113, 0.15)'
+                          : report.dimensions.cost === 'REGRESSION'
+                          ? 'rgba(243, 156, 18, 0.15)'
+                          : 'rgba(255, 255, 255, 0.08)',
+                      color:
+                        report.dimensions.cost === 'IMPROVEMENT'
+                          ? '#2ECC71'
+                          : report.dimensions.cost === 'REGRESSION'
+                          ? '#F39C12'
+                          : '#8899AA',
+                    }}
+                  >
+                    {report.dimensions.cost}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                  Model token usage & normalized inference pricing
+                </div>
+              </div>
+
+              {/* Reliability Dimension */}
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '6px',
+                  padding: '0.75rem 0.9rem',
+                }}
+              >
+                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Reliability Dimension</div>
+                <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      background:
+                        report.dimensions.reliability === 'IMPROVEMENT'
+                          ? 'rgba(46, 204, 113, 0.15)'
+                          : report.dimensions.reliability === 'REGRESSION'
+                          ? 'rgba(255, 51, 17, 0.15)'
+                          : 'rgba(255, 255, 255, 0.08)',
+                      color:
+                        report.dimensions.reliability === 'IMPROVEMENT'
+                          ? '#2ECC71'
+                          : report.dimensions.reliability === 'REGRESSION'
+                          ? '#FF4422'
+                          : '#8899AA',
+                    }}
+                  >
+                    {report.dimensions.reliability}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                  Transport success, timeouts, rate limits, and network errors
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 12 Release Gates Checklist ── */}
+        {report.releaseGates && report.releaseGates.length > 0 && (
+          <div
+            style={{
+              background: '#0D1117',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              padding: '1.1rem 1.3rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.8rem',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#8899AA',
+                }}
+              >
+                PRODUCTION RELEASE GATES AUDIT ({report.releaseGates.filter((g) => g.status === 'PASS').length}/{report.releaseGates.length} PASSING)
+              </span>
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  padding: '0.15rem 0.55rem',
+                  borderRadius: '4px',
+                  background:
+                    report.overallGateStatus === 'PASS'
+                      ? 'rgba(46, 204, 113, 0.2)'
+                      : report.overallGateStatus === 'FAIL'
+                      ? 'rgba(255, 51, 17, 0.2)'
+                      : 'rgba(243, 156, 18, 0.2)',
+                  color:
+                    report.overallGateStatus === 'PASS'
+                      ? '#2ECC71'
+                      : report.overallGateStatus === 'FAIL'
+                      ? '#FF4422'
+                      : '#F39C12',
+                  border: `1px solid ${
+                    report.overallGateStatus === 'PASS'
+                      ? 'rgba(46, 204, 113, 0.4)'
+                      : report.overallGateStatus === 'FAIL'
+                      ? 'rgba(255, 51, 17, 0.4)'
+                      : 'rgba(243, 156, 18, 0.4)'
+                  }`,
+                }}
+              >
+                OVERALL GATE STATUS: {report.overallGateStatus || 'INCONCLUSIVE'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              {report.releaseGates.map((gate, idx) => {
+                const isPass = gate.status === 'PASS';
+                const isFail = gate.status === 'FAIL';
+                const isWarn = gate.status === 'WARNING';
+                const statusColor = isPass ? '#2ECC71' : isFail ? '#FF4422' : isWarn ? '#F39C12' : '#C084FC';
+                const statusBg = isPass
+                  ? 'rgba(46, 204, 113, 0.12)'
+                  : isFail
+                  ? 'rgba(255, 51, 17, 0.12)'
+                  : isWarn
+                  ? 'rgba(243, 156, 18, 0.12)'
+                  : 'rgba(192, 132, 252, 0.12)';
+
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '120px 220px 180px 1fr',
+                      alignItems: 'center',
+                      padding: '0.55rem 0.8rem',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '5px',
+                      fontSize: '0.78rem',
+                      gap: '0.8rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span
+                        style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                          padding: '0.12rem 0.45rem',
+                          borderRadius: '3px',
+                          background: statusBg,
+                          color: statusColor,
+                          border: `1px solid ${statusColor}40`,
+                          display: 'inline-block',
+                          textAlign: 'center',
+                          minWidth: '55px',
+                        }}
+                      >
+                        {gate.status}
+                      </span>
+                      {gate.isBlocking && (
+                        <span style={{ fontSize: '0.62rem', color: '#FF6B6B', fontWeight: 700 }} title="Blocking release gate">
+                          [BLOCK]
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{gate.gate}</span>
+                      <span style={{ display: 'block', fontSize: '0.66rem', color: '#778899' }}>{gate.category}</span>
+                    </div>
+
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.74rem' }}>
+                      <span style={{ color: '#E0E0E0' }}>{gate.observed}</span>
+                      {gate.threshold && (
+                        <span style={{ color: '#8899AA', display: 'block', fontSize: '0.68rem' }}>
+                          Target: {gate.threshold}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '0.72rem', color: '#94A3B8', lineHeight: 1.35 }}>
+                      {gate.details}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Separate Infrastructure & Judge Cost Breakdown ── */}
+        {report.judgeCostUsd !== undefined && report.judgeCostUsd !== null && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '0.8rem',
+              marginBottom: '1.5rem',
+              padding: '0.85rem 1.1rem',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+            }}
+          >
+            <div>
+              <span style={{ color: '#888888', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase' }}>Benchmark Model Cost</span>
+              <span style={{ color: '#FFFFFF', fontWeight: 700 }}>
+                {report.benchmarkCostUsd !== null && report.benchmarkCostUsd !== undefined ? `$${report.benchmarkCostUsd.toFixed(4)}` : '—'}
+              </span>
+            </div>
+            <div>
+              <span style={{ color: '#888888', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                Judge Cost ({report.judgeModel || 'Groq Judge'})
+              </span>
+              <span style={{ color: '#4E95FF', fontWeight: 700 }}>
+                ${report.judgeCostUsd.toFixed(4)}
+              </span>
+            </div>
+            <div>
+              <span style={{ color: '#888888', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase' }}>Total Evaluation Infrastructure Cost</span>
+              <span style={{ color: '#2ECC71', fontWeight: 700 }}>
+                {report.totalInfrastructureCostUsd !== null && report.totalInfrastructureCostUsd !== undefined ? `$${report.totalInfrastructureCostUsd.toFixed(4)}` : '—'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* ── 3. Metric-by-Metric Comparison Table ── */}
         <div>
           <h3 style={{ fontSize: '1rem', color: '#FFFFFF', margin: '0 0 0.8rem 0' }}>
@@ -919,7 +1455,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   {m.candidateValue !== null ? (m.unit === '$' ? `$${m.candidateValue.toFixed(m.candidateValue < 0.01 ? 5 : 4)}` : `${m.candidateValue.toLocaleString()} ${m.unit}`) : '—'}
                 </div>
 
-                <div style={{ color: m.isImprovement === true ? '#2ECC71' : m.isImprovement === false ? '#FF4422' : '#888888', fontFamily: 'monospace', fontWeight: 700 }}>
+                <div style={{ color: (m.assessment === 'IMPROVEMENT' || (m.isImprovement === true && m.absoluteDelta !== 0)) ? '#2ECC71' : (m.assessment === 'REGRESSION' || (m.isImprovement === false && m.absoluteDelta !== 0)) ? '#FF4422' : '#888888', fontFamily: 'monospace', fontWeight: 700 }}>
                   {m.absoluteDelta !== null ? (
                     m.unit === '$'
                       ? (m.absoluteDelta >= 0 ? `+$${m.absoluteDelta.toFixed(Math.abs(m.absoluteDelta) < 0.01 ? 5 : 4)}` : `-$${Math.abs(m.absoluteDelta).toFixed(Math.abs(m.absoluteDelta) < 0.01 ? 5 : 4)}`)
@@ -927,26 +1463,50 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   ) : '—'}
                 </div>
 
-                <div style={{ color: m.isImprovement === true ? '#2ECC71' : m.isImprovement === false ? '#FF4422' : '#888888', fontFamily: 'monospace', fontWeight: 700 }}>
+                <div style={{ color: (m.assessment === 'IMPROVEMENT' || (m.isImprovement === true && m.absoluteDelta !== 0)) ? '#2ECC71' : (m.assessment === 'REGRESSION' || (m.isImprovement === false && m.absoluteDelta !== 0)) ? '#FF4422' : '#888888', fontFamily: 'monospace', fontWeight: 700 }}>
                   {m.percentageDelta !== null ? (m.percentageDelta > 0 ? `+${m.percentageDelta}%` : `${m.percentageDelta}%`) : '—'}
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  {m.isImprovement !== null ? (
+                  {m.assessment === 'IMPROVEMENT' || (m.isImprovement === true && m.absoluteDelta !== 0) ? (
                     <span
                       style={{
                         fontSize: '0.68rem',
                         padding: '0.15rem 0.5rem',
                         borderRadius: '3px',
                         fontWeight: 700,
-                        background: m.isImprovement ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 51, 17, 0.15)',
-                        color: m.isImprovement ? '#2ECC71' : '#FF4422',
+                        background: 'rgba(46, 204, 113, 0.15)',
+                        color: '#2ECC71',
                       }}
                     >
-                      {m.isImprovement ? 'WIN' : 'LOSS'}
+                      IMPROVEMENT
+                    </span>
+                  ) : m.assessment === 'REGRESSION' || (m.isImprovement === false && m.absoluteDelta !== 0) ? (
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '3px',
+                        fontWeight: 700,
+                        background: 'rgba(255, 51, 17, 0.15)',
+                        color: '#FF4422',
+                      }}
+                    >
+                      REGRESSION
                     </span>
                   ) : (
-                    <span style={{ fontSize: '0.68rem', color: '#888888' }}>—</span>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '3px',
+                        fontWeight: 700,
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        color: '#8899AA',
+                      }}
+                    >
+                      PARITY
+                    </span>
                   )}
                 </div>
               </div>

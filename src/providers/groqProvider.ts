@@ -115,24 +115,38 @@ export class GroqProvider implements ModelProvider {
       }
       messages.push({ role: 'user', content: request.input });
 
+      const isGptOss = model === 'openai/gpt-oss-20b' || model === 'openai/gpt-oss-120b';
+      const reasoningEffort = isGptOss ? (request.reasoningEffort || 'medium') : undefined;
+
+      const groqPayload: any = {
+        model,
+        messages,
+        temperature: request.temperature ?? 0.0,
+        max_tokens: request.maxTokens ?? 2048,
+        metadata: {
+          testCaseId: request.testCaseId,
+          promptVersion: request.promptVersion,
+          caseIndex: request.metadata?.caseIndex,
+          totalCases: request.metadata?.totalCases,
+        },
+      };
+
+      if (reasoningEffort) {
+        groqPayload.reasoning_effort = reasoningEffort;
+      }
+
+      // Enforce JSON structured output only if the test case specifically requires structured JSON
+      if (request.evaluatorType === 'json_validity') {
+        groqPayload.response_format = { type: 'json_object' };
+      }
+
       const response = await fetch(this.proxyEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Reliq-Provider': 'groq',
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: request.temperature ?? 0.0,
-          max_tokens: request.maxTokens ?? 2048,
-          metadata: {
-            testCaseId: request.testCaseId,
-            promptVersion: request.promptVersion,
-            caseIndex: request.metadata?.caseIndex,
-            totalCases: request.metadata?.totalCases,
-          },
-        }),
+        body: JSON.stringify(groqPayload),
       });
 
       const clientLatencyMs = Math.round(performance.now() - startTime);

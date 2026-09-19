@@ -12,7 +12,7 @@
    and viewing full comparison reports with standardized recommendation verdicts.
    ============================================================ */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ComparisonReportModal } from '../components/ComparisonReportModal';
 import {
   Dataset,
@@ -23,10 +23,12 @@ import {
 import { ComparisonReport } from '../../evaluation/comparator';
 import { EvaluationRunner } from '../../evaluation/runner';
 import { generateBenchmarkDataset } from '../../data/datasetGenerator';
+import { CHECKOUT_RELIABILITY_SYSTEM_PROMPT } from '../../data/seedData';
 import { providerRegistry, ServerProviderStatus } from '../../providers/registry';
 import { ProviderType } from '../../providers/types';
 import { useRouter } from '../../router/useRouter';
 import { apiRepository } from '../../services/apiRepository';
+import { getEligibleJudgeModels, getDefaultJudgeModel, GROQ_MODEL_REGISTRY } from '../../evaluation/judgeRegistry';
 
 interface EvaluationsViewProps {
   project: Project;
@@ -137,17 +139,15 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   // Selection states (Mode 2: Cross-Provider Benchmark - Real providers by default)
   const [customBaselineProvider, setCustomBaselineProvider] = useState<ProviderType>('google');
   const [customBaselineModel, setCustomBaselineModel] = useState<string>(PROVIDER_MODELS.google[0].id);
-  const [customBaselinePrompt, setCustomBaselinePrompt] = useState<string>(
-    'You are an enterprise AI checkout assistant. Enforce the $500 supervisor escalation policy, and formulate all responses as structured text or JSON.'
-  );
+  const [customBaselinePrompt, setCustomBaselinePrompt] = useState<string>(CHECKOUT_RELIABILITY_SYSTEM_PROMPT);
   const [customBaselineTemp, setCustomBaselineTemp] = useState<number>(0.2);
+  const [customBaselineReasoningEffort, setCustomBaselineReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
 
   const [customCandidateProvider, setCustomCandidateProvider] = useState<ProviderType>('groq');
   const [customCandidateModel, setCustomCandidateModel] = useState<string>(PROVIDER_MODELS.groq[0].id);
-  const [customCandidatePrompt, setCustomCandidatePrompt] = useState<string>(
-    'You are a fast checkout assistant. Assist with orders, calculate shipping, and formulate responses as structured JSON or text.'
-  );
+  const [customCandidatePrompt, setCustomCandidatePrompt] = useState<string>(CHECKOUT_RELIABILITY_SYSTEM_PROMPT);
   const [customCandidateTemp, setCustomCandidateTemp] = useState<number>(0.2);
+  const [customCandidateReasoningEffort, setCustomCandidateReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
 
   // Execution states
   const [isRunning, setIsRunning] = useState(false);
@@ -178,6 +178,61 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   const baselineVersion = versions.find((v) => v.id === baselineVersionId) || versions[0];
   const candidateVersion = versions.find((v) => v.id === candidateVersionId) || versions[1] || versions[0];
 
+  // Effective benchmark models for judge eligibility
+  const effectiveBaselineModel = configMode === 'custom_benchmark' ? customBaselineModel : (baselineVersion?.modelIdentifier || 'openai/gpt-oss-20b');
+  const effectiveCandidateModel = configMode === 'custom_benchmark' ? customCandidateModel : (candidateVersion?.modelIdentifier || 'openai/gpt-oss-120b');
+
+  // Dynamic judge eligibility calculation
+  const eligibleJudgeModels = useMemo(() => {
+    return getEligibleJudgeModels(effectiveBaselineModel, effectiveCandidateModel);
+  }, [effectiveBaselineModel, effectiveCandidateModel]);
+
+  // Judge selection states
+  const [judgeEnabled, setJudgeEnabled] = useState<boolean>(true);
+  const [selectedJudgeModel, setSelectedJudgeModel] = useState<string>('groq/compound');
+  const [judgeStatus, setJudgeStatus] = useState<string>('CHECKING');
+  const [judgeStatusDetails, setJudgeStatusDetails] = useState<string>('');
+
+  // Auto-adjust judge model if current selection becomes ineligible
+  useEffect(() => {
+    if (eligibleJudgeModels.length > 0) {
+      if (!eligibleJudgeModels.some((m) => m.id === selectedJudgeModel)) {
+        const def = getDefaultJudgeModel(effectiveBaselineModel, effectiveCandidateModel);
+        if (def) setSelectedJudgeModel(def.id);
+      }
+    }
+  }, [eligibleJudgeModels, effectiveBaselineModel, effectiveCandidateModel, selectedJudgeModel]);
+
+  // Model availability check
+  const checkJudgeAvailability = async (modelId: string) => {
+    setJudgeStatus('CHECKING');
+    try {
+      const res = await fetch(`/api/judge/test?model=${encodeURIComponent(modelId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setJudgeStatus(data.status || 'UNAVAILABLE');
+        setJudgeStatusDetails(data.latencyMs ? `${data.latencyMs}ms` : data.error || '');
+      } else {
+        setJudgeStatus('REQUEST FAILED');
+        setJudgeStatusDetails(`HTTP ${res.status}`);
+      }
+    } catch (err: any) {
+      setJudgeStatus('UNAVAILABLE');
+      setJudgeStatusDetails(err.message || 'Network error');
+    }
+  };
+
+  useEffect(() => {
+    if (judgeEnabled && selectedJudgeModel) {
+      checkJudgeAvailability(selectedJudgeModel);
+    }
+  }, [judgeEnabled, selectedJudgeModel]);
+
+  const isJudgeConflicting = judgeEnabled && (
+    selectedJudgeModel === effectiveBaselineModel ||
+    selectedJudgeModel === effectiveCandidateModel
+  );
+
   const handleStartEvaluation = async () => {
     let bVer: ModelVersion = baselineVersion;
     let cVer: ModelVersion = candidateVersion;
@@ -192,6 +247,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         systemPrompt: customBaselinePrompt,
         temperature: customBaselineTemp,
         maxTokens: 4096,
+        reasoningEffort: (customBaselineModel === 'openai/gpt-oss-20b' || customBaselineModel === 'openai/gpt-oss-120b') ? customBaselineReasoningEffort : undefined,
         isBaseline: true,
         createdAt: new Date().toISOString(),
       };
@@ -205,6 +261,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         systemPrompt: customCandidatePrompt,
         temperature: customCandidateTemp,
         maxTokens: 4096,
+        reasoningEffort: (customCandidateModel === 'openai/gpt-oss-20b' || customCandidateModel === 'openai/gpt-oss-120b') ? customCandidateReasoningEffort : undefined,
         isBaseline: false,
         createdAt: new Date().toISOString(),
       };
@@ -216,6 +273,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     console.log('[RELIQ UI] Test cases:', selectedDataset ? (selectedDataset.cases?.length || 0) : 0);
     console.log('[RELIQ UI] Baseline:', `${bVer?.provider || 'none'} / ${bVer?.modelIdentifier || bVer?.name || 'none'}`);
     console.log('[RELIQ UI] Candidate:', `${cVer?.provider || 'none'} / ${cVer?.modelIdentifier || cVer?.name || 'none'}`);
+
+    // Validation for judge conflict
+    if (isJudgeConflicting) {
+      setEvaluationError('Judge model must be different from both benchmark models.');
+      return;
+    }
 
     // Validation for datasets with 0 test cases
     if (!selectedDataset || !selectedDataset.cases || selectedDataset.cases.length === 0) {
@@ -250,6 +313,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         dataset: datasetToEvaluate,
         baselineVersion: bVer,
         candidateVersion: cVer,
+        judgeConfig: judgeEnabled ? {
+          enabled: true,
+          provider: 'groq' as const,
+          modelIdentifier: selectedJudgeModel,
+          temperature: 0.1,
+          maxTokens: 1024,
+        } : undefined,
         regressionSettings: project.regressionSettings,
         maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
         concurrency: 1,
@@ -708,6 +778,24 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 </select>
               </div>
 
+              {/* Reasoning Effort (GPT-OSS on Groq) */}
+              {(customBaselineModel === 'openai/gpt-oss-20b' || customBaselineModel === 'openai/gpt-oss-120b') && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                    Reasoning Effort (GPT-OSS)
+                  </label>
+                  <select
+                    value={customBaselineReasoningEffort}
+                    onChange={(e) => setCustomBaselineReasoningEffort(e.target.value as 'low' | 'medium' | 'high')}
+                    style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium (Default / Fair Comparison)</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              )}
+
               {/* System Prompt */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
@@ -785,6 +873,24 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   ))}
                 </select>
               </div>
+
+              {/* Reasoning Effort (GPT-OSS on Groq) */}
+              {(customCandidateModel === 'openai/gpt-oss-20b' || customCandidateModel === 'openai/gpt-oss-120b') && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#888888', marginBottom: '0.3rem' }}>
+                    Reasoning Effort (GPT-OSS)
+                  </label>
+                  <select
+                    value={customCandidateReasoningEffort}
+                    onChange={(e) => setCustomCandidateReasoningEffort(e.target.value as 'low' | 'medium' | 'high')}
+                    style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium (Default / Fair Comparison)</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              )}
 
               {/* System Prompt */}
               <div>
@@ -872,6 +978,179 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           </div>
         )}
 
+        {/* ── Evaluation Models & LLM Judge Configuration ── */}
+        <div
+          style={{
+            background: '#0D1117',
+            border: isJudgeConflicting ? '1px solid #FF4444' : '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            padding: '1.25rem',
+            marginBottom: '1.25rem',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>⚖️ Evaluation Models & LLM Judge</span>
+              </h3>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.76rem', color: isJudgeConflicting ? '#FF6B6B' : '#8899AA' }}>
+                {isJudgeConflicting
+                  ? '⚠️ Configuration Error: Judge model must be different from both benchmark models.'
+                  : 'Judge model must be different from both benchmark models. Reuses existing GROQ_API_KEY.'}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#CCCCCC', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={judgeEnabled}
+                  onChange={(e) => setJudgeEnabled(e.target.checked)}
+                  disabled={isRunning}
+                  style={{ accentColor: 'var(--accent, #FF6B35)' }}
+                />
+                <span>Enable LLM Judge</span>
+              </label>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+            {/* Benchmark Models Summary */}
+            <div style={{ background: '#161B22', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', fontWeight: 600 }}>
+                Active Benchmark Models
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#AAAAAA' }}>Baseline:</span>
+                  <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontSize: '0.78rem' }}>{effectiveBaselineModel}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#AAAAAA' }}>Candidate:</span>
+                  <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontSize: '0.78rem' }}>{effectiveCandidateModel}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#AAAAAA' }}>Reasoning Effort:</span>
+                  <span style={{ color: '#4E95FF', fontWeight: 600 }}>Medium</span>
+                </div>
+              </div>
+            </div>
+
+            {/* LLM Judge Selector & Status */}
+            <div style={{ background: '#161B22', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                  Independent LLM Judge
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    padding: '0.15rem 0.45rem',
+                    borderRadius: '4px',
+                    background:
+                      judgeStatus === 'AVAILABLE'
+                        ? 'rgba(46, 160, 67, 0.2)'
+                        : judgeStatus === 'CHECKING'
+                        ? 'rgba(78, 149, 255, 0.2)'
+                        : judgeStatus === 'API KEY MISSING'
+                        ? 'rgba(255, 68, 68, 0.2)'
+                        : 'rgba(210, 153, 34, 0.2)',
+                    color:
+                      judgeStatus === 'AVAILABLE'
+                        ? '#3FB950'
+                        : judgeStatus === 'CHECKING'
+                        ? '#4E95FF'
+                        : judgeStatus === 'API KEY MISSING'
+                        ? '#FF6B6B'
+                        : '#E3B341',
+                  }}
+                >
+                  {judgeStatus}
+                </span>
+              </div>
+
+              {judgeEnabled ? (
+                <div>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <select
+                      value={selectedJudgeModel}
+                      onChange={(e) => setSelectedJudgeModel(e.target.value)}
+                      disabled={isRunning || !judgeEnabled}
+                      style={{
+                        flex: 1,
+                        padding: '0.45rem 0.6rem',
+                        background: '#0D1117',
+                        border: isJudgeConflicting ? '1px solid #FF4444' : '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '4px',
+                        color: '#FFFFFF',
+                        fontSize: '0.82rem',
+                      }}
+                    >
+                      {eligibleJudgeModels.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.displayName}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => checkJudgeAvailability(selectedJudgeModel)}
+                      disabled={isRunning || judgeStatus === 'CHECKING'}
+                      style={{
+                        padding: '0.35rem 0.65rem',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '4px',
+                        color: '#FFFFFF',
+                        fontSize: '0.72rem',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {judgeStatus === 'CHECKING' ? 'Testing...' : 'Test Judge'}
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#8899AA' }}>
+                    <span>Model ID: <code style={{ color: '#4E95FF' }}>{selectedJudgeModel}</code></span>
+                    {judgeStatusDetails && <span>{judgeStatusDetails}</span>}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.8rem', color: '#666666', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                  LLM Judge is currently disabled. Evaluation will use deterministic criteria.
+                </div>
+              )}
+            </div>
+
+            {/* Semantic Evaluation Status */}
+            <div style={{ background: '#161B22', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                  Semantic Evaluation
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    padding: '0.15rem 0.45rem',
+                    borderRadius: '4px',
+                    background: 'rgba(46, 160, 67, 0.2)',
+                    color: '#3FB950',
+                  }}
+                >
+                  Local (Configured)
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.76rem', color: '#CCCCCC', lineHeight: 1.4 }}>
+                Local mathematical n-gram vectorization & cosine similarity analyzer. Zero external API calls.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Action Controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -891,7 +1170,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 fontSize: '0.82rem',
               }}
             >
-              <option value={0}>Full Suite ({selectedDataset?.cases?.length || 0} scenarios)</option>
+              <option value={27}>Checkout Reliability Suite (27 scenarios - Required Benchmark)</option>
+              <option value={0}>Full Suite ({selectedDataset?.cases?.length || 27} scenarios)</option>
               <option value={5}>Validation Smoke Test (5 scenarios)</option>
               <option value={10}>Targeted Benchmark (10 scenarios)</option>
               <option value={20}>Standard Suite (20 scenarios)</option>
@@ -907,18 +1187,18 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </span>
           <button
             onClick={handleStartEvaluation}
-            disabled={isRunning || !selectedDataset}
+            disabled={isRunning || !selectedDataset || isJudgeConflicting}
             style={{
-              background: isRunning ? '#444444' : 'var(--accent, #FF6B35)',
-              color: isRunning ? '#AAAAAA' : '#000000',
+              background: isRunning || isJudgeConflicting ? '#444444' : 'var(--accent, #FF6B35)',
+              color: isRunning || isJudgeConflicting ? '#AAAAAA' : '#000000',
               border: 'none',
               padding: '0.75rem 2rem',
               borderRadius: '6px',
               fontSize: '0.88rem',
               fontWeight: 700,
               letterSpacing: '0.04em',
-              cursor: isRunning ? 'wait' : 'pointer',
-              boxShadow: isRunning ? 'none' : '0 4px 15px rgba(255, 107, 53, 0.35)',
+              cursor: isRunning || isJudgeConflicting ? 'not-allowed' : 'pointer',
+              boxShadow: isRunning || isJudgeConflicting ? 'none' : '0 4px 15px rgba(255, 107, 53, 0.35)',
             }}
           >
             {isRunning ? 'Running Evaluation...' : 'Run Evaluation →'}

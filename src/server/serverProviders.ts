@@ -395,6 +395,25 @@ export class ServerGroqProvider implements ModelProvider {
     console.log(`[GROQ] Model: ${model}`);
 
     try {
+      const isGptOss = model === 'openai/gpt-oss-20b' || model === 'openai/gpt-oss-120b';
+      const reasoningEffort = isGptOss ? (request.reasoningEffort || 'medium') : undefined;
+
+      const groqPayload: any = {
+        model,
+        messages,
+        temperature: request.temperature ?? 0.0,
+        max_tokens: request.maxTokens ?? 2048,
+      };
+
+      if (reasoningEffort) {
+        groqPayload.reasoning_effort = reasoningEffort;
+      }
+
+      // Enforce JSON structured output only if the test case specifically requires structured JSON
+      if (request.evaluatorType === 'json_validity') {
+        groqPayload.response_format = { type: 'json_object' };
+      }
+
       const { response, retries, latencyMs } = await fetchWithRetry({
         url: 'https://api.groq.com/openai/v1/chat/completions',
         init: {
@@ -403,12 +422,7 @@ export class ServerGroqProvider implements ModelProvider {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
           },
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature: request.temperature ?? 0.0,
-            max_tokens: request.maxTokens ?? 2048,
-          }),
+          body: JSON.stringify(groqPayload),
         },
         maxRetries: 3,
         baseDelayMs: 1000,

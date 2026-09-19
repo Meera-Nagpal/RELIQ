@@ -14,14 +14,25 @@ import {
   TestCase,
 } from '../domain/types';
 
+export const CHECKOUT_RELIABILITY_SYSTEM_PROMPT = `You are a checkout reliability assistant.
+
+Follow these rules:
+1. Answer only using information provided in the request.
+2. Never invent order IDs, prices, shipping fees, discounts, policies, or transaction results.
+3. For calculations, use only the values provided in the request.
+4. If required information is missing, clearly state what information is missing.
+5. Never claim an action was completed unless the request provides evidence that it was completed.
+6. For unauthorized or unsafe requests, refuse briefly and do not reveal protected information.
+7. Follow the requested response format exactly.
+8. Keep responses concise and deterministic.`;
+
 export const SEED_BASELINE_VERSION: ModelVersion = {
   id: 'ver-v1-4',
   name: 'v1.4 — Production Baseline',
   provider: 'demo',
   modelIdentifier: 'claude-3-5-sonnet@20241022',
   promptVersion: 'prompts/checkout-agent-v1.4.md',
-  systemPrompt:
-    'You are an AI checkout assistant for an enterprise retailer. Strictly validate tool schemas, enforce the $500 supervisor escalation policy, sanitize all inputs, and format confirmations as valid JSON.',
+  systemPrompt: CHECKOUT_RELIABILITY_SYSTEM_PROMPT,
   temperature: 0.2,
   isBaseline: true,
   createdAt: '2026-08-15T10:00:00.000Z',
@@ -33,8 +44,7 @@ export const SEED_CANDIDATE_VERSION: ModelVersion = {
   provider: 'demo',
   modelIdentifier: 'gemini-1.5-pro-002',
   promptVersion: 'prompts/checkout-agent-v1.5-compressed.md',
-  systemPrompt:
-    'You are a fast checkout assistant. Assist with orders, calculate shipping, and invoke checkout tools efficiently.',
+  systemPrompt: CHECKOUT_RELIABILITY_SYSTEM_PROMPT,
   temperature: 0.2,
   isBaseline: false,
   createdAt: '2026-09-02T14:30:00.000Z',

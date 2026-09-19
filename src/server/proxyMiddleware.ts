@@ -20,6 +20,7 @@ import {
   getRunsFromDisk,
   runServerEvaluation,
   startEvaluationJob,
+  validateEvaluationOptions,
 } from './evaluationService';
 import {
   fetchWithRetry,
@@ -37,6 +38,7 @@ import { evaluationDbService } from './services/evaluationDbService';
 import { sendError } from './routes/httpUtils';
 import { getDatabase } from './db/database';
 import { seedDatabase } from './db/seed';
+import { GROQ_MODEL_REGISTRY } from '../evaluation/judgeRegistry';
 
 export { getApiKey, fetchWithRetry, parseJsonBody, sendJson };
 
@@ -177,6 +179,12 @@ export function createReliqProxyMiddleware() {
         if (body.candidateVersion) {
           console.log(`[BACKEND] Candidate: ${body.candidateVersion.provider} / ${body.candidateVersion.modelIdentifier}`);
         }
+        if (body.judgeConfig?.enabled) {
+          console.log(`[BACKEND] Judge: ${body.judgeConfig.provider} / ${body.judgeConfig.modelIdentifier}`);
+        }
+
+        // Synchronously validate all options (dataset, versions, judge independence) before proceeding
+        validateEvaluationOptions(body);
 
         if (isAsync) {
           const { runId } = startEvaluationJob(body);
@@ -517,6 +525,98 @@ export function createReliqProxyMiddleware() {
       return;
     }
 
+    // ── LLM Judge Model Availability Check: POST or GET /api/judge/test ──
+    if ((req.method === 'POST' || req.method === 'GET') && parsedUrl.startsWith('/api/judge/test')) {
+      const apiKey = getApiKey('GROQ_API_KEY');
+      if (!apiKey) {
+        sendJson(res, 200, {
+          status: 'API KEY MISSING',
+          available: false,
+          error: 'GROQ_API_KEY is not configured in server environment (.env.local).',
+        });
+        return;
+      }
+
+      let modelId = 'groq/compound';
+      if (req.method === 'POST') {
+        const body = await parseJsonBody(req).catch(() => ({}));
+        modelId = body.model || body.modelIdentifier || modelId;
+      } else {
+        const queryParams = new URL(req.url || '', 'http://localhost').searchParams;
+        modelId = queryParams.get('model') || modelId;
+      }
+
+      const descriptor = GROQ_MODEL_REGISTRY[modelId];
+      if (!descriptor || !descriptor.isJudgeEligible) {
+        sendJson(res, 200, {
+          status: 'MODEL NOT ACCESSIBLE',
+          available: false,
+          model: modelId,
+          error: `Model '${modelId}' is not an eligible Groq judge model.`,
+        });
+        return;
+      }
+
+      try {
+        const startTime = performance.now();
+        const testRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: [{ role: 'user', content: 'Ping' }],
+            max_tokens: 1,
+            temperature: 0.0,
+          }),
+        });
+        const latencyMs = Math.round(performance.now() - startTime);
+
+        if (testRes.ok) {
+          const testData = await testRes.json();
+          if (testData.choices && testData.choices.length > 0) {
+            sendJson(res, 200, {
+              status: 'AVAILABLE',
+              available: true,
+              model: modelId,
+              displayName: descriptor.displayName,
+              latencyMs,
+            });
+            return;
+          }
+        }
+
+        if (testRes.status === 401 || testRes.status === 403 || testRes.status === 404) {
+          sendJson(res, 200, {
+            status: 'MODEL NOT ACCESSIBLE',
+            available: false,
+            model: modelId,
+            httpStatus: testRes.status,
+            error: `Model not accessible on Groq account (HTTP ${testRes.status})`,
+          });
+          return;
+        }
+
+        sendJson(res, 200, {
+          status: 'REQUEST FAILED',
+          available: false,
+          model: modelId,
+          httpStatus: testRes.status,
+          error: `Groq request failed with status ${testRes.status}`,
+        });
+      } catch (err: any) {
+        sendJson(res, 200, {
+          status: 'UNAVAILABLE',
+          available: false,
+          model: modelId,
+          error: err.message,
+        });
+      }
+      return;
+    }
+
     // ── Groq Models List: GET /api/providers/groq/models ─────────
     if (req.method === 'GET' && parsedUrl === '/api/providers/groq/models') {
       const apiKey = getApiKey('GROQ_API_KEY');
@@ -564,7 +664,13 @@ export function createReliqProxyMiddleware() {
         const body = await parseJsonBody(req);
         const { metadata, ...groqPayload } = body;
         const caseId = metadata?.testCaseId || 'n/a';
-        console.log(`[RELIQ Proxy] -> GROQ POST model=${groqPayload.model} (case=${caseId})`);
+
+        const isGptOss = groqPayload.model === 'openai/gpt-oss-20b' || groqPayload.model === 'openai/gpt-oss-120b';
+        if (isGptOss && !groqPayload.reasoning_effort) {
+          groqPayload.reasoning_effort = 'medium';
+        }
+
+        console.log(`[RELIQ Proxy] -> GROQ POST model=${groqPayload.model} (case=${caseId}, reasoning=${groqPayload.reasoning_effort || 'none'})`);
 
         const { response, retries, latencyMs } = await fetchWithRetry({
           url: 'https://api.groq.com/openai/v1/chat/completions',
