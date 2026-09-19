@@ -2,7 +2,7 @@
    RELIQ — Groq Model Provider Adapter
    
    Secure server-side proxy integration for Groq LPUs.
-   Supports openai/gpt-oss-20b, Llama 3.3 70B, Llama 3.1 8B, and Mixtral.
+   Supports openai/gpt-oss-20b, openai/gpt-oss-120b, groq/compound, groq/compound-mini, qwen/qwen3.8-27b, allam-2-7b.
    Captures normalized UsageRecord telemetry and real-time rate limit headers
    (x-ratelimit-limit-requests, x-ratelimit-remaining-requests,
    x-ratelimit-limit-tokens, x-ratelimit-remaining-tokens, retry-after).
@@ -29,9 +29,11 @@ const DEFAULT_MODELS_ENDPOINT = '/api/providers/groq/models';
 
 export const GROQ_SUPPORTED_MODELS = [
   'openai/gpt-oss-20b',
-  'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant',
-  'mixtral-8x7b-32768',
+  'openai/gpt-oss-120b',
+  'groq/compound',
+  'groq/compound-mini',
+  'qwen/qwen3.8-27b',
+  'allam-2-7b',
 ];
 
 export class GroqProvider implements ModelProvider {

@@ -12191,6 +12191,51 @@ var MODEL_PRICING_TABLE = {
     effectiveDate: "2025-01-01",
     notes: "Groq standard tier rate for open models."
   },
+  "openai/gpt-oss-120b": {
+    provider: "groq",
+    modelIdentifier: "openai/gpt-oss-120b",
+    displayName: "OpenAI GPT-OSS 120B (Groq)",
+    costPerMillionInputTokens: 0.59,
+    costPerMillionOutputTokens: 0.79,
+    effectiveDate: "2025-01-01",
+    notes: "Groq high capability tier rate."
+  },
+  "groq/compound": {
+    provider: "groq",
+    modelIdentifier: "groq/compound",
+    displayName: "Groq Compound (Groq)",
+    costPerMillionInputTokens: 0.1,
+    costPerMillionOutputTokens: 0.2,
+    effectiveDate: "2025-01-01",
+    notes: "Groq Compound general reasoning model."
+  },
+  "groq/compound-mini": {
+    provider: "groq",
+    modelIdentifier: "groq/compound-mini",
+    displayName: "Groq Compound Mini (Groq)",
+    costPerMillionInputTokens: 0.05,
+    costPerMillionOutputTokens: 0.1,
+    effectiveDate: "2025-01-01",
+    notes: "Groq Compound Mini fast inference model."
+  },
+  "qwen/qwen3.8-27b": {
+    provider: "groq",
+    modelIdentifier: "qwen/qwen3.8-27b",
+    displayName: "Qwen 3.8 27B (Groq)",
+    costPerMillionInputTokens: 0.2,
+    costPerMillionOutputTokens: 0.4,
+    effectiveDate: "2025-01-01",
+    notes: "Qwen 3.8 27B 128k Tongyi Lab model."
+  },
+  "allam-2-7b": {
+    provider: "groq",
+    modelIdentifier: "allam-2-7b",
+    displayName: "ALLaM 2 7B (Groq)",
+    costPerMillionInputTokens: 0.1,
+    costPerMillionOutputTokens: 0.2,
+    effectiveDate: "2025-01-01",
+    notes: "ALLaM 2 7B SDAIA bilingual model."
+  },
   "llama-3.3-70b-versatile": {
     provider: "groq",
     modelIdentifier: "llama-3.3-70b-versatile",
@@ -12919,9 +12964,11 @@ var DEFAULT_PROXY_ENDPOINT4 = "/api/providers/groq";
 var DEFAULT_MODELS_ENDPOINT2 = "/api/providers/groq/models";
 var GROQ_SUPPORTED_MODELS = [
   "openai/gpt-oss-20b",
-  "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant",
-  "mixtral-8x7b-32768"
+  "openai/gpt-oss-120b",
+  "groq/compound",
+  "groq/compound-mini",
+  "qwen/qwen3.8-27b",
+  "allam-2-7b"
 ];
 var GroqProvider = class {
   id = "groq";
@@ -14957,9 +15004,11 @@ var ServerGroqProvider = class {
       providerType: this.providerType,
       supportedModels: [
         "openai/gpt-oss-20b",
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768"
+        "openai/gpt-oss-120b",
+        "groq/compound",
+        "groq/compound-mini",
+        "qwen/qwen3.8-27b",
+        "allam-2-7b"
       ],
       supportsStreaming: true,
       supportsTools: true,
