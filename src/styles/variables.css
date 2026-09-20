@@ -17,6 +17,11 @@
   --accent-dim: rgba(255, 107, 53, 0.3);
   --accent-subtle: rgba(255, 107, 53, 0.08);
 
+  /* RELIQ Brand CSS Variables */
+  --reliq-accent: #FF6B35;
+  --reliq-accent-secondary: #FF8C5A;
+  --reliq-background: #0A0A0A;
+
   /* Health States */
   --healthy: #4ADE80;
   --warning: #FBBF24;

@@ -12,8 +12,9 @@
    and viewing full comparison reports with standardized recommendation verdicts.
    ============================================================ */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ComparisonReportModal } from '../components/ComparisonReportModal';
+import { EvaluationProgressModal } from '../components/EvaluationProgressModal';
 import {
   Dataset,
   EvaluationRun,

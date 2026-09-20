@@ -14,6 +14,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ComparisonReport, RecommendationVerdict } from '../../evaluation/comparator';
+import { downloadReportPdf } from '../../utils/pdfExporter';
 
 interface ComparisonReportModalProps {
   report: ComparisonReport;
@@ -45,6 +46,10 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     a.download = `reliq-report-${report.id || 'export'}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportPdf = () => {
+    downloadReportPdf(report);
   };
 
   const handleCopySummary = async () => {
@@ -173,6 +178,94 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     (report.totalCases < 10 ? 'LOW' : report.totalCases < 50 ? 'MODERATE' : report.totalCases < 100 ? 'GOOD' : 'STRONG');
   const swingPct = report.totalCases > 0 ? (100 / report.totalCases).toFixed(0) : 100;
 
+  // ── Authoritative Relative & Release Gate Comparison Logic ──
+  const baselineQuality = report.metrics.qualityScore?.baselineValue ?? null;
+  const candidateQuality = report.metrics.qualityScore?.candidateValue ?? null;
+  const qualityDelta = report.qualityDelta;
+  const latencyDelta = report.latencyDelta;
+  const costDelta = report.costDelta;
+  const tokenDelta = report.tokenDelta;
+
+  const failedGates = (report.releaseGates || []).filter((g) => g.status === 'FAIL');
+  const warningGates = (report.releaseGates || []).filter((g) => g.status === 'WARNING');
+  const hasGateFailures = failedGates.length > 0 || report.overallGateStatus === 'FAIL';
+  const isPreliminary = Boolean(
+    report.isPreliminary ||
+    report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
+    (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+  );
+
+  // Relative outcome strictly based on quality delta & existing comparison
+  let relativeResult: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY' | 'INCONCLUSIVE' = 'PARITY';
+  let relativeTitle = 'Statistical Parity';
+  let relativeBadgeColor = '#8899AA';
+  let relativeBadgeBg = 'rgba(255, 255, 255, 0.08)';
+  let relativeBorderColor = 'rgba(255, 255, 255, 0.15)';
+
+  if (
+    report.metrics.evaluationCoverage &&
+    (((report.metrics.evaluationCoverage.baselineValue ?? 100) < 80) ||
+      ((report.metrics.evaluationCoverage.candidateValue ?? 100) < 80))
+  ) {
+    relativeResult = 'INCONCLUSIVE';
+    relativeTitle = 'Inconclusive (Coverage)';
+    relativeBadgeColor = '#C084FC';
+    relativeBadgeBg = 'rgba(192, 132, 252, 0.15)';
+    relativeBorderColor = 'rgba(192, 132, 252, 0.35)';
+  } else if (isPreliminary) {
+    relativeResult = 'INCONCLUSIVE';
+    relativeTitle = 'Preliminary Benchmark (N < 27)';
+    relativeBadgeColor = '#F59E0B';
+    relativeBadgeBg = 'rgba(245, 158, 11, 0.15)';
+    relativeBorderColor = 'rgba(245, 158, 11, 0.35)';
+  } else if (qualityDelta !== null && qualityDelta > 0) {
+    relativeResult = 'IMPROVEMENT';
+    relativeTitle = 'Candidate Outperformed Baseline';
+    relativeBadgeColor = '#2ECC71';
+    relativeBadgeBg = 'rgba(46, 204, 113, 0.15)';
+    relativeBorderColor = 'rgba(46, 204, 113, 0.35)';
+  } else if (qualityDelta !== null && qualityDelta < 0) {
+    relativeResult = 'REGRESSION';
+    relativeTitle = 'Candidate Quality Regression';
+    relativeBadgeColor = '#EF4444';
+    relativeBadgeBg = 'rgba(239, 68, 68, 0.15)';
+    relativeBorderColor = 'rgba(239, 68, 68, 0.35)';
+  } else {
+    relativeResult = 'PARITY';
+    relativeTitle = 'Statistical Parity';
+    relativeBadgeColor = '#8899AA';
+    relativeBadgeBg = 'rgba(255, 255, 255, 0.08)';
+    relativeBorderColor = 'rgba(255, 255, 255, 0.15)';
+  }
+
+  // Concise 1-2 line comment generated from real metrics
+  const getConciseInterpretation = (): string => {
+    if (relativeResult === 'INCONCLUSIVE') {
+      return report.winnerReason || 'Evaluation coverage or sample size is insufficient to certify relative difference.';
+    }
+    if (qualityDelta !== null && qualityDelta > 0) {
+      const latWorse = latencyDelta !== null && latencyDelta > 0;
+      const cstWorse = costDelta !== null && costDelta > 0;
+      const tokReduced = tokenDelta !== null && tokenDelta < 0;
+      if (latWorse || cstWorse) {
+        if (tokReduced && (latWorse || cstWorse)) {
+          return `Candidate improved quality and reduced output tokens, but introduced higher latency (+${latencyDelta}ms) and evaluation cost.`;
+        }
+        return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points), but introduced higher latency (+${latencyDelta}ms).`;
+      }
+      return `Candidate achieved higher quality and correctness than the baseline, with +${qualityDelta.toFixed(1)} quality points.`;
+    }
+    if (qualityDelta !== null && qualityDelta < 0) {
+      return 'Baseline achieved higher quality under the configured evaluation criteria.';
+    }
+    if (qualityDelta === 0) {
+      return 'Both models produced equivalent results under the configured comparison metrics.';
+    }
+    return report.winnerReason || 'Benchmark evaluation complete.';
+  };
+
+  const conciseInterpretation = getConciseInterpretation();
+
   return (
     <div
       style={{
@@ -292,6 +385,25 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               ⬇ Export JSON
             </button>
             <button
+              onClick={handleExportPdf}
+              title="Download cross-model comparison report as real vector PDF"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                color: '#FFFFFF',
+                padding: '0.45rem 0.9rem',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <span>📄</span> Export PDF
+            </button>
+            <button
               onClick={onClose}
               aria-label="Close comparison report modal"
               style={{
@@ -310,6 +422,120 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             >
               ✕
             </button>
+          </div>
+        </div>
+
+        {/* ── TOP PROMINENT WINNER / COMPARISON RESULT SECTION ── */}
+        <div
+          style={{
+            background: 'linear-gradient(180deg, rgba(22, 27, 36, 0.95) 0%, rgba(13, 17, 23, 0.98) 100%)',
+            border: `1px solid ${hasGateFailures ? 'rgba(239, 68, 68, 0.4)' : relativeBorderColor}`,
+            boxShadow: hasGateFailures
+              ? '0 0 25px rgba(239, 68, 68, 0.15)'
+              : relativeResult === 'IMPROVEMENT'
+              ? '0 0 25px rgba(46, 204, 113, 0.15)'
+              : '0 0 20px rgba(0, 0, 0, 0.5)',
+            borderRadius: '12px',
+            padding: '1.5rem 1.8rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.2rem',
+          }}
+        >
+          {/* Top Tier: RELATIVE COMPARISON */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.6rem' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8899AA' }}>
+                RELATIVE COMPARISON
+              </div>
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '4px',
+                  background: relativeBadgeBg,
+                  color: relativeBadgeColor,
+                  border: `1px solid ${relativeBorderColor}`,
+                }}
+              >
+                {relativeResult}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap', margin: '0.2rem 0' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: relativeBadgeColor, margin: 0 }}>
+                {relativeResult === 'IMPROVEMENT'
+                  ? `🏆 ${report.candidate.model || 'RELEASE CANDIDATE'}`
+                  : relativeResult === 'REGRESSION'
+                  ? `🛡️ ${report.baseline.model || 'PRODUCTION BASELINE'}`
+                  : relativeTitle}
+              </h2>
+              {baselineQuality !== null && candidateQuality !== null && (
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#E0E0E0', fontFamily: 'monospace' }}>
+                  Quality: <span style={{ color: '#AAAAAA' }}>{baselineQuality}%</span> → <span style={{ color: relativeBadgeColor }}>{candidateQuality}%</span>
+                  {qualityDelta !== null && (
+                    <span style={{ fontSize: '0.9rem', color: qualityDelta >= 0 ? '#2ECC71' : '#EF4444', marginLeft: '0.4rem' }}>
+                      ({qualityDelta >= 0 ? `+${qualityDelta.toFixed(1)}` : qualityDelta.toFixed(1)} pts)
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.88rem', color: '#B0C0D0', lineHeight: 1.5 }}>
+              {conciseInterpretation}
+            </p>
+          </div>
+
+          {/* Bottom Tier: PRODUCTION RELEASE STATUS (Strictly Separated) */}
+          <div
+            style={{
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              paddingTop: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.4rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8899AA' }}>
+                PRODUCTION RELEASE STATUS
+              </div>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  padding: '0.2rem 0.65rem',
+                  borderRadius: '4px',
+                  background: hasGateFailures ? 'rgba(239, 68, 68, 0.18)' : recStyle.bg,
+                  color: hasGateFailures ? '#FF4422' : recStyle.color,
+                  border: `1px solid ${hasGateFailures ? 'rgba(239, 68, 68, 0.4)' : recStyle.border}`,
+                }}
+              >
+                {hasGateFailures ? `⛔ BLOCK / FAIL (${failedGates.length} GATES FAILED)` : report.recommendation}
+              </span>
+            </div>
+
+            <div style={{ fontSize: '0.82rem', color: hasGateFailures ? '#FFAA88' : '#CCCCCC', lineHeight: 1.45 }}>
+              {hasGateFailures ? (
+                <div>
+                  <strong>Attention Required:</strong> {failedGates.map((g) => g.gate).join(', ')} failed validation.
+                  <span style={{ color: '#8899AA', display: 'block', fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                    Note: Although the candidate demonstrates relative quality improvement, production deployment remains gated until all release criteria pass.
+                  </span>
+                </div>
+              ) : isPreliminary ? (
+                <div>
+                  <strong>Preliminary Benchmark:</strong> Evaluated {report.totalCases}/27 scenarios. Full 27-scenario test suite required for production release certification.
+                </div>
+              ) : (
+                <div>
+                  ✓ All configured production release gates passed verification. Safe for production promotion.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
