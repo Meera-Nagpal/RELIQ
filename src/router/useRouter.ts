@@ -85,7 +85,7 @@ function isReducedMotion(): boolean {
   }
 }
 
-export function triggerGlobalTransition(callback?: () => void, durationMs = 650) {
+export function triggerGlobalTransition(callback?: () => void, durationMs = 820) {
   if (globalIsTransitioning) return;
 
   if (isReducedMotion()) {
@@ -99,7 +99,8 @@ export function triggerGlobalTransition(callback?: () => void, durationMs = 650)
 
   notifyTransitionListeners(true);
 
-  // Perform callback / route shift at midpoint of ripple expansion
+  // Perform callback / route shift at midpoint of ripple expansion (~380ms for 820ms duration)
+  const midpoint = Math.min(380, Math.max(50, Math.floor(durationMs * 0.46)));
   routeChangeTimer = setTimeout(() => {
     if (callback) {
       try {
@@ -108,9 +109,9 @@ export function triggerGlobalTransition(callback?: () => void, durationMs = 650)
         console.error('Error executing transition callback:', e);
       }
     }
-  }, 240);
+  }, midpoint);
 
-  // Complete and remove overlay
+  // Complete and remove overlay (~820ms)
   transitionCleanupTimer = setTimeout(() => {
     notifyTransitionListeners(false);
   }, durationMs);

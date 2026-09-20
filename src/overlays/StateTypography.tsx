@@ -32,14 +32,17 @@ export function StateTypography() {
     <div
       style={{
         position: 'fixed',
-        left: 'clamp(2rem, 8vw, 8rem)',
+        left: 'clamp(1.5rem, 6vw, 6rem)',
         top: '50%',
         transform: 'translateY(-50%)',
         zIndex: 12,
         pointerEvents: 'none',
         opacity,
-        maxWidth: '420px',
-        transition: 'opacity 0.2s ease-out',
+        maxWidth: 'clamp(320px, 36vw, 460px)',
+        padding: '1.5rem',
+        borderRadius: '12px',
+        background: 'radial-gradient(ellipse at left, rgba(10, 10, 10, 0.72) 0%, rgba(10, 10, 10, 0) 75%)',
+        transition: 'opacity 0.25s ease-out',
       }}
     >
       {/* Step tag */}
@@ -60,12 +63,13 @@ export function StateTypography() {
       {/* Headline */}
       <h2
         style={{
-          fontSize: 'clamp(1.8rem, 3.2vw, 3rem)',
+          fontSize: 'clamp(1.7rem, 3.2vw, 2.8rem)',
           fontWeight: 800,
           letterSpacing: '-0.03em',
           color: '#F5F5F5',
-          lineHeight: 1.1,
-          margin: '0 0 1rem 0',
+          lineHeight: 1.15,
+          margin: '0 0 0.85rem 0',
+          textShadow: '0 2px 14px rgba(0, 0, 0, 0.8)',
         }}
       >
         {currentState.name}
@@ -75,9 +79,10 @@ export function StateTypography() {
       <p
         style={{
           fontSize: 'clamp(0.95rem, 1.3vw, 1.15rem)',
-          color: 'var(--text-muted, #999999)',
+          color: 'var(--text-muted, #A0B0C0)',
           lineHeight: 1.6,
           margin: 0,
+          textShadow: '0 1px 8px rgba(0, 0, 0, 0.7)',
         }}
       >
         {currentState.description}

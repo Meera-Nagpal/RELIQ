@@ -48,6 +48,8 @@ export function ReliabilityCore() {
     ];
   }, []);
 
+  const introProgress = useRef(0);
+
   useFrame((state, delta) => {
     if (!coreRef.current || !materialRef.current || !shellRef.current) return;
 
@@ -69,6 +71,12 @@ export function ReliabilityCore() {
     const time = state.clock.elapsedTime;
     materialRef.current.uniforms.uTime.value = time;
     materialRef.current.uniforms.uScrollProgress.value = scrollProgress;
+
+    // Intro energy convergence from top toward central globe
+    introProgress.current = Math.min(1.0, introProgress.current + delta * 0.9);
+    const introT = introProgress.current;
+    const introScale = THREE.MathUtils.smoothstep(introT, 0.05, 1.0);
+    const introOffsetY = (1.0 - Math.sin((introT * Math.PI) / 2)) * 2.8;
 
     // Speeds increase when unstable
     const instability = 1.0 - currentHealth;
@@ -96,14 +104,14 @@ export function ReliabilityCore() {
       ring3Ref.current.rotation.z = Math.sin(time * 0.5 * speedMult) * 0.35;
     }
 
-    // Unstable micro-jitter during regression
+    // Unstable micro-jitter during regression or smooth convergence
     if (healthStatus === 'regression') {
       const jitterX = (Math.random() - 0.5) * 0.04;
       const jitterY = (Math.random() - 0.5) * 0.04;
       const jitterZ = (Math.random() - 0.5) * 0.04;
       coreRef.current.position.set(jitterX, jitterY, jitterZ);
     } else {
-      coreRef.current.position.lerp(new THREE.Vector3(0, 0, 0), delta * 5);
+      coreRef.current.position.lerp(new THREE.Vector3(0, introOffsetY, 0), delta * 4.5);
     }
 
     // Rhythmic breathing pulse
@@ -111,8 +119,8 @@ export function ReliabilityCore() {
     const pulseAmp = THREE.MathUtils.lerp(0.02, 0.08, instability);
     const pulse = 1.0 + Math.sin(time * pulseFreq) * pulseAmp;
 
-    coreRef.current.scale.setScalar(pulse * 1.15);
-    shellRef.current.scale.setScalar(pulse * 1.35);
+    coreRef.current.scale.setScalar(pulse * 1.15 * Math.max(0.05, introScale));
+    shellRef.current.scale.setScalar(pulse * 1.35 * Math.max(0.05, introScale));
 
     // Shell color & emissive reactivity
     if (shellMaterialRef.current) {

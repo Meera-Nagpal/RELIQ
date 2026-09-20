@@ -8,8 +8,8 @@
   --bg-elevated: #141414;
   --bg-surface: #1A1A1A;
   --text: #F5F5F5;
-  --text-muted: #888888;
-  --text-dim: #555555;
+  --text-muted: #A0B0C0;
+  --text-dim: #708090;
 
   /* Accent */
   --accent: #FF6B35;
@@ -57,9 +57,10 @@
 
   /* Z-Index Scale */
   --z-canvas: 0;
-  --z-content: 1;
-  --z-overlay: 10;
+  --z-atmospheric: 5;
+  --z-content: 10;
   --z-progress: 20;
   --z-nav: 30;
-  --z-modal: 40;
+  --z-modal: 100;
+  --z-transition: 9999;
 }

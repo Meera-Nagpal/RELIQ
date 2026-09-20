@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
+import { apiRepository } from '../services/apiRepository';
+import { EvaluationRun } from '../types';
 
 interface VersionItem {
   id: string;
@@ -77,6 +79,44 @@ const VERSIONS: VersionItem[] = [
  */
 export function VersionCards() {
   const scrollProgress = useExperienceStore((state) => state.scrollProgress);
+  const [realRuns, setRealRuns] = useState<VersionItem[] | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    apiRepository
+      .getEvaluationRuns()
+      .then((runs: EvaluationRun[]) => {
+        if (!mounted) return;
+        if (runs && runs.length >= 2) {
+          const mapped: VersionItem[] = runs.slice(0, 5).map((r: EvaluationRun, idx: number) => {
+            const score = r.metrics?.qualityScore;
+            const lat = r.metrics?.meanLatencyMs;
+            const cost = r.metrics?.estimatedCost;
+            const isReg = r.comparisonReport?.relativeOutcome === 'REGRESSION' || r.status === 'FAILED';
+            const isWarn = r.comparisonReport?.overallGateStatus === 'CONDITIONS';
+            return {
+              id: `v1.${idx + 1}`,
+              name: `${r.candidateVersion?.provider?.toUpperCase() || 'RUN'} (${r.candidateVersion?.modelIdentifier?.split('/').pop() || r.id.slice(0, 8)})`,
+              accuracy: score != null ? `${score.toFixed(1)}%` : 'N/A',
+              latency: lat != null ? `${(lat / 1000).toFixed(2)}s` : 'N/A',
+              cost: cost != null ? `$${cost.toFixed(4)}` : 'N/A',
+              status: isReg ? 'regression' : isWarn ? 'warning' : 'healthy',
+              statusLabel: isReg ? 'REGRESSION DETECTED' : isWarn ? 'DRIFT WARNING' : 'VERIFIED STABLE',
+              changeSummary: r.comparisonReport?.summary || `Authoritative benchmark run evaluated across ${r.totalCases || 27} scenarios.`,
+              isRegression: isReg,
+            };
+          });
+          setRealRuns(mapped);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const activeVersions = realRuns && realRuns.length >= 2 ? realRuns : VERSIONS;
+  const isRealData = Boolean(realRuns && realRuns.length >= 2);
 
   // Active during States 2 and 3 (scrollProgress 0.32 to 0.62)
   const pinStart = 0.32;
@@ -134,16 +174,32 @@ export function VersionCards() {
           gap: '0.4rem',
         }}
       >
-        <div
-          style={{
-            fontSize: '0.75rem',
-            letterSpacing: '0.25em',
-            textTransform: 'uppercase',
-            color: 'var(--accent, #FF6B35)',
-            fontWeight: 600,
-          }}
-        >
-          02 // HORIZONTAL COMPARISON
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+          <span
+            style={{
+              fontSize: '0.75rem',
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+              color: 'var(--accent, #FF6B35)',
+              fontWeight: 600,
+            }}
+          >
+            02 // HORIZONTAL COMPARISON
+          </span>
+          <span
+            style={{
+              fontSize: '0.65rem',
+              padding: '0.2rem 0.65rem',
+              borderRadius: '999px',
+              border: isRealData ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 107, 53, 0.4)',
+              background: isRealData ? 'rgba(46, 204, 113, 0.12)' : 'rgba(255, 107, 53, 0.12)',
+              color: isRealData ? '#2ECC71' : 'var(--accent, #FF6B35)',
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+            }}
+          >
+            {isRealData ? 'LIVE BACKEND RUNS' : 'SAMPLE BENCHMARK AUDIT DATA • INTERACTIVE DEMO'}
+          </span>
         </div>
         <h2
           style={{
@@ -159,7 +215,7 @@ export function VersionCards() {
         <p
           style={{
             fontSize: '0.9rem',
-            color: 'var(--text-muted, #888888)',
+            color: 'var(--text-muted, #A0B0C0)',
             maxWidth: '480px',
             margin: 0,
           }}
@@ -179,7 +235,7 @@ export function VersionCards() {
           transition: 'transform 0.08s linear',
         }}
       >
-        {VERSIONS.map((v, i) => {
+        {activeVersions.map((v, i) => {
           const isReg = v.isRegression;
           const isWarn = v.status === 'warning';
           const borderColor = isReg
@@ -198,12 +254,13 @@ export function VersionCards() {
                 width: 'clamp(320px, 28vw, 420px)',
                 flexShrink: 0,
                 background: isReg
-                  ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.85) 0%, rgba(18, 6, 5, 0.95) 100%)'
-                  : 'linear-gradient(180deg, rgba(20, 24, 30, 0.85) 0%, rgba(12, 14, 18, 0.95) 100%)',
+                  ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.94) 0%, rgba(18, 6, 5, 0.98) 100%)'
+                  : 'linear-gradient(180deg, rgba(20, 24, 30, 0.94) 0%, rgba(12, 14, 18, 0.98) 100%)',
                 border: `1px solid ${borderColor}`,
                 borderRadius: '12px',
                 padding: '2rem',
                 boxShadow: glowShadow,
+                backdropFilter: 'blur(12px)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1.4rem',
@@ -338,11 +395,30 @@ export function VersionCards() {
               <div
                 style={{
                   fontSize: '0.8rem',
-                  color: isReg ? '#FFBBAA' : '#99AAB8',
+                  color: isReg ? '#FFBBAA' : 'var(--text-muted, #A0B0C0)',
                   lineHeight: 1.45,
                 }}
               >
                 {v.changeSummary}
+              </div>
+
+              {/* Source & Provenance Badge */}
+              <div
+                style={{
+                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  paddingTop: '0.6rem',
+                  fontSize: '0.64rem',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: isRealData ? '#2ECC71' : 'var(--text-dim, #708090)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>SOURCE: {isRealData ? 'RELIQ AUDIT DATABASE' : 'SAMPLE BENCHMARK SCENARIO'}</span>
+                <span>{isRealData ? 'AUTHORITATIVE' : 'DEMO'}</span>
               </div>
             </div>
           );

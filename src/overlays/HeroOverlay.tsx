@@ -45,28 +45,29 @@ export function HeroOverlay() {
           width: '100%',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
           <span
             style={{
               fontFamily: "'Inter', sans-serif",
-              fontSize: '1.1rem',
-              fontWeight: 800,
-              letterSpacing: '0.15em',
+              fontSize: '1.55rem',
+              fontWeight: 900,
+              letterSpacing: '0.18em',
               color: '#FFFFFF',
+              textShadow: '0 0 25px rgba(255, 107, 53, 0.4)',
             }}
           >
             RELIQ
           </span>
           <span
             style={{
-              fontSize: '0.65rem',
-              padding: '0.2rem 0.6rem',
+              fontSize: '0.68rem',
+              padding: '0.25rem 0.65rem',
               borderRadius: '999px',
-              border: '1px solid rgba(255, 107, 53, 0.4)',
-              background: 'rgba(255, 107, 53, 0.1)',
+              border: '1px solid rgba(255, 107, 53, 0.45)',
+              background: 'rgba(255, 107, 53, 0.12)',
               color: 'var(--accent, #FF6B35)',
-              fontWeight: 600,
-              letterSpacing: '0.1em',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
             }}
           >
             AI RELIABILITY SUITE

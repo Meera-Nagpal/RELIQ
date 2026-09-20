@@ -86,7 +86,11 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
       onClick={(e) => e.stopPropagation()}
     >
       <div
+        className="evaluation-modal-card"
         style={{
+          position: 'relative',
+          overflow: 'hidden',
+          isolation: 'isolate',
           background: '#0D1117',
           border: isFailed ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(255, 107, 53, 0.35)',
           borderRadius: '16px',
@@ -113,6 +117,14 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             to {
               opacity: 1;
               transform: scale(1);
+            }
+          }
+          @keyframes reliqIndeterminate {
+            0% {
+              transform: translateX(-100%);
+            }
+            100% {
+              transform: translateX(300%);
             }
           }
         `}</style>
@@ -222,12 +234,12 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
               <span style={{ color: '#CCCCCC', fontWeight: 600 }}>
-                {progressCounts
+                {progressCounts && progressCounts.current > 0
                   ? `Processing scenario ${currentCaseNumber} / ${targetTotal}`
-                  : 'Evaluation in progress...'}
+                  : 'EVALUATION IN PROGRESS'}
               </span>
               <span style={{ color: 'var(--reliq-accent, #FF6B35)', fontWeight: 800 }}>
-                {progressPercent}%
+                {progressPercent > 0 ? `${progressPercent}%` : ''}
               </span>
             </div>
 
@@ -239,17 +251,31 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                 background: 'rgba(255, 255, 255, 0.08)',
                 borderRadius: '4px',
                 overflow: 'hidden',
+                position: 'relative',
               }}
             >
-              <div
-                style={{
-                  width: `${Math.max(4, Math.min(100, progressPercent))}%`,
-                  height: '100%',
-                  background: 'linear-gradient(90deg, #FF6B35 0%, #FF8C5A 100%)',
-                  borderRadius: '4px',
-                  transition: 'width 0.3s ease-out',
-                }}
-              />
+              {progressPercent > 0 ? (
+                <div
+                  style={{
+                    width: `${Math.max(4, Math.min(100, progressPercent))}%`,
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #FF6B35 0%, #FF8C5A 100%)',
+                    borderRadius: '4px',
+                    transition: 'width 0.3s ease-out',
+                  }}
+                />
+              ) : (
+                <div
+                  className="reliq-progress-indeterminate"
+                  style={{
+                    width: '35%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, transparent 0%, #FF6B35 50%, transparent 100%)',
+                    borderRadius: '4px',
+                    animation: 'reliqIndeterminate 1.4s ease-in-out infinite',
+                  }}
+                />
+              )}
             </div>
 
             {/* Current Stage or Case Text */}

@@ -41,11 +41,18 @@ export const LandingExperience: React.FC = () => {
 
   // Read device flags from store
   const webglAvailable = useExperienceStore((s) => s.webglAvailable);
+  const experienceReady = useExperienceStore((s) => s.experienceReady);
 
   return (
     <div className="app-container" ref={containerRef}>
       {/* ── 3D Canvas Layer ───────────────────────────────── */}
-      <div className="canvas-wrapper">
+      <div
+        className="canvas-wrapper"
+        style={{
+          opacity: experienceReady ? 1 : 0.9,
+          transition: 'opacity 0.6s ease-out',
+        }}
+      >
         {webglAvailable ? (
           <React.Suspense fallback={<StaticHero />}>
             <ExperienceCanvas />

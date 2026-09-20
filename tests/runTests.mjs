@@ -6817,6 +6817,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runUiUxExportPolishTests } = await import('./uiUxExportPolish.test.mjs');
     await runUiUxExportPolishTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Final Frontend Polish: Containment, Timing, Cards & 3D
+    // -------------------------------------------------------------
+    const { runFrontendPolishTests } = await import('./frontendPolish.test.mjs');
+    await runFrontendPolishTests();
   } finally {
     await server.close();
   }

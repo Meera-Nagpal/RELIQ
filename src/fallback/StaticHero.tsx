@@ -19,7 +19,7 @@ const containerStyle: React.CSSProperties = {
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
-  background: '#0A0A0A',
+  background: 'radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.09) 0%, #0A0A0A 70%)',
   zIndex: 0,
 };
 
@@ -31,21 +31,22 @@ const titleStyle: React.CSSProperties = {
   textTransform: 'uppercase',
   color: '#F5F5F5',
   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  opacity: 0.15,
+  opacity: 0.22,
 };
 
 const loaderStyle: React.CSSProperties = {
-  marginTop: '2rem',
+  marginTop: '1.5rem',
   display: 'flex',
   gap: '0.5rem',
   alignItems: 'center',
 };
 
 const dotBaseStyle: React.CSSProperties = {
-  width: '4px',
-  height: '4px',
+  width: '5px',
+  height: '5px',
   borderRadius: '50%',
   background: '#FF6B35',
+  boxShadow: '0 0 8px #FF6B35',
 };
 
 const keyframesCSS = `
@@ -84,11 +85,24 @@ export const StaticHero: React.FC = () => {
           <div className="static-hero-dot" style={dotBaseStyle} />
           <div className="static-hero-dot" style={dotBaseStyle} />
         </div>
+        <div
+          style={{
+            marginTop: '1.2rem',
+            fontSize: '0.72rem',
+            letterSpacing: '0.24em',
+            textTransform: 'uppercase',
+            color: 'var(--reliq-accent, #FF6B35)',
+            fontWeight: 700,
+            opacity: 0.9,
+          }}
+        >
+          INITIALIZING RELIQ SYSTEM
+        </div>
         {/* Screen reader text */}
         <span
           style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}
         >
-          Loading experience…
+          Loading RELIQ experience…
         </span>
       </div>
     </>

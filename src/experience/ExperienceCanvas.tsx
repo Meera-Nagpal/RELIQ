@@ -53,9 +53,9 @@ export function ExperienceCanvas() {
 
   return (
     <ErrorBoundary>
-      <React.Suspense fallback={<div className="loading-fallback" style={{ width: '100%', height: '100%', backgroundColor: '#0A0A0A' }} />}>
+      <React.Suspense fallback={null}>
         <Canvas
-          dpr={[1, 2]}
+          dpr={[1, capabilityTier === 'low' ? 1.2 : 1.75]}
           camera={{ position: [0, 0.8, 7.8], fov: 45 }}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         >
@@ -65,10 +65,12 @@ export function ExperienceCanvas() {
           <Camera />
           
           <ReliabilityCore />
-          <SpatialTypography />
+          <React.Suspense fallback={null}>
+            <SpatialTypography />
+          </React.Suspense>
           <DataConnections />
           
-          <Particles count={capabilityTier === 'low' ? 600 : 2200} />
+          <Particles count={capabilityTier === 'low' ? 600 : 2000} />
           
           <ReflectiveGround />
           

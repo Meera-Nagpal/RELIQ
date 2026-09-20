@@ -213,19 +213,26 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   // Model availability check
   const checkJudgeAvailability = async (modelId: string) => {
     setJudgeStatus('CHECKING');
+    setJudgeStatusDetails('');
     try {
       const res = await fetch(`/api/judge/test?model=${encodeURIComponent(modelId)}`);
       if (res.ok) {
         const data = await res.json();
-        setJudgeStatus(data.status || 'UNAVAILABLE');
-        setJudgeStatusDetails(data.latencyMs ? `${data.latencyMs}ms` : data.error || '');
+        if (data.status === 'AVAILABLE' || data.available) {
+          setJudgeStatus('AVAILABLE');
+          const modelName = eligibleJudgeModels.find((m) => m.id === modelId)?.displayName || modelId;
+          setJudgeStatusDetails(`✓ Judge model available. ${modelName} responded successfully${data.latencyMs ? ` (${data.latencyMs}ms)` : ''}.`);
+        } else {
+          setJudgeStatus('UNAVAILABLE');
+          setJudgeStatusDetails(data.error || 'Judge model unavailable or API key missing.');
+        }
       } else {
-        setJudgeStatus('REQUEST FAILED');
-        setJudgeStatusDetails(`HTTP ${res.status}`);
+        setJudgeStatus('UNAVAILABLE');
+        setJudgeStatusDetails(`HTTP ${res.status}: Judge connection test failed.`);
       }
     } catch (err: any) {
       setJudgeStatus('UNAVAILABLE');
-      setJudgeStatusDetails(err.message || 'Network error');
+      setJudgeStatusDetails(err.message || 'Network error connecting to judge service.');
     }
   };
 
@@ -1125,24 +1132,34 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       type="button"
                       onClick={() => checkJudgeAvailability(selectedJudgeModel)}
                       disabled={isRunning || judgeStatus === 'CHECKING'}
+                      aria-label="Test LLM Judge Model Connection"
                       style={{
-                        padding: '0.35rem 0.65rem',
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        padding: '0.4rem 0.8rem',
+                        background: judgeStatus === 'CHECKING' ? 'rgba(255, 107, 53, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                        border: judgeStatus === 'CHECKING' ? '1px solid var(--accent, #FF6B35)' : '1px solid rgba(255, 255, 255, 0.15)',
                         borderRadius: '4px',
-                        color: '#FFFFFF',
+                        color: judgeStatus === 'CHECKING' ? 'var(--accent, #FF6B35)' : '#FFFFFF',
                         fontSize: '0.72rem',
-                        cursor: 'pointer',
+                        fontWeight: 700,
+                        cursor: isRunning || judgeStatus === 'CHECKING' ? 'not-allowed' : 'pointer',
                         whiteSpace: 'nowrap',
+                        transition: 'all 0.2s ease',
                       }}
                     >
-                      {judgeStatus === 'CHECKING' ? 'Testing...' : 'Test Judge'}
+                      {judgeStatus === 'CHECKING' ? 'TESTING…' : 'TEST CONNECTION'}
                     </button>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#8899AA' }}>
-                    <span>Model ID: <code style={{ color: '#4E95FF' }}>{selectedJudgeModel}</code></span>
-                    {judgeStatusDetails && <span>{judgeStatusDetails}</span>}
+                  <div style={{ marginTop: '0.45rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.72rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8899AA' }}>
+                      <span>Judge: <strong style={{ color: '#FFFFFF' }}>{eligibleJudgeModels.find((m) => m.id === selectedJudgeModel)?.displayName || selectedJudgeModel}</strong></span>
+                      <span>Status: <strong style={{ color: judgeStatus === 'AVAILABLE' ? '#3FB950' : judgeStatus === 'CHECKING' ? '#4E95FF' : '#FF6B6B' }}>{judgeStatus === 'CHECKING' ? 'TESTING…' : judgeStatus}</strong></span>
+                    </div>
+                    {judgeStatusDetails && (
+                      <div style={{ color: judgeStatus === 'AVAILABLE' ? '#3FB950' : '#FF7777', fontSize: '0.72rem' }}>
+                        {judgeStatusDetails}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
