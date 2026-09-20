@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
 import { apiRepository } from '../services/apiRepository';
-import { EvaluationRun } from '../types';
+import { EvaluationRun } from '../domain/types';
 
 interface VersionItem {
   id: string;
@@ -89,11 +89,11 @@ export function VersionCards() {
         if (!mounted) return;
         if (runs && runs.length >= 2) {
           const mapped: VersionItem[] = runs.slice(0, 5).map((r: EvaluationRun, idx: number) => {
-            const score = r.metrics?.qualityScore;
-            const lat = r.metrics?.meanLatencyMs;
-            const cost = r.metrics?.estimatedCost;
-            const isReg = r.comparisonReport?.relativeOutcome === 'REGRESSION' || r.status === 'FAILED';
-            const isWarn = r.comparisonReport?.overallGateStatus === 'CONDITIONS';
+            const score = r.metrics?.candidateQualityScore ?? r.metrics?.candidateAccuracy;
+            const lat = r.metrics?.candidateAvgLatencyMs;
+            const cost = r.metrics?.candidateEstimatedCost;
+            const isReg = Boolean(r.regressionDecision?.isRegression || r.releaseDecision?.status === 'BLOCK' || r.releaseDecision?.status === 'REGRESSION_DETECTED');
+            const isWarn = Boolean(r.releaseDecision?.status === 'SHIP_WITH_CONDITIONS' || r.releaseDecision?.status === 'INSUFFICIENT_EVIDENCE');
             return {
               id: `v1.${idx + 1}`,
               name: `${r.candidateVersion?.provider?.toUpperCase() || 'RUN'} (${r.candidateVersion?.modelIdentifier?.split('/').pop() || r.id.slice(0, 8)})`,
@@ -102,7 +102,7 @@ export function VersionCards() {
               cost: cost != null ? `$${cost.toFixed(4)}` : 'N/A',
               status: isReg ? 'regression' : isWarn ? 'warning' : 'healthy',
               statusLabel: isReg ? 'REGRESSION DETECTED' : isWarn ? 'DRIFT WARNING' : 'VERIFIED STABLE',
-              changeSummary: r.comparisonReport?.summary || `Authoritative benchmark run evaluated across ${r.totalCases || 27} scenarios.`,
+              changeSummary: r.regressionDecision?.summary || r.releaseDecision?.reason || `Authoritative benchmark run evaluated across ${r.metrics?.totalCases || 27} scenarios.`,
               isRegression: isReg,
             };
           });
