@@ -166,9 +166,9 @@ export function VersionCards() {
   const activeVersions = realRuns && realRuns.length >= 2 ? realRuns : DEFAULT_VERSIONS;
   const isRealData = Boolean(realRuns && realRuns.length >= 2);
 
-  // Active during States 2 and 3 (scrollProgress 0.32 to 0.62)
-  const pinStart = 0.32;
-  const pinEnd = 0.62;
+  // Active strictly during State 2 (COMPARE / EVALUATION: scrollProgress 0.28 to 0.49)
+  const pinStart = 0.28;
+  const pinEnd = 0.49;
   const isActive = scrollProgress >= pinStart && scrollProgress <= pinEnd;
 
   // Horizontal translation progress (0 to 1)
@@ -179,11 +179,11 @@ export function VersionCards() {
   // Fade in / out opacity for the pinned overlay
   const opacity = useMemo(() => {
     if (scrollProgress < pinStart) return 0;
-    if (scrollProgress < pinStart + 0.04) {
-      return mapRangeClamped(scrollProgress, pinStart, pinStart + 0.04, 0, 1);
+    if (scrollProgress < pinStart + 0.03) {
+      return mapRangeClamped(scrollProgress, pinStart, pinStart + 0.03, 0, 1);
     }
-    if (scrollProgress > pinEnd - 0.04) {
-      return mapRangeClamped(scrollProgress, pinEnd - 0.04, pinEnd, 1, 0);
+    if (scrollProgress > pinEnd - 0.03) {
+      return mapRangeClamped(scrollProgress, pinEnd - 0.03, pinEnd, 1, 0);
     }
     return 1;
   }, [scrollProgress]);

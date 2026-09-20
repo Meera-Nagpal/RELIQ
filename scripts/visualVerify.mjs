@@ -208,7 +208,15 @@ async function main() {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await wait(1000);
+  await cdp.send('Runtime.evaluate', {
+    expression: `
+      (() => {
+        const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        window.scrollTo(0, 0.44 * totalScrollHeight);
+      })()
+    `,
+  });
+  await wait(2200);
   const shot1280 = await cdp.send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(SCREENSHOT_DIR, 'compare_1280x720.png'), Buffer.from(shot1280.data, 'base64'));
   console.log('  ✓ Saved 1280x720 screenshot');
