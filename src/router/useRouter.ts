@@ -76,8 +76,13 @@ function notifyTransitionListeners(transitioning: boolean) {
 }
 
 function isReducedMotion(): boolean {
-  if (typeof window === 'undefined' || !window.matchMedia) return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const win = typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? (globalThis as any).window : undefined;
+  if (!win || !win.matchMedia) return false;
+  try {
+    return win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
 }
 
 export function triggerGlobalTransition(callback?: () => void, durationMs = 650) {

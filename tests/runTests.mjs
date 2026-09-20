@@ -6811,6 +6811,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runEvaluatorReportingCleanupTests } = await import('./evaluatorReportingCleanup.test.mjs');
     await runEvaluatorReportingCleanupTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Final UI/UX Polish: PDF Export, Winner Header & Ripple Transitions
+    // -------------------------------------------------------------
+    const { runUiUxExportPolishTests } = await import('./uiUxExportPolish.test.mjs');
+    await runUiUxExportPolishTests({ test, asyncTest }, server);
   } finally {
     await server.close();
   }

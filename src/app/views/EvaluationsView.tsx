@@ -94,7 +94,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   onDeleteRun,
   onSelectActiveRun,
 }) => {
-  const { navigate } = useRouter();
+  const { navigate, triggerTransition } = useRouter();
 
   // Mode: 'saved_versions' vs 'custom_benchmark'
   const [configMode, setConfigMode] = useState<'saved_versions' | 'custom_benchmark'>('saved_versions');
@@ -152,6 +152,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
   // Execution states
   const [isRunning, setIsRunning] = useState(false);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const isCancelledRef = useRef(false);
   const [maxCasesToRun, setMaxCasesToRun] = useState<number>(0);
   const [progressPercent, setProgressPercent] = useState(0);
   const [currentProgressText, setCurrentProgressText] = useState('');
@@ -166,12 +168,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     try {
       const freshRun = await apiRepository.getEvaluationRunById(run.id);
       if (freshRun && freshRun.comparisonReport) {
-        setActiveReport(freshRun.comparisonReport);
+        triggerTransition(() => {
+          setActiveReport(freshRun.comparisonReport || null);
+        });
         return;
       }
     } catch {}
     if (run.comparisonReport) {
-      setActiveReport(run.comparisonReport);
+      triggerTransition(() => {
+        setActiveReport(run.comparisonReport || null);
+      });
     }
   };
 
@@ -291,6 +297,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
     setEvaluationError(null);
     setIsRunning(true);
+    setIsProgressModalOpen(true);
+    isCancelledRef.current = false;
     setCurrentRunId(null);
     setProgressPercent(0);
     setProgressCounts(null);
@@ -350,7 +358,21 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       let run: EvaluationRun | null = null;
       let completed = false;
       while (!completed) {
+        if (isCancelledRef.current) {
+          console.log('[RELIQ UI] Evaluation loop cancelled by user');
+          setIsRunning(false);
+          setIsProgressModalOpen(false);
+          return;
+        }
+
         await new Promise((res) => setTimeout(res, 400));
+
+        if (isCancelledRef.current) {
+          setIsRunning(false);
+          setIsProgressModalOpen(false);
+          return;
+        }
+
         const statusRes = await fetch(`/api/evaluations/status/${runId}`);
         if (statusRes.ok) {
           const statusData = await statusRes.json();
@@ -359,7 +381,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             setProgressPercent(percent);
             setProgressCounts({ current, total });
             setCurrentProgressText(
-              `Evaluating scenario ${current}/${total}: ${caseName || ''}`
+              caseName ? `Evaluating scenario ${current}/${total}: ${caseName}` : `Processing scenario ${current}/${total}`
             );
           }
 
@@ -378,8 +400,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       if (run) {
         await onSaveRun(run);
         onSelectActiveRun(run);
+        setIsRunning(false);
+        setIsProgressModalOpen(false);
         if (run.comparisonReport) {
-          setActiveReport(run.comparisonReport);
+          triggerTransition(() => {
+            setActiveReport(run.comparisonReport || null);
+          });
         }
       }
       setIsRunning(false);
@@ -387,7 +413,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       console.error('[RELIQ UI] Evaluation error:', err);
       setEvaluationError(err.message || 'Evaluation run failed');
       setIsRunning(false);
-      setCurrentRunId(null);
+      // Keep isProgressModalOpen true so failure view displays error details & retry
     }
   };
 
@@ -1504,6 +1530,33 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           onClose={() => setActiveReport(null)}
         />
       )}
+
+      {/* ── Live Evaluation Running Modal ── */}
+      <EvaluationProgressModal
+        isOpen={isProgressModalOpen}
+        datasetName={selectedDataset?.name || 'Benchmark Dataset'}
+        totalScenarios={maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 27)}
+        baselineModel={`${effectiveBaselineModel} (${configMode === 'custom_benchmark' ? customBaselineProvider : baselineVersion?.provider || 'default'})`}
+        candidateModel={`${effectiveCandidateModel} (${configMode === 'custom_benchmark' ? customCandidateProvider : candidateVersion?.provider || 'default'})`}
+        judgeModel={selectedJudgeModel}
+        judgeEnabled={judgeEnabled}
+        semanticStatus="ACTIVE"
+        progressPercent={progressPercent}
+        progressCounts={progressCounts}
+        currentStageText={currentProgressText}
+        runId={currentRunId}
+        error={evaluationError}
+        onCancel={() => {
+          isCancelledRef.current = true;
+          setIsRunning(false);
+          setIsProgressModalOpen(false);
+          setEvaluationError(null);
+        }}
+        onRetry={() => {
+          setEvaluationError(null);
+          handleStartEvaluation();
+        }}
+      />
     </div>
   );
 };
