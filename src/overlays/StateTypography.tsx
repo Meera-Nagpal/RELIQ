@@ -32,16 +32,18 @@ export function StateTypography() {
     <div
       style={{
         position: 'fixed',
-        left: 'clamp(1.5rem, 6vw, 6rem)',
+        left: 'clamp(3rem, 10vw, 12vw)',
         top: '50%',
         transform: 'translateY(-50%)',
-        zIndex: 12,
+        zIndex: 20,
         pointerEvents: 'none',
         opacity,
-        maxWidth: 'clamp(320px, 36vw, 460px)',
+        maxWidth: 'clamp(340px, 38vw, 480px)',
         padding: '1.5rem',
         borderRadius: '12px',
-        background: 'radial-gradient(ellipse at left, rgba(10, 10, 10, 0.72) 0%, rgba(10, 10, 10, 0) 75%)',
+        background: 'radial-gradient(ellipse at left, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.55) 65%, rgba(10, 10, 10, 0) 90%)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         transition: 'opacity 0.25s ease-out',
       }}
     >

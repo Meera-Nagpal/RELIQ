@@ -36,7 +36,7 @@ export function MetricOverlay() {
       return {
         displayValue: '500',
         hasPercent: false,
-        label: 'TEST CASES IN HARNESS',
+        label: 'ACTIVE TEST CASES IN HARNESS',
       };
     }
 
@@ -87,9 +87,9 @@ export function MetricOverlay() {
     <div
       style={{
         position: 'fixed',
-        top: '25%',
-        right: 'clamp(2rem, 8vw, 8rem)',
-        zIndex: 12,
+        top: currentStateIndex === 3 ? '31%' : '26%',
+        right: 'clamp(3rem, 10vw, 12vw)',
+        zIndex: 20,
         pointerEvents: 'none',
         opacity,
         display: 'flex',

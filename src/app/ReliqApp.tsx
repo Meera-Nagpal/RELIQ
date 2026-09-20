@@ -193,25 +193,6 @@ export const ReliqApp: React.FC = () => {
     await loadData();
   };
 
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          width: '100vw',
-          height: '100vh',
-          background: '#0D1117',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#888888',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        Initializing RELIQ Workspace...
-      </div>
-    );
-  }
-
   if (loadError) {
     return (
       <div
@@ -290,6 +271,16 @@ export const ReliqApp: React.FC = () => {
 
         {/* Viewport Content */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '2rem', boxSizing: 'border-box' }}>
+          {isLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+              <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+                <div style={{ flex: 1, height: '130px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }} />
+                <div style={{ flex: 1, height: '130px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }} />
+                <div style={{ flex: 1, height: '130px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }} />
+              </div>
+              <div style={{ height: '380px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }} />
+            </div>
+          ) : (
           <ErrorBoundary>
           {appView === 'dashboard' && activeProject && (
             <DashboardView
@@ -385,6 +376,7 @@ export const ReliqApp: React.FC = () => {
             </div>
           )}
           </ErrorBoundary>
+          )}
         </main>
       </div>
     </div>

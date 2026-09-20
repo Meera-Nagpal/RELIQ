@@ -219,7 +219,9 @@ export class LocalStorageRepository implements StorageRepository {
           mode = 'SAVED';
         }
 
-        const isReg = Boolean(run.regressionDecision?.isRegression);
+        const totalCases = run.metrics?.totalCases ?? (run.caseResults?.length || 0);
+        const hasData = totalCases > 0 && (run.metrics?.candidateAccuracy != null || run.metrics?.candidateQualityScore != null);
+        const isReg = hasData && Boolean(run.regressionDecision?.isRegression);
         const updatedRun: EvaluationRun = {
           ...run,
           projectId: run.projectId || projectId || 'proj-checkout-agent',
@@ -229,20 +231,20 @@ export class LocalStorageRepository implements StorageRepository {
           caseResults: Array.isArray(run.caseResults) ? run.caseResults : Array.isArray((run as any).results) ? (run as any).results : [],
           regressionDecision: run.regressionDecision || {
             isRegression: isReg,
-            verdict: isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
-            summary: isReg ? 'Regression detected in evaluation' : 'No regressions detected',
+            verdict: !hasData ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+            summary: !hasData ? 'No completed evaluation data' : isReg ? 'Regression detected in evaluation' : 'No regressions detected',
             violatedRules: [],
             regressionCategories: [],
           },
           releaseDecision: run.releaseDecision || {
-            status: isReg ? 'BLOCK' : 'PASS',
+            status: !hasData ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'BLOCK' : 'PASS',
             decidedBy: 'System',
             decidedAt: run.timestamp || new Date().toISOString(),
           },
           metrics: {
             ...(run.metrics || {}),
-            totalCases: run.metrics?.totalCases ?? (run.caseResults?.length || 0),
-            sampleSize: run.metrics?.sampleSize ?? run.metrics?.totalCases ?? 0,
+            totalCases: totalCases,
+            sampleSize: run.metrics?.sampleSize ?? totalCases,
             evidenceStrength: run.metrics?.evidenceStrength || 'LOW',
             baselinePassed: run.metrics?.baselinePassed ?? 0,
             candidatePassed: run.metrics?.candidatePassed ?? 0,

@@ -1112,11 +1112,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       onChange={(e) => setSelectedJudgeModel(e.target.value)}
                       disabled={isRunning || !judgeEnabled}
                       style={{
-                        flex: 1,
-                        padding: '0.45rem 0.6rem',
+                        width: '100%',
+                        padding: '0.5rem 0.75rem',
                         background: '#0D1117',
                         border: isJudgeConflicting ? '1px solid #FF4444' : '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '4px',
+                        borderRadius: '6px',
                         color: '#FFFFFF',
                         fontSize: '0.82rem',
                       }}
@@ -1127,27 +1127,6 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                         </option>
                       ))}
                     </select>
-
-                    <button
-                      type="button"
-                      onClick={() => checkJudgeAvailability(selectedJudgeModel)}
-                      disabled={isRunning || judgeStatus === 'CHECKING'}
-                      aria-label="Test LLM Judge Model Connection"
-                      style={{
-                        padding: '0.4rem 0.8rem',
-                        background: judgeStatus === 'CHECKING' ? 'rgba(255, 107, 53, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-                        border: judgeStatus === 'CHECKING' ? '1px solid var(--accent, #FF6B35)' : '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '4px',
-                        color: judgeStatus === 'CHECKING' ? 'var(--accent, #FF6B35)' : '#FFFFFF',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        cursor: isRunning || judgeStatus === 'CHECKING' ? 'not-allowed' : 'pointer',
-                        whiteSpace: 'nowrap',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      {judgeStatus === 'CHECKING' ? 'TESTING…' : 'TEST CONNECTION'}
-                    </button>
                   </div>
 
                   <div style={{ marginTop: '0.45rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.72rem' }}>

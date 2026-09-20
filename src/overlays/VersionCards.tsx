@@ -92,17 +92,18 @@ export function VersionCards() {
             const score = r.metrics?.candidateQualityScore ?? r.metrics?.candidateAccuracy;
             const lat = r.metrics?.candidateAvgLatencyMs;
             const cost = r.metrics?.candidateEstimatedCost;
-            const isReg = Boolean(r.regressionDecision?.isRegression || r.releaseDecision?.status === 'BLOCK' || r.releaseDecision?.status === 'REGRESSION_DETECTED');
-            const isWarn = Boolean(r.releaseDecision?.status === 'SHIP_WITH_CONDITIONS' || r.releaseDecision?.status === 'INSUFFICIENT_EVIDENCE');
+            const hasData = score != null;
+            const isReg = hasData && Boolean(r.regressionDecision?.isRegression || r.releaseDecision?.status === 'BLOCK' || r.releaseDecision?.status === 'REGRESSION_DETECTED');
+            const isWarn = hasData && Boolean(r.releaseDecision?.status === 'SHIP_WITH_CONDITIONS' || r.releaseDecision?.status === 'INSUFFICIENT_EVIDENCE');
             return {
               id: `v1.${idx + 1}`,
               name: `${r.candidateVersion?.provider?.toUpperCase() || 'RUN'} (${r.candidateVersion?.modelIdentifier?.split('/').pop() || r.id.slice(0, 8)})`,
-              accuracy: score != null ? `${score.toFixed(1)}%` : 'N/A',
+              accuracy: hasData ? `${score.toFixed(1)}%` : 'N/A',
               latency: lat != null ? `${(lat / 1000).toFixed(2)}s` : 'N/A',
               cost: cost != null ? `$${cost.toFixed(4)}` : 'N/A',
-              status: isReg ? 'regression' : isWarn ? 'warning' : 'healthy',
-              statusLabel: isReg ? 'REGRESSION DETECTED' : isWarn ? 'DRIFT WARNING' : 'VERIFIED STABLE',
-              changeSummary: r.regressionDecision?.summary || r.releaseDecision?.reason || `Authoritative benchmark run evaluated across ${r.metrics?.totalCases || 27} scenarios.`,
+              status: !hasData ? 'warning' : isReg ? 'regression' : isWarn ? 'warning' : 'healthy',
+              statusLabel: !hasData ? 'No completed evaluation data' : isReg ? 'REGRESSION DETECTED' : isWarn ? 'DRIFT WARNING' : 'VERIFIED STABLE',
+              changeSummary: !hasData ? 'No completed evaluation data' : r.regressionDecision?.summary || r.releaseDecision?.reason || `Authoritative benchmark run evaluated across ${r.metrics?.totalCases || 27} scenarios.`,
               isRegression: isReg,
             };
           });
@@ -198,7 +199,7 @@ export function VersionCards() {
               letterSpacing: '0.1em',
             }}
           >
-            {isRealData ? 'LIVE BACKEND RUNS' : 'SAMPLE BENCHMARK AUDIT DATA • INTERACTIVE DEMO'}
+            {isRealData ? 'LIVE / HISTORICAL EVALUATION' : 'DEMO / SAMPLE BENCHMARK DATA'}
           </span>
         </div>
         <h2
@@ -417,8 +418,8 @@ export function VersionCards() {
                   alignItems: 'center',
                 }}
               >
-                <span>SOURCE: {isRealData ? 'RELIQ AUDIT DATABASE' : 'SAMPLE BENCHMARK SCENARIO'}</span>
-                <span>{isRealData ? 'AUTHORITATIVE' : 'DEMO'}</span>
+                <span>SOURCE: {isRealData ? 'LIVE / HISTORICAL EVALUATION' : 'DEMO / SAMPLE BENCHMARK'}</span>
+                <span>{isRealData ? 'LIVE RUN' : 'DEMO'}</span>
               </div>
             </div>
           );

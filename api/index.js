@@ -17428,7 +17428,9 @@ function getRunsFromDisk() {
           const parsed = JSON.parse(content);
           if (parsed?.id && !seenIds.has(parsed.id)) {
             seenIds.add(parsed.id);
-            const isReg = Boolean(parsed.regressionDecision?.isRegression);
+            const totalCases = parsed.metrics?.totalCases ?? (parsed.caseResults?.length || 0);
+            const hasData = totalCases > 0 && (parsed.metrics?.candidateAccuracy != null || parsed.metrics?.candidateQualityScore != null);
+            const isReg = hasData && Boolean(parsed.regressionDecision?.isRegression);
             const normalized = {
               ...parsed,
               projectId: parsed.projectId || "proj-checkout-agent",
@@ -17437,13 +17439,13 @@ function getRunsFromDisk() {
               caseResults: Array.isArray(parsed.caseResults) ? parsed.caseResults : Array.isArray(parsed.results) ? parsed.results : [],
               regressionDecision: parsed.regressionDecision || {
                 isRegression: isReg,
-                verdict: isReg ? "REGRESSION_DETECTED" : "NO_REGRESSION",
-                summary: isReg ? "Regression detected in evaluation" : "No regressions detected",
+                verdict: !hasData ? "INSUFFICIENT_EVIDENCE" : isReg ? "REGRESSION_DETECTED" : "NO_REGRESSION",
+                summary: !hasData ? "No completed evaluation data" : isReg ? "Regression detected in evaluation" : "No regressions detected",
                 violatedRules: [],
                 regressionCategories: []
               },
               releaseDecision: parsed.releaseDecision || {
-                status: isReg ? "BLOCK" : "PASS",
+                status: !hasData ? "INSUFFICIENT_EVIDENCE" : isReg ? "BLOCK" : "PASS",
                 decidedBy: "System",
                 decidedAt: parsed.timestamp || (/* @__PURE__ */ new Date()).toISOString()
               },

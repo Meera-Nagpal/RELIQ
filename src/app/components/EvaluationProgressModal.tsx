@@ -130,7 +130,24 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
         `}</style>
 
         {/* ── Top Ripple Animation or Failure Icon ── */}
-        <div style={{ margin: '0.5rem 0' }}>
+        <div
+          className="evaluation-modal-ripple-container"
+          style={{
+            margin: '0.5rem 0',
+            position: 'relative',
+            overflow: 'hidden',
+            isolation: 'isolate',
+            borderRadius: '12px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '1.2rem',
+            width: '100%',
+            maxWidth: '260px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+          }}
+        >
           {isFailed ? (
             <div
               style={{
