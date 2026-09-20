@@ -4,82 +4,105 @@ import { mapRangeClamped } from '../utils/math';
 import { apiRepository } from '../services/apiRepository';
 import { EvaluationRun } from '../domain/types';
 
-interface VersionItem {
+export interface VersionItem {
   id: string;
   name: string;
+  modelTag: string;
   accuracy: string;
   latency: string;
   cost: string;
   status: 'healthy' | 'warning' | 'regression';
   statusLabel: string;
+  source: 'LIVE RUN' | 'HISTORICAL' | 'DEMO / SAMPLE' | 'NO COMPLETED RUN';
   changeSummary: string;
   isRegression?: boolean;
+  hasData: boolean;
 }
 
-const VERSIONS: VersionItem[] = [
+const DEFAULT_VERSIONS: VersionItem[] = [
   {
     id: 'v1.1',
-    name: 'Production Baseline',
-    accuracy: '96.8%',
-    latency: '1.38s',
-    cost: '$0.0039',
-    status: 'healthy',
-    statusLabel: 'VERIFIED STABLE',
-    changeSummary: 'Golden dataset evaluated against 500 ground-truth prompts.',
+    name: 'CEREBRAS (llama-3-70b)',
+    modelTag: 'CEREBRAS',
+    accuracy: '—',
+    latency: '—',
+    cost: '—',
+    status: 'warning',
+    statusLabel: 'NO COMPLETED RUN',
+    source: 'NO COMPLETED RUN',
+    changeSummary: 'Pending benchmark execution. No completed evaluation data recorded.',
+    hasData: false,
+    isRegression: false,
   },
   {
     id: 'v1.2',
-    name: 'Prompt Compression',
+    name: 'GROQ (openai/gpt-oss-20b)',
+    modelTag: 'GROQ',
+    accuracy: '40.0%',
+    latency: '1.12s',
+    cost: '$0.0004',
+    status: 'healthy',
+    statusLabel: 'VERIFIED STABLE',
+    source: 'HISTORICAL',
+    changeSummary: 'Baseline evaluated across golden benchmark suite. Stable tool execution.',
+    hasData: true,
+    isRegression: false,
+  },
+  {
+    id: 'v1.3',
+    name: 'DEMO (Golden Baseline)',
+    modelTag: 'DEMO',
     accuracy: '95.1%',
     latency: '1.24s',
     cost: '$0.0031',
     status: 'healthy',
-    statusLabel: 'PASSING',
-    changeSummary: 'Reduced system preamble by 24% with negligible accuracy delta.',
-  },
-  {
-    id: 'v1.3',
-    name: 'Few-Shot Refinement',
-    accuracy: '94.2%',
-    latency: '1.45s',
-    cost: '$0.0041',
-    status: 'healthy',
-    statusLabel: 'PASSING',
-    changeSummary: 'Updated 3 edge case examples in evaluation harness.',
+    statusLabel: 'VERIFIED STABLE',
+    source: 'DEMO / SAMPLE',
+    changeSummary: 'Standard golden reference prompt suite evaluated across ground-truth cases.',
+    hasData: true,
+    isRegression: false,
   },
   {
     id: 'v1.4',
-    name: 'Tool Schema Update',
-    accuracy: '91.7%',
-    latency: '1.58s',
-    cost: '$0.0044',
+    name: 'RUN (llama-3.3-70b-versatile)',
+    modelTag: 'RUN',
+    accuracy: '—',
+    latency: '—',
+    cost: '—',
     status: 'warning',
-    statusLabel: 'DRIFT WARNING',
-    changeSummary: 'Modified JSON schema for checkout parameters. Slight drift observed.',
+    statusLabel: 'NO COMPLETED RUN',
+    source: 'NO COMPLETED RUN',
+    changeSummary: 'Candidate queued for execution. No completed evaluation data recorded.',
+    hasData: false,
+    isRegression: false,
   },
   {
     id: 'v1.5',
-    name: 'Candidate Release',
+    name: 'GROQ (Candidate Release)',
+    modelTag: 'GROQ',
     accuracy: '89.7%',
     latency: '1.86s',
     cost: '$0.0052',
     status: 'regression',
     statusLabel: 'REGRESSION DETECTED',
+    source: 'HISTORICAL',
     changeSummary: 'Critical regression: 47 test cases failed on payment validation tools.',
+    hasData: true,
     isRegression: true,
   },
 ];
 
 /**
- * Pinned Horizontal Scroll Section (Benjamin Creative + Laurens Art combo)
- * Normal vertical scroll -> 3D camera movement -> SECTION PINNED ->
- * vertical scroll translates into horizontal version comparison ->
- * 3D environment remains subtly visible behind frosted backdrop ->
- * v1.5 strikes with regression alert -> section releases into vertical scroll.
+ * Editorial Model Ledger / Data Rail (Technical Research Instrument)
+ * 
+ * Replaces bulky glassmorphism card panels with a sleek, flat data rail.
+ * Keeps the 3D globe and particles fully visible in the background.
+ * Provides interactive scrub-synced model rows with truthful data labeling.
  */
 export function VersionCards() {
   const scrollProgress = useExperienceStore((state) => state.scrollProgress);
   const [realRuns, setRealRuns] = useState<VersionItem[] | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -89,22 +112,46 @@ export function VersionCards() {
         if (!mounted) return;
         if (runs && runs.length >= 2) {
           const mapped: VersionItem[] = runs.slice(0, 5).map((r: EvaluationRun, idx: number) => {
+            const totalCases = r.metrics?.totalCases ?? (r.caseResults?.length || 0);
             const score = r.metrics?.candidateQualityScore ?? r.metrics?.candidateAccuracy;
             const lat = r.metrics?.candidateAvgLatencyMs;
             const cost = r.metrics?.candidateEstimatedCost;
-            const hasData = score != null;
+            const hasData = totalCases > 0 && score != null;
+            const isLive = r.executionMode === 'LIVE' || Boolean(r.provenance?.isLiveExecution);
             const isReg = hasData && Boolean(r.regressionDecision?.isRegression || r.releaseDecision?.status === 'BLOCK' || r.releaseDecision?.status === 'REGRESSION_DETECTED');
             const isWarn = hasData && Boolean(r.releaseDecision?.status === 'SHIP_WITH_CONDITIONS' || r.releaseDecision?.status === 'INSUFFICIENT_EVIDENCE');
+            const provider = (r.candidateVersion?.provider || 'RUN').toUpperCase();
+            const modelName = r.candidateVersion?.modelIdentifier?.split('/').pop() || r.id.slice(0, 8);
+
+            const source: VersionItem['source'] = !hasData
+              ? 'NO COMPLETED RUN'
+              : isLive
+              ? 'LIVE RUN'
+              : 'HISTORICAL';
+
+            const statusLabel = !hasData
+              ? 'NO COMPLETED RUN'
+              : isReg
+              ? 'REGRESSION DETECTED'
+              : isWarn
+              ? 'DRIFT WARNING'
+              : 'VERIFIED STABLE';
+
             return {
               id: `v1.${idx + 1}`,
-              name: `${r.candidateVersion?.provider?.toUpperCase() || 'RUN'} (${r.candidateVersion?.modelIdentifier?.split('/').pop() || r.id.slice(0, 8)})`,
-              accuracy: hasData ? `${score.toFixed(1)}%` : 'N/A',
-              latency: lat != null ? `${(lat / 1000).toFixed(2)}s` : 'N/A',
-              cost: cost != null ? `$${cost.toFixed(4)}` : 'N/A',
+              name: `${provider} (${modelName})`,
+              modelTag: provider,
+              accuracy: hasData ? `${score.toFixed(1)}%` : '—',
+              latency: hasData && lat != null ? `${(lat / 1000).toFixed(2)}s` : '—',
+              cost: hasData && cost != null ? `$${cost.toFixed(4)}` : '—',
               status: !hasData ? 'warning' : isReg ? 'regression' : isWarn ? 'warning' : 'healthy',
-              statusLabel: !hasData ? 'No completed evaluation data' : isReg ? 'REGRESSION DETECTED' : isWarn ? 'DRIFT WARNING' : 'VERIFIED STABLE',
-              changeSummary: !hasData ? 'No completed evaluation data' : r.regressionDecision?.summary || r.releaseDecision?.reason || `Authoritative benchmark run evaluated across ${r.metrics?.totalCases || 27} scenarios.`,
+              statusLabel,
+              source,
+              changeSummary: !hasData
+                ? 'No completed evaluation data recorded for this run.'
+                : r.regressionDecision?.summary || r.releaseDecision?.reason || `Authoritative benchmark run evaluated across ${totalCases} scenarios.`,
               isRegression: isReg,
+              hasData,
             };
           });
           setRealRuns(mapped);
@@ -116,7 +163,7 @@ export function VersionCards() {
     };
   }, []);
 
-  const activeVersions = realRuns && realRuns.length >= 2 ? realRuns : VERSIONS;
+  const activeVersions = realRuns && realRuns.length >= 2 ? realRuns : DEFAULT_VERSIONS;
   const isRealData = Boolean(realRuns && realRuns.length >= 2);
 
   // Active during States 2 and 3 (scrollProgress 0.32 to 0.62)
@@ -141,14 +188,19 @@ export function VersionCards() {
     return 1;
   }, [scrollProgress]);
 
-  // Total horizontal track translation percentage
-  // From right of screen to far left so all 5 cards pass through center
-  const translateX = mapRangeClamped(hProgress, 0, 1, 65, -82);
+  // Active row index driven by scroll progression
+  const scrollActiveIndex = Math.min(
+    activeVersions.length - 1,
+    Math.max(0, Math.floor(hProgress * activeVersions.length))
+  );
+  const selectedIndex = hoveredIndex !== null ? hoveredIndex : scrollActiveIndex;
+  const activeItem = activeVersions[selectedIndex] || activeVersions[0];
 
   if (opacity <= 0.001) return null;
 
   return (
     <div
+      className="model-ledger-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -156,297 +208,331 @@ export function VersionCards() {
         pointerEvents: isActive ? 'auto' : 'none',
         opacity,
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        background: 'rgba(6, 9, 13, 0.45)',
-        backdropFilter: 'blur(3px)',
+        alignItems: 'center',
+        background: 'transparent', // Preserves 3D background completely
         transition: 'opacity 0.25s ease-out',
         overflow: 'hidden',
       }}
     >
-      {/* ── Section Header Track ── */}
+      {/* ── Editorial Data Rail Container (Left-to-Center) ── */}
       <div
+        className="model-ledger-container"
         style={{
           position: 'absolute',
-          top: '12%',
-          left: 'clamp(2rem, 8vw, 8rem)',
+          left: 'clamp(2.5rem, 7vw, 6rem)',
+          top: 'clamp(10%, 14vh, 18%)',
+          width: 'clamp(340px, 58vw, 780px)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.4rem',
+          gap: '1rem',
+          pointerEvents: 'auto',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
-          <span
-            style={{
-              fontSize: '0.75rem',
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-              color: 'var(--accent, #FF6B35)',
-              fontWeight: 600,
-            }}
-          >
-            02 // HORIZONTAL COMPARISON
-          </span>
-          <span
-            style={{
-              fontSize: '0.65rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '999px',
-              border: isRealData ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 107, 53, 0.4)',
-              background: isRealData ? 'rgba(46, 204, 113, 0.12)' : 'rgba(255, 107, 53, 0.12)',
-              color: isRealData ? '#2ECC71' : 'var(--accent, #FF6B35)',
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-            }}
-          >
-            {isRealData ? 'LIVE / HISTORICAL EVALUATION' : 'DEMO / SAMPLE BENCHMARK DATA'}
-          </span>
-        </div>
-        <h2
-          style={{
-            fontSize: 'clamp(1.5rem, 3.5vw, 2.8rem)',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: '#FFFFFF',
-            margin: 0,
-          }}
-        >
-          Continuous Evaluation Track
-        </h2>
-        <p
-          style={{
-            fontSize: '0.9rem',
-            color: 'var(--text-muted, #A0B0C0)',
-            maxWidth: '480px',
-            margin: 0,
-          }}
-        >
-          Scroll vertically to scrub through model versions in real-time. Watch the background 3D core react to regression.
-        </p>
-      </div>
-
-      {/* ── Horizontally Scrolling Cards Track ── */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '2.5rem',
-          paddingLeft: '10vw',
-          transform: `translateX(${translateX}vw)`,
-          willChange: 'transform',
-          transition: 'transform 0.08s linear',
-        }}
-      >
-        {activeVersions.map((v, i) => {
-          const isReg = v.isRegression;
-          const isWarn = v.status === 'warning';
-          const borderColor = isReg
-            ? '#FF2200'
-            : isWarn
-            ? '#FF9944'
-            : 'rgba(255, 255, 255, 0.12)';
-          const glowShadow = isReg
-            ? '0 0 35px rgba(255, 34, 0, 0.35)'
-            : '0 10px 30px rgba(0, 0, 0, 0.5)';
-
-          return (
-            <div
-              key={v.id}
+        {/* Header Metadata */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+            <span
               style={{
-                width: 'clamp(320px, 28vw, 420px)',
-                flexShrink: 0,
-                background: isReg
-                  ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.94) 0%, rgba(18, 6, 5, 0.98) 100%)'
-                  : 'linear-gradient(180deg, rgba(20, 24, 30, 0.94) 0%, rgba(12, 14, 18, 0.98) 100%)',
-                border: `1px solid ${borderColor}`,
-                borderRadius: '12px',
-                padding: '2rem',
-                boxShadow: glowShadow,
-                backdropFilter: 'blur(12px)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.4rem',
-                position: 'relative',
+                fontFamily: 'monospace',
+                fontSize: '0.72rem',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: 'var(--accent, #FF6B35)',
+                fontWeight: 600,
               }}
             >
-              {/* Header Badge */}
+              STAGE 02 // CONTINUOUS EVALUATION TRACK
+            </span>
+            <span
+              style={{
+                fontSize: '0.64rem',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '4px',
+                border: isRealData ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 107, 53, 0.4)',
+                background: isRealData ? 'rgba(46, 204, 113, 0.12)' : 'rgba(255, 107, 53, 0.12)',
+                color: isRealData ? '#2ECC71' : 'var(--accent, #FF6B35)',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                fontFamily: 'monospace',
+                textTransform: 'uppercase',
+              }}
+            >
+              {isRealData ? 'LIVE / HISTORICAL EVALUATION' : 'DEMO / SAMPLE BENCHMARK DATA'}
+            </span>
+          </div>
+
+          <h2
+            style={{
+              fontSize: 'clamp(1.5rem, 2.8vw, 2.4rem)',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              color: '#F5F5F5',
+              lineHeight: 1.15,
+              margin: 0,
+              textShadow: '0 2px 14px rgba(0, 0, 0, 0.9)',
+            }}
+          >
+            Model Evaluation Ledger
+          </h2>
+          <p
+            style={{
+              fontSize: 'clamp(0.82rem, 1.1vw, 0.95rem)',
+              color: 'var(--text-muted, #8899AA)',
+              margin: 0,
+              lineHeight: 1.4,
+              textShadow: '0 1px 8px rgba(0, 0, 0, 0.8)',
+            }}
+          >
+            Observability rail tracking regression tolerances and latency bounds across release candidates.
+          </p>
+        </div>
+
+        {/* ── Data Rail Column Labels ── */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 1rem',
+            fontSize: '0.64rem',
+            fontFamily: 'monospace',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: '#607080',
+            fontWeight: 600,
+          }}
+        >
+          <div style={{ width: '48px' }}>VER</div>
+          <div style={{ flex: 2.2 }}>MODEL CANDIDATE</div>
+          <div style={{ flex: 1.6 }}>STATUS</div>
+          <div style={{ flex: 1.1, textAlign: 'right' }}>RELIABILITY</div>
+          <div style={{ flex: 0.9, textAlign: 'right' }}>LATENCY</div>
+          <div style={{ flex: 0.9, textAlign: 'right' }}>COST</div>
+          <div style={{ flex: 1.2, textAlign: 'right' }}>SOURCE</div>
+        </div>
+
+        {/* ── Horizontal Data Rails (Flatter Editorial Treatment) ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+          {activeVersions.map((v, i) => {
+            const isSelected = i === selectedIndex;
+            const isReg = v.isRegression;
+            const isWarn = v.status === 'warning' && v.hasData;
+            const noData = !v.hasData;
+
+            // Color tokens
+            const accentColor = isReg
+              ? '#FF2200'
+              : isWarn
+              ? '#FFAA55'
+              : noData
+              ? '#667788'
+              : '#4DA6FF';
+
+            return (
               <div
+                key={v.id}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
                 style={{
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
+                  padding: '0.7rem 1rem',
+                  borderRadius: '6px',
+                  // 75-90% opacity directly behind text row for sharp contrast without giant glass blur
+                  background: isSelected
+                    ? isReg
+                      ? 'rgba(38, 14, 12, 0.92)'
+                      : 'rgba(22, 28, 38, 0.92)'
+                    : 'rgba(12, 16, 22, 0.84)',
+                  border: isSelected
+                    ? `1px solid ${accentColor}`
+                    : '1px solid rgba(255, 255, 255, 0.07)',
+                  borderLeft: isSelected
+                    ? `3px solid ${accentColor}`
+                    : '3px solid transparent',
+                  boxShadow: isSelected
+                    ? isReg
+                      ? '0 4px 20px rgba(255, 34, 0, 0.22)'
+                      : '0 4px 20px rgba(77, 166, 255, 0.15)'
+                    : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
               >
+                {/* Version Pill */}
                 <div
                   style={{
+                    width: '48px',
                     fontFamily: 'monospace',
-                    fontSize: '1.25rem',
+                    fontSize: '0.78rem',
                     fontWeight: 700,
-                    color: '#FFFFFF',
+                    color: isSelected ? accentColor : '#A0B0C0',
                   }}
                 >
                   {v.id}
                 </div>
+
+                {/* Model Candidate Name */}
+                <div style={{ flex: 2.2, display: 'flex', flexDirection: 'column' }}>
+                  <span
+                    style={{
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      color: isSelected ? '#FFFFFF' : '#D0D8E0',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    {v.name}
+                  </span>
+                </div>
+
+                {/* Status Badge */}
+                <div style={{ flex: 1.6, display: 'flex', alignItems: 'center' }}>
+                  <span
+                    style={{
+                      fontSize: '0.62rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '3px',
+                      background: isReg
+                        ? 'rgba(255, 34, 0, 0.18)'
+                        : isWarn
+                        ? 'rgba(255, 170, 85, 0.18)'
+                        : noData
+                        ? 'rgba(100, 120, 140, 0.14)'
+                        : 'rgba(77, 166, 255, 0.16)',
+                      color: accentColor,
+                      border: `1px solid ${accentColor}40`,
+                    }}
+                  >
+                    {v.statusLabel}
+                  </span>
+                </div>
+
+                {/* Primary Metric: Reliability */}
                 <div
                   style={{
-                    fontSize: '0.68rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.15em',
-                    padding: '0.3rem 0.75rem',
-                    borderRadius: '999px',
-                    background: isReg
-                      ? 'rgba(255, 34, 0, 0.2)'
-                      : isWarn
-                      ? 'rgba(255, 153, 68, 0.15)'
-                      : 'rgba(77, 166, 255, 0.15)',
+                    flex: 1.1,
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
                     color: isReg
                       ? '#FF3311'
-                      : isWarn
-                      ? '#FFAA55'
+                      : noData
+                      ? '#607080'
+                      : isSelected
+                      ? '#FFFFFF'
                       : '#4DA6FF',
-                    border: `1px solid ${
-                      isReg ? '#FF2200' : isWarn ? '#FFAA55' : 'rgba(77, 166, 255, 0.3)'
-                    }`,
-                  }}
-                >
-                  {v.statusLabel}
-                </div>
-              </div>
-
-              {/* Version Title */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.15em',
-                    color: '#888888',
-                  }}
-                >
-                  Model Tag
-                </div>
-                <div
-                  style={{
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    color: '#ECECEC',
-                    marginTop: '0.2rem',
-                  }}
-                >
-                  {v.name}
-                </div>
-              </div>
-
-              {/* Giant Metric Display */}
-              <div
-                style={{
-                  background: 'rgba(0, 0, 0, 0.3)',
-                  borderRadius: '8px',
-                  padding: '1.2rem',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: '#888888',
-                  }}
-                >
-                  Reliability Score
-                </div>
-                <div
-                  style={{
-                    fontSize: '2.8rem',
-                    fontWeight: 800,
-                    color: isReg ? '#FF2200' : isWarn ? '#FFAA55' : '#4DA6FF',
-                    letterSpacing: '-0.03em',
-                    marginTop: '0.2rem',
                   }}
                 >
                   {v.accuracy}
                 </div>
-              </div>
 
-              {/* Secondary Stats */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '1rem',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                  paddingTop: '1rem',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '0.7rem', color: '#888888' }}>LATENCY</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF' }}>
-                    {v.latency}
-                  </div>
+                {/* Latency */}
+                <div
+                  style={{
+                    flex: 0.9,
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                    fontSize: '0.82rem',
+                    color: noData ? '#607080' : '#A0B0C0',
+                  }}
+                >
+                  {v.latency}
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.7rem', color: '#888888' }}>COST / RUN</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF' }}>
-                    {v.cost}
-                  </div>
+
+                {/* Cost */}
+                <div
+                  style={{
+                    flex: 0.9,
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                    fontSize: '0.82rem',
+                    color: noData ? '#607080' : '#A0B0C0',
+                  }}
+                >
+                  {v.cost}
+                </div>
+
+                {/* Truthful Source Tag */}
+                <div
+                  style={{
+                    flex: 1.2,
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                    fontSize: '0.62rem',
+                    letterSpacing: '0.05em',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    color: v.source === 'LIVE RUN'
+                      ? '#2ECC71'
+                      : v.source === 'HISTORICAL'
+                      ? '#4DA6FF'
+                      : v.source === 'DEMO / SAMPLE'
+                      ? '#FFAA55'
+                      : '#607080',
+                  }}
+                >
+                  {v.source}
                 </div>
               </div>
+            );
+          })}
+        </div>
 
-              {/* Summary */}
-              <div
-                style={{
-                  fontSize: '0.8rem',
-                  color: isReg ? '#FFBBAA' : 'var(--text-muted, #A0B0C0)',
-                  lineHeight: 1.45,
-                }}
-              >
-                {v.changeSummary}
-              </div>
-
-              {/* Source & Provenance Badge */}
-              <div
-                style={{
-                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                  paddingTop: '0.6rem',
-                  fontSize: '0.64rem',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: isRealData ? '#2ECC71' : 'var(--text-dim, #708090)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <span>SOURCE: {isRealData ? 'LIVE / HISTORICAL EVALUATION' : 'DEMO / SAMPLE BENCHMARK'}</span>
-                <span>{isRealData ? 'LIVE RUN' : 'DEMO'}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Track Progress Bar */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '8%',
-          left: 'clamp(2rem, 8vw, 8rem)',
-          right: 'clamp(2rem, 8vw, 8rem)',
-          height: '2px',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '1px',
-          overflow: 'hidden',
-        }}
-      >
+        {/* ── Active Row Audit Summary Drawer ── */}
         <div
           style={{
-            height: '100%',
-            width: `${hProgress * 100}%`,
-            background: hProgress > 0.8 ? '#FF2200' : '#FF6B35',
-            transition: 'background 0.3s ease',
+            padding: '0.65rem 0.95rem',
+            borderRadius: '4px',
+            background: 'rgba(10, 14, 20, 0.88)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '0.6rem',
+            fontSize: '0.78rem',
+            lineHeight: 1.45,
+            color: activeItem?.isRegression ? '#FFAA99' : '#A0B0C0',
           }}
-        />
+        >
+          <span
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: activeItem?.isRegression ? '#FF2200' : 'var(--accent, #FF6B35)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {activeItem?.id} AUDIT NOTE //
+          </span>
+          <span>{activeItem?.changeSummary}</span>
+        </div>
+
+        {/* ── Rail Scrub Progress Bar ── */}
+        <div
+          style={{
+            width: '100%',
+            height: '2px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '1px',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              width: `${hProgress * 100}%`,
+              background: activeItem?.isRegression ? '#FF2200' : '#FF6B35',
+              transition: 'background 0.25s ease',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

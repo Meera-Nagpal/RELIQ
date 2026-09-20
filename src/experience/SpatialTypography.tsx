@@ -132,14 +132,14 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 03: EVALUATION (COMPARE — 94.8% Accuracy) ── */}
-      <group ref={state3Group} position={[2.2, 0.3, -1.8]} rotation={[0, -0.2, 0]}>
+      <group ref={state3Group} position={[2.2, -0.2, -1.8]} rotation={[0, -0.2, 0]}>
         <Text
           fontSize={1.7}
           letterSpacing={0.12}
           color="#4DA6FF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.20}
           depthOffset={1}
         >
           COMPARE
@@ -151,7 +151,7 @@ export function SpatialTypography() {
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.20}
           depthOffset={1}
         >
           94.8%
@@ -163,7 +163,7 @@ export function SpatialTypography() {
           color="#888888"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.22}
+          fillOpacity={0.18}
           depthOffset={1}
         >
           BASELINE ACCURACY
@@ -175,10 +175,10 @@ export function SpatialTypography() {
         <Text
           fontSize={1.9}
           letterSpacing={0.18}
-          color="#FF2200"
+          color="#3A180E"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.20}
           depthOffset={1}
         >
           DETECT
@@ -187,10 +187,10 @@ export function SpatialTypography() {
           position={[0, -0.85, 0]}
           fontSize={0.32}
           letterSpacing={0.28}
-          color="#FF6B35"
+          color="#4A2012"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.18}
           depthOffset={1}
         >
           REGRESSION DETECTED
