@@ -93,15 +93,14 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 02: DATA (RUN — 500 Test Cases) ── */}
-      <group ref={state2Group} position={[-2.2, 0.4, -1.8]} rotation={[0, 0.2, 0]}>
+      <group ref={state2Group} position={[-2.4, 0.4, 1.2]} rotation={[0, 0.25, 0]}>
         <Text
           fontSize={1.8}
           letterSpacing={0.15}
           color="#FF6B35"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
-          depthOffset={1}
+          fillOpacity={0.8}
         >
           RUN
         </Text>
@@ -112,8 +111,7 @@ export function SpatialTypography() {
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
-          depthOffset={1}
+          fillOpacity={0.9}
         >
           500
         </Text>
@@ -124,23 +122,21 @@ export function SpatialTypography() {
           color="#888888"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.22}
-          depthOffset={1}
+          fillOpacity={0.8}
         >
           ACTIVE TEST CASES
         </Text>
       </group>
 
       {/* ── STATE 03: EVALUATION (COMPARE — 94.8% Accuracy) ── */}
-      <group ref={state3Group} position={[2.2, 0.3, -1.8]} rotation={[0, -0.2, 0]}>
+      <group ref={state3Group} position={[2.6, 0.3, -0.4]} rotation={[0, -0.3, 0]}>
         <Text
           fontSize={1.7}
           letterSpacing={0.12}
           color="#4DA6FF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
-          depthOffset={1}
+          fillOpacity={0.8}
         >
           COMPARE
         </Text>
@@ -151,8 +147,7 @@ export function SpatialTypography() {
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
-          depthOffset={1}
+          fillOpacity={0.9}
         >
           94.8%
         </Text>
@@ -163,23 +158,21 @@ export function SpatialTypography() {
           color="#888888"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.22}
-          depthOffset={1}
+          fillOpacity={0.8}
         >
           BASELINE ACCURACY
         </Text>
       </group>
 
       {/* ── STATE 04: REGRESSION (DETECT — 89.7% Warning) ── */}
-      <group ref={state4Group} position={[0, 1.8, -2.4]}>
+      <group ref={state4Group} position={[0, 1.6, -1.2]}>
         <Text
           fontSize={1.9}
           letterSpacing={0.18}
           color="#FF2200"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
-          depthOffset={1}
+          fillOpacity={0.9}
         >
           DETECT
         </Text>
@@ -190,54 +183,50 @@ export function SpatialTypography() {
           color="#FF6B35"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
-          depthOffset={1}
+          fillOpacity={0.9}
         >
           REGRESSION DETECTED
         </Text>
       </group>
 
       {/* ── STATE 05: INVESTIGATION (INVESTIGATE — 47 Failed Cases) ── */}
-      <group ref={state5Group} position={[1.8, 0.1, -1.8]} rotation={[0, -0.25, 0]}>
+      <group ref={state5Group} position={[-1.8, 0.2, 0.8]} rotation={[0, 0.35, 0]}>
         <Text
-          fontSize={1.8}
+          fontSize={1.4}
           letterSpacing={0.15}
           color="#FF9955"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.20}
-          depthOffset={1}
+          fillOpacity={0.8}
         >
           INVESTIGATE
         </Text>
         <Text
-          position={[0, -0.85, 0]}
-          fontSize={2.4}
+          position={[0, -0.75, 0]}
+          fontSize={0.8}
           letterSpacing={0.05}
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.22}
-          depthOffset={1}
+          fillOpacity={0.9}
         >
           47
         </Text>
         <Text
-          position={[0, -1.8, 0]}
-          fontSize={0.32}
+          position={[0, -1.2, 0]}
+          fontSize={0.22}
           letterSpacing={0.2}
           color="#888888"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.20}
-          depthOffset={1}
+          fillOpacity={0.8}
         >
           ISOLATED FAILURES
         </Text>
       </group>
 
       {/* ── STATE 06: CONFIDENCE / TRANSITION (SHIP — 96.8% Target) ── */}
-      <group ref={state6Group} position={[0, 0.2, -1.8]}>
+      <group ref={state6Group} position={[0, 0.2, 1.4]}>
         <Text
           position={[0, 1.2, 0]}
           fontSize={0.3}
@@ -245,20 +234,18 @@ export function SpatialTypography() {
           color="#4DA6FF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.26}
-          depthOffset={1}
+          fillOpacity={0.9}
         >
           ROOT-CAUSE ISOLATED
         </Text>
         <Text
           position={[0, 0.3, 0]}
-          fontSize={2.0}
+          fontSize={1.6}
           letterSpacing={0.04}
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.26}
-          depthOffset={1}
+          fillOpacity={1}
         >
           96.8%
         </Text>
@@ -269,8 +256,7 @@ export function SpatialTypography() {
           color="#FF6B35"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.26}
-          depthOffset={1}
+          fillOpacity={0.9}
         >
           AI RELIABILITY ASSURED
         </Text>

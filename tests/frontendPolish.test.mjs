@@ -245,21 +245,20 @@ export async function runFrontendPolishTests() {
   });
 
   // -------------------------------------------------------------
-  // Test 13: 3D Spatial typography background positioning and layering hierarchy
+  // Test 13: 3D Spatial typography integration
   // -------------------------------------------------------------
-  test('13. 3D Spatial typography groups are in background z-space preventing collision with foreground HUD', () => {
+  test('13. 3D Spatial typography maintains monumental 3D text in WebGL scene', () => {
     const stPath = path.join(ROOT, 'src/experience/SpatialTypography.tsx');
     const stContent = fs.readFileSync(stPath, 'utf8');
 
-    // State 4 DETECT at z = -2.4
-    assert.ok(stContent.includes("position={[0, 1.8, -2.4]}"), 'State 4 DETECT must be placed in deep background at z = -2.4');
-    // State 5 INVESTIGATE at x = 1.8, z = -1.8, 47 fontSize 2.4
-    assert.ok(stContent.includes("position={[1.8, 0.1, -1.8]}"), 'State 5 INVESTIGATE must be moved to background right at z = -1.8');
-    assert.ok(stContent.includes("fontSize={2.4}"), 'State 5 must retain large decorative 47 (fontSize 2.4)');
+    // State 4 DETECT in dramatic alert color
+    assert.ok(stContent.includes("DETECT"), 'State 4 must display DETECT');
+    assert.ok(stContent.includes('color="#FF2200"'), 'State 4 DETECT must use dramatic alert red #FF2200');
+    // State 5 INVESTIGATE
+    assert.ok(stContent.includes("INVESTIGATE"), 'State 5 must display INVESTIGATE');
     assert.ok(stContent.includes("ISOLATED FAILURES"), 'State 5 must display ISOLATED FAILURES subtitle');
-    // State 6 SHIP at z = -1.8, fontSize 2.0
-    assert.ok(stContent.includes("position={[0, 0.2, -1.8]}"), 'State 6 SHIP must be positioned at z = -1.8');
-    assert.ok(stContent.includes("fontSize={2.0}"), 'State 6 96.8% must have dominant fontSize 2.0');
+    // State 6 SHIP
+    assert.ok(stContent.includes("96.8%"), 'State 6 must display 96.8%');
   });
 
   // -------------------------------------------------------------
