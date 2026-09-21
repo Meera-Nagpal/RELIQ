@@ -83,12 +83,22 @@ export function MetricOverlay() {
 
   const isRegressionWarning = currentStateIndex === 3 && stateProgress > 0.7;
 
+  const topPosition = currentStateIndex === 3
+    ? 'clamp(38%, 42vh, 46%)'
+    : currentStateIndex === 2
+    ? 'clamp(33%, 36vh, 40%)'
+    : 'clamp(28%, 30vh, 34%)';
+
+  const rightPosition = currentStateIndex === 2
+    ? 'clamp(3rem, 8vw, 10vw)'
+    : 'clamp(3rem, 10vw, 12vw)';
+
   return (
     <div
       style={{
         position: 'fixed',
-        top: currentStateIndex === 3 ? '31%' : '26%',
-        right: 'clamp(3rem, 10vw, 12vw)',
+        top: topPosition,
+        right: rightPosition,
         zIndex: 20,
         pointerEvents: 'none',
         opacity,

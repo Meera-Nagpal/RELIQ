@@ -13,6 +13,7 @@ export function StateTypography() {
 
   const opacity = useMemo(() => {
     if (currentStateIndex === 0) return 0; // State 0 uses HeroOverlay
+    if (currentStateIndex === 2) return 0; // State 2 (COMPARE) uses dedicated Model Ledger data rail
     if (currentStateIndex === 5 && stateProgress > 0.5) return 0; // Final state transitions into Dashboard
 
     // Smooth fade in / out within state
