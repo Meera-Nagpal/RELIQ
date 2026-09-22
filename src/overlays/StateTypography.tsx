@@ -13,7 +13,6 @@ export function StateTypography() {
 
   const opacity = useMemo(() => {
     if (currentStateIndex === 0) return 0; // State 0 uses HeroOverlay
-    if (currentStateIndex === 2) return 0; // State 2 (COMPARE) uses dedicated Model Ledger data rail
     if (currentStateIndex === 5 && stateProgress > 0.5) return 0; // Final state transitions into Dashboard
 
     // Smooth fade in / out within state
@@ -33,18 +32,16 @@ export function StateTypography() {
     <div
       style={{
         position: 'fixed',
-        left: 'clamp(3rem, 10vw, 12vw)',
+        left: 'clamp(1.5rem, 6vw, 6rem)',
         top: '50%',
         transform: 'translateY(-50%)',
-        zIndex: 20,
+        zIndex: 12,
         pointerEvents: 'none',
         opacity,
-        maxWidth: 'clamp(340px, 38vw, 480px)',
+        maxWidth: 'clamp(320px, 36vw, 460px)',
         padding: '1.5rem',
         borderRadius: '12px',
-        background: 'radial-gradient(ellipse at left, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.55) 65%, rgba(10, 10, 10, 0) 90%)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
+        background: 'radial-gradient(ellipse at left, rgba(10, 10, 10, 0.72) 0%, rgba(10, 10, 10, 0) 75%)',
         transition: 'opacity 0.25s ease-out',
       }}
     >

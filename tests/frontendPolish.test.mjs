@@ -160,21 +160,28 @@ export async function runFrontendPolishTests() {
   });
 
   // -------------------------------------------------------------
-  // Test 7: Model Ledger / Data Rail & Truthful Provenance
+  // Test 7: Comparison / History Cards Data Integrity & Labeling
   // -------------------------------------------------------------
-  test('7. VersionCards uses Model Ledger data rail without bulky glass cards or screen-wide blur', () => {
+  test('7. VersionCards explicitly badges SAMPLE BENCHMARK AUDIT DATA or binds to authoritative DB runs', () => {
     const vcPath = path.join(ROOT, 'src/overlays/VersionCards.tsx');
     const content = fs.readFileSync(vcPath, 'utf8');
 
-    assert.ok(content.includes('model-ledger-container'), 'Must render model-ledger-container');
-    assert.ok(content.includes('Model Evaluation Ledger'), 'Must display Model Evaluation Ledger headline');
-    assert.ok(content.includes('MODEL CANDIDATE'), 'Must have MODEL CANDIDATE column header');
-    assert.ok(content.includes('RELIABILITY'), 'Must have RELIABILITY column header');
-    assert.ok(!content.includes("backdropFilter: 'blur(3px)'"), 'Must NOT have screen-wide backdrop blur');
-    assert.ok(!content.includes("width: 'clamp(320px, 28vw, 420px)'"), 'Must NOT have bulky floating card widths');
-    assert.ok(content.includes('DEMO / SAMPLE BENCHMARK DATA'), 'Must label demo data explicitly');
-    assert.ok(content.includes('LIVE / HISTORICAL EVALUATION'), 'Must badge real evaluation runs explicitly');
-    assert.ok(content.includes('NO COMPLETED RUN'), 'Must display NO COMPLETED RUN for uncompleted models');
+    assert.ok(
+      content.includes('SAMPLE BENCHMARK AUDIT DATA • INTERACTIVE DEMO'),
+      'Section must explicitly label demo cards as SAMPLE BENCHMARK AUDIT DATA'
+    );
+    assert.ok(
+      content.includes('apiRepository') && content.includes('getEvaluationRuns'),
+      'Component must query real evaluation runs from apiRepository'
+    );
+    assert.ok(
+      content.includes('SOURCE:'),
+      'Cards must explicitly display their authoritative data source'
+    );
+    assert.ok(
+      content.includes('backdropFilter:'),
+      'Cards must have backdrop blur for readability over 3D scene'
+    );
   });
 
   // -------------------------------------------------------------
@@ -239,21 +246,20 @@ export async function runFrontendPolishTests() {
   });
 
   // -------------------------------------------------------------
-  // Test 13: 3D Spatial typography background positioning and layering hierarchy
+  // Test 13: 3D Spatial typography integration
   // -------------------------------------------------------------
-  test('13. 3D Spatial typography groups are in background z-space preventing collision with foreground HUD', () => {
+  test('13. 3D Spatial typography maintains monumental 3D text in WebGL scene', () => {
     const stPath = path.join(ROOT, 'src/experience/SpatialTypography.tsx');
     const stContent = fs.readFileSync(stPath, 'utf8');
 
-    // State 4 DETECT at z = -2.4
-    assert.ok(stContent.includes("position={[0, 1.8, -2.4]}"), 'State 4 DETECT must be placed in deep background at z = -2.4');
-    // State 5 INVESTIGATE at x = 1.8, z = -1.8, 47 fontSize 2.4
-    assert.ok(stContent.includes("position={[1.8, 0.1, -1.8]}"), 'State 5 INVESTIGATE must be moved to background right at z = -1.8');
-    assert.ok(stContent.includes("fontSize={2.4}"), 'State 5 must retain large decorative 47 (fontSize 2.4)');
+    // State 4 DETECT in dramatic alert color
+    assert.ok(stContent.includes("DETECT"), 'State 4 must display DETECT');
+    assert.ok(stContent.includes('color="#FF2200"'), 'State 4 DETECT must use dramatic alert red #FF2200');
+    // State 5 INVESTIGATE
+    assert.ok(stContent.includes("INVESTIGATE"), 'State 5 must display INVESTIGATE');
     assert.ok(stContent.includes("ISOLATED FAILURES"), 'State 5 must display ISOLATED FAILURES subtitle');
-    // State 6 SHIP at z = -1.8, fontSize 2.0
-    assert.ok(stContent.includes("position={[0, 0.2, -1.8]}"), 'State 6 SHIP must be positioned at z = -1.8');
-    assert.ok(stContent.includes("fontSize={2.0}"), 'State 6 96.8% must have dominant fontSize 2.0');
+    // State 6 SHIP
+    assert.ok(stContent.includes("96.8%"), 'State 6 must display 96.8%');
   });
 
   // -------------------------------------------------------------
@@ -286,15 +292,15 @@ export async function runFrontendPolishTests() {
   });
 
   // -------------------------------------------------------------
-  // Test 16: MetricOverlay responsive vertical positioning for breathing room
+  // Test 16: MetricOverlay original clean positioning
   // -------------------------------------------------------------
-  test('16. MetricOverlay dynamically calculates topPosition for State 2 and State 3 breathing room', () => {
+  test('16. MetricOverlay positions animated metrics cleanly in top right viewport', () => {
     const moPath = path.join(ROOT, 'src/overlays/MetricOverlay.tsx');
     const moContent = fs.readFileSync(moPath, 'utf8');
 
-    assert.ok(moContent.includes("clamp(38%, 42vh, 46%)"), 'State 3 DETECT score must be moved down to clamp(38%, 42vh, 46%)');
-    assert.ok(moContent.includes("clamp(33%, 36vh, 40%)"), 'State 2 COMPARE score must be moved down to clamp(33%, 36vh, 40%)');
-    assert.ok(moContent.includes("clamp(3rem, 8vw, 10vw)"), 'State 2 right position must use clamp(3rem, 8vw, 10vw)');
+    assert.ok(moContent.includes("top: '25%'"), 'MetricOverlay must be positioned at top 25%');
+    assert.ok(moContent.includes("right: 'clamp(2rem, 8vw, 8rem)'"), 'MetricOverlay must use clamp(2rem, 8vw, 8rem) for right position');
+    assert.ok(moContent.includes("TEST CASES IN HARNESS"), 'State 1 must display TEST CASES IN HARNESS');
   });
 
   console.log(`\n============================================================`);

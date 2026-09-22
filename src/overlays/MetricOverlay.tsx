@@ -36,7 +36,7 @@ export function MetricOverlay() {
       return {
         displayValue: '500',
         hasPercent: false,
-        label: 'ACTIVE TEST CASES IN HARNESS',
+        label: 'TEST CASES IN HARNESS',
       };
     }
 
@@ -83,23 +83,13 @@ export function MetricOverlay() {
 
   const isRegressionWarning = currentStateIndex === 3 && stateProgress > 0.7;
 
-  const topPosition = currentStateIndex === 3
-    ? 'clamp(38%, 42vh, 46%)'
-    : currentStateIndex === 2
-    ? 'clamp(33%, 36vh, 40%)'
-    : 'clamp(28%, 30vh, 34%)';
-
-  const rightPosition = currentStateIndex === 2
-    ? 'clamp(3rem, 8vw, 10vw)'
-    : 'clamp(3rem, 10vw, 12vw)';
-
   return (
     <div
       style={{
         position: 'fixed',
-        top: topPosition,
-        right: rightPosition,
-        zIndex: 20,
+        top: '25%',
+        right: 'clamp(2rem, 8vw, 8rem)',
+        zIndex: 12,
         pointerEvents: 'none',
         opacity,
         display: 'flex',
