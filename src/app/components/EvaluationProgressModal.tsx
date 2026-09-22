@@ -235,7 +235,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <div>
               <span style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Judge: </span>
               <span style={{ color: judgeEnabled ? '#2ECC71' : '#888888', fontWeight: 600, fontSize: '0.75rem' }}>
-                {judgeEnabled ? (judgeModel || 'Groq Compound') : 'Disabled (Deterministic)'}
+                {judgeEnabled ? (judgeModel || 'Qwen 3.8 27B') : 'Disabled (Deterministic)'}
               </span>
             </div>
             {runId && (

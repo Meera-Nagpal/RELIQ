@@ -23,23 +23,6 @@ export interface GroqJudgeModelDescriptor {
  * Single source of truth across UI, backend, runner, and evaluator layers.
  */
 export const GROQ_MODEL_REGISTRY: Record<string, GroqJudgeModelDescriptor> = {
-  'groq/compound': {
-    id: 'groq/compound',
-    displayName: 'Groq Compound (128k General Reasoning)',
-    description: 'General-purpose reasoning model ideal for multi-criteria qualitative evaluation.',
-    isJudgeEligible: true,
-    tier: 'reasoning',
-    contextWindow: 131072,
-    recommendedForJudge: true,
-  },
-  'groq/compound-mini': {
-    id: 'groq/compound-mini',
-    displayName: 'Groq Compound Mini (128k Fast Inference)',
-    description: 'Compact low-latency reasoning model for high-throughput judging.',
-    isJudgeEligible: true,
-    tier: 'fast',
-    contextWindow: 131072,
-  },
   'qwen/qwen3.8-27b': {
     id: 'qwen/qwen3.8-27b',
     displayName: 'Qwen 3.8 27B (128k Tongyi Lab)',
@@ -47,6 +30,25 @@ export const GROQ_MODEL_REGISTRY: Record<string, GroqJudgeModelDescriptor> = {
     isJudgeEligible: true,
     tier: 'reasoning',
     contextWindow: 131072,
+    recommendedForJudge: true,
+  },
+  'groq/compound': {
+    id: 'groq/compound',
+    displayName: 'Groq Compound (Decommissioned)',
+    description: 'Decommissioned by Groq as of September 21, 2026 (HTTP 404). Ineligible for judging.',
+    isJudgeEligible: false,
+    tier: 'reasoning',
+    contextWindow: 131072,
+    recommendedForJudge: false,
+  },
+  'groq/compound-mini': {
+    id: 'groq/compound-mini',
+    displayName: 'Groq Compound Mini (Decommissioned)',
+    description: 'Decommissioned by Groq as of September 21, 2026 (HTTP 404). Ineligible for judging.',
+    isJudgeEligible: false,
+    tier: 'fast',
+    contextWindow: 131072,
+    recommendedForJudge: false,
   },
   'allam-2-7b': {
     id: 'allam-2-7b',

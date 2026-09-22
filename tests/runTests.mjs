@@ -5846,7 +5846,7 @@ async function runTests() {
     // -------------------------------------------------------------
     test('182: Judge configuration accepts third eligible model as judge', () => {
       const res = validateJudgeConfiguration(
-        { enabled: true, modelIdentifier: 'groq/compound', provider: 'groq' },
+        { enabled: true, modelIdentifier: 'qwen/qwen3.8-27b', provider: 'groq' },
         'openai/gpt-oss-20b',
         'openai/gpt-oss-120b'
       );
@@ -5868,15 +5868,38 @@ async function runTests() {
     });
 
     // -------------------------------------------------------------
-    // Test 184: Dynamic eligible judge model filtering excludes active benchmark models
+    // Test 183B: Decommissioned Groq compound models are rejected as judges
     // -------------------------------------------------------------
-    test('184: Dynamic eligible judge model filtering excludes active benchmark models', () => {
+    test('183B: Decommissioned Groq compound models are rejected as judges', () => {
+      const res = validateJudgeConfiguration(
+        { enabled: true, modelIdentifier: 'groq/compound', provider: 'groq' },
+        'openai/gpt-oss-20b',
+        'openai/gpt-oss-120b'
+      );
+      assert.strictEqual(res.valid, false);
+      assert.ok(res.error.includes('is not eligible to act as an LLM judge') || res.error.includes('not available'));
+
+      const resMini = validateJudgeConfiguration(
+        { enabled: true, modelIdentifier: 'groq/compound-mini', provider: 'groq' },
+        'openai/gpt-oss-20b',
+        'openai/gpt-oss-120b'
+      );
+      assert.strictEqual(resMini.valid, false);
+      assert.ok(resMini.error.includes('is not eligible to act as an LLM judge') || resMini.error.includes('not available'));
+    });
+
+    // -------------------------------------------------------------
+    // Test 184: Dynamic eligible judge model filtering excludes active benchmark models and decommissioned models
+    // -------------------------------------------------------------
+    test('184: Dynamic eligible judge model filtering excludes active benchmark models and decommissioned models', () => {
       const eligible = getEligibleJudgeModels('openai/gpt-oss-20b', 'openai/gpt-oss-120b');
       assert.ok(eligible.length >= 2, 'Must have at least 2 eligible judge models');
       assert.strictEqual(eligible.some((m) => m.id === 'openai/gpt-oss-20b'), false);
       assert.strictEqual(eligible.some((m) => m.id === 'openai/gpt-oss-120b'), false);
-      assert.ok(eligible.some((m) => m.id === 'groq/compound'));
-      assert.ok(eligible.some((m) => m.id === 'groq/compound-mini'));
+      assert.strictEqual(eligible.some((m) => m.id === 'groq/compound'), false, 'groq/compound must not be eligible');
+      assert.strictEqual(eligible.some((m) => m.id === 'groq/compound-mini'), false, 'groq/compound-mini must not be eligible');
+      assert.ok(eligible.some((m) => m.id === 'qwen/qwen3.8-27b'), 'qwen/qwen3.8-27b must be eligible');
+      assert.ok(eligible.some((m) => m.id === 'allam-2-7b'), 'allam-2-7b must be eligible');
     });
 
     // -------------------------------------------------------------
@@ -5884,13 +5907,13 @@ async function runTests() {
     // -------------------------------------------------------------
     test('185: Default judge model selection picks first eligible model neither baseline nor candidate', () => {
       const defaultJudge = getDefaultJudgeModel('openai/gpt-oss-20b', 'openai/gpt-oss-120b');
-      assert.strictEqual(defaultJudge?.id, 'groq/compound');
+      assert.strictEqual(defaultJudge?.id, 'qwen/qwen3.8-27b');
 
-      // If baseline is groq/compound, default falls to next eligible model
-      const fallbackJudge = getDefaultJudgeModel('groq/compound', 'openai/gpt-oss-120b');
-      assert.notStrictEqual(fallbackJudge?.id, 'groq/compound');
+      // If baseline is qwen/qwen3.8-27b, default falls to next eligible model
+      const fallbackJudge = getDefaultJudgeModel('qwen/qwen3.8-27b', 'openai/gpt-oss-120b');
+      assert.notStrictEqual(fallbackJudge?.id, 'qwen/qwen3.8-27b');
       assert.notStrictEqual(fallbackJudge?.id, 'openai/gpt-oss-120b');
-      assert.strictEqual(fallbackJudge?.id, 'qwen/qwen3.8-27b');
+      assert.strictEqual(fallbackJudge?.id, 'openai/gpt-oss-20b');
     });
 
     // -------------------------------------------------------------
@@ -6050,7 +6073,7 @@ async function runTests() {
           candidateVersion: { provider: 'groq', modelIdentifier: 'openai/gpt-oss-120b' },
           baselineProvider: mockBaseline,
           candidateProvider: mockCandidate,
-          judgeConfig: { enabled: true, modelIdentifier: 'groq/compound', provider: 'groq' },
+          judgeConfig: { enabled: true, modelIdentifier: 'qwen/qwen3.8-27b', provider: 'groq' },
           maxCases: 1,
         });
 
@@ -6124,7 +6147,7 @@ async function runTests() {
           candidateVersion: { provider: 'groq', modelIdentifier: 'openai/gpt-oss-120b' },
           baselineProvider: mockBaseline,
           candidateProvider: mockCandidate,
-          judgeConfig: { enabled: true, modelIdentifier: 'groq/compound', provider: 'groq' },
+          judgeConfig: { enabled: true, modelIdentifier: 'qwen/qwen3.8-27b', provider: 'groq' },
           maxCases: 1,
         });
 
@@ -6215,7 +6238,7 @@ async function runTests() {
           candidateVersion: { provider: 'groq', modelIdentifier: 'openai/gpt-oss-120b' },
           baselineProvider: mockBaseline,
           candidateProvider: mockCandidate,
-          judgeConfig: { enabled: true, modelIdentifier: 'groq/compound', provider: 'groq' },
+          judgeConfig: { enabled: true, modelIdentifier: 'qwen/qwen3.8-27b', provider: 'groq' },
           maxCases: 1,
         });
 
@@ -6354,9 +6377,9 @@ async function runTests() {
       assert.strictEqual(semInfo.status, 'CONFIGURED');
       assert.ok(semInfo.label.includes('Local (Configured)'));
 
-      const judgeInfo = getLLMJudgeInfo('groq/compound');
+      const judgeInfo = getLLMJudgeInfo('qwen/qwen3.8-27b');
       assert.strictEqual(judgeInfo.status, 'CONFIGURED');
-      assert.ok(judgeInfo.label.includes('groq/compound'));
+      assert.ok(judgeInfo.label.includes('qwen/qwen3.8-27b'));
     });
 
     // -------------------------------------------------------------
@@ -6460,7 +6483,7 @@ async function runTests() {
           judgeConfig: {
             enabled: true,
             provider: 'groq',
-            modelIdentifier: 'groq/compound',
+            modelIdentifier: 'qwen/qwen3.8-27b',
             temperature: 0.1,
             maxTokens: 1024,
           },
@@ -6472,7 +6495,7 @@ async function runTests() {
         assert.strictEqual(run.metrics.llmJudgeStatus, 'EXECUTED');
         assert.strictEqual(run.comparisonReport.semanticEvaluationStatus, 'EXECUTED');
         assert.strictEqual(run.comparisonReport.llmJudgeStatus, 'EXECUTED');
-        assert.strictEqual(run.comparisonReport.judgeModel, 'groq/compound');
+        assert.strictEqual(run.comparisonReport.judgeModel, 'qwen/qwen3.8-27b');
         assert.strictEqual(run.comparisonReport.judgeEvaluatedCases, 1);
 
         // Verify individual case layers
@@ -6480,7 +6503,7 @@ async function runTests() {
         assert.ok(caseRes.semanticEvaluation, 'semanticEvaluation must be populated');
         assert.ok(caseRes.semanticEvaluation.similarityScore > 0, 'Semantic similarity score must be > 0');
         assert.ok(caseRes.llmJudgeEvaluation, 'llmJudgeEvaluation must be populated');
-        assert.strictEqual(caseRes.llmJudgeEvaluation.judgeModel, 'groq/compound');
+        assert.strictEqual(caseRes.llmJudgeEvaluation.judgeModel, 'qwen/qwen3.8-27b');
         assert.strictEqual(caseRes.llmJudgeEvaluation.overall, 4.8);
       } finally {
         globalThis.fetch = originalFetch;
@@ -6515,7 +6538,7 @@ async function runTests() {
         candidateVersion: { provider: 'groq', modelIdentifier: 'openai/gpt-oss-120b' },
         baselineProvider: { providerType: 'groq', generate: async () => ({ output: 'pong', usage: { promptTokens: 5, completionTokens: 5, totalTokens: 10, latencyMs: 50, provider: 'groq' } }), getMetadata: () => ({ id: 'g', name: 'g', providerType: 'groq', isConfigured: true, supportedModels: [] }) },
         candidateProvider: { providerType: 'groq', generate: async () => ({ output: 'pong', usage: { promptTokens: 5, completionTokens: 5, totalTokens: 10, latencyMs: 50, provider: 'groq' } }), getMetadata: () => ({ id: 'g', name: 'g', providerType: 'groq', isConfigured: true, supportedModels: [] }) },
-        judgeConfig: { enabled: false, provider: 'groq', modelIdentifier: 'groq/compound' },
+        judgeConfig: { enabled: false, provider: 'groq', modelIdentifier: 'qwen/qwen3.8-27b' },
         maxCases: 1,
       });
       assert.strictEqual(runNotConfig.metrics.llmJudgeStatus, 'NOT_CONFIGURED');
@@ -6538,7 +6561,7 @@ async function runTests() {
           candidateVersion: { provider: 'groq', modelIdentifier: 'openai/gpt-oss-120b' },
           baselineProvider: { providerType: 'groq', generate: async () => ({ output: 'pong', usage: { promptTokens: 5, completionTokens: 5, totalTokens: 10, latencyMs: 50, provider: 'groq' } }), getMetadata: () => ({ id: 'g', name: 'g', providerType: 'groq', isConfigured: true, supportedModels: [] }) },
           candidateProvider: { providerType: 'groq', generate: async () => ({ output: 'pong', usage: { promptTokens: 5, completionTokens: 5, totalTokens: 10, latencyMs: 50, provider: 'groq' } }), getMetadata: () => ({ id: 'g', name: 'g', providerType: 'groq', isConfigured: true, supportedModels: [] }) },
-          judgeConfig: { enabled: true, provider: 'groq', modelIdentifier: 'groq/compound' },
+          judgeConfig: { enabled: true, provider: 'groq', modelIdentifier: 'qwen/qwen3.8-27b' },
           maxCases: 1,
         });
 
@@ -6591,7 +6614,7 @@ async function runTests() {
           judgeConfig: {
             enabled: true,
             provider: 'groq',
-            modelIdentifier: 'groq/compound',
+            modelIdentifier: 'qwen/qwen3.8-27b',
             temperature: 0.1,
             maxTokens: 1024,
           },
@@ -6601,7 +6624,7 @@ async function runTests() {
         assert.ok(run.id.startsWith('run-live-'));
         assert.strictEqual(run.metrics.llmJudgeStatus, 'EXECUTED');
         assert.strictEqual(run.metrics.semanticEvaluationStatus, 'EXECUTED');
-        assert.strictEqual(run.metrics.judgeModel, 'groq/compound');
+        assert.strictEqual(run.metrics.judgeModel, 'qwen/qwen3.8-27b');
         assert.strictEqual(run.comparisonReport.llmJudgeStatus, 'EXECUTED');
         assert.strictEqual(run.comparisonReport.semanticEvaluationStatus, 'EXECUTED');
 
@@ -6669,7 +6692,7 @@ async function runTests() {
           candidateVersion: { provider: 'groq', modelIdentifier: 'openai/gpt-oss-120b' },
           baselineProvider: mockLeakingCandidate,
           candidateProvider: mockLeakingCandidate,
-          judgeConfig: { enabled: true, provider: 'groq', modelIdentifier: 'groq/compound' },
+          judgeConfig: { enabled: true, provider: 'groq', modelIdentifier: 'qwen/qwen3.8-27b' },
           maxCases: 1,
         });
 

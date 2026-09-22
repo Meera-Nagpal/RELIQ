@@ -738,7 +738,7 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
       threshold: 'EXECUTED (or N/A)',
       details:
         metrics.llmJudgeStatus === 'EXECUTED'
-          ? `LLM Judge (${metrics.judgeModel || 'groq/compound'}) qualitative evaluation verified.`
+          ? `LLM Judge (${metrics.judgeModel || 'qwen/qwen3.8-27b'}) qualitative evaluation verified.`
           : metrics.llmJudgeStatus === 'FAILED'
           ? 'Secondary judge execution encountered an error.'
           : 'Secondary judge verification not configured.',

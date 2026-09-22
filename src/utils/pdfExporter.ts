@@ -403,7 +403,7 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   const semStatus = report.semanticEvaluationStatus || 'CONFIGURED (Local)';
   const factStatus = report.factualityGroundednessStatus || 'CONFIGURED';
   const judgeStatus = report.llmJudgeStatus === 'EXECUTED'
-    ? `EXECUTED (${report.judgeModel || 'Groq Compound'})`
+    ? `EXECUTED (${report.judgeModel || 'Qwen 3.8 27B'})`
     : report.llmJudgeStatus || 'NOT CONFIGURED';
 
   doc.setFillColor(0.35, 0.4, 0.45);

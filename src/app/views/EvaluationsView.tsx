@@ -196,7 +196,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
   // Judge selection states
   const [judgeEnabled, setJudgeEnabled] = useState<boolean>(true);
-  const [selectedJudgeModel, setSelectedJudgeModel] = useState<string>('groq/compound');
+  const [selectedJudgeModel, setSelectedJudgeModel] = useState<string>('qwen/qwen3.8-27b');
   const [judgeStatus, setJudgeStatus] = useState<string>('CHECKING');
   const [judgeStatusDetails, setJudgeStatusDetails] = useState<string>('');
 

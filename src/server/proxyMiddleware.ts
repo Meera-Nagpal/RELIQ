@@ -537,7 +537,7 @@ export function createReliqProxyMiddleware() {
         return;
       }
 
-      let modelId = 'groq/compound';
+      let modelId = 'qwen/qwen3.8-27b';
       if (req.method === 'POST') {
         const body = await parseJsonBody(req).catch(() => ({}));
         modelId = body.model || body.modelIdentifier || modelId;

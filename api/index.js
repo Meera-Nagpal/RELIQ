@@ -1175,7 +1175,7 @@ function evaluateReleaseDecision(input) {
       status: metrics.llmJudgeStatus === "EXECUTED" ? "PASS" : metrics.llmJudgeStatus === "FAILED" ? "FAIL" : "NOT_APPLICABLE",
       observed: metrics.llmJudgeStatus || "NOT_CONFIGURED",
       threshold: "EXECUTED (or N/A)",
-      details: metrics.llmJudgeStatus === "EXECUTED" ? `LLM Judge (${metrics.judgeModel || "groq/compound"}) qualitative evaluation verified.` : metrics.llmJudgeStatus === "FAILED" ? "Secondary judge execution encountered an error." : "Secondary judge verification not configured.",
+      details: metrics.llmJudgeStatus === "EXECUTED" ? `LLM Judge (${metrics.judgeModel || "qwen/qwen3.8-27b"}) qualitative evaluation verified.` : metrics.llmJudgeStatus === "FAILED" ? "Secondary judge execution encountered an error." : "Secondary judge verification not configured.",
       isBlocking: false
     }
   ];
@@ -14206,30 +14206,32 @@ async function fetchWithRetry(options) {
 
 // src/evaluation/judgeRegistry.ts
 var GROQ_MODEL_REGISTRY = {
-  "groq/compound": {
-    id: "groq/compound",
-    displayName: "Groq Compound (128k General Reasoning)",
-    description: "General-purpose reasoning model ideal for multi-criteria qualitative evaluation.",
-    isJudgeEligible: true,
-    tier: "reasoning",
-    contextWindow: 131072,
-    recommendedForJudge: true
-  },
-  "groq/compound-mini": {
-    id: "groq/compound-mini",
-    displayName: "Groq Compound Mini (128k Fast Inference)",
-    description: "Compact low-latency reasoning model for high-throughput judging.",
-    isJudgeEligible: true,
-    tier: "fast",
-    contextWindow: 131072
-  },
   "qwen/qwen3.8-27b": {
     id: "qwen/qwen3.8-27b",
     displayName: "Qwen 3.8 27B (128k Tongyi Lab)",
     description: "High-capability instruction-tuned open weights model for complex structured evaluations.",
     isJudgeEligible: true,
     tier: "reasoning",
-    contextWindow: 131072
+    contextWindow: 131072,
+    recommendedForJudge: true
+  },
+  "groq/compound": {
+    id: "groq/compound",
+    displayName: "Groq Compound (Decommissioned)",
+    description: "Decommissioned by Groq as of September 21, 2026 (HTTP 404). Ineligible for judging.",
+    isJudgeEligible: false,
+    tier: "reasoning",
+    contextWindow: 131072,
+    recommendedForJudge: false
+  },
+  "groq/compound-mini": {
+    id: "groq/compound-mini",
+    displayName: "Groq Compound Mini (Decommissioned)",
+    description: "Decommissioned by Groq as of September 21, 2026 (HTTP 404). Ineligible for judging.",
+    isJudgeEligible: false,
+    tier: "fast",
+    contextWindow: 131072,
+    recommendedForJudge: false
   },
   "allam-2-7b": {
     id: "allam-2-7b",
@@ -14378,7 +14380,7 @@ var LLMJudgeEvaluator = class {
    */
   static async evaluate(params) {
     const { testCase, actualOutput, judgeConfig } = params;
-    const model = judgeConfig.modelIdentifier || "groq/compound";
+    const model = judgeConfig.modelIdentifier || "qwen/qwen3.8-27b";
     const systemPrompt = "You are an impartial, expert LLM evaluator judging model responses against test case specifications. Evaluate strictly based on evidence provided in the request and expected behavior. Return ONLY a structured JSON object with your ratings and justification.";
     const userPrompt = `
 TEST CASE DETAILS:
@@ -19216,7 +19218,7 @@ ${userText}` }]
         });
         return;
       }
-      let modelId = "groq/compound";
+      let modelId = "qwen/qwen3.8-27b";
       if (req.method === "POST") {
         const body = await parseJsonBody(req).catch(() => ({}));
         modelId = body.model || body.modelIdentifier || modelId;
