@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useExperienceStore } from '../store/experienceStore';
+import { useRouter } from '../router/useRouter';
 
 /**
  * SpatialTypography Component
@@ -12,9 +13,11 @@ import { useExperienceStore } from '../store/experienceStore';
  * - Occluded by 3D geometry
  * - Mirrored in the reflective fluid ground
  * - Changing perspective as the camera navigates
+ * - Strictly isolated during global brand transitions
  */
 export function SpatialTypography() {
   const { currentStateIndex, stateProgress, healthStatus } = useExperienceStore();
+  const { isTransitioning } = useRouter();
 
   const state1Group = useRef<THREE.Group>(null);
   const state2Group = useRef<THREE.Group>(null);
@@ -24,6 +27,27 @@ export function SpatialTypography() {
   const state6Group = useRef<THREE.Group>(null);
 
   useFrame((state, delta) => {
+    // Transition State Isolation:
+    // If a brand transition is active, immediately hide all state typography
+    if (isTransitioning) {
+      const hideGroup = (group: THREE.Group | null) => {
+        if (!group) return;
+        group.visible = false;
+        group.children.forEach((child: any) => {
+          if (child.material) {
+            child.material.opacity = 0;
+          }
+        });
+      };
+      hideGroup(state1Group.current);
+      hideGroup(state2Group.current);
+      hideGroup(state3Group.current);
+      hideGroup(state4Group.current);
+      hideGroup(state5Group.current);
+      hideGroup(state6Group.current);
+      return;
+    }
+
     // Opacity helpers for each state
     const getOpacity = (targetIdx: number) => {
       if (currentStateIndex === targetIdx) {
@@ -37,13 +61,14 @@ export function SpatialTypography() {
     const updateGroupOpacity = (group: THREE.Group | null, targetOpacity: number) => {
       if (!group) return;
       group.visible = targetOpacity > 0.01;
+      const dampFactor = targetOpacity === 0 ? 14 : 7;
       group.children.forEach((child: any) => {
         if (child.material) {
           child.material.transparent = true;
           child.material.opacity = THREE.MathUtils.damp(
             child.material.opacity ?? 0,
             targetOpacity,
-            6,
+            dampFactor,
             delta
           );
         }
@@ -60,7 +85,7 @@ export function SpatialTypography() {
     // Jitter state 4 (DETECT / REGRESSION) during regression
     if (state4Group.current && healthStatus === 'regression') {
       state4Group.current.position.x = (Math.random() - 0.5) * 0.03;
-      state4Group.current.position.y = 1.6 + (Math.random() - 0.5) * 0.03;
+      state4Group.current.position.y = 1.8 + (Math.random() - 0.5) * 0.03;
     }
   });
 
@@ -71,10 +96,10 @@ export function SpatialTypography() {
         <Text
           fontSize={3.2}
           letterSpacing={0.12}
-          color="#F2F2F2"
+          color="#D9DDE2"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={1}
+          fillOpacity={0.45}
           depthOffset={1}
         >
           RELIQ
@@ -83,36 +108,36 @@ export function SpatialTypography() {
           position={[0, -1.5, 0]}
           fontSize={0.28}
           letterSpacing={0.25}
-          color="#888888"
+          color="#AEB5BE"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.9}
+          fillOpacity={0.60}
         >
           SHIP AI CHANGES WITH CONFIDENCE
         </Text>
       </group>
 
-      {/* ── STATE 02: DATA (RUN — 500 Test Cases) ── */}
-      <group ref={state2Group} position={[-2.2, 0.4, -1.8]} rotation={[0, 0.2, 0]}>
+      {/* ── STATE 02: DATA (DATA — 500 Active Test Cases) ── */}
+      <group ref={state2Group} position={[0.4, 0.4, -1.6]} rotation={[0, -0.1, 0]}>
         <Text
           fontSize={1.8}
           letterSpacing={0.15}
-          color="#FF6B35"
+          color="#D9DDE2"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.45}
           depthOffset={1}
         >
-          RUN
+          DATA
         </Text>
         <Text
           position={[0, -0.9, 0]}
           fontSize={0.65}
           letterSpacing={0.08}
-          color="#FFFFFF"
+          color="#D9DDE2"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.75}
           depthOffset={1}
         >
           500
@@ -121,10 +146,10 @@ export function SpatialTypography() {
           position={[0, -1.35, 0]}
           fontSize={0.22}
           letterSpacing={0.2}
-          color="#888888"
+          color="#AEB5BE"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.22}
+          fillOpacity={0.55}
           depthOffset={1}
         >
           ACTIVE TEST CASES
@@ -136,10 +161,10 @@ export function SpatialTypography() {
         <Text
           fontSize={1.7}
           letterSpacing={0.12}
-          color="#4DA6FF"
+          color="#D9DDE2"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.52}
           depthOffset={1}
         >
           COMPARE
@@ -148,10 +173,10 @@ export function SpatialTypography() {
           position={[0, -0.85, 0]}
           fontSize={0.7}
           letterSpacing={0.05}
-          color="#FFFFFF"
+          color="#E6E8EB"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.75}
           depthOffset={1}
         >
           94.8%
@@ -160,10 +185,10 @@ export function SpatialTypography() {
           position={[0, -1.3, 0]}
           fontSize={0.22}
           letterSpacing={0.2}
-          color="#888888"
+          color="#AEB5BE"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.22}
+          fillOpacity={0.55}
           depthOffset={1}
         >
           BASELINE ACCURACY
@@ -175,10 +200,10 @@ export function SpatialTypography() {
         <Text
           fontSize={1.9}
           letterSpacing={0.18}
-          color="#FF2200"
+          color="#D7DBE0"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.55}
           depthOffset={1}
         >
           DETECT
@@ -187,37 +212,37 @@ export function SpatialTypography() {
           position={[0, -0.85, 0]}
           fontSize={0.32}
           letterSpacing={0.28}
-          color="#FF6B35"
+          color="#E5673E"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.24}
+          fillOpacity={0.60}
           depthOffset={1}
         >
           REGRESSION DETECTED
         </Text>
       </group>
 
-      {/* ── STATE 05: INVESTIGATION (INVESTIGATE — 47 Failed Cases) ── */}
+      {/* ── STATE 05: INVESTIGATION (INVESTIGATION — 47 Failed Cases) ── */}
       <group ref={state5Group} position={[1.8, 0.1, -1.8]} rotation={[0, -0.25, 0]}>
         <Text
-          fontSize={1.8}
+          fontSize={1.6}
           letterSpacing={0.15}
-          color="#FF9955"
+          color="#D9DDE2"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.20}
+          fillOpacity={0.58}
           depthOffset={1}
         >
-          INVESTIGATE
+          INVESTIGATION
         </Text>
         <Text
           position={[0, -0.85, 0]}
           fontSize={2.4}
           letterSpacing={0.05}
-          color="#FFFFFF"
+          color="#E6E8EB"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.22}
+          fillOpacity={0.75}
           depthOffset={1}
         >
           47
@@ -226,10 +251,10 @@ export function SpatialTypography() {
           position={[0, -1.8, 0]}
           fontSize={0.32}
           letterSpacing={0.2}
-          color="#888888"
+          color="#AEB5BE"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.20}
+          fillOpacity={0.55}
           depthOffset={1}
         >
           ISOLATED FAILURES
@@ -242,10 +267,10 @@ export function SpatialTypography() {
           position={[0, 1.2, 0]}
           fontSize={0.3}
           letterSpacing={0.35}
-          color="#4DA6FF"
+          color="#B8C0C8"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.26}
+          fillOpacity={0.60}
           depthOffset={1}
         >
           ROOT-CAUSE ISOLATED
@@ -254,10 +279,10 @@ export function SpatialTypography() {
           position={[0, 0.3, 0]}
           fontSize={2.0}
           letterSpacing={0.04}
-          color="#FFFFFF"
+          color="#E6E8EB"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.26}
+          fillOpacity={0.82}
           depthOffset={1}
         >
           96.8%
@@ -269,7 +294,7 @@ export function SpatialTypography() {
           color="#FF6B35"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.26}
+          fillOpacity={0.62}
           depthOffset={1}
         >
           AI RELIABILITY ASSURED

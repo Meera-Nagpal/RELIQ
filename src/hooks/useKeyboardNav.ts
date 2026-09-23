@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useExperienceStore } from '../store/experienceStore';
+import { triggerGlobalTransition } from '../router/useRouter';
 
 /**
  * Hook for keyboard navigation between states
@@ -29,9 +30,12 @@ export function useKeyboardNav() {
 
     const scrollToState = (index: number) => {
       // Calculate target scroll position from state index: (stateIndex / 6) * totalScrollHeight
+      const clampedIndex = Math.min(Math.max(index, 0), 5);
       const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const targetScroll = (index / 6) * totalScrollHeight;
-      window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+      const targetScroll = (clampedIndex / 6) * totalScrollHeight;
+      triggerGlobalTransition(() => {
+        window.scrollTo({ top: targetScroll, behavior: 'auto' });
+      }, 680);
     };
 
     window.addEventListener('keydown', handleKeyDown);

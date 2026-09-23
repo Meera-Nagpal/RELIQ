@@ -1,10 +1,13 @@
 /* ============================================================
-   RELIQ — Fullscreen Page Transition Overlay
+   RELIQ — Clean Brand Transition Overlay
    
-   Renders a fixed, fullscreen overlay with 3 concentric RELIQ ripples
-   that expand and fade during navigation events.
+   Renders a focused transition layer displaying ONLY "RELIQ" with
+   centered concentric circular ripples, subtle orange glow, and
+   calibrated 700-1000ms timing.
    
-   Target Duration: ~650ms total.
+   Underlying 3D environment remains rendered behind the translucent
+   backdrop while all state-specific typography is hidden.
+   
    Accessibility: Respects prefers-reduced-motion: reduce.
    ============================================================ */
 
@@ -25,31 +28,36 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
-        background: 'rgba(10, 10, 10, 0.88)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        background: 'rgba(8, 10, 14, 0.76)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         pointerEvents: 'auto', // Prevents double clicks during transition
         overflow: 'hidden',
-        animation: 'reliqOverlayFade 2.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards',
+        /* 2.5s duration compatibility */
+        animation: 'reliqTransitionFade 0.68s cubic-bezier(0.22, 0.61, 0.36, 1) forwards',
       }}
     >
       <style>{`
-        @keyframes reliqOverlayFade {
+        @keyframes reliqTransitionFade {
           0% {
             opacity: 0;
+            transform: scale(0.98);
           }
-          12% {
+          25% {
             opacity: 1;
+            transform: scale(1);
           }
-          88% {
+          65% {
             opacity: 1;
+            transform: scale(1);
           }
           100% {
             opacity: 0;
+            transform: scale(1.02);
           }
         }
 
@@ -61,28 +69,88 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
         }
       `}</style>
 
+      {/* ── Centered Brand Transition Container ── */}
       <div
         style={{
+          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '1.2rem',
+          width: '280px',
+          height: '240px',
         }}
       >
-        <RippleLoader size={120} mode="pulse" />
+        {/* Concentric subtle circular rings centered around RELIQ */}
         <div
           style={{
-            fontFamily: "'Inter', -apple-system, sans-serif",
-            fontSize: '0.72rem',
-            letterSpacing: '0.22em',
-            textTransform: 'uppercase',
-            color: 'var(--reliq-accent, #FF6B35)',
-            fontWeight: 700,
-            opacity: 0.9,
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
           }}
         >
-          RELIQ TRANSITION
+          <RippleLoader size={130} mode="pulse" />
+        </div>
+
+        {/* Brand wordmark ONLY: RELIQ */}
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+            fontSize: '1.75rem',
+            fontWeight: 800,
+            letterSpacing: '0.28em',
+            textIndent: '0.28em', // optically center letter-spaced text
+            color: '#F0F3F6',
+            textShadow: '0 0 24px rgba(255, 107, 53, 0.5), 0 0 48px rgba(255, 107, 53, 0.2)',
+            marginBottom: '0.6rem',
+          }}
+        >
+          RELIQ
+        </div>
+
+        {/* Subtle orange accent / dots row: ◯ ● ◯ */}
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.55rem',
+            opacity: 0.85,
+          }}
+        >
+          <div
+            style={{
+              width: '4px',
+              height: '4px',
+              borderRadius: '50%',
+              border: '1px solid rgba(255, 107, 53, 0.7)',
+              background: 'transparent',
+            }}
+          />
+          <div
+            style={{
+              width: '5px',
+              height: '5px',
+              borderRadius: '50%',
+              background: 'var(--reliq-accent, #FF6B35)',
+              boxShadow: '0 0 8px #FF6B35',
+            }}
+          />
+          <div
+            style={{
+              width: '4px',
+              height: '4px',
+              borderRadius: '50%',
+              border: '1px solid rgba(255, 107, 53, 0.7)',
+              background: 'transparent',
+            }}
+          />
         </div>
       </div>
     </div>

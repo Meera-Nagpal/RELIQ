@@ -3,6 +3,7 @@ import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
 import { apiRepository } from '../services/apiRepository';
 import { EvaluationRun } from '../domain/types';
+import { useRouter } from '../router/useRouter';
 
 interface VersionItem {
   id: string;
@@ -141,11 +142,13 @@ export function VersionCards() {
     return 1;
   }, [scrollProgress]);
 
+  const { isTransitioning } = useRouter();
+
   // Total horizontal track translation percentage
   // From right of screen to far left so all 5 cards pass through center
   const translateX = mapRangeClamped(hProgress, 0, 1, 65, -82);
 
-  if (opacity <= 0.001) return null;
+  if (isTransitioning || opacity <= 0.001) return null;
 
   return (
     <div

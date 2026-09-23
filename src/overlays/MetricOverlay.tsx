@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
 import { apiRepository } from '../services/apiRepository';
+import { useRouter } from '../router/useRouter';
 
 /**
  * Giant animated metric numbers overlay.
@@ -12,6 +13,7 @@ export function MetricOverlay() {
   const currentStateIndex = useExperienceStore((state) => state.currentStateIndex);
   const currentState = useExperienceStore((state) => state.currentState);
   const stateProgress = useExperienceStore((state) => state.stateProgress);
+  const { isTransitioning } = useRouter();
 
   const [activeCaseCount, setActiveCaseCount] = useState<number>(27);
 
@@ -106,7 +108,7 @@ export function MetricOverlay() {
     };
   }, [currentStateIndex, stateProgress, currentState]);
 
-  if (currentStateIndex === 0 || currentStateIndex === 5 || opacity <= 0.01) return null;
+  if (isTransitioning || currentStateIndex === 0 || currentStateIndex === 5 || opacity <= 0.01) return null;
 
   const isRegressionWarning = currentStateIndex === 3 && stateProgress > 0.7;
 
@@ -139,7 +141,7 @@ export function MetricOverlay() {
             fontWeight: 800,
             lineHeight: 0.95,
             letterSpacing: '-0.04em',
-            color: isRegressionWarning ? '#FF2200' : '#FFFFFF',
+            color: isRegressionWarning ? '#D7DBE0' : '#FFFFFF',
             transition: 'color 0.3s ease',
           }}
         >
@@ -150,7 +152,7 @@ export function MetricOverlay() {
             style={{
               fontSize: 'clamp(1.8rem, 3.5vw, 3.5rem)',
               fontWeight: 700,
-              color: isRegressionWarning ? '#FF2200' : 'var(--accent, #FF6B35)',
+              color: isRegressionWarning ? '#E5673E' : 'var(--accent, #FF6B35)',
             }}
           >
             %
@@ -163,7 +165,7 @@ export function MetricOverlay() {
           fontSize: '0.75rem',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          color: isRegressionWarning ? '#FFAA99' : 'var(--text-muted, #888888)',
+          color: isRegressionWarning ? '#D7DBE0' : 'var(--text-muted, #888888)',
           fontWeight: 600,
           marginTop: '0.6rem',
         }}
@@ -176,14 +178,14 @@ export function MetricOverlay() {
           style={{
             marginTop: '1rem',
             padding: '0.4rem 0.9rem',
-            background: 'rgba(255, 34, 0, 0.15)',
-            border: '1px solid #FF2200',
-            color: '#FF4422',
+            background: 'rgba(229, 103, 62, 0.15)',
+            border: '1px solid rgba(229, 103, 62, 0.6)',
+            color: '#FF7A50',
             borderRadius: '4px',
             fontSize: '0.75rem',
             fontWeight: 700,
             letterSpacing: '0.15em',
-            boxShadow: '0 0 20px rgba(255, 34, 0, 0.3)',
+            boxShadow: '0 0 20px rgba(229, 103, 62, 0.3)',
             animation: 'pulse 1.2s infinite',
           }}
         >
