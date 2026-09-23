@@ -158,8 +158,9 @@ export function VersionCards() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        background: 'rgba(6, 9, 13, 0.45)',
-        backdropFilter: 'blur(3px)',
+        background: 'rgba(6, 9, 13, 0.32)',
+        backdropFilter: 'blur(2.5px)',
+        WebkitBackdropFilter: 'blur(2.5px)',
         transition: 'opacity 0.25s ease-out',
         overflow: 'hidden',
       }}
@@ -255,13 +256,14 @@ export function VersionCards() {
                 width: 'clamp(320px, 28vw, 420px)',
                 flexShrink: 0,
                 background: isReg
-                  ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.94) 0%, rgba(18, 6, 5, 0.98) 100%)'
-                  : 'linear-gradient(180deg, rgba(20, 24, 30, 0.94) 0%, rgba(12, 14, 18, 0.98) 100%)',
+                  ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.65) 0%, rgba(18, 6, 5, 0.75) 100%)'
+                  : 'linear-gradient(180deg, rgba(16, 20, 28, 0.65) 0%, rgba(10, 12, 16, 0.75) 100%)',
                 border: `1px solid ${borderColor}`,
                 borderRadius: '12px',
-                padding: '2rem',
+                padding: '1.8rem',
                 boxShadow: glowShadow,
-                backdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1.4rem',

@@ -133,25 +133,25 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
         <div
           className="evaluation-modal-ripple-container"
           style={{
-            margin: '0.25rem auto 0.5rem auto',
+            margin: '0.2rem auto 0.6rem auto',
             position: 'relative',
             overflow: 'hidden',
             isolation: 'isolate',
             borderRadius: '50%',
-            width: '124px',
-            height: '124px',
-            minWidth: '124px',
-            minHeight: '124px',
+            width: '136px',
+            height: '136px',
+            minWidth: '136px',
+            minHeight: '136px',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             background: isFailed
-              ? 'radial-gradient(circle, rgba(239, 68, 68, 0.16) 0%, rgba(13, 17, 23, 0.95) 75%)'
-              : 'radial-gradient(circle, rgba(255, 107, 53, 0.12) 0%, rgba(13, 17, 23, 0.95) 75%)',
-            border: isFailed ? '2px solid rgba(239, 68, 68, 0.5)' : '2px solid rgba(255, 107, 53, 0.45)',
+              ? 'radial-gradient(circle, rgba(239, 68, 68, 0.14) 0%, rgba(13, 17, 23, 0.96) 75%)'
+              : 'radial-gradient(circle, rgba(255, 107, 53, 0.09) 0%, rgba(13, 17, 23, 0.96) 75%)',
+            border: isFailed ? '1.5px solid rgba(239, 68, 68, 0.5)' : '1.5px solid rgba(255, 107, 53, 0.38)',
             boxShadow: isFailed
-              ? '0 0 28px rgba(239, 68, 68, 0.25), inset 0 0 16px rgba(239, 68, 68, 0.15)'
-              : '0 0 28px rgba(255, 107, 53, 0.25), inset 0 0 16px rgba(255, 107, 53, 0.15)',
+              ? '0 0 24px rgba(239, 68, 68, 0.22), inset 0 0 16px rgba(239, 68, 68, 0.12)'
+              : '0 0 24px rgba(255, 107, 53, 0.18), inset 0 0 16px rgba(255, 107, 53, 0.10)',
           }}
         >
           {isFailed ? (
@@ -173,7 +173,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               ⚠
             </div>
           ) : (
-            <RippleLoader size={124} mode="continuous" />
+            <RippleLoader size={136} mode="continuous" />
           )}
         </div>
 

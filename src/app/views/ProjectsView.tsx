@@ -126,8 +126,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             gap: '1rem',
           }}
         >
-          <div style={{ fontSize: '2rem' }}>◈</div>
-          <h3 style={{ color: '#FFFFFF', margin: 0, fontSize: '1.25rem' }}>No Projects Found</h3>
+          <div style={{ fontSize: '2rem', color: '#888888' }}>◫</div>
+          <h3 style={{ color: '#FFFFFF', margin: 0, fontSize: '1.25rem', letterSpacing: '0.05em' }}>NO SAVED PROJECTS</h3>
           <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0, maxWidth: '440px', lineHeight: 1.5 }}>
             Get started by creating your first evaluation project workspace to organize datasets, models, and regression gates.
           </p>
@@ -176,21 +176,19 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         {proj.name}
                       </h3>
                     </div>
-                    {isActive && (
-                      <span
-                        style={{
-                          fontSize: '0.68rem',
-                          padding: '0.2rem 0.6rem',
-                          borderRadius: '999px',
-                          background: 'rgba(255, 107, 53, 0.15)',
-                          color: 'var(--accent, #FF6B35)',
-                          fontWeight: 700,
-                          border: '1px solid rgba(255, 107, 53, 0.3)',
-                        }}
-                      >
-                        ACTIVE
-                      </span>
-                    )}
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '999px',
+                        background: isActive ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                        color: isActive ? '#2ECC71' : '#8899AA',
+                        fontWeight: 700,
+                        border: isActive ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      }}
+                    >
+                      {isActive ? 'ACTIVE' : 'INACTIVE'}
+                    </span>
                   </div>
 
                   <p style={{ fontSize: '0.88rem', color: '#8899A6', lineHeight: 1.5, margin: '0 0 1.2rem 0' }}>
@@ -200,22 +198,36 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   <div
                     style={{
                       background: 'rgba(0, 0, 0, 0.25)',
-                      padding: '0.8rem',
+                      padding: '0.85rem',
                       borderRadius: '6px',
                       fontSize: '0.78rem',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.4rem',
+                      gap: '0.45rem',
                       border: '1px solid rgba(255, 255, 255, 0.04)',
                     }}
                   >
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888888' }}>Dataset Used:</span>
+                      <span style={{ color: '#FFFFFF', fontWeight: 600 }}>
+                        {proj.defaultDatasetId || 'Checkout Reliability Suite (27 scenarios)'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888888' }}>Comparison Models:</span>
+                      <span style={{ color: '#4DA6FF', fontFamily: 'monospace', fontWeight: 600 }}>
+                        {proj.baselineVersionId || 'ver-v1-4'} vs {proj.candidateVersionId || 'ver-v1-5'}
+                      </span>
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#888888' }}>Target Accuracy Gate:</span>
                       <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{proj.regressionSettings.minAccuracyPercent}%</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888888' }}>Allowed Degradation:</span>
-                      <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{proj.regressionSettings.maxAccuracyDegradationPercent}%</span>
+                      <span style={{ color: '#888888' }}>Last Updated:</span>
+                      <span style={{ color: '#AAAAAA' }}>
+                        {new Date(proj.updatedAt || proj.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -229,15 +241,20 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     borderTop: '1px solid rgba(255, 255, 255, 0.06)',
                     paddingTop: '1rem',
                     marginTop: '1.2rem',
+                    flexWrap: 'wrap',
+                    gap: '0.6rem',
                   }}
                 >
-                  {!isActive ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     <button
-                      onClick={() => onSelectProject(proj.id)}
+                      onClick={() => {
+                        onSelectProject(proj.id);
+                        navigate('#/app/dashboard');
+                      }}
                       style={{
-                        background: 'transparent',
-                        border: '1px solid var(--accent, #FF6B35)',
-                        color: 'var(--accent, #FF6B35)',
+                        background: 'var(--accent, #FF6B35)',
+                        color: '#000000',
+                        border: 'none',
                         padding: '0.45rem 1rem',
                         borderRadius: '6px',
                         fontSize: '0.8rem',
@@ -245,13 +262,25 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         cursor: 'pointer',
                       }}
                     >
-                      Set Active
+                      Open Project →
                     </button>
-                  ) : (
-                    <span style={{ fontSize: '0.8rem', color: '#2ECC71', fontWeight: 600 }}>
-                      ✓ Active Workspace
-                    </span>
-                  )}
+                    {!isActive && (
+                      <button
+                        onClick={() => onSelectProject(proj.id)}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#CCCCCC',
+                          padding: '0.45rem 0.8rem',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Set Active
+                      </button>
+                    )}
+                  </div>
 
                   <div style={{ display: 'flex', gap: '0.6rem' }}>
                     <button

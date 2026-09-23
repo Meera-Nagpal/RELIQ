@@ -32,31 +32,32 @@ export function StateTypography() {
     <div
       style={{
         position: 'fixed',
-        left: 'clamp(3rem, 10vw, 12vw)',
-        top: '50%',
-        transform: 'translateY(-50%)',
+        left: 'clamp(1.5rem, 5vw, 5rem)',
+        bottom: 'clamp(2rem, 7vh, 4.5rem)',
         zIndex: 20,
         pointerEvents: 'none',
         opacity,
-        maxWidth: 'clamp(340px, 38vw, 480px)',
-        padding: '1.5rem',
-        borderRadius: '12px',
-        background: 'radial-gradient(ellipse at left, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.55) 65%, rgba(10, 10, 10, 0) 90%)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        transition: 'opacity 0.25s ease-out',
+        maxWidth: 'clamp(280px, 32vw, 390px)',
+        padding: '1.1rem 1.35rem',
+        borderRadius: '10px',
+        background: 'rgba(10, 14, 22, 0.48)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(3px)',
+        WebkitBackdropFilter: 'blur(3px)',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.35)',
+        transition: 'opacity 0.22s cubic-bezier(0.22, 0.61, 0.36, 1)',
       }}
     >
       {/* Step tag */}
       <div
         style={{
           fontFamily: 'monospace',
-          fontSize: '0.78rem',
+          fontSize: '0.72rem',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
           color: 'var(--accent, #FF6B35)',
           fontWeight: 600,
-          marginBottom: '0.5rem',
+          marginBottom: '0.4rem',
         }}
       >
         STAGE {paddedIndex} // {currentState.label}
@@ -65,13 +66,13 @@ export function StateTypography() {
       {/* Headline */}
       <h2
         style={{
-          fontSize: 'clamp(1.7rem, 3.2vw, 2.8rem)',
+          fontSize: 'clamp(1.4rem, 2.5vw, 2.2rem)',
           fontWeight: 800,
-          letterSpacing: '-0.03em',
+          letterSpacing: '-0.02em',
           color: '#F5F5F5',
-          lineHeight: 1.15,
-          margin: '0 0 0.85rem 0',
-          textShadow: '0 2px 14px rgba(0, 0, 0, 0.8)',
+          lineHeight: 1.18,
+          margin: '0 0 0.6rem 0',
+          textShadow: '0 2px 10px rgba(0, 0, 0, 0.7)',
         }}
       >
         {currentState.name}
@@ -80,11 +81,11 @@ export function StateTypography() {
       {/* Description */}
       <p
         style={{
-          fontSize: 'clamp(0.95rem, 1.3vw, 1.15rem)',
+          fontSize: 'clamp(0.85rem, 1.1vw, 0.98rem)',
           color: 'var(--text-muted, #A0B0C0)',
-          lineHeight: 1.6,
+          lineHeight: 1.55,
           margin: 0,
-          textShadow: '0 1px 8px rgba(0, 0, 0, 0.7)',
+          textShadow: '0 1px 6px rgba(0, 0, 0, 0.6)',
         }}
       >
         {currentState.description}

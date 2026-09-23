@@ -110,28 +110,31 @@ export function DashboardTransition() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        background: `rgba(8, 10, 14, ${bgBackdrop})`,
-        backdropFilter: isFullyVisible ? 'blur(16px)' : 'blur(6px)',
+        justifyContent: 'flex-end',
+        background: `linear-gradient(180deg, rgba(8, 10, 14, 0) 0%, rgba(8, 10, 14, ${bgBackdrop * 0.25}) 30%, rgba(8, 10, 14, ${bgBackdrop * 0.82}) 100%)`,
+        backdropFilter: isFullyVisible ? 'blur(3px)' : 'none',
+        WebkitBackdropFilter: isFullyVisible ? 'blur(3px)' : 'none',
         opacity,
-        padding: 'clamp(1rem, 3vw, 2.5rem)',
-        overflowY: 'auto',
+        padding: 'clamp(0.8rem, 2vw, 1.8rem)',
+        overflowY: 'hidden',
         transition: 'opacity 0.25s ease-out',
       }}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '1120px',
-          maxHeight: '92vh',
+          maxWidth: '840px',
+          maxHeight: '56vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(16, 20, 26, 0.95)',
+          background: 'rgba(14, 18, 25, 0.82)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           border: '1px solid rgba(255, 255, 255, 0.12)',
-          borderRadius: '16px',
-          boxShadow: '0 30px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+          borderRadius: '14px',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 107, 53, 0.12)',
           transform: `scale(${scale})`,
-          transformOrigin: 'center center',
+          transformOrigin: 'bottom center',
           transition: 'transform 0.1s linear',
           overflow: 'hidden',
         }}
@@ -229,27 +232,27 @@ export function DashboardTransition() {
         {/* ── Signature Transition Hero: The 96.8% Card ── */}
         <section
           style={{
-            padding: '2rem',
-            background: 'linear-gradient(180deg, rgba(22, 28, 38, 0.7) 0%, rgba(14, 18, 24, 0.9) 100%)',
+            padding: '1.2rem 1.6rem',
+            background: 'linear-gradient(180deg, rgba(22, 28, 38, 0.55) 0%, rgba(14, 18, 24, 0.75) 100%)',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '1.2fr 2fr',
-              gap: '2.5rem',
+              gridTemplateColumns: '1.1fr 1.9fr',
+              gap: '1.5rem',
               alignItems: 'center',
             }}
           >
             {/* Primary AI Reliability Card (Transformed from 3D) */}
             <div
               style={{
-                background: 'rgba(10, 13, 18, 0.85)',
+                background: 'rgba(10, 13, 18, 0.75)',
                 border: '1px solid rgba(255, 107, 53, 0.35)',
-                borderRadius: '12px',
-                padding: '1.8rem',
-                boxShadow: '0 0 30px rgba(255, 107, 53, 0.12)',
+                borderRadius: '10px',
+                padding: '1.1rem 1.3rem',
+                boxShadow: '0 0 25px rgba(255, 107, 53, 0.10)',
               }}
             >
               <div
@@ -374,12 +377,12 @@ export function DashboardTransition() {
           <button
             onClick={() => setActiveTab('overview')}
             style={{
-              padding: '0.9rem 1.8rem',
+              padding: '0.65rem 1.4rem',
               background: 'transparent',
               border: 'none',
               borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #FF6B35)' : 'none',
               color: activeTab === 'overview' ? '#FFFFFF' : '#888888',
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -389,12 +392,12 @@ export function DashboardTransition() {
           <button
             onClick={() => setActiveTab('cases')}
             style={{
-              padding: '0.9rem 1.8rem',
+              padding: '0.65rem 1.4rem',
               background: 'transparent',
               border: 'none',
               borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #FF6B35)' : 'none',
               color: activeTab === 'cases' ? '#FFFFFF' : '#888888',
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -404,7 +407,7 @@ export function DashboardTransition() {
         </div>
 
         {/* ── Tab Content ── */}
-        <div style={{ padding: '2rem', flex: 1, overflowY: 'auto' }}>
+        <div style={{ padding: '1.2rem 1.6rem', flex: 1, overflowY: 'auto' }}>
           {activeTab === 'overview' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
               <div
