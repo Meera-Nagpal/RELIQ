@@ -26,19 +26,20 @@ export const GROQ_MODEL_REGISTRY: Record<string, GroqJudgeModelDescriptor> = {
   'groq/compound': {
     id: 'groq/compound',
     displayName: 'Groq Compound (128k General Reasoning)',
-    description: 'General-purpose reasoning model ideal for multi-criteria qualitative evaluation.',
+    description: 'Legacy reasoning model supported for test mock compatibility.',
     isJudgeEligible: true,
     tier: 'reasoning',
     contextWindow: 131072,
-    recommendedForJudge: true,
+    recommendedForJudge: false,
   },
   'groq/compound-mini': {
     id: 'groq/compound-mini',
     displayName: 'Groq Compound Mini (128k Fast Inference)',
-    description: 'Compact low-latency reasoning model for high-throughput judging.',
+    description: 'Legacy compact reasoning model supported for test mock compatibility.',
     isJudgeEligible: true,
     tier: 'fast',
     contextWindow: 131072,
+    recommendedForJudge: false,
   },
   'qwen/qwen3.8-27b': {
     id: 'qwen/qwen3.8-27b',
@@ -47,6 +48,7 @@ export const GROQ_MODEL_REGISTRY: Record<string, GroqJudgeModelDescriptor> = {
     isJudgeEligible: true,
     tier: 'reasoning',
     contextWindow: 131072,
+    recommendedForJudge: true,
   },
   'allam-2-7b': {
     id: 'allam-2-7b',

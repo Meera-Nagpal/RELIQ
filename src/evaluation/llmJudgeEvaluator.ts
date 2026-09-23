@@ -75,7 +75,7 @@ export class LLMJudgeEvaluator {
    */
   static async evaluate(params: JudgeEvaluationParams): Promise<LLMJudgeScore> {
     const { testCase, actualOutput, judgeConfig } = params;
-    const model = judgeConfig.modelIdentifier || 'groq/compound';
+    const model = judgeConfig.modelIdentifier || 'qwen/qwen3.8-27b';
 
     const systemPrompt =
       'You are an impartial, expert LLM evaluator judging model responses against test case specifications. ' +

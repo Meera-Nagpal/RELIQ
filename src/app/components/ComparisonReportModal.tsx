@@ -26,6 +26,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   onClose,
 }) => {
   const [copiedNotification, setCopiedNotification] = useState(false);
+  const targetRequiredCases = report.benchmarkCompletion?.requiredCases || report.totalCases || 27;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -94,8 +95,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           border: '#F39C12',
           color: '#F39C12',
           glow: 'rgba(243, 156, 18, 0.25)',
-          label: report.totalCases < 27
-            ? `⚡ PRELIMINARY SUBSET (N = ${report.totalCases}/27 SCENARIOS — REQUIRES 27 CASES FOR PRODUCTION RELEASE)`
+          label: report.totalCases < targetRequiredCases
+            ? `⚡ PRELIMINARY SUBSET (N = ${report.totalCases}/${targetRequiredCases} SCENARIOS — REQUIRES ${targetRequiredCases} CASES FOR PRODUCTION RELEASE)`
             : '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
         };
       case 'NO REGRESSION':
@@ -192,7 +193,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   const isPreliminary = Boolean(
     report.isPreliminary ||
     report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
-    (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+    (report.totalCases < targetRequiredCases)
   );
 
   // Relative outcome strictly based on quality delta & existing comparison
@@ -214,7 +215,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     relativeBorderColor = 'rgba(192, 132, 252, 0.35)';
   } else if (isPreliminary) {
     relativeResult = 'INCONCLUSIVE';
-    relativeTitle = 'Preliminary Benchmark (N < 27)';
+    relativeTitle = `Preliminary Benchmark (N < ${targetRequiredCases})`;
     relativeBadgeColor = '#F59E0B';
     relativeBadgeBg = 'rgba(245, 158, 11, 0.15)';
     relativeBorderColor = 'rgba(245, 158, 11, 0.35)';
@@ -528,7 +529,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 </div>
               ) : isPreliminary ? (
                 <div>
-                  <strong>Preliminary Benchmark:</strong> Evaluated {report.totalCases}/27 scenarios. Full 27-scenario test suite required for production release certification.
+                  <strong>Preliminary Benchmark:</strong> Evaluated {report.totalCases}/{targetRequiredCases} scenarios. Full {targetRequiredCases}-scenario test suite required for production release certification.
                 </div>
               ) : (
                 <div>
@@ -1169,7 +1170,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           {/* Winner Card */}
           <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
-              {report.isPreliminary || report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' || (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+              {isPreliminary
                 ? 'Evaluation Status'
                 : (report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK')
                 ? 'Relative Comparison'
@@ -1180,7 +1181,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 fontSize: '1.25rem',
                 fontWeight: 800,
                 color:
-                  report.isPreliminary || report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' || (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+                  isPreliminary
                     ? '#F59E0B'
                     : ((report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK'))
                     ? (report.qualityDelta !== null && report.qualityDelta > 0 ? '#4DA6FF' : report.qualityDelta !== null && report.qualityDelta < 0 ? '#EF4444' : '#FFAA44')
@@ -1192,7 +1193,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 margin: '0.3rem 0',
               }}
             >
-              {report.isPreliminary || report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' || (report.totalCases < 27 && (report.datasetName || '').toLowerCase().includes('checkout'))
+              {isPreliminary
                 ? 'PRELIMINARY RESULT'
                 : ((report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK'))
                 ? (report.qualityDelta !== null && report.qualityDelta > 0 ? 'Relative Quality: Improvement' : report.qualityDelta !== null && report.qualityDelta < 0 ? 'Relative Quality: Regression' : 'Relative Quality: Parity')
@@ -1492,23 +1493,29 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       ? 'rgba(46, 204, 113, 0.2)'
                       : report.overallGateStatus === 'FAIL'
                       ? 'rgba(255, 51, 17, 0.2)'
+                      : report.overallGateStatus === 'PASS WITH WARNINGS'
+                      ? 'rgba(245, 158, 11, 0.2)'
                       : 'rgba(243, 156, 18, 0.2)',
                   color:
                     report.overallGateStatus === 'PASS'
                       ? '#2ECC71'
                       : report.overallGateStatus === 'FAIL'
                       ? '#FF4422'
+                      : report.overallGateStatus === 'PASS WITH WARNINGS'
+                      ? '#F59E0B'
                       : '#F39C12',
                   border: `1px solid ${
                     report.overallGateStatus === 'PASS'
                       ? 'rgba(46, 204, 113, 0.4)'
                       : report.overallGateStatus === 'FAIL'
                       ? 'rgba(255, 51, 17, 0.4)'
+                      : report.overallGateStatus === 'PASS WITH WARNINGS'
+                      ? 'rgba(245, 158, 11, 0.4)'
                       : 'rgba(243, 156, 18, 0.4)'
                   }`,
                 }}
               >
-                OVERALL GATE STATUS: {report.overallGateStatus || 'INCONCLUSIVE'}
+                OVERALL GATE STATUS: {report.overallGateStatus === 'FAIL' ? 'BLOCK / FAIL' : report.overallGateStatus || 'INCONCLUSIVE'}
               </span>
             </div>
 
@@ -1531,7 +1538,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     key={idx}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '120px 220px 180px 1fr',
+                      gridTemplateColumns: '150px 210px 180px 1fr',
                       alignItems: 'center',
                       padding: '0.55rem 0.8rem',
                       background: 'rgba(255, 255, 255, 0.02)',
@@ -1541,28 +1548,41 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       gap: '0.8rem',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span
-                        style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 800,
-                          padding: '0.12rem 0.45rem',
-                          borderRadius: '3px',
-                          background: statusBg,
-                          color: statusColor,
-                          border: `1px solid ${statusColor}40`,
-                          display: 'inline-block',
-                          textAlign: 'center',
-                          minWidth: '55px',
-                        }}
-                      >
-                        {gate.status}
-                      </span>
-                      {gate.isBlocking && (
-                        <span style={{ fontSize: '0.62rem', color: '#FF6B6B', fontWeight: 700 }} title="Blocking release gate">
-                          [BLOCK]
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span style={{ fontSize: '0.62rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS:</span>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            padding: '0.12rem 0.45rem',
+                            borderRadius: '3px',
+                            background: statusBg,
+                            color: statusColor,
+                            border: `1px solid ${statusColor}40`,
+                            display: 'inline-block',
+                            textAlign: 'center',
+                            minWidth: '45px',
+                          }}
+                        >
+                          {gate.status}
                         </span>
-                      )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.62rem' }}>
+                        <span style={{ color: '#778899', textTransform: 'uppercase' }}>ON FAILURE:</span>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: gate.isBlocking ? '#FF6B6B' : '#F59E0B',
+                            background: gate.isBlocking ? 'rgba(255, 107, 107, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                            padding: '0.08rem 0.35rem',
+                            borderRadius: '2px',
+                            border: `1px solid ${gate.isBlocking ? 'rgba(255, 107, 107, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                          }}
+                        >
+                          {gate.isBlocking ? 'BLOCK' : 'WARN'}
+                        </span>
+                      </div>
                     </div>
 
                     <div>

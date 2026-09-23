@@ -5884,13 +5884,13 @@ async function runTests() {
     // -------------------------------------------------------------
     test('185: Default judge model selection picks first eligible model neither baseline nor candidate', () => {
       const defaultJudge = getDefaultJudgeModel('openai/gpt-oss-20b', 'openai/gpt-oss-120b');
-      assert.strictEqual(defaultJudge?.id, 'groq/compound');
+      assert.strictEqual(defaultJudge?.id, 'qwen/qwen3.8-27b');
 
-      // If baseline is groq/compound, default falls to next eligible model
-      const fallbackJudge = getDefaultJudgeModel('groq/compound', 'openai/gpt-oss-120b');
-      assert.notStrictEqual(fallbackJudge?.id, 'groq/compound');
+      // If baseline is qwen/qwen3.8-27b, default falls to next eligible model
+      const fallbackJudge = getDefaultJudgeModel('qwen/qwen3.8-27b', 'openai/gpt-oss-120b');
+      assert.notStrictEqual(fallbackJudge?.id, 'qwen/qwen3.8-27b');
       assert.notStrictEqual(fallbackJudge?.id, 'openai/gpt-oss-120b');
-      assert.strictEqual(fallbackJudge?.id, 'qwen/qwen3.8-27b');
+      assert.strictEqual(fallbackJudge?.id, 'groq/compound');
     });
 
     // -------------------------------------------------------------
@@ -6823,6 +6823,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runFrontendPolishTests } = await import('./frontendPolish.test.mjs');
     await runFrontendPolishTests();
+
+    // -------------------------------------------------------------
+    // 100-Case Execution, Release Gate Reporting & LLM Judge Tests
+    // -------------------------------------------------------------
+    const { runBenchmark100ExecutionJudgeTests } = await import('./benchmark100ExecutionJudge.test.mjs');
+    await runBenchmark100ExecutionJudgeTests({ test, asyncTest }, server);
   } finally {
     await server.close();
   }
