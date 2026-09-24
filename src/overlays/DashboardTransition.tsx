@@ -116,8 +116,8 @@ export function DashboardTransition() {
   const isFullyVisible = scrollProgress > 0.94;
 
   const scale = useMemo(() => {
-    if (!isEntering) return 0.85;
-    return mapRangeClamped(stateProgress, 0.25, 0.85, 0.85, 1.0);
+    if (!isEntering) return 0.98;
+    return mapRangeClamped(stateProgress, 0.25, 0.85, 0.98, 1.0);
   }, [isEntering, stateProgress]);
 
   const opacity = useMemo(() => {
@@ -170,16 +170,16 @@ export function DashboardTransition() {
         justifyContent: 'center',
         background: `linear-gradient(180deg, rgba(8, 10, 14, 0) 0%, rgba(8, 10, 14, ${bgBackdrop * 0.25}) 30%, rgba(8, 10, 14, ${bgBackdrop * 0.85}) 100%)`,
         opacity,
-        padding: 'clamp(1rem, 2.5vh, 2.5rem) clamp(1.5rem, 4vw, 4rem)',
+        padding: 'clamp(0.6rem, 1.8vh, 1.2rem) clamp(1rem, 2.5vw, 2rem)',
         overflow: 'hidden',
         transition: 'opacity 0.25s ease-out',
       }}
     >
       <div
         style={{
-          width: '100%',
-          maxWidth: 'clamp(900px, 86vw, 1340px)',
-          maxHeight: '76vh',
+          width: '91vw',
+          maxWidth: '92vw',
+          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           background: 'rgba(10, 13, 19, 0.96)',
