@@ -61,6 +61,16 @@ export function Camera() {
     const velocityKick = THREE.MathUtils.clamp(scrollVelocity * 0.0008, -0.2, 0.2);
     targetPosition.current.z += velocityKick;
 
+    // Horizontal exploration: pan camera across wide composition on horizontal scroll
+    if (typeof window !== 'undefined') {
+      const maxScrollX = document.documentElement.scrollWidth - window.innerWidth;
+      if (maxScrollX > 0) {
+        const hRatio = THREE.MathUtils.clamp(window.scrollX / maxScrollX, 0, 1);
+        targetPosition.current.x += hRatio * 1.6;
+        targetLookAt.current.x += hRatio * 1.2;
+      }
+    }
+
     // Smooth camera damping
     camera.position.lerp(targetPosition.current, delta * 3.2);
 

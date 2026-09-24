@@ -93,7 +93,7 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 02: DATA (RUN — 500 Test Cases) ── */}
-      <group ref={state2Group} position={[-2.4, 0.4, 1.2]} rotation={[0, 0.25, 0]}>
+      <group ref={state2Group} position={[0.2, 0.4, -0.6]} rotation={[0, -0.15, 0]}>
         <Text
           fontSize={1.8}
           letterSpacing={0.15}
@@ -106,7 +106,7 @@ export function SpatialTypography() {
         </Text>
         <Text
           position={[0, -0.9, 0]}
-          fontSize={0.65}
+          fontSize={0.75}
           letterSpacing={0.08}
           color="#FFFFFF"
           anchorX="center"
@@ -129,7 +129,7 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 03: EVALUATION (COMPARE — 94.8% Accuracy) ── */}
-      <group ref={state3Group} position={[2.6, 0.3, -0.4]} rotation={[0, -0.3, 0]}>
+      <group ref={state3Group} position={[2.8, 0.3, -1.0]} rotation={[0, -0.32, 0]}>
         <Text
           fontSize={1.7}
           letterSpacing={0.12}
@@ -190,9 +190,9 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 05: INVESTIGATION (INVESTIGATE — 47 Failed Cases) ── */}
-      <group ref={state5Group} position={[-1.8, 0.2, 0.8]} rotation={[0, 0.35, 0]}>
+      <group ref={state5Group} position={[1.0, 0.3, -0.8]} rotation={[0, -0.22, 0]}>
         <Text
-          fontSize={1.4}
+          fontSize={1.5}
           letterSpacing={0.15}
           color="#FF9955"
           anchorX="center"
@@ -203,7 +203,7 @@ export function SpatialTypography() {
         </Text>
         <Text
           position={[0, -0.75, 0]}
-          fontSize={0.8}
+          fontSize={0.85}
           letterSpacing={0.05}
           color="#FFFFFF"
           anchorX="center"
@@ -226,11 +226,11 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 06: CONFIDENCE / TRANSITION (SHIP — 96.8% Target) ── */}
-      <group ref={state6Group} position={[0, 0.2, 1.4]}>
+      <group ref={state6Group} position={[0.3, 0.35, 0.1]} rotation={[0, -0.08, 0]}>
         <Text
-          position={[0, 1.2, 0]}
-          fontSize={0.3}
-          letterSpacing={0.35}
+          position={[0, 0.85, 0]}
+          fontSize={0.24}
+          letterSpacing={0.32}
           color="#4DA6FF"
           anchorX="center"
           anchorY="middle"
@@ -239,9 +239,9 @@ export function SpatialTypography() {
           ROOT-CAUSE ISOLATED
         </Text>
         <Text
-          position={[0, 0.3, 0]}
-          fontSize={1.6}
-          letterSpacing={0.04}
+          position={[0, 0.18, 0]}
+          fontSize={1.05}
+          letterSpacing={0.03}
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
@@ -250,9 +250,9 @@ export function SpatialTypography() {
           96.8%
         </Text>
         <Text
-          position={[0, -0.6, 0]}
-          fontSize={0.22}
-          letterSpacing={0.25}
+          position={[0, -0.45, 0]}
+          fontSize={0.20}
+          letterSpacing={0.22}
           color="#FF6B35"
           anchorX="center"
           anchorY="middle"

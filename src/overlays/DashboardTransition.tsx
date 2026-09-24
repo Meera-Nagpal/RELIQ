@@ -166,32 +166,28 @@ export function DashboardTransition() {
         pointerEvents: isEntering ? 'auto' : 'none',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'flex-end',
-        background: `linear-gradient(180deg, rgba(8, 10, 14, 0) 0%, rgba(8, 10, 14, ${bgBackdrop * 0.25}) 30%, rgba(8, 10, 14, ${bgBackdrop * 0.82}) 100%)`,
-        backdropFilter: isFullyVisible ? 'blur(3px)' : 'none',
-        WebkitBackdropFilter: isFullyVisible ? 'blur(3px)' : 'none',
+        background: `linear-gradient(180deg, rgba(8, 10, 14, 0) 0%, rgba(8, 10, 14, ${bgBackdrop * 0.25}) 30%, rgba(8, 10, 14, ${bgBackdrop * 0.85}) 100%)`,
         opacity,
-        padding: 'clamp(0.8rem, 2vw, 1.8rem)',
-        overflowY: 'hidden',
+        padding: '0 0 clamp(1.5rem, 3.5vh, 3.5rem) clamp(2rem, 5vw, 6rem)',
+        overflow: 'hidden',
         transition: 'opacity 0.25s ease-out',
       }}
     >
       <div
         style={{
-          width: '100%',
-          maxWidth: '840px',
-          maxHeight: '56vh',
+          width: 'clamp(580px, 56vw, 860px)',
+          maxWidth: '92vw',
+          maxHeight: '62vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(14, 18, 25, 0.82)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          borderRadius: '14px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 107, 53, 0.12)',
+          background: 'rgba(8, 11, 16, 0.95)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '8px',
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.1)',
           transform: `scale(${scale})`,
-          transformOrigin: 'bottom center',
+          transformOrigin: 'bottom left',
           transition: 'transform 0.1s linear',
           overflow: 'hidden',
         }}
@@ -202,9 +198,9 @@ export function DashboardTransition() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '1.2rem 2rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            background: 'rgba(12, 15, 20, 0.8)',
+            padding: '0.9rem 1.4rem',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+            background: 'rgba(6, 8, 12, 0.85)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -248,20 +244,19 @@ export function DashboardTransition() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <button
               onClick={() => navigate('#/app/dashboard')}
               style={{
                 background: 'var(--accent, #FF6B35)',
                 color: '#000000',
                 border: 'none',
-                padding: '0.5rem 1.2rem',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
+                padding: '0.45rem 1rem',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
                 fontWeight: 700,
-                letterSpacing: '0.05em',
+                letterSpacing: '0.04em',
                 cursor: 'pointer',
-                boxShadow: '0 0 20px rgba(255, 107, 53, 0.4)',
               }}
             >
               Launch Workspace →
@@ -273,12 +268,14 @@ export function DashboardTransition() {
               title="Replay 3D experience"
               style={{
                 background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#AAAAAA',
-                padding: '0.45rem 0.8rem',
-                borderRadius: '6px',
+                border: 'none',
+                color: '#777777',
+                padding: '0.4rem 0.6rem',
                 fontSize: '0.75rem',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
               }}
             >
               ↺ Replay Immersion
@@ -289,48 +286,47 @@ export function DashboardTransition() {
         {/* ── Signature Transition Hero: The 96.8% Card ── */}
         <section
           style={{
-            padding: '1.2rem 1.6rem',
-            background: 'linear-gradient(180deg, rgba(22, 28, 38, 0.55) 0%, rgba(14, 18, 24, 0.75) 100%)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '1rem 1.4rem',
+            background: 'rgba(8, 11, 16, 0.6)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '1.1fr 1.9fr',
-              gap: '1.5rem',
+              gridTemplateColumns: '240px 1fr',
+              gap: '1.4rem',
               alignItems: 'center',
             }}
           >
             {/* Primary AI Reliability Card (Transformed from 3D) */}
             <div
               style={{
-                background: 'rgba(10, 13, 18, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '8px',
-                padding: '1.2rem 1.4rem',
-                boxShadow: 'inset 0 0 20px rgba(0, 0, 0, 0.5)',
+                background: 'rgba(12, 16, 23, 0.8)',
+                border: '1px solid rgba(255, 255, 255, 0.07)',
+                borderRadius: '6px',
+                padding: '1rem 1.25rem',
               }}
             >
               <div
                 style={{
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.15em',
+                  fontSize: '0.68rem',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  color: '#888888',
-                  marginBottom: '0.4rem',
+                  color: '#777777',
+                  marginBottom: '0.3rem',
                 }}
               >
                 AI RELIABILITY
               </div>
               <div
                 style={{
-                  fontSize: 'clamp(2.5rem, 4vw, 3.2rem)',
+                  fontSize: '2.8rem',
                   fontWeight: 800,
                   color: '#FFFFFF',
                   lineHeight: 1,
                   letterSpacing: '-0.03em',
-                  textShadow: '0 0 25px rgba(255, 107, 53, 0.3)',
                 }}
               >
                 {displayScore}
@@ -338,33 +334,34 @@ export function DashboardTransition() {
               <div
                 style={{
                   display: 'flex',
-                  gap: '1.2rem',
-                  marginTop: '1rem',
-                  fontSize: '0.75rem',
+                  gap: '1rem',
+                  marginTop: '0.85rem',
+                  fontSize: '0.72rem',
                   borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                  paddingTop: '0.8rem',
+                  paddingTop: '0.65rem',
                 }}
               >
                 <div>
-                  <div style={{ color: '#666666' }}>Accuracy</div>
+                  <div style={{ color: '#666666', fontSize: '0.65rem' }}>Accuracy</div>
                   <div style={{ color: '#4DA6FF', fontWeight: 600 }}>{displayAccuracy}</div>
                 </div>
                 <div>
-                  <div style={{ color: '#666666' }}>Latency</div>
+                  <div style={{ color: '#666666', fontSize: '0.65rem' }}>Latency</div>
                   <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayLatency}</div>
                 </div>
                 <div>
-                  <div style={{ color: '#666666' }}>Cost</div>
+                  <div style={{ color: '#666666', fontSize: '0.65rem' }}>Cost</div>
                   <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayCost}</div>
                 </div>
               </div>
             </div>
 
             {/* Release Status & Action Gateway */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
               <div
                 style={{
-                  fontSize: '0.75rem',
+                  fontSize: '0.68rem',
+                  fontFamily: 'monospace',
                   color: '#4DA6FF',
                   fontWeight: 700,
                   letterSpacing: '0.12em',
@@ -373,29 +370,29 @@ export function DashboardTransition() {
               >
                 RELEASE EVALUATION READY
               </div>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
                 Target Model v1.6 Passed Golden Gate
               </h3>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: '#A0B0C0', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: '#90A0B0', lineHeight: 1.5 }}>
                 All 47 previous regressions in payment validation and tool schemas have been verified resolved. Evaluated against {dynamicCaseCount} multi-turn test vectors with 0 breaking anomalies.
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.4rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginTop: '0.35rem' }}>
                 <button
                   onClick={() => navigate('#/app/dashboard')}
                   style={{
                     background: 'var(--accent, #FF6B35)',
                     color: '#000000',
                     border: 'none',
-                    padding: '0.55rem 1.2rem',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
+                    padding: '0.5rem 1.15rem',
+                    borderRadius: '4px',
+                    fontSize: '0.78rem',
                     fontWeight: 700,
                     cursor: 'pointer',
                   }}
                 >
                   Open Full RELIQ Workspace →
                 </button>
-                <span style={{ fontSize: '0.8rem', color: '#888888' }}>
+                <span style={{ fontSize: '0.76rem', color: '#777777' }}>
                   Root-cause confidence: <strong style={{ color: '#FFFFFF' }}>87%</strong>
                 </span>
               </div>
@@ -407,20 +404,20 @@ export function DashboardTransition() {
         <div
           style={{
             display: 'flex',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            background: 'rgba(10, 13, 18, 0.6)',
-            padding: '0 1.6rem',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+            background: 'rgba(6, 8, 12, 0.7)',
+            padding: '0 1.4rem',
           }}
         >
           <button
             onClick={() => setActiveTab('overview')}
             style={{
-              padding: '0.8rem 1.2rem',
+              padding: '0.65rem 1rem',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #FF6B35)' : 'none',
-              color: activeTab === 'overview' ? '#FFFFFF' : '#888888',
-              fontSize: '0.82rem',
+              borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
+              color: activeTab === 'overview' ? '#FFFFFF' : '#777777',
+              fontSize: '0.78rem',
               fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -430,12 +427,12 @@ export function DashboardTransition() {
           <button
             onClick={() => setActiveTab('cases')}
             style={{
-              padding: '0.8rem 1.2rem',
+              padding: '0.65rem 1rem',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #FF6B35)' : 'none',
-              color: activeTab === 'cases' ? '#FFFFFF' : '#888888',
-              fontSize: '0.82rem',
+              borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
+              color: activeTab === 'cases' ? '#FFFFFF' : '#777777',
+              fontSize: '0.78rem',
               fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -445,15 +442,15 @@ export function DashboardTransition() {
         </div>
 
         {/* ── Tab Content ── */}
-        <div style={{ padding: '1.2rem 1.6rem', flex: 1, overflowY: 'auto' }}>
+        <div style={{ padding: '1rem 1.4rem', flex: 1, overflowY: 'auto' }}>
           {activeTab === 'overview' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.2rem' }}>
               <div
                 style={{
-                  background: 'rgba(10, 13, 18, 0.5)',
+                  background: 'rgba(10, 13, 18, 0.6)',
                   border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: '8px',
-                  padding: '1.5rem',
+                  borderRadius: '6px',
+                  padding: '1.1rem 1.25rem',
                 }}
               >
                 <h4 style={{ margin: '0 0 1.2rem 0', fontSize: '0.9rem', color: '#ECECEC' }}>
@@ -524,12 +521,12 @@ export function DashboardTransition() {
                   onClick={() => navigate('#/app/evaluations')}
                   style={{
                     marginTop: 'auto',
-                    background: 'rgba(77, 166, 255, 0.12)',
-                    color: '#55DDFF',
-                    border: '1px solid rgba(77, 166, 255, 0.3)',
-                    padding: '0.6rem',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
+                    background: 'rgba(77, 166, 255, 0.08)',
+                    color: '#4DA6FF',
+                    border: '1px solid rgba(77, 166, 255, 0.25)',
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                    fontSize: '0.78rem',
                     fontWeight: 600,
                     cursor: 'pointer',
                   }}
