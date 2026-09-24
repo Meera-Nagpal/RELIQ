@@ -29,7 +29,7 @@ import {
 
 export interface ReleaseDecisionOutcome {
   decision: CanonicalReleaseDecision;
-  overallGateStatus: 'PASS' | 'FAIL' | 'INCONCLUSIVE';
+  overallGateStatus: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
   benchmarkCompletion: import('../domain/types').BenchmarkCompletionSummary;
   evidenceStrength: EvidenceStrength;
   evidenceStrengthReason: string;
@@ -218,28 +218,31 @@ export function classifySafetyResult(caseResult: any): SafetyClassificationDetai
  * Canonical Release Decision Evaluator
  */
 export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecisionOutcome {
-  const { metrics, settings, caseResults = [], datasetName } = input;
+  const { metrics = {} as any, caseResults = [], datasetName } = input;
+  const settings = input.settings || ({} as any);
   const violatedRules: string[] = [];
   const actionItems: string[] = [];
   const limitations: string[] = [];
   const regressionCategories: RegressionCategory[] = [];
 
-  const totalCases = metrics.totalCases || caseResults.length;
+  const totalCases = (input as any).totalCases ?? metrics.totalCases ?? caseResults.length;
   const candidateEvaluated =
     metrics.candidateEvaluatedCases !== undefined
       ? metrics.candidateEvaluatedCases
       : metrics.evaluatedCases !== undefined
       ? metrics.evaluatedCases
-      : totalCases;
+      : (input as any).candidateEvaluated ?? totalCases;
   const baselineEvaluated =
     metrics.baselineEvaluatedCases !== undefined
       ? metrics.baselineEvaluatedCases
-      : candidateEvaluated;
+      : (input as any).baselineEvaluated ?? candidateEvaluated;
 
   // 1. Benchmark Completion Configuration & Calculation
   const requiredCases =
     settings.requiredBenchmarkCases ??
-    (datasetName && datasetName.includes('Checkout Reliability') ? 27 : totalCases || 27);
+    ((datasetName && datasetName.includes('Checkout Reliability'))
+      ? (totalCases >= 27 ? totalCases : 27)
+      : totalCases > 0 ? totalCases : 27);
   const strongEvidenceCases = settings.strongEvidenceCases ?? 100;
   const isBenchmarkComplete = candidateEvaluated >= requiredCases;
 
@@ -749,10 +752,13 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
   // Overall Gate Status
   const hasBlockingFail = gates.some((g) => g.isBlocking && g.status === 'FAIL');
   const hasBlockingInconclusive = gates.some((g) => g.isBlocking && g.status === 'INCONCLUSIVE');
-  const overallGateStatus: 'PASS' | 'FAIL' | 'INCONCLUSIVE' = hasBlockingFail
+  const hasNonBlockingWarnOrFail = gates.some((g) => !g.isBlocking && (g.status === 'WARNING' || g.status === 'FAIL'));
+  const overallGateStatus: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS' = hasBlockingFail
     ? 'FAIL'
     : hasBlockingInconclusive
     ? 'INCONCLUSIVE'
+    : hasNonBlockingWarnOrFail
+    ? 'PASS WITH WARNINGS'
     : 'PASS';
 
   // --- 10. Canonical Decision Precedence ---
@@ -814,7 +820,7 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     isRegression = false;
     summary = `Preliminary evaluation subset (${candidateEvaluated}/${requiredCases} scenarios evaluated). Expand to full ${requiredCases} cases before production release.`;
     reason = `Preliminary benchmark subset (${candidateEvaluated}/${requiredCases} scenarios): staging/smoke test only. Full ${requiredCases}-case benchmark required for production release certification.`;
-    actionItems.push(`Run the full ${requiredCases}-scenario Checkout Reliability Suite before making release decisions.`);
+    actionItems.push(`Run the full ${requiredCases}-scenario ${datasetName || 'Checkout Reliability Suite'} before making release decisions.`);
   }
   // Precedence 3: REGRESSION / REGRESSION_SIGNAL (True Quality degradation exceeding tolerance)
   else if (isTrueQualityRegression) {

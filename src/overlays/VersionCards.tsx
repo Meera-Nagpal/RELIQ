@@ -3,6 +3,7 @@ import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
 import { apiRepository } from '../services/apiRepository';
 import { EvaluationRun } from '../domain/types';
+import { useRouter } from '../router/useRouter';
 
 interface VersionItem {
   id: string;
@@ -140,11 +141,13 @@ export function VersionCards() {
     return 1;
   }, [scrollProgress]);
 
+  const { isTransitioning } = useRouter();
+
   // Total horizontal track translation percentage
   // From right of screen to far left so all 5 cards pass through center
   const translateX = mapRangeClamped(hProgress, 0, 1, 65, -82);
 
-  if (opacity <= 0.001) return null;
+  if (isTransitioning || opacity <= 0.001) return null;
 
   return (
     <div
@@ -157,8 +160,9 @@ export function VersionCards() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        background: 'rgba(6, 9, 13, 0.45)',
-        backdropFilter: 'blur(3px)',
+        background: 'rgba(6, 9, 13, 0.32)',
+        backdropFilter: 'blur(2.5px)',
+        WebkitBackdropFilter: 'blur(2.5px)',
         transition: 'opacity 0.25s ease-out',
         overflow: 'hidden',
       }}
@@ -254,13 +258,14 @@ export function VersionCards() {
                 width: 'clamp(320px, 28vw, 420px)',
                 flexShrink: 0,
                 background: isReg
-                  ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.94) 0%, rgba(18, 6, 5, 0.98) 100%)'
-                  : 'linear-gradient(180deg, rgba(20, 24, 30, 0.94) 0%, rgba(12, 14, 18, 0.98) 100%)',
+                  ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.65) 0%, rgba(18, 6, 5, 0.75) 100%)'
+                  : 'linear-gradient(180deg, rgba(16, 20, 28, 0.65) 0%, rgba(10, 12, 16, 0.75) 100%)',
                 border: `1px solid ${borderColor}`,
                 borderRadius: '12px',
-                padding: '2rem',
+                padding: '1.8rem',
                 boxShadow: glowShadow,
-                backdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1.4rem',

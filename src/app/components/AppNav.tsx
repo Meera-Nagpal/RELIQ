@@ -10,13 +10,40 @@ interface AppNavProps {
   regressionCount?: number;
 }
 
-const NAV_ITEMS: { id: AppView; label: string; icon: string }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: '◈' },
-  { id: 'projects', label: 'Projects', icon: '◫' },
-  { id: 'datasets', label: 'Datasets', icon: '☰' },
-  { id: 'evaluations', label: 'Evaluations', icon: '▶' },
-  { id: 'regressions', label: 'Failure Explorer', icon: '⚠' },
-  { id: 'settings', label: 'Settings', icon: '⚙' },
+interface NavItem {
+  id: AppView;
+  label: string;
+  actionLabel?: string;
+  icon: string;
+}
+
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: 'RELIQ FLOW',
+    items: [
+      { id: 'evaluations', label: 'Evaluations', actionLabel: 'RUN', icon: '▶' },
+      { id: 'dashboard', label: 'Dashboard', actionLabel: 'COMPARE', icon: '◈' },
+      { id: 'datasets', label: 'Datasets', actionLabel: 'DETECT', icon: '☰' },
+      { id: 'regressions', label: 'Failure Explorer', actionLabel: 'INVESTIGATE', icon: '⚠' },
+    ],
+  },
+  {
+    title: 'WORKSPACE',
+    items: [
+      { id: 'projects', label: 'Saved Projects', icon: '◫' },
+    ],
+  },
+  {
+    title: 'SYSTEM',
+    items: [
+      { id: 'settings', label: 'Settings', icon: '⚙' },
+    ],
+  },
 ];
 
 export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0 }) => {
@@ -45,10 +72,10 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
             display: 'flex',
             alignItems: 'center',
             gap: '0.6rem',
-            padding: '0.4rem 0.6rem 1.5rem 0.6rem',
+            padding: '0.4rem 0.6rem 1.2rem 0.6rem',
             cursor: 'pointer',
             borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            marginBottom: '1.2rem',
+            marginBottom: '1rem',
           }}
         >
           <div
@@ -87,56 +114,87 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
           </span>
         </div>
 
-        {/* Nav Links */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-          {NAV_ITEMS.map((item) => {
-            const isActive = currentView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(`#/app/${item.id}`)}
+        {/* Nav Link Groups */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.65rem 0.85rem',
-                  borderRadius: '6px',
-                  background: isActive ? 'rgba(255, 107, 53, 0.12)' : 'transparent',
-                  border: isActive
-                    ? '1px solid rgba(255, 107, 53, 0.3)'
-                    : '1px solid transparent',
-                  color: isActive ? '#FFFFFF' : '#8899A6',
-                  fontSize: '0.85rem',
-                  fontWeight: isActive ? 600 : 500,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.15s ease',
-                  width: '100%',
+                  fontSize: '0.64rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: '#667788',
+                  padding: '0.2rem 0.6rem',
                 }}
               >
-                <span style={{ fontSize: '0.95rem', color: isActive ? 'var(--accent, #FF6B35)' : '#667788' }}>
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-                {item.id === 'regressions' && regressionCount > 0 && (
-                  <span
+                {group.title}
+              </div>
+              {group.items.map((item) => {
+                const isActive = currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(`#/app/${item.id}`)}
                     style={{
-                      marginLeft: 'auto',
-                      fontSize: '0.65rem',
-                      padding: '0.1rem 0.4rem',
-                      borderRadius: '4px',
-                      background: 'rgba(255, 34, 0, 0.2)',
-                      color: '#FF4422',
-                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '6px',
+                      background: isActive ? 'rgba(255, 107, 53, 0.12)' : 'transparent',
+                      border: isActive
+                        ? '1px solid rgba(255, 107, 53, 0.3)'
+                        : '1px solid transparent',
+                      color: isActive ? '#FFFFFF' : '#8899A6',
+                      fontSize: '0.84rem',
+                      fontWeight: isActive ? 600 : 500,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                      width: '100%',
                     }}
-                    title={`${regressionCount} quality regression(s) detected`}
                   >
-                    {regressionCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                    <span style={{ fontSize: '0.88rem', color: isActive ? 'var(--accent, #FF6B35)' : '#667788', width: '16px', textAlign: 'center' }}>
+                      {item.icon}
+                    </span>
+                    <span style={{ flex: 1 }}>{item.label}</span>
+                    {item.actionLabel && (
+                      <span
+                        style={{
+                          fontSize: '0.6rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.08em',
+                          padding: '0.12rem 0.4rem',
+                          borderRadius: '3px',
+                          background: isActive ? 'rgba(255, 107, 53, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+                          color: isActive ? 'var(--accent, #FF6B35)' : '#8899AA',
+                        }}
+                      >
+                        {item.actionLabel}
+                      </span>
+                    )}
+                    {item.id === 'regressions' && regressionCount > 0 && (
+                      <span
+                        style={{
+                          marginLeft: item.actionLabel ? '0.3rem' : 'auto',
+                          fontSize: '0.65rem',
+                          padding: '0.1rem 0.4rem',
+                          borderRadius: '4px',
+                          background: 'rgba(255, 34, 0, 0.2)',
+                          color: '#FF4422',
+                          fontWeight: 700,
+                        }}
+                        title={`${regressionCount} quality regression(s) detected`}
+                      >
+                        {regressionCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </div>
 

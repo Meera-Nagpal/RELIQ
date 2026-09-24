@@ -357,10 +357,11 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.setFillColor(hasGateFailures ? 0.85 : 0.12, hasGateFailures ? 0.15 : 0.65, hasGateFailures ? 0.15 : 0.35);
   doc.drawText(recVerdict, releaseBoxX + 10, releaseBoxY + releaseBoxH - 28, 9.5, 'Helvetica-Bold');
 
+  const targetRequired = report.benchmarkCompletion?.requiredCases || report.totalCases || 27;
   const gateFailReason = failedGates.length > 0
     ? `${failedGates.length} failed gate(s): ${failedGates.map((g) => g.gate).slice(0, 2).join(', ')}`
-    : report.totalCases < 27
-    ? `Preliminary: requires 27 scenarios`
+    : report.totalCases < targetRequired
+    ? `Preliminary: requires ${targetRequired} scenarios`
     : `All production gates verified`;
   doc.setFillColor(0.4, 0.45, 0.5);
   doc.drawText(gateFailReason.slice(0, 42), releaseBoxX + 10, releaseBoxY + 8, 6.5, 'Helvetica');
@@ -384,10 +385,10 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
 
   const bCovVal = report.metrics.evaluationCoverage?.baselineValue ?? 100;
   const cCovVal = report.metrics.evaluationCoverage?.candidateValue ?? 100;
-  const evStrength = report.evidenceStrength || (report.totalCases < 10 ? 'LOW' : report.totalCases < 27 ? 'MODERATE' : 'STRONG');
+  const evStrength = report.evidenceStrength || (report.totalCases < 10 ? 'LOW' : report.totalCases < targetRequired ? 'MODERATE' : 'STRONG');
 
   doc.setFillColor(0.35, 0.4, 0.45);
-  doc.drawText(`Cases: ${report.totalCases} / 27 required benchmark cases`, left + 10, bStatusY + 28, 7.5, 'Helvetica');
+  doc.drawText(`Cases: ${report.totalCases} / ${targetRequired} required benchmark cases`, left + 10, bStatusY + 28, 7.5, 'Helvetica');
   doc.drawText(`Coverage: Base ${bCovVal}%  •  Candidate ${cCovVal}%`, left + 10, bStatusY + 16, 7.5, 'Helvetica');
   doc.drawText(`Evidence Strength: ${evStrength} (Sample Base)`, left + 10, bStatusY + 5, 7.5, 'Helvetica');
 
@@ -458,7 +459,7 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
 
     // Metric Name
     doc.setFillColor(0.15, 0.18, 0.22);
-    doc.drawText(m.metric.slice(0, 32), cMetric, rowY + 4, 7.5, 'Helvetica-Bold');
+    doc.drawText((m.metric || '').slice(0, 32), cMetric, rowY + 4, 7.5, 'Helvetica-Bold');
 
     // Baseline Value
     const baseStr = m.baselineValue !== null && m.baselineValue !== undefined
@@ -517,8 +518,9 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
 
   doc.setFillColor(1.0, 1.0, 1.0);
   doc.drawText('GATE', left + 8, gateHdrY + 5, 7, 'Helvetica-Bold');
-  doc.drawText('OBSERVED', left + 180, gateHdrY + 5, 7, 'Helvetica-Bold');
-  doc.drawText('THRESHOLD / TARGET', left + 270, gateHdrY + 5, 7, 'Helvetica-Bold');
+  doc.drawText('OBSERVED', left + 175, gateHdrY + 5, 7, 'Helvetica-Bold');
+  doc.drawText('THRESHOLD / TARGET', left + 260, gateHdrY + 5, 7, 'Helvetica-Bold');
+  doc.drawText('ACTION', left + 365, gateHdrY + 5, 7, 'Helvetica-Bold');
   doc.drawText('STATUS', left + width - 10, gateHdrY + 5, 7, 'Helvetica-Bold', 'right');
 
   doc.y = gateHdrY;
@@ -539,11 +541,15 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
       doc.drawLine(left, rowY, left + width, rowY);
 
       doc.setFillColor(0.15, 0.18, 0.22);
-      doc.drawText(g.gate.slice(0, 36), left + 8, rowY + 4, 7.5, 'Helvetica-Bold');
+      doc.drawText((g.gate || '').slice(0, 36), left + 8, rowY + 4, 7.5, 'Helvetica-Bold');
 
       doc.setFillColor(0.35, 0.4, 0.45);
-      doc.drawText(g.observed || '—', left + 180, rowY + 4, 7.5, 'Helvetica');
-      doc.drawText(g.threshold || '—', left + 270, rowY + 4, 7.5, 'Helvetica');
+      doc.drawText(g.observed || '—', left + 175, rowY + 4, 7.5, 'Helvetica');
+      doc.drawText(g.threshold || '—', left + 260, rowY + 4, 7.5, 'Helvetica');
+
+      // Failure Action column
+      doc.setFillColor(g.isBlocking ? 0.85 : 0.85, g.isBlocking ? 0.15 : 0.55, g.isBlocking ? 0.15 : 0.1);
+      doc.drawText(g.isBlocking ? 'BLOCK' : 'WARN', left + 365, rowY + 4, 7.5, 'Helvetica-Bold');
 
       const isPass = g.status === 'PASS';
       const isFail = g.status === 'FAIL';

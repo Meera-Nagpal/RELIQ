@@ -96,8 +96,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 }) => {
   const { navigate, triggerTransition } = useRouter();
 
-  // Mode: 'saved_versions' vs 'custom_benchmark'
-  const [configMode, setConfigMode] = useState<'saved_versions' | 'custom_benchmark'>('saved_versions');
+  // Mode: 'saved_versions' vs 'custom_benchmark' (Default to Cross-Provider Benchmark)
+  const [configMode, setConfigMode] = useState<'saved_versions' | 'custom_benchmark'>('custom_benchmark');
 
   // Server credentials status
   const [serverStatus, setServerStatus] = useState<ServerProviderStatus>({
@@ -137,15 +137,15 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   const [baselineVersionId, setBaselineVersionId] = useState<string>(project?.baselineVersionId || versions?.[0]?.id || '');
   const [candidateVersionId, setCandidateVersionId] = useState<string>(project?.candidateVersionId || versions?.[1]?.id || versions?.[0]?.id || '');
 
-  // Selection states (Mode 2: Cross-Provider Benchmark - Real providers by default)
-  const [customBaselineProvider, setCustomBaselineProvider] = useState<ProviderType>('google');
-  const [customBaselineModel, setCustomBaselineModel] = useState<string>(PROVIDER_MODELS.google[0].id);
+  // Selection states (Mode 2: Cross-Provider Benchmark - Default: Groq openai/gpt-oss-20b vs openai/gpt-oss-120b)
+  const [customBaselineProvider, setCustomBaselineProvider] = useState<ProviderType>('groq');
+  const [customBaselineModel, setCustomBaselineModel] = useState<string>('openai/gpt-oss-20b');
   const [customBaselinePrompt, setCustomBaselinePrompt] = useState<string>(CHECKOUT_RELIABILITY_SYSTEM_PROMPT);
   const [customBaselineTemp, setCustomBaselineTemp] = useState<number>(0.2);
   const [customBaselineReasoningEffort, setCustomBaselineReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
 
   const [customCandidateProvider, setCustomCandidateProvider] = useState<ProviderType>('groq');
-  const [customCandidateModel, setCustomCandidateModel] = useState<string>(PROVIDER_MODELS.groq[0].id);
+  const [customCandidateModel, setCustomCandidateModel] = useState<string>('openai/gpt-oss-120b');
   const [customCandidatePrompt, setCustomCandidatePrompt] = useState<string>(CHECKOUT_RELIABILITY_SYSTEM_PROMPT);
   const [customCandidateTemp, setCustomCandidateTemp] = useState<number>(0.2);
   const [customCandidateReasoningEffort, setCustomCandidateReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
@@ -664,6 +664,56 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </button>
           </div>
         )}
+
+        {/* ── Active Benchmark Overview Bar ── */}
+        <div
+          style={{
+            background: 'rgba(255, 107, 53, 0.05)',
+            border: '1px solid rgba(255, 107, 53, 0.22)',
+            borderRadius: '8px',
+            padding: '0.85rem 1.2rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '1rem',
+            alignItems: 'center',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Active Benchmark Suite
+            </div>
+            <div style={{ fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 700, marginTop: '0.2rem' }}>
+              {selectedDataset?.name || 'Checkout Reliability Suite'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--accent, #FF6B35)', fontWeight: 600 }}>
+              {selectedDataset?.cases?.length || 27} authoritative scenarios
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Baseline Model ({configMode === 'custom_benchmark' ? customBaselineProvider.toUpperCase() : (baselineVersion?.provider?.toUpperCase() || 'DEMO')})
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#ECECEC', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
+              {effectiveBaselineModel}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#2ECC71', fontWeight: 600 }}>
+              Reference Anchor
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Candidate Model ({configMode === 'custom_benchmark' ? customCandidateProvider.toUpperCase() : (candidateVersion?.provider?.toUpperCase() || 'DEMO')})
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#4DA6FF', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
+              {effectiveCandidateModel}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#4DA6FF', fontWeight: 600 }}>
+              Evaluation Candidate
+            </div>
+          </div>
+        </div>
 
         {/* ── Dataset Selector ── */}
         <div>
@@ -1193,12 +1243,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 fontSize: '0.82rem',
               }}
             >
+              <option value={0}>Full Suite ({selectedDataset?.cases?.length || 27} scenarios - Run All)</option>
               <option value={27}>Checkout Reliability Suite (27 scenarios - Required Benchmark)</option>
-              <option value={0}>Full Suite ({selectedDataset?.cases?.length || 27} scenarios)</option>
+              <option value={100}>Enterprise Scale Benchmark (100 scenarios)</option>
               <option value={5}>Validation Smoke Test (5 scenarios)</option>
               <option value={10}>Targeted Benchmark (10 scenarios)</option>
               <option value={20}>Standard Suite (20 scenarios)</option>
-              <option value={100}>Scale Validation (100 scenarios)</option>
               <option value={500}>High-Capacity Benchmark (500 scenarios)</option>
               <option value={1000}>Stress Benchmark (1,000 scenarios)</option>
             </select>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useExperienceStore } from '../store/experienceStore';
+import { useRouter } from '../router/useRouter';
 
 const STEP_LABELS = [
   { index: 0, tag: '01', name: 'SYSTEM' },
@@ -18,11 +19,15 @@ const STEP_LABELS = [
 export function ProgressIndicator() {
   const currentStateIndex = useExperienceStore((state) => state.currentStateIndex);
   const scrollProgress = useExperienceStore((state) => state.scrollProgress);
+  const { triggerTransition } = useRouter();
 
   const handleStepClick = (stepIndex: number) => {
+    if (stepIndex === currentStateIndex) return;
     const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
     const targetScroll = (stepIndex / 6 + 0.02) * totalScrollHeight;
-    window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    triggerTransition(() => {
+      window.scrollTo({ top: targetScroll, behavior: 'auto' });
+    });
   };
 
   return (

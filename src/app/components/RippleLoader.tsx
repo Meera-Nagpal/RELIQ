@@ -39,16 +39,19 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
       <style>{`
         @keyframes reliqRippleAnimation {
           0% {
-            transform: scale(0.25);
-            opacity: 0.9;
+            transform: scale(0.20);
+            opacity: 0;
             border-color: ${color};
           }
-          45% {
-            opacity: 0.65;
+          15% {
+            opacity: 0.75;
+            border-color: ${color};
+          }
+          50% {
             border-color: ${secondaryColor};
           }
           100% {
-            transform: scale(2.6);
+            transform: scale(2.4);
             opacity: 0;
             border-color: ${color};
           }
@@ -61,7 +64,7 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
           right: 0;
           bottom: 0;
           border-radius: 50%;
-          border: 4px solid ${color};
+          border: 2px solid ${color};
           will-change: transform, opacity;
           opacity: 0;
           pointer-events: none;
@@ -69,18 +72,23 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
         }
 
         .reliq-ripple-ring-1 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '2.5s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s /* 2.5s duration compatibility */' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
           animation-delay: 0s;
         }
 
         .reliq-ripple-ring-2 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '2.5s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.45s' : '0.45s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.12s' : '0.45s'};
         }
 
         .reliq-ripple-ring-3 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '2.5s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.9s' : '0.9s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.24s' : '0.90s'};
+        }
+
+        .reliq-ripple-ring-4 {
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.36s' : '1.35s'};
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -106,19 +114,20 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
         {/* Core glow dot */}
         <div
           style={{
-            width: `${Math.max(10, size * 0.16)}px`,
-            height: `${Math.max(10, size * 0.16)}px`,
+            width: `${Math.max(8, size * 0.12)}px`,
+            height: `${Math.max(8, size * 0.12)}px`,
             borderRadius: '50%',
             background: color,
-            boxShadow: `0 0 16px ${color}`,
+            boxShadow: `0 0 12px ${color}, 0 0 4px #FFFFFF`,
             zIndex: 2,
           }}
         />
 
-        {/* 3 Concentric Ripple Rings */}
+        {/* 4 Concentric Ripple Rings */}
         <div className="ripple reliq-ripple-ring reliq-ripple-ring-1" />
         <div className="ripple reliq-ripple-ring reliq-ripple-ring-2" />
         <div className="ripple reliq-ripple-ring reliq-ripple-ring-3" />
+        <div className="ripple reliq-ripple-ring reliq-ripple-ring-4" />
       </div>
     </div>
   );

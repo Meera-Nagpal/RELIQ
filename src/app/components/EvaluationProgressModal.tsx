@@ -129,37 +129,43 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
           }
         `}</style>
 
-        {/* ── Top Ripple Animation or Failure Icon ── */}
+        {/* ── Circular Frame with Concentric Expanding Ripple Rings ── */}
         <div
           className="evaluation-modal-ripple-container"
           style={{
-            margin: '0.5rem 0',
+            margin: '0.2rem auto 0.6rem auto',
             position: 'relative',
             overflow: 'hidden',
             isolation: 'isolate',
-            borderRadius: '12px',
+            borderRadius: '50%',
+            width: '136px',
+            height: '136px',
+            minWidth: '136px',
+            minHeight: '136px',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '1.2rem',
-            width: '100%',
-            maxWidth: '260px',
-            background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
+            background: isFailed
+              ? 'radial-gradient(circle, rgba(239, 68, 68, 0.14) 0%, rgba(13, 17, 23, 0.96) 75%)'
+              : 'radial-gradient(circle, rgba(255, 107, 53, 0.09) 0%, rgba(13, 17, 23, 0.96) 75%)',
+            border: isFailed ? '1.5px solid rgba(239, 68, 68, 0.5)' : '1.5px solid rgba(255, 107, 53, 0.38)',
+            boxShadow: isFailed
+              ? '0 0 24px rgba(239, 68, 68, 0.22), inset 0 0 16px rgba(239, 68, 68, 0.12)'
+              : '0 0 24px rgba(255, 107, 53, 0.18), inset 0 0 16px rgba(255, 107, 53, 0.10)',
           }}
         >
           {isFailed ? (
             <div
               style={{
-                width: '84px',
-                height: '84px',
+                width: '74px',
+                height: '74px',
                 borderRadius: '50%',
                 background: 'rgba(239, 68, 68, 0.15)',
                 border: '2px solid #EF4444',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '2.5rem',
+                fontSize: '2.2rem',
                 color: '#EF4444',
                 boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
               }}
@@ -167,7 +173,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               ⚠
             </div>
           ) : (
-            <RippleLoader size={96} mode="continuous" />
+            <RippleLoader size={136} mode="continuous" />
           )}
         </div>
 
@@ -207,7 +213,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             width: '100%',
             background: 'rgba(255, 255, 255, 0.03)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '10px',
+            borderRadius: '12px',
             padding: '0.9rem 1.1rem',
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',

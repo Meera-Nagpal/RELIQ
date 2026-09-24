@@ -109,7 +109,7 @@ export interface ComparisonReport {
   evidenceStrengthReason?: string;
   benchmarkCompletion?: import('../domain/types').BenchmarkCompletionSummary;
   releaseGates?: import('../domain/types').ReleaseGateResult[];
-  overallGateStatus?: 'PASS' | 'FAIL' | 'INCONCLUSIVE';
+  overallGateStatus?: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
   dimensions?: import('../domain/types').DimensionalTradeoffs;
   isPreliminary?: boolean;
   regressionCategories?: RegressionCategory[];
@@ -613,7 +613,9 @@ export function generateComparisonReport(
 
   const datasetRequiredCases =
     settings.requiredBenchmarkCases ??
-    (datasetName?.toLowerCase().includes('checkout reliability') ? 27 : totalCases);
+    ((datasetName && datasetName.includes('Checkout Reliability'))
+      ? (totalCases >= 27 ? totalCases : 27)
+      : totalCases > 0 ? totalCases : 27);
   const isPreliminary = cEvaluatedCount < datasetRequiredCases;
 
   if (bEvaluatedCount === 0 || cEvaluatedCount === 0) {
@@ -892,7 +894,7 @@ export function generateComparisonReport(
     sampleSizeWarning,
     latencyPercentileWarning,
     semanticEvaluationStatus: options.runMetrics?.semanticEvaluationStatus || (caseResults.some((r) => r.semanticEvaluation) ? 'EXECUTED' : 'NOT_CONFIGURED'),
-    llmJudgeStatus: options.runMetrics?.llmJudgeStatus || (caseResults.some((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error) ? 'EXECUTED' : 'NOT_CONFIGURED'),
+    llmJudgeStatus: options.runMetrics?.llmJudgeStatus || (caseResults.some((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error) ? 'EXECUTED' : caseResults.some((r) => r.llmJudgeEvaluation?.error) ? 'FAILED' : 'NOT_CONFIGURED'),
     factualityGroundednessStatus,
     groundednessApplicableCases,
     groundednessEvaluatedCases,
