@@ -1,5 +1,5 @@
 # ============================================================
-# RELIQ — One-Click Task Rollback Script
+# RELIQ -- One-Click Task Rollback Script
 # 
 # Safely rolls back changes introduced during the RELIQ UI
 # restoration task, returning the repository to the pre-task checkpoint.
@@ -14,7 +14,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "         RELIQ — TASK ROLLBACK MECHANISM                    " -ForegroundColor Cyan
+Write-Host "         RELIQ -- TASK ROLLBACK MECHANISM                    " -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -85,11 +85,12 @@ try {
     npm run build
 
     Write-Host ""
-    Write-Host "✓ Rollback complete! Repository has been restored to checkpoint:" -ForegroundColor Green
+    Write-Host "[OK] Rollback complete! Repository has been restored to checkpoint:" -ForegroundColor Green
     Write-Host "  Commit: $CheckpointSha" -ForegroundColor Green
     Write-Host ""
     Write-Host "Working directory is restored to the pre-task baseline."
-} catch {
+}
+catch {
     Write-Host "Error during rollback: $_" -ForegroundColor Red
     exit 1
 }
