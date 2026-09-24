@@ -232,7 +232,9 @@ export function VersionCards() {
       <div
         style={{
           display: 'flex',
-          gap: '2.5rem',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
+          gap: '40px',
           paddingLeft: '10vw',
           transform: `translateX(${translateX}vw)`,
           willChange: 'transform',
@@ -255,26 +257,34 @@ export function VersionCards() {
             <div
               key={v.id}
               style={{
-                width: 'clamp(320px, 28vw, 420px)',
+                width: '370px',
+                minWidth: '370px',
+                height: '470px',
+                minHeight: '470px',
+                maxHeight: '470px',
                 flexShrink: 0,
+                boxSizing: 'border-box',
                 background: isReg
                   ? 'linear-gradient(180deg, rgba(35, 10, 8, 0.65) 0%, rgba(18, 6, 5, 0.75) 100%)'
                   : 'linear-gradient(180deg, rgba(16, 20, 28, 0.65) 0%, rgba(10, 12, 16, 0.75) 100%)',
                 border: `1px solid ${borderColor}`,
                 borderRadius: '12px',
-                padding: '1.8rem',
+                padding: '32px',
                 boxShadow: glowShadow,
                 backdropFilter: 'blur(4px)',
                 WebkitBackdropFilter: 'blur(4px)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1.4rem',
+                justifyContent: 'space-between',
                 position: 'relative',
               }}
             >
-              {/* Header Badge */}
+              {/* Header Badge (~45px) */}
               <div
                 style={{
+                  height: '45px',
+                  minHeight: '45px',
+                  maxHeight: '45px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -316,8 +326,17 @@ export function VersionCards() {
                 </div>
               </div>
 
-              {/* Version Title */}
-              <div>
+              {/* Version Title / Model Tag (~60px) */}
+              <div
+                style={{
+                  height: '60px',
+                  minHeight: '60px',
+                  maxHeight: '60px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}
+              >
                 <div
                   style={{
                     fontSize: '0.75rem',
@@ -330,23 +349,34 @@ export function VersionCards() {
                 </div>
                 <div
                   style={{
-                    fontSize: '1.1rem',
+                    fontSize: '1.05rem',
                     fontWeight: 600,
                     color: '#ECECEC',
                     marginTop: '0.2rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   }}
                 >
                   {v.name}
                 </div>
               </div>
 
-              {/* Giant Metric Display */}
+              {/* Giant Metric Display / Reliability Score Box (135px) */}
               <div
                 style={{
+                  width: '100%',
+                  height: '135px',
+                  minHeight: '135px',
+                  maxHeight: '135px',
+                  boxSizing: 'border-box',
                   background: 'rgba(0, 0, 0, 0.3)',
                   borderRadius: '8px',
-                  padding: '1.2rem',
+                  padding: '1rem 1.2rem',
                   border: '1px solid rgba(255, 255, 255, 0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
                 }}
               >
                 <div
@@ -366,64 +396,83 @@ export function VersionCards() {
                     color: isReg ? '#FF2200' : isWarn ? '#FFAA55' : '#4DA6FF',
                     letterSpacing: '-0.03em',
                     marginTop: '0.2rem',
+                    lineHeight: 1,
                   }}
                 >
                   {v.accuracy}
                 </div>
               </div>
 
-              {/* Secondary Stats */}
+              {/* Secondary Stats / Latency & Cost (~60px) */}
               <div
                 style={{
+                  height: '60px',
+                  minHeight: '60px',
+                  maxHeight: '60px',
+                  boxSizing: 'border-box',
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
                   gap: '1rem',
                   borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                  paddingTop: '1rem',
+                  paddingTop: '0.6rem',
+                  alignItems: 'center',
                 }}
               >
                 <div>
                   <div style={{ fontSize: '0.7rem', color: '#888888' }}>LATENCY</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#FFFFFF' }}>
                     {v.latency}
                   </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: '#888888' }}>COST / RUN</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#FFFFFF' }}>
                     {v.cost}
                   </div>
                 </div>
               </div>
 
-              {/* Summary */}
+              {/* Summary & Source (remaining height) */}
               <div
                 style={{
-                  fontSize: '0.8rem',
-                  color: isReg ? '#FFBBAA' : 'var(--text-muted, #A0B0C0)',
-                  lineHeight: 1.45,
-                }}
-              >
-                {v.changeSummary}
-              </div>
-
-              {/* Source & Provenance Badge */}
-              <div
-                style={{
-                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                  paddingTop: '0.6rem',
-                  fontSize: '0.64rem',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: isRealData ? '#2ECC71' : 'var(--text-dim, #708090)',
+                  flex: 1,
+                  minHeight: 0,
                   display: 'flex',
+                  flexDirection: 'column',
                   justifyContent: 'space-between',
-                  alignItems: 'center',
+                  gap: '0.5rem',
+                  overflow: 'hidden',
                 }}
               >
-                <span>SOURCE: {isRealData ? 'RELIQ AUDIT DATABASE' : 'SAMPLE BENCHMARK SCENARIO'}</span>
-                <span>{isRealData ? 'AUTHORITATIVE' : 'DEMO'}</span>
+                <div
+                  style={{
+                    fontSize: '0.78rem',
+                    color: isReg ? '#FFBBAA' : 'var(--text-muted, #A0B0C0)',
+                    lineHeight: 1.4,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {v.changeSummary}
+                </div>
+
+                {/* Source & Provenance Badge */}
+                <div
+                  style={{
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    paddingTop: '0.5rem',
+                    fontSize: '0.64rem',
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: isRealData ? '#2ECC71' : 'var(--text-dim, #708090)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span>SOURCE: {isRealData ? 'RELIQ AUDIT DATABASE' : 'SAMPLE BENCHMARK SCENARIO'}</span>
+                  <span>{isRealData ? 'AUTHORITATIVE' : 'DEMO'}</span>
+                </div>
               </div>
             </div>
           );

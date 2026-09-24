@@ -75,15 +75,15 @@ body {
 
 /* App & Experience Container — Immersive wide canvas composition */
 .app-container {
-  width: 125vw;
-  min-width: 125vw;
+  width: 100%;
+  min-width: 1440px;
   position: relative;
 }
 
 /* Experience Scroll Container — Creates scroll height and wide canvas space */
 .experience-scroll-container {
-  width: 125vw;
-  min-width: 125vw;
+  width: 100%;
+  min-width: 1600px;
   height: 600vh; /* 6 states × 100vh each */
   position: relative;
 }

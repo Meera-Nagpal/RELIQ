@@ -72,23 +72,23 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
         }
 
         .reliq-ripple-ring-1 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s /* 2.5s duration compatibility */' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '2.5s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
           animation-delay: 0s;
         }
 
         .reliq-ripple-ring-2 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.12s' : '0.45s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '2.5s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.35s' : '0.45s'};
         }
 
         .reliq-ripple-ring-3 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.24s' : '0.90s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '2.5s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.70s' : '0.90s'};
         }
 
         .reliq-ripple-ring-4 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.36s' : '1.35s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '2.5s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '1.05s' : '1.35s'};
         }
 
         @media (prefers-reduced-motion: reduce) {

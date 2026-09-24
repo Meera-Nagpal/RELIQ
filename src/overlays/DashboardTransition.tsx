@@ -170,42 +170,47 @@ export function DashboardTransition() {
         justifyContent: 'center',
         background: `linear-gradient(180deg, rgba(8, 10, 14, 0) 0%, rgba(8, 10, 14, ${bgBackdrop * 0.25}) 30%, rgba(8, 10, 14, ${bgBackdrop * 0.85}) 100%)`,
         opacity,
-        padding: 'clamp(0.6rem, 1.8vh, 1.2rem) clamp(1rem, 2.5vw, 2rem)',
+        padding: '24px 40px',
         overflow: 'hidden',
         transition: 'opacity 0.25s ease-out',
       }}
     >
       <div
         style={{
-          width: '91vw',
-          maxWidth: '92vw',
-          maxHeight: '92vh',
+          width: 'min(1200px, calc(100% - 80px))',
+          minWidth: 'min(1100px, calc(100% - 40px))',
+          maxWidth: '1200px',
+          height: '380px',
+          minHeight: '380px',
+          maxHeight: '380px',
           display: 'flex',
           flexDirection: 'column',
           background: 'rgba(10, 13, 19, 0.96)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           border: '1px solid rgba(255, 255, 255, 0.10)',
-          borderRadius: '12px',
+          borderRadius: '10px',
           boxShadow: '0 24px 70px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 107, 53, 0.08)',
-          transform: `scale(${scale})`,
-          transformOrigin: 'center center',
-          transition: 'transform 0.1s linear',
+          boxSizing: 'border-box',
           overflow: 'hidden',
         }}
       >
-        {/* ── Dashboard App Header ── */}
+        {/* ── Header (48px) ── */}
         <header
           style={{
+            height: '48px',
+            minHeight: '48px',
+            maxHeight: '48px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '1.1rem 1.8rem',
+            padding: '0 24px',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             background: 'rgba(6, 8, 12, 0.85)',
+            boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <div
                 style={{
@@ -216,14 +221,14 @@ export function DashboardTransition() {
                   boxShadow: '0 0 10px #FF6B35',
                 }}
               />
-              <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '1.1rem' }}>
+              <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '1.05rem', color: '#FFFFFF' }}>
                 RELIQ
               </span>
             </div>
             <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
             <div
               style={{
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 color: '#DDDDDD',
                 fontWeight: 500,
                 display: 'flex',
@@ -231,14 +236,15 @@ export function DashboardTransition() {
                 gap: '0.5rem',
               }}
             >
-              <span>project:</span>
+              <span style={{ color: '#888888' }}>project:</span>
               <span
                 style={{
-                  padding: '0.2rem 0.6rem',
+                  padding: '0.15rem 0.55rem',
                   borderRadius: '4px',
                   background: 'rgba(255, 255, 255, 0.06)',
                   fontFamily: 'monospace',
                   color: '#4DA6FF',
+                  fontSize: '0.78rem',
                 }}
               >
                 checkout-agent-v2
@@ -246,16 +252,16 @@ export function DashboardTransition() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button
               onClick={() => navigate('#/app/dashboard')}
               style={{
                 background: 'var(--accent, #FF6B35)',
                 color: '#000000',
                 border: 'none',
-                padding: '0.55rem 1.3rem',
-                borderRadius: '6px',
-                fontSize: '0.82rem',
+                padding: '0.4rem 1rem',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
                 fontWeight: 700,
                 letterSpacing: '0.04em',
                 cursor: 'pointer',
@@ -270,11 +276,11 @@ export function DashboardTransition() {
               title="Replay 3D experience"
               style={{
                 background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: '#888888',
-                padding: '0.5rem 0.85rem',
-                borderRadius: '6px',
-                fontSize: '0.78rem',
+                padding: '0.35rem 0.75rem',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -286,325 +292,386 @@ export function DashboardTransition() {
           </div>
         </header>
 
-        {/* ── Signature Transition Hero: The 96.8% Card ── */}
+        {/* ── Top Content Row (~110px) ── */}
         <section
           style={{
-            padding: '1.4rem 1.8rem',
+            height: '110px',
+            minHeight: '110px',
+            maxHeight: '110px',
+            padding: '10px 24px',
             background: 'rgba(8, 11, 16, 0.6)',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            display: 'grid',
+            gridTemplateColumns: '140px 1fr',
+            gap: '1.5rem',
+            alignItems: 'center',
+            boxSizing: 'border-box',
           }}
         >
+          {/* Metric Block (~140px) */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '280px 1fr',
-              gap: '2rem',
-              alignItems: 'center',
+              width: '140px',
+              height: '90px',
+              background: 'rgba(12, 16, 23, 0.85)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '6px',
+              padding: '0.5rem 0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              boxSizing: 'border-box',
             }}
           >
-            {/* Primary AI Reliability Card (Transformed from 3D) */}
             <div
               style={{
-                background: 'rgba(12, 16, 23, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '8px',
-                padding: '1.2rem 1.5rem',
+                fontSize: '0.62rem',
+                fontFamily: 'monospace',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#777777',
               }}
             >
-              <div
-                style={{
-                  fontSize: '0.72rem',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: '#777777',
-                  marginBottom: '0.4rem',
-                }}
-              >
-                AI RELIABILITY
+              AI RELIABILITY
+            </div>
+            <div
+              style={{
+                fontSize: '2.4rem',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                lineHeight: 1,
+                letterSpacing: '-0.03em',
+                margin: '0.15rem 0',
+              }}
+            >
+              {displayScore}
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '0.2rem',
+                fontSize: '0.58rem',
+                color: '#888888',
+                borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                paddingTop: '0.25rem',
+                textAlign: 'center',
+              }}
+            >
+              <div>
+                <div style={{ color: '#777777', fontSize: '0.50rem', textTransform: 'uppercase' }}>Acc</div>
+                <div style={{ color: '#4DA6FF', fontWeight: 600 }}>{displayAccuracy}</div>
               </div>
-              <div
-                style={{
-                  fontSize: '3.4rem',
-                  fontWeight: 800,
-                  color: '#FFFFFF',
-                  lineHeight: 1,
-                  letterSpacing: '-0.03em',
-                }}
-              >
-                {displayScore}
+              <div>
+                <div style={{ color: '#777777', fontSize: '0.50rem', textTransform: 'uppercase' }}>Lat</div>
+                <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayLatency}</div>
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '1.4rem',
-                  marginTop: '1rem',
-                  fontSize: '0.75rem',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                  paddingTop: '0.75rem',
-                }}
-              >
-                <div>
-                  <div style={{ color: '#666666', fontSize: '0.68rem', marginBottom: '0.2rem' }}>Accuracy</div>
-                  <div style={{ color: '#4DA6FF', fontWeight: 600 }}>{displayAccuracy}</div>
-                </div>
-                <div>
-                  <div style={{ color: '#666666', fontSize: '0.68rem', marginBottom: '0.2rem' }}>Latency</div>
-                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayLatency}</div>
-                </div>
-                <div>
-                  <div style={{ color: '#666666', fontSize: '0.68rem', marginBottom: '0.2rem' }}>Cost</div>
-                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayCost}</div>
-                </div>
+              <div>
+                <div style={{ color: '#777777', fontSize: '0.50rem', textTransform: 'uppercase' }}>Cost</div>
+                <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayCost}</div>
               </div>
             </div>
+          </div>
 
-            {/* Release Status & Action Gateway */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-              <div
+          {/* Right Content Area (remaining width) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: '0.68rem',
+                fontFamily: 'monospace',
+                color: '#4DA6FF',
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+              }}
+            >
+              RELEASE EVALUATION READY
+            </div>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '1.15rem',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                letterSpacing: '-0.01em',
+                lineHeight: 1.2,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              Target Model v1.6 Passed Golden Gate
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                fontSize: '0.78rem',
+                color: '#90A0B0',
+                lineHeight: 1.35,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              All 47 previous regressions in payment validation and tool schemas have been verified resolved. Evaluated against {dynamicCaseCount} multi-turn test vectors with 0 breaking anomalies.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.2rem' }}>
+              <button
+                onClick={() => navigate('#/app/dashboard')}
                 style={{
-                  fontSize: '0.72rem',
-                  fontFamily: 'monospace',
-                  color: '#4DA6FF',
+                  background: 'var(--accent, #FF6B35)',
+                  color: '#000000',
+                  border: 'none',
+                  padding: '0.35rem 0.95rem',
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
                   fontWeight: 700,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 12px rgba(255, 107, 53, 0.25)',
                 }}
               >
-                RELEASE EVALUATION READY
-              </div>
-              <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
-                Target Model v1.6 Passed Golden Gate
-              </h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#90A0B0', lineHeight: 1.55 }}>
-                All 47 previous regressions in payment validation and tool schemas have been verified resolved. Evaluated against {dynamicCaseCount} multi-turn test vectors with 0 breaking anomalies.
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', marginTop: '0.4rem' }}>
-                <button
-                  onClick={() => navigate('#/app/dashboard')}
-                  style={{
-                    background: 'var(--accent, #FF6B35)',
-                    color: '#000000',
-                    border: 'none',
-                    padding: '0.65rem 1.4rem',
-                    borderRadius: '6px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 0 16px rgba(255, 107, 53, 0.3)',
-                  }}
-                >
-                  Open Full RELIQ Workspace →
-                </button>
-                <span style={{ fontSize: '0.8rem', color: '#777777' }}>
-                  Root-cause confidence: <strong style={{ color: '#FFFFFF' }}>87%</strong>
-                </span>
-              </div>
+                Open Full RELIQ Workspace →
+              </button>
+              <span style={{ fontSize: '0.75rem', color: '#777777' }}>
+                Root-cause confidence: <strong style={{ color: '#FFFFFF' }}>87%</strong>
+              </span>
             </div>
           </div>
         </section>
 
-        {/* ── Tabs Navigation ── */}
+        {/* ── Lower Content Section with Divider (~170px) ── */}
         <div
           style={{
+            flex: 1,
             display: 'flex',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            background: 'rgba(6, 8, 12, 0.7)',
-            padding: '0 1.8rem',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
-          <button
-            onClick={() => setActiveTab('overview')}
+          {/* Tabs Bar (1px divider) */}
+          <div
             style={{
-              padding: '0.75rem 1.2rem',
-              background: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
-              color: activeTab === 'overview' ? '#FFFFFF' : '#777777',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              cursor: 'pointer',
+              height: '33px',
+              minHeight: '33px',
+              maxHeight: '33px',
+              display: 'flex',
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(6, 8, 12, 0.7)',
+              padding: '0 24px',
+              boxSizing: 'border-box',
             }}
           >
-            Regression Breakdown
-          </button>
-          <button
-            onClick={() => setActiveTab('cases')}
+            <button
+              onClick={() => setActiveTab('overview')}
+              style={{
+                height: '100%',
+                padding: '0 0.8rem',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
+                color: activeTab === 'overview' ? '#FFFFFF' : '#777777',
+                fontSize: '0.76rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                letterSpacing: '0.02em',
+              }}
+            >
+              Regression Breakdown
+            </button>
+            <button
+              onClick={() => setActiveTab('cases')}
+              style={{
+                height: '100%',
+                padding: '0 0.8rem',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
+                color: activeTab === 'cases' ? '#FFFFFF' : '#777777',
+                fontSize: '0.76rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                letterSpacing: '0.02em',
+              }}
+            >
+              Test Suite Cases ({dynamicCaseCount})
+            </button>
+          </div>
+
+          {/* Lower Content (~170px) */}
+          <div
             style={{
-              padding: '0.75rem 1.2rem',
-              background: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
-              color: activeTab === 'cases' ? '#FFFFFF' : '#777777',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              cursor: 'pointer',
+              flex: 1,
+              padding: '10px 24px',
+              boxSizing: 'border-box',
+              overflowY: 'auto',
             }}
           >
-            Test Suite Cases ({dynamicCaseCount})
-          </button>
-        </div>
-
-        {/* ── Tab Content ── */}
-        <div style={{ padding: '1.3rem 1.8rem', flex: 1, overflowY: 'auto' }}>
-          {activeTab === 'overview' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.2rem' }}>
-              <div
-                style={{
-                  background: 'rgba(10, 13, 18, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: '6px',
-                  padding: '1.1rem 1.25rem',
-                }}
-              >
-                <h4 style={{ margin: '0 0 1.2rem 0', fontSize: '0.9rem', color: '#ECECEC' }}>
-                  Root Cause Distribution (v1.5 Regression Suite)
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
-                      <span style={{ color: '#CCCCCC' }}>Tool Schema Parameter Mismatch</span>
-                      <span style={{ color: '#FF4422', fontWeight: 600 }}>47% (22 cases)</span>
-                    </div>
-                    <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '47%', background: '#FF4422' }} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
-                      <span style={{ color: '#CCCCCC' }}>Prompt Preamble Compression Truncation</span>
-                      <span style={{ color: '#FFAA44', fontWeight: 600 }}>29% (14 cases)</span>
-                    </div>
-                    <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '29%', background: '#FFAA44' }} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
-                      <span style={{ color: '#CCCCCC' }}>Safety Policy False Positives</span>
-                      <span style={{ color: '#4DA6FF', fontWeight: 600 }}>14% (7 cases)</span>
-                    </div>
-                    <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '14%', background: '#4DA6FF' }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: 'rgba(10, 13, 18, 0.5)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: '8px',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                }}
-              >
-                <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#ECECEC' }}>
-                  Reliability Harness Parameters
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
-                    <span style={{ color: '#888888' }}>Baseline Model</span>
-                    <span style={{ color: '#FFFFFF', fontFamily: 'monospace' }}>{baselineModelId}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
-                    <span style={{ color: '#888888' }}>Candidate Model</span>
-                    <span style={{ color: '#4DA6FF', fontFamily: 'monospace' }}>{candidateModelId}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
-                    <span style={{ color: '#888888' }}>Independent Judge</span>
-                    <span style={{ color: '#2ECC71', fontFamily: 'monospace' }}>{judgeModelId}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate('#/app/evaluations')}
+            {activeTab === 'overview' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '24px', height: '100%' }}>
+                {/* Left Card: Regression Breakdown */}
+                <div
                   style={{
-                    marginTop: 'auto',
-                    background: 'rgba(77, 166, 255, 0.08)',
-                    color: '#4DA6FF',
-                    border: '1px solid rgba(77, 166, 255, 0.25)',
-                    padding: '0.5rem',
-                    borderRadius: '4px',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
+                    background: 'rgba(10, 13, 18, 0.6)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  Run Custom Evaluation in App →
-                </button>
-              </div>
-            </div>
-          )}
+                  <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '0.8rem', color: '#ECECEC' }}>
+                    Root Cause Distribution (v1.5 Regression Suite)
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: '0.15rem' }}>
+                        <span style={{ color: '#CCCCCC' }}>Tool Schema Parameter Mismatch</span>
+                        <span style={{ color: '#FF4422', fontWeight: 600 }}>47% (22 cases)</span>
+                      </div>
+                      <div style={{ height: '4px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: '47%', background: '#FF4422' }} />
+                      </div>
+                    </div>
 
-          {activeTab === 'cases' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '90px 1.8fr 120px 100px 90px',
-                  padding: '0.6rem 1rem',
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: '#888888',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                }}
-              >
-                <div>ID</div>
-                <div>Test Scenario</div>
-                <div>Category</div>
-                <div>Status</div>
-                <div>Latency</div>
-              </div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: '0.15rem' }}>
+                        <span style={{ color: '#CCCCCC' }}>Prompt Preamble Compression Truncation</span>
+                        <span style={{ color: '#FFAA44', fontWeight: 600 }}>29% (14 cases)</span>
+                      </div>
+                      <div style={{ height: '4px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: '29%', background: '#FFAA44' }} />
+                      </div>
+                    </div>
 
-              {SAMPLE_TEST_CASES.map((tc) => {
-                const isSelected = selectedCase?.id === tc.id;
-                const isReg = tc.status === 'regression';
-                return (
-                  <div
-                    key={tc.id}
-                    onClick={() => setSelectedCase(tc)}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: '0.15rem' }}>
+                        <span style={{ color: '#CCCCCC' }}>Safety Policy False Positives</span>
+                        <span style={{ color: '#4DA6FF', fontWeight: 600 }}>14% (7 cases)</span>
+                      </div>
+                      <div style={{ height: '4px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: '14%', background: '#4DA6FF' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Card: Reliability Parameters */}
+                <div
+                  style={{
+                    background: 'rgba(10, 13, 18, 0.5)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '0.8rem', color: '#ECECEC' }}>
+                    Reliability Harness Parameters
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.72rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.15rem' }}>
+                      <span style={{ color: '#888888' }}>Baseline Model</span>
+                      <span style={{ color: '#FFFFFF', fontFamily: 'monospace' }}>{baselineModelId}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.15rem' }}>
+                      <span style={{ color: '#888888' }}>Candidate Model</span>
+                      <span style={{ color: '#4DA6FF', fontFamily: 'monospace' }}>{candidateModelId}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.15rem' }}>
+                      <span style={{ color: '#888888' }}>Independent Judge</span>
+                      <span style={{ color: '#2ECC71', fontFamily: 'monospace' }}>{judgeModelId}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate('#/app/evaluations')}
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: '90px 1.8fr 120px 100px 90px',
-                      padding: '0.8rem 1rem',
-                      borderRadius: '6px',
-                      background: isSelected ? 'rgba(255, 255, 255, 0.06)' : 'rgba(10, 13, 18, 0.4)',
-                      border: isSelected ? '1px solid rgba(255, 107, 53, 0.4)' : '1px solid rgba(255, 255, 255, 0.04)',
+                      marginTop: '0.35rem',
+                      background: 'rgba(77, 166, 255, 0.08)',
+                      color: '#4DA6FF',
+                      border: '1px solid rgba(77, 166, 255, 0.25)',
+                      padding: '0.3rem 0.6rem',
+                      borderRadius: '4px',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
                       cursor: 'pointer',
-                      fontSize: '0.82rem',
-                      alignItems: 'center',
                     }}
                   >
-                    <div style={{ fontFamily: 'monospace', color: '#8899AA' }}>{tc.id}</div>
-                    <div style={{ color: '#FFFFFF', fontWeight: 500 }}>{tc.name}</div>
-                    <div style={{ color: '#888888' }}>{tc.category}</div>
-                    <div>
-                      <span
-                        style={{
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
-                          background: isReg ? 'rgba(255, 34, 0, 0.2)' : 'rgba(46, 204, 113, 0.15)',
-                          color: isReg ? '#FF4422' : '#2ECC71',
-                          border: `1px solid ${isReg ? '#FF3311' : '#27AE60'}`,
-                        }}
-                      >
-                        {isReg ? 'REGRESSION' : 'PASSED'}
-                      </span>
+                    Run Custom Evaluation in App →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'cases' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '70px 1.8fr 100px 80px 70px',
+                    padding: '0.3rem 0.6rem',
+                    fontSize: '0.68rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#888888',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  <div>ID</div>
+                  <div>Test Scenario</div>
+                  <div>Category</div>
+                  <div>Status</div>
+                  <div>Latency</div>
+                </div>
+
+                {SAMPLE_TEST_CASES.map((tc) => {
+                  const isSelected = selectedCase?.id === tc.id;
+                  const isReg = tc.status === 'regression';
+                  return (
+                    <div
+                      key={tc.id}
+                      onClick={() => setSelectedCase(tc)}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '70px 1.8fr 100px 80px 70px',
+                        padding: '0.35rem 0.6rem',
+                        borderRadius: '4px',
+                        background: isSelected ? 'rgba(255, 255, 255, 0.06)' : 'rgba(10, 13, 18, 0.4)',
+                        border: isSelected ? '1px solid rgba(255, 107, 53, 0.4)' : '1px solid rgba(255, 255, 255, 0.04)',
+                        cursor: 'pointer',
+                        fontSize: '0.74rem',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div style={{ fontFamily: 'monospace', color: '#8899AA', fontSize: '0.7rem' }}>{tc.id}</div>
+                      <div style={{ color: '#FFFFFF', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.name}</div>
+                      <div style={{ color: '#888888', fontSize: '0.7rem' }}>{tc.category}</div>
+                      <div>
+                        <span
+                          style={{
+                            padding: '0.15rem 0.4rem',
+                            borderRadius: '3px',
+                            fontSize: '0.64rem',
+                            fontWeight: 700,
+                            background: isReg ? 'rgba(255, 34, 0, 0.2)' : 'rgba(46, 204, 113, 0.15)',
+                            color: isReg ? '#FF4422' : '#2ECC71',
+                            border: `1px solid ${isReg ? '#FF3311' : '#27AE60'}`,
+                          }}
+                        >
+                          {isReg ? 'REGRESSION' : 'PASSED'}
+                        </span>
+                      </div>
+                      <div style={{ color: '#CCCCCC', fontFamily: 'monospace', fontSize: '0.7rem' }}>{tc.latency}</div>
                     </div>
-                    <div style={{ color: '#CCCCCC', fontFamily: 'monospace' }}>{tc.latency}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
