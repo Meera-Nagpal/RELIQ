@@ -64,24 +64,6 @@ export function StateTypography() {
         STAGE {paddedIndex} // {currentState.label}
       </div>
 
-      {/* Target Metric for State 05 (SHIP / CONFIDENCE): 96.8% */}
-      {currentStateIndex === 5 && (
-        <div style={{ marginBottom: '0.35rem' }}>
-          <div
-            style={{
-              fontSize: 'clamp(3rem, 5.5vw, 4.8rem)',
-              fontWeight: 800,
-              color: '#FFFFFF',
-              letterSpacing: '-0.03em',
-              lineHeight: 1,
-              textShadow: '0 0 35px rgba(255, 107, 53, 0.35)',
-            }}
-          >
-            96.8%
-          </div>
-        </div>
-      )}
-
       {/* Headline */}
       <h2
         style={{
@@ -109,42 +91,6 @@ export function StateTypography() {
       >
         {currentState.description}
       </p>
-
-      {/* Foreground Metric for State 02 (RUN / DATA): 500 ACTIVE TEST CASES */}
-      {currentStateIndex === 1 && (
-        <div
-          style={{
-            marginTop: '1.25rem',
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: '0.65rem',
-          }}
-        >
-          <span
-            style={{
-              fontSize: 'clamp(2rem, 3.5vw, 2.8rem)',
-              fontWeight: 800,
-              color: '#FFFFFF',
-              lineHeight: 1,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            500
-          </span>
-          <span
-            style={{
-              fontSize: '0.72rem',
-              fontFamily: 'monospace',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: 'var(--accent, #FF6B35)',
-              fontWeight: 600,
-            }}
-          >
-            ACTIVE TEST CASES
-          </span>
-        </div>
-      )}
     </div>
   );
 }
