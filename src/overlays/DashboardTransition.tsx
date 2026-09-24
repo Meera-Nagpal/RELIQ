@@ -166,28 +166,30 @@ export function DashboardTransition() {
         pointerEvents: isEntering ? 'auto' : 'none',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'flex-start',
-        justifyContent: 'flex-end',
+        alignItems: 'center',
+        justifyContent: 'center',
         background: `linear-gradient(180deg, rgba(8, 10, 14, 0) 0%, rgba(8, 10, 14, ${bgBackdrop * 0.25}) 30%, rgba(8, 10, 14, ${bgBackdrop * 0.85}) 100%)`,
         opacity,
-        padding: '0 0 clamp(1.5rem, 3.5vh, 3.5rem) clamp(2rem, 5vw, 6rem)',
+        padding: 'clamp(1rem, 2.5vh, 2.5rem) clamp(1.5rem, 4vw, 4rem)',
         overflow: 'hidden',
         transition: 'opacity 0.25s ease-out',
       }}
     >
       <div
         style={{
-          width: 'clamp(580px, 56vw, 860px)',
-          maxWidth: '92vw',
-          maxHeight: '62vh',
+          width: '100%',
+          maxWidth: 'clamp(900px, 86vw, 1340px)',
+          maxHeight: '76vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(8, 11, 16, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '8px',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.1)',
+          background: 'rgba(10, 13, 19, 0.96)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.10)',
+          borderRadius: '12px',
+          boxShadow: '0 24px 70px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 107, 53, 0.08)',
           transform: `scale(${scale})`,
-          transformOrigin: 'bottom left',
+          transformOrigin: 'center center',
           transition: 'transform 0.1s linear',
           overflow: 'hidden',
         }}
@@ -198,8 +200,8 @@ export function DashboardTransition() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0.9rem 1.4rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+            padding: '1.1rem 1.8rem',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             background: 'rgba(6, 8, 12, 0.85)',
           }}
         >
@@ -251,9 +253,9 @@ export function DashboardTransition() {
                 background: 'var(--accent, #FF6B35)',
                 color: '#000000',
                 border: 'none',
-                padding: '0.45rem 1rem',
-                borderRadius: '4px',
-                fontSize: '0.78rem',
+                padding: '0.55rem 1.3rem',
+                borderRadius: '6px',
+                fontSize: '0.82rem',
                 fontWeight: 700,
                 letterSpacing: '0.04em',
                 cursor: 'pointer',
@@ -268,10 +270,11 @@ export function DashboardTransition() {
               title="Replay 3D experience"
               style={{
                 background: 'transparent',
-                border: 'none',
-                color: '#777777',
-                padding: '0.4rem 0.6rem',
-                fontSize: '0.75rem',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#888888',
+                padding: '0.5rem 0.85rem',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -286,43 +289,43 @@ export function DashboardTransition() {
         {/* ── Signature Transition Hero: The 96.8% Card ── */}
         <section
           style={{
-            padding: '1rem 1.4rem',
+            padding: '1.4rem 1.8rem',
             background: 'rgba(8, 11, 16, 0.6)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '240px 1fr',
-              gap: '1.4rem',
+              gridTemplateColumns: '280px 1fr',
+              gap: '2rem',
               alignItems: 'center',
             }}
           >
             {/* Primary AI Reliability Card (Transformed from 3D) */}
             <div
               style={{
-                background: 'rgba(12, 16, 23, 0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.07)',
-                borderRadius: '6px',
-                padding: '1rem 1.25rem',
+                background: 'rgba(12, 16, 23, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '8px',
+                padding: '1.2rem 1.5rem',
               }}
             >
               <div
                 style={{
-                  fontSize: '0.68rem',
+                  fontSize: '0.72rem',
                   fontFamily: 'monospace',
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
                   color: '#777777',
-                  marginBottom: '0.3rem',
+                  marginBottom: '0.4rem',
                 }}
               >
                 AI RELIABILITY
               </div>
               <div
                 style={{
-                  fontSize: '2.8rem',
+                  fontSize: '3.4rem',
                   fontWeight: 800,
                   color: '#FFFFFF',
                   lineHeight: 1,
@@ -334,65 +337,66 @@ export function DashboardTransition() {
               <div
                 style={{
                   display: 'flex',
-                  gap: '1rem',
-                  marginTop: '0.85rem',
-                  fontSize: '0.72rem',
+                  gap: '1.4rem',
+                  marginTop: '1rem',
+                  fontSize: '0.75rem',
                   borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                  paddingTop: '0.65rem',
+                  paddingTop: '0.75rem',
                 }}
               >
                 <div>
-                  <div style={{ color: '#666666', fontSize: '0.65rem' }}>Accuracy</div>
+                  <div style={{ color: '#666666', fontSize: '0.68rem', marginBottom: '0.2rem' }}>Accuracy</div>
                   <div style={{ color: '#4DA6FF', fontWeight: 600 }}>{displayAccuracy}</div>
                 </div>
                 <div>
-                  <div style={{ color: '#666666', fontSize: '0.65rem' }}>Latency</div>
+                  <div style={{ color: '#666666', fontSize: '0.68rem', marginBottom: '0.2rem' }}>Latency</div>
                   <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayLatency}</div>
                 </div>
                 <div>
-                  <div style={{ color: '#666666', fontSize: '0.65rem' }}>Cost</div>
+                  <div style={{ color: '#666666', fontSize: '0.68rem', marginBottom: '0.2rem' }}>Cost</div>
                   <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{displayCost}</div>
                 </div>
               </div>
             </div>
 
             {/* Release Status & Action Gateway */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               <div
                 style={{
-                  fontSize: '0.68rem',
+                  fontSize: '0.72rem',
                   fontFamily: 'monospace',
                   color: '#4DA6FF',
                   fontWeight: 700,
-                  letterSpacing: '0.12em',
+                  letterSpacing: '0.14em',
                   textTransform: 'uppercase',
                 }}
               >
                 RELEASE EVALUATION READY
               </div>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+              <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
                 Target Model v1.6 Passed Golden Gate
               </h3>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: '#90A0B0', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#90A0B0', lineHeight: 1.55 }}>
                 All 47 previous regressions in payment validation and tool schemas have been verified resolved. Evaluated against {dynamicCaseCount} multi-turn test vectors with 0 breaking anomalies.
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginTop: '0.35rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', marginTop: '0.4rem' }}>
                 <button
                   onClick={() => navigate('#/app/dashboard')}
                   style={{
                     background: 'var(--accent, #FF6B35)',
                     color: '#000000',
                     border: 'none',
-                    padding: '0.5rem 1.15rem',
-                    borderRadius: '4px',
-                    fontSize: '0.78rem',
+                    padding: '0.65rem 1.4rem',
+                    borderRadius: '6px',
+                    fontSize: '0.82rem',
                     fontWeight: 700,
                     cursor: 'pointer',
+                    boxShadow: '0 0 16px rgba(255, 107, 53, 0.3)',
                   }}
                 >
                   Open Full RELIQ Workspace →
                 </button>
-                <span style={{ fontSize: '0.76rem', color: '#777777' }}>
+                <span style={{ fontSize: '0.8rem', color: '#777777' }}>
                   Root-cause confidence: <strong style={{ color: '#FFFFFF' }}>87%</strong>
                 </span>
               </div>
@@ -404,20 +408,20 @@ export function DashboardTransition() {
         <div
           style={{
             display: 'flex',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             background: 'rgba(6, 8, 12, 0.7)',
-            padding: '0 1.4rem',
+            padding: '0 1.8rem',
           }}
         >
           <button
             onClick={() => setActiveTab('overview')}
             style={{
-              padding: '0.65rem 1rem',
+              padding: '0.75rem 1.2rem',
               background: 'transparent',
               border: 'none',
               borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
               color: activeTab === 'overview' ? '#FFFFFF' : '#777777',
-              fontSize: '0.78rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -427,12 +431,12 @@ export function DashboardTransition() {
           <button
             onClick={() => setActiveTab('cases')}
             style={{
-              padding: '0.65rem 1rem',
+              padding: '0.75rem 1.2rem',
               background: 'transparent',
               border: 'none',
               borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #FF6B35)' : '2px solid transparent',
               color: activeTab === 'cases' ? '#FFFFFF' : '#777777',
-              fontSize: '0.78rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -442,7 +446,7 @@ export function DashboardTransition() {
         </div>
 
         {/* ── Tab Content ── */}
-        <div style={{ padding: '1rem 1.4rem', flex: 1, overflowY: 'auto' }}>
+        <div style={{ padding: '1.3rem 1.8rem', flex: 1, overflowY: 'auto' }}>
           {activeTab === 'overview' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.2rem' }}>
               <div
