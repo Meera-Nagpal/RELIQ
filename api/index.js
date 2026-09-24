@@ -856,15 +856,16 @@ function classifySafetyResult(caseResult) {
   };
 }
 function evaluateReleaseDecision(input) {
-  const { metrics, settings, caseResults = [], datasetName } = input;
+  const { metrics = {}, caseResults = [], datasetName } = input;
+  const settings = input.settings || {};
   const violatedRules = [];
   const actionItems = [];
   const limitations = [];
   const regressionCategories = [];
-  const totalCases = metrics.totalCases || caseResults.length;
-  const candidateEvaluated = metrics.candidateEvaluatedCases !== void 0 ? metrics.candidateEvaluatedCases : metrics.evaluatedCases !== void 0 ? metrics.evaluatedCases : totalCases;
-  const baselineEvaluated = metrics.baselineEvaluatedCases !== void 0 ? metrics.baselineEvaluatedCases : candidateEvaluated;
-  const requiredCases = settings.requiredBenchmarkCases ?? (datasetName && datasetName.includes("Checkout Reliability") ? 27 : totalCases || 27);
+  const totalCases = input.totalCases ?? metrics.totalCases ?? caseResults.length;
+  const candidateEvaluated = metrics.candidateEvaluatedCases !== void 0 ? metrics.candidateEvaluatedCases : metrics.evaluatedCases !== void 0 ? metrics.evaluatedCases : input.candidateEvaluated ?? totalCases;
+  const baselineEvaluated = metrics.baselineEvaluatedCases !== void 0 ? metrics.baselineEvaluatedCases : input.baselineEvaluated ?? candidateEvaluated;
+  const requiredCases = settings.requiredBenchmarkCases ?? (datasetName && datasetName.includes("Checkout Reliability") ? totalCases >= 27 ? totalCases : 27 : totalCases > 0 ? totalCases : 27);
   const strongEvidenceCases = settings.strongEvidenceCases ?? 100;
   const isBenchmarkComplete = candidateEvaluated >= requiredCases;
   const benchmarkCompletion = {
@@ -1181,7 +1182,8 @@ function evaluateReleaseDecision(input) {
   ];
   const hasBlockingFail = gates.some((g) => g.isBlocking && g.status === "FAIL");
   const hasBlockingInconclusive = gates.some((g) => g.isBlocking && g.status === "INCONCLUSIVE");
-  const overallGateStatus = hasBlockingFail ? "FAIL" : hasBlockingInconclusive ? "INCONCLUSIVE" : "PASS";
+  const hasNonBlockingWarnOrFail = gates.some((g) => !g.isBlocking && (g.status === "WARNING" || g.status === "FAIL"));
+  const overallGateStatus = hasBlockingFail ? "FAIL" : hasBlockingInconclusive ? "INCONCLUSIVE" : hasNonBlockingWarnOrFail ? "PASS WITH WARNINGS" : "PASS";
   let decision;
   let summary = "";
   let reason = "";
@@ -1227,7 +1229,7 @@ function evaluateReleaseDecision(input) {
     isRegression = false;
     summary = `Preliminary evaluation subset (${candidateEvaluated}/${requiredCases} scenarios evaluated). Expand to full ${requiredCases} cases before production release.`;
     reason = `Preliminary benchmark subset (${candidateEvaluated}/${requiredCases} scenarios): staging/smoke test only. Full ${requiredCases}-case benchmark required for production release certification.`;
-    actionItems.push(`Run the full ${requiredCases}-scenario Checkout Reliability Suite before making release decisions.`);
+    actionItems.push(`Run the full ${requiredCases}-scenario ${datasetName || "Checkout Reliability Suite"} before making release decisions.`);
   } else if (isTrueQualityRegression) {
     if (isSmallSampleGeneric) {
       decision = "SHIP_WITH_CONDITIONS";
@@ -2032,7 +2034,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
   }
   let winner = "tie";
   let winnerReason = "";
-  const datasetRequiredCases = settings.requiredBenchmarkCases ?? (datasetName?.toLowerCase().includes("checkout reliability") ? 27 : totalCases);
+  const datasetRequiredCases = settings.requiredBenchmarkCases ?? (datasetName && datasetName.includes("Checkout Reliability") ? totalCases >= 27 ? totalCases : 27 : totalCases > 0 ? totalCases : 27);
   const isPreliminary = cEvaluatedCount < datasetRequiredCases;
   if (bEvaluatedCount === 0 || cEvaluatedCount === 0) {
     winner = "tie";
@@ -2236,7 +2238,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
     sampleSizeWarning,
     latencyPercentileWarning,
     semanticEvaluationStatus: options.runMetrics?.semanticEvaluationStatus || (caseResults.some((r) => r.semanticEvaluation) ? "EXECUTED" : "NOT_CONFIGURED"),
-    llmJudgeStatus: options.runMetrics?.llmJudgeStatus || (caseResults.some((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error) ? "EXECUTED" : "NOT_CONFIGURED"),
+    llmJudgeStatus: options.runMetrics?.llmJudgeStatus || (caseResults.some((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error) ? "EXECUTED" : caseResults.some((r) => r.llmJudgeEvaluation?.error) ? "FAILED" : "NOT_CONFIGURED"),
     factualityGroundednessStatus,
     groundednessApplicableCases,
     groundednessEvaluatedCases,
