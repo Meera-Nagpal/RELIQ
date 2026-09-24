@@ -59,8 +59,6 @@ const PROVIDER_MODELS: Record<ProviderType, { id: string; label: string }[]> = {
   groq: [
     { id: 'openai/gpt-oss-20b', label: 'OpenAI GPT-OSS 20B (Groq Fast Inference)' },
     { id: 'openai/gpt-oss-120b', label: 'OpenAI GPT-OSS 120B (Groq High Capability)' },
-    { id: 'groq/compound', label: 'Groq Compound (128k General Reasoning)' },
-    { id: 'groq/compound-mini', label: 'Groq Compound Mini (128k Fast Inference)' },
     { id: 'qwen/qwen3.8-27b', label: 'Qwen 3.8 27B (128k Tongyi Lab)' },
     { id: 'allam-2-7b', label: 'ALLaM 2 7B (SDAIA Bilingual)' },
   ],

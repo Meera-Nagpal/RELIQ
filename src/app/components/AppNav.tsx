@@ -35,7 +35,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: 'WORKSPACE',
     items: [
-      { id: 'projects', label: 'Saved Projects', icon: '◫' },
+      { id: 'projects', label: 'Saved Projects', actionLabel: 'SHIP', icon: '◫' },
     ],
   },
   {

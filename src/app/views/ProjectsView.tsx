@@ -216,7 +216,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#888888' }}>Comparison Models:</span>
                       <span style={{ color: '#4DA6FF', fontFamily: 'monospace', fontWeight: 600 }}>
-                        {proj.baselineVersionId || 'ver-v1-4'} vs {proj.candidateVersionId || 'ver-v1-5'}
+                        {proj.baselineVersionId === 'ver-v1-4' ? 'openai/gpt-oss-20b' : proj.baselineVersionId || 'openai/gpt-oss-20b'} vs {proj.candidateVersionId === 'ver-v1-5' ? 'openai/gpt-oss-120b' : proj.candidateVersionId || 'openai/gpt-oss-120b'}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>

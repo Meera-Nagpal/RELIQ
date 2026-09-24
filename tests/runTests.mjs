@@ -6846,6 +6846,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runFrontendPolishTests } = await import('./frontendPolish.test.mjs');
     await runFrontendPolishTests();
+
+    // -------------------------------------------------------------
+    // 100-Case Execution, Release Gate Reporting & LLM Judge Tests
+    // -------------------------------------------------------------
+    const { runBenchmark100ExecutionJudgeTests } = await import('./benchmark100ExecutionJudge.test.mjs');
+    await runBenchmark100ExecutionJudgeTests({ test, asyncTest }, server);
   } finally {
     await server.close();
   }

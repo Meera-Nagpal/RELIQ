@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
 
+import { useRouter } from '../router/useRouter';
+
 /**
  * Narrative HUD overlay explaining each step in the AI reliability workflow.
  * Appears on the left side of the screen, synchronized with 3D camera transitions.
@@ -10,9 +12,11 @@ export function StateTypography() {
   const currentStateIndex = useExperienceStore((state) => state.currentStateIndex);
   const currentState = useExperienceStore((state) => state.currentState);
   const stateProgress = useExperienceStore((state) => state.stateProgress);
+  const { isTransitioning } = useRouter();
 
   const opacity = useMemo(() => {
     if (currentStateIndex === 0) return 0; // State 0 uses HeroOverlay
+    if (currentStateIndex === 2) return 0; // State 2 (COMPARE) uses dedicated Model Ledger data rail
     if (currentStateIndex === 5 && stateProgress > 0.5) return 0; // Final state transitions into Dashboard
 
     // Smooth fade in / out within state
@@ -24,7 +28,7 @@ export function StateTypography() {
     return 1;
   }, [currentStateIndex, stateProgress]);
 
-  if (currentStateIndex === 0 || !currentState || opacity <= 0.01) return null;
+  if (isTransitioning || currentStateIndex === 0 || !currentState || opacity <= 0.01) return null;
 
   const paddedIndex = (currentStateIndex + 1).toString().padStart(2, '0');
 
