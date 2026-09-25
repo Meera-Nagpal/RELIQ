@@ -1114,7 +1114,7 @@ function evaluateReleaseDecision(input) {
       observed: candidateQuality !== null && candidateQuality !== void 0 ? `${candidateQuality.toFixed(1)}%` : "N/A",
       threshold: `>= ${minRequiredAccuracy.toFixed(1)}%`,
       details: passesMinAccuracy ? "Candidate meets absolute acceptance quality threshold." : `Candidate score (${candidateQuality?.toFixed(1)}%) is below acceptance target (${minRequiredAccuracy.toFixed(1)}%).`,
-      isBlocking: false
+      isBlocking: settings?.isMinimumQualityBlocking !== void 0 ? Boolean(settings.isMinimumQualityBlocking) : true
     },
     {
       gate: "Operational Failure Rate",
@@ -1132,7 +1132,7 @@ function evaluateReleaseDecision(input) {
       observed: typeof metrics.latencyDeltaPercent === "number" ? `${metrics.latencyDeltaPercent > 0 ? "+" : ""}${metrics.latencyDeltaPercent.toFixed(1)}% (${latencyDeltaMs ?? 0}ms)` : "N/A",
       threshold: `<= +${maxAllowedLatencyIncreasePercent.toFixed(1)}%`,
       details: !isLatencySpike ? "Response latency within acceptable limits." : `Latency increase exceeds configured limit of +${maxAllowedLatencyIncreasePercent.toFixed(1)}%.`,
-      isBlocking: false
+      isBlocking: settings?.isLatencyBlocking !== void 0 ? Boolean(settings.isLatencyBlocking) : true
     },
     {
       gate: "Cost Threshold",
@@ -1250,6 +1250,37 @@ function evaluateReleaseDecision(input) {
       reason = `Candidate evaluated score (${candidateQuality !== null ? candidateQuality.toFixed(1) + "%" : "N/A"}) degraded beyond allowed tolerance (${maxAllowedDegradation.toFixed(1)}%) against baseline (${baselineQuality !== null ? baselineQuality.toFixed(1) + "%" : "N/A"}).`;
       actionItems.push("Inspect regression failure cases and optimize candidate model prompts.");
     }
+  } else if (hasBlockingFail) {
+    decision = "BLOCK";
+    isRegression = false;
+    const failedBlockingGates = gates.filter((g) => g.isBlocking && g.status === "FAIL");
+    const failedQuality = failedBlockingGates.some((g) => g.gate === "Minimum Quality Threshold" || g.category === "QUALITY");
+    const failedLatency = failedBlockingGates.some((g) => g.gate === "Latency Threshold" || g.category === "LATENCY");
+    if (qualityDelta !== null && qualityDelta > 0) {
+      if (failedQuality && failedLatency) {
+        summary = "Candidate quality improved relative to baseline, but release is blocked because absolute quality and latency gates failed.";
+      } else if (failedQuality) {
+        summary = "Candidate quality improved relative to baseline, but release is blocked because absolute quality gate failed.";
+      } else if (failedLatency) {
+        summary = "Candidate quality improved relative to baseline, but release is blocked because latency gate failed.";
+      } else {
+        summary = `Candidate quality improved relative to baseline, but release is blocked because ${failedBlockingGates.map((g) => g.gate.toLowerCase()).join(" and ")} failed.`;
+      }
+    } else if (qualityDelta === 0) {
+      summary = `Candidate maintained quality parity with baseline, but release is blocked because ${failedBlockingGates.map((g) => g.gate.toLowerCase()).join(" and ")} failed.`;
+    } else {
+      summary = `Release is blocked because ${failedBlockingGates.map((g) => g.gate.toLowerCase()).join(" and ")} failed.`;
+    }
+    reason = `Candidate quality ${qualityDelta !== null && qualityDelta > 0 ? `improved (+${qualityDelta.toFixed(1)} pts vs baseline)` : "maintained parity"}, but production release is blocked due to failed release criteria: ${failedBlockingGates.map((g) => g.gate).join(", ")}.`;
+    failedBlockingGates.forEach((g) => {
+      if (g.gate === "Minimum Quality Threshold") {
+        actionItems.push(`Candidate quality (${candidateQuality?.toFixed(1)}%) is below absolute production target (${minRequiredAccuracy.toFixed(1)}%). Optimize prompts or fine-tuning before deployment.`);
+      } else if (g.gate === "Latency Threshold") {
+        actionItems.push(`Candidate latency increase (${typeof metrics.latencyDeltaPercent === "number" ? "+" + metrics.latencyDeltaPercent.toFixed(1) + "%" : ""}) exceeds configured limit of +${maxAllowedLatencyIncreasePercent.toFixed(1)}%. Profile and reduce inference latency.`);
+      } else {
+        actionItems.push(`Resolve ${g.gate} release gate failure before production deployment.`);
+      }
+    });
   } else if (isSmallSampleGeneric || isLatencySpike || regressionCategories.includes("COST_REGRESSION") || regressionCategories.includes("RELIABILITY_REGRESSION") || !passesMinAccuracy) {
     decision = "SHIP_WITH_CONDITIONS";
     isRegression = false;
@@ -2148,7 +2179,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
   } else if (releaseOutcome.decision === "REGRESSION_DETECTED") {
     regressionStatus = "REGRESSION_DETECTED";
   } else if (releaseOutcome.decision === "BLOCK") {
-    regressionStatus = releaseOutcome.isRegression ? "REGRESSION_DETECTED" : "INSUFFICIENT_EVIDENCE";
+    regressionStatus = releaseOutcome.isRegression ? "REGRESSION_DETECTED" : "NO_REGRESSION";
   } else {
     regressionStatus = "NO_REGRESSION";
   }
@@ -2229,6 +2260,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
     benchmarkCompletion: releaseOutcome.benchmarkCompletion,
     releaseGates: releaseOutcome.gates,
     overallGateStatus: releaseOutcome.overallGateStatus,
+    summary: releaseOutcome.summary,
     dimensions: releaseOutcome.dimensions,
     isPreliminary,
     regressionCategories: releaseOutcome.regressionCategories,

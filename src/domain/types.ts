@@ -397,7 +397,7 @@ export interface MetricSummary {
   evidenceStrengthReason?: string;
   benchmarkCompletion?: BenchmarkCompletionSummary;
   releaseGates?: ReleaseGateResult[];
-  overallGateStatus?: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
+  overallGateStatus?: 'PASS' | 'FAIL' | 'BLOCKED' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
   dimensions?: DimensionalTradeoffs;
   baselinePassed: number;
   candidatePassed: number;

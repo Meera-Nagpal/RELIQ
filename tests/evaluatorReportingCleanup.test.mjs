@@ -285,7 +285,7 @@ export async function runEvaluatorReportingCleanupTests({ test, asyncTest }, ser
     assert.ok(minThresholdGate);
     assert.strictEqual(minThresholdGate.status, 'FAIL');
     assert.strictEqual(minThresholdGate.observed, '44.2%');
-    assert.strictEqual(minThresholdGate.isBlocking, false); // Advisory target
+    assert.strictEqual(minThresholdGate.isBlocking, true); // Blocking release gate
   });
 
   // 5. Parity Handling: Zero Delta is ALWAYS PARITY, Never WIN
@@ -574,11 +574,16 @@ export async function runEvaluatorReportingCleanupTests({ test, asyncTest }, ser
     assert.strictEqual(report.benchmarkCompletion.status, 'FULL_BENCHMARK_COMPLETE');
     assert.strictEqual(report.evidenceStrength, 'MODERATE');
 
-    // Recommendation must NOT claim "Directional quality regression signal observed"
-    assert.strictEqual(report.recommendation, 'SHIP WITH CONDITIONS');
+    // Recommendation must be BLOCK RELEASE due to failed blocking gates (Minimum Quality & Latency)
+    assert.strictEqual(report.recommendation, 'BLOCK RELEASE');
+    assert.strictEqual(report.overallGateStatus, 'FAIL');
     assert.ok(!report.recommendationReason.includes('quality regression'));
     assert.ok(!report.evidence.some((e) => e.toLowerCase().includes('directional quality regression')));
-    assert.ok(report.recommendationReason.includes('Relative quality improved (+19.9 pts'));
+    assert.strictEqual(
+      report.summary,
+      'Candidate quality improved relative to baseline, but release is blocked because absolute quality and latency gates failed.'
+    );
+    assert.ok(report.recommendationReason.includes('Candidate quality improved'));
 
     // Winner reason must acknowledge relative improvement while noting failed production gates
     assert.ok(report.winnerReason.includes('relative quality improvement (+19.9 pts vs baseline)'));

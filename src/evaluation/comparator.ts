@@ -109,7 +109,8 @@ export interface ComparisonReport {
   evidenceStrengthReason?: string;
   benchmarkCompletion?: import('../domain/types').BenchmarkCompletionSummary;
   releaseGates?: import('../domain/types').ReleaseGateResult[];
-  overallGateStatus?: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
+  overallGateStatus?: 'PASS' | 'FAIL' | 'BLOCKED' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
+  summary?: string;
   dimensions?: import('../domain/types').DimensionalTradeoffs;
   isPreliminary?: boolean;
   regressionCategories?: RegressionCategory[];
@@ -759,7 +760,7 @@ export function generateComparisonReport(
   } else if (releaseOutcome.decision === 'REGRESSION_DETECTED') {
     regressionStatus = 'REGRESSION_DETECTED';
   } else if (releaseOutcome.decision === 'BLOCK') {
-    regressionStatus = releaseOutcome.isRegression ? 'REGRESSION_DETECTED' : 'INSUFFICIENT_EVIDENCE';
+    regressionStatus = releaseOutcome.isRegression ? 'REGRESSION_DETECTED' : 'NO_REGRESSION';
   } else {
     regressionStatus = 'NO_REGRESSION';
   }
@@ -885,6 +886,7 @@ export function generateComparisonReport(
     benchmarkCompletion: releaseOutcome.benchmarkCompletion,
     releaseGates: releaseOutcome.gates,
     overallGateStatus: releaseOutcome.overallGateStatus,
+    summary: releaseOutcome.summary,
     dimensions: releaseOutcome.dimensions,
     isPreliminary,
     regressionCategories: releaseOutcome.regressionCategories,

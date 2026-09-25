@@ -29,7 +29,7 @@ import {
 
 export interface ReleaseDecisionOutcome {
   decision: CanonicalReleaseDecision;
-  overallGateStatus: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
+  overallGateStatus: 'PASS' | 'FAIL' | 'BLOCKED' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS';
   benchmarkCompletion: import('../domain/types').BenchmarkCompletionSummary;
   evidenceStrength: EvidenceStrength;
   evidenceStrengthReason: string;
@@ -650,7 +650,7 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
       details: passesMinAccuracy
         ? 'Candidate meets absolute acceptance quality threshold.'
         : `Candidate score (${candidateQuality?.toFixed(1)}%) is below acceptance target (${minRequiredAccuracy.toFixed(1)}%).`,
-      isBlocking: false,
+      isBlocking: (settings as any)?.isMinimumQualityBlocking !== undefined ? Boolean((settings as any).isMinimumQualityBlocking) : true,
     },
     {
       gate: 'Operational Failure Rate',
@@ -676,7 +676,7 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
       details: !isLatencySpike
         ? 'Response latency within acceptable limits.'
         : `Latency increase exceeds configured limit of +${maxAllowedLatencyIncreasePercent.toFixed(1)}%.`,
-      isBlocking: false,
+      isBlocking: (settings as any)?.isLatencyBlocking !== undefined ? Boolean((settings as any).isLatencyBlocking) : true,
     },
     {
       gate: 'Cost Threshold',
@@ -753,7 +753,7 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
   const hasBlockingFail = gates.some((g) => g.isBlocking && g.status === 'FAIL');
   const hasBlockingInconclusive = gates.some((g) => g.isBlocking && g.status === 'INCONCLUSIVE');
   const hasNonBlockingWarnOrFail = gates.some((g) => !g.isBlocking && (g.status === 'WARNING' || g.status === 'FAIL'));
-  const overallGateStatus: 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS' = hasBlockingFail
+  const overallGateStatus: 'PASS' | 'FAIL' | 'BLOCKED' | 'INCONCLUSIVE' | 'PASS WITH WARNINGS' = hasBlockingFail
     ? 'FAIL'
     : hasBlockingInconclusive
     ? 'INCONCLUSIVE'
@@ -844,6 +844,43 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
       reason = `Candidate evaluated score (${candidateQuality !== null ? candidateQuality.toFixed(1) + '%' : 'N/A'}) degraded beyond allowed tolerance (${maxAllowedDegradation.toFixed(1)}%) against baseline (${baselineQuality !== null ? baselineQuality.toFixed(1) + '%' : 'N/A'}).`;
       actionItems.push('Inspect regression failure cases and optimize candidate model prompts.');
     }
+  }
+  // Precedence 3B: BLOCK (Release Gate Failures: blocking quality, latency, reliability, or coverage gates failed)
+  else if (hasBlockingFail) {
+    decision = 'BLOCK';
+    isRegression = false;
+
+    const failedBlockingGates = gates.filter((g) => g.isBlocking && g.status === 'FAIL');
+    const failedQuality = failedBlockingGates.some((g) => g.gate === 'Minimum Quality Threshold' || g.category === 'QUALITY');
+    const failedLatency = failedBlockingGates.some((g) => g.gate === 'Latency Threshold' || g.category === 'LATENCY');
+
+    if (qualityDelta !== null && qualityDelta > 0) {
+      if (failedQuality && failedLatency) {
+        summary = 'Candidate quality improved relative to baseline, but release is blocked because absolute quality and latency gates failed.';
+      } else if (failedQuality) {
+        summary = 'Candidate quality improved relative to baseline, but release is blocked because absolute quality gate failed.';
+      } else if (failedLatency) {
+        summary = 'Candidate quality improved relative to baseline, but release is blocked because latency gate failed.';
+      } else {
+        summary = `Candidate quality improved relative to baseline, but release is blocked because ${failedBlockingGates.map((g) => g.gate.toLowerCase()).join(' and ')} failed.`;
+      }
+    } else if (qualityDelta === 0) {
+      summary = `Candidate maintained quality parity with baseline, but release is blocked because ${failedBlockingGates.map((g) => g.gate.toLowerCase()).join(' and ')} failed.`;
+    } else {
+      summary = `Release is blocked because ${failedBlockingGates.map((g) => g.gate.toLowerCase()).join(' and ')} failed.`;
+    }
+
+    reason = `Candidate quality ${qualityDelta !== null && qualityDelta > 0 ? `improved (+${qualityDelta.toFixed(1)} pts vs baseline)` : 'maintained parity'}, but production release is blocked due to failed release criteria: ${failedBlockingGates.map((g) => g.gate).join(', ')}.`;
+
+    failedBlockingGates.forEach((g) => {
+      if (g.gate === 'Minimum Quality Threshold') {
+        actionItems.push(`Candidate quality (${candidateQuality?.toFixed(1)}%) is below absolute production target (${minRequiredAccuracy.toFixed(1)}%). Optimize prompts or fine-tuning before deployment.`);
+      } else if (g.gate === 'Latency Threshold') {
+        actionItems.push(`Candidate latency increase (${typeof metrics.latencyDeltaPercent === 'number' ? '+' + metrics.latencyDeltaPercent.toFixed(1) + '%' : ''}) exceeds configured limit of +${maxAllowedLatencyIncreasePercent.toFixed(1)}%. Profile and reduce inference latency.`);
+      } else {
+        actionItems.push(`Resolve ${g.gate} release gate failure before production deployment.`);
+      }
+    });
   }
   // Precedence 4: SHIP_WITH_CONDITIONS (Small sample generic smoke test, latency spike, cost increase, or absolute target not met)
   else if (

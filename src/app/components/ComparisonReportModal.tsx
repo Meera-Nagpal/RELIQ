@@ -189,7 +189,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
   const failedGates = (report.releaseGates || []).filter((g) => g.status === 'FAIL');
   const warningGates = (report.releaseGates || []).filter((g) => g.status === 'WARNING');
-  const hasGateFailures = failedGates.length > 0 || report.overallGateStatus === 'FAIL';
+  const hasGateFailures = failedGates.length > 0 || report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED';
   const isPreliminary = Boolean(
     report.isPreliminary ||
     report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
@@ -515,7 +515,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   border: `1px solid ${hasGateFailures ? 'rgba(239, 68, 68, 0.4)' : recStyle.border}`,
                 }}
               >
-                {hasGateFailures ? `⛔ BLOCK / FAIL (${failedGates.length} GATES FAILED)` : report.recommendation}
+                {hasGateFailures ? `⛔ BLOCKED (${failedGates.length} GATES FAILED)` : report.recommendation}
               </span>
             </div>
 
@@ -1491,7 +1491,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   background:
                     report.overallGateStatus === 'PASS'
                       ? 'rgba(46, 204, 113, 0.2)'
-                      : report.overallGateStatus === 'FAIL'
+                      : report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED'
                       ? 'rgba(255, 51, 17, 0.2)'
                       : report.overallGateStatus === 'PASS WITH WARNINGS'
                       ? 'rgba(245, 158, 11, 0.2)'
@@ -1499,7 +1499,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   color:
                     report.overallGateStatus === 'PASS'
                       ? '#2ECC71'
-                      : report.overallGateStatus === 'FAIL'
+                      : report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED'
                       ? '#FF4422'
                       : report.overallGateStatus === 'PASS WITH WARNINGS'
                       ? '#F59E0B'
@@ -1507,7 +1507,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   border: `1px solid ${
                     report.overallGateStatus === 'PASS'
                       ? 'rgba(46, 204, 113, 0.4)'
-                      : report.overallGateStatus === 'FAIL'
+                      : report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED'
                       ? 'rgba(255, 51, 17, 0.4)'
                       : report.overallGateStatus === 'PASS WITH WARNINGS'
                       ? 'rgba(245, 158, 11, 0.4)'
@@ -1515,7 +1515,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   }`,
                 }}
               >
-                OVERALL GATE STATUS: {report.overallGateStatus === 'FAIL' ? 'BLOCK / FAIL' : report.overallGateStatus || 'INCONCLUSIVE'}
+                OVERALL GATE STATUS: {report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED' ? 'BLOCKED' : report.overallGateStatus || 'INCONCLUSIVE'}
               </span>
             </div>
 

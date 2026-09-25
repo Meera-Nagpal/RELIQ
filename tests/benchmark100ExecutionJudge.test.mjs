@@ -497,4 +497,80 @@ export async function runBenchmark100ExecutionJudgeTests({ test, asyncTest }, se
     assert.ok(pdfSrc.includes("'ACTION'"), 'pdfExporter must include distinct ACTION table column header');
     assert.ok(pdfSrc.includes("'STATUS'"), 'pdfExporter must include distinct STATUS table column header');
   });
+
+  // -------------------------------------------------------------
+  // Test 16: Blocking Gate Aggregation & Precedence: Quality Improved but Absolute Quality & Latency Gates Failed
+  // -------------------------------------------------------------
+  test('16. Blocking Gate Aggregation: Quality improved but Minimum Quality & Latency fail => BLOCK & required summary', () => {
+    const outcome = evaluateReleaseDecision({
+      totalCases: 27,
+      candidateEvaluated: 27,
+      baselineEvaluated: 27,
+      metrics: {
+        totalCases: 27,
+        sampleSize: 27,
+        baselinePassed: 6,
+        candidatePassed: 9,
+        baselineAccuracy: 22.2,
+        candidateAccuracy: 33.3,
+        accuracyDelta: 11.1,
+        baselineEvaluatedCases: 27,
+        candidateEvaluatedCases: 27,
+        baselineEvaluationCoverage: 100,
+        candidateEvaluationCoverage: 100,
+        baselinePassRate: 22.2,
+        candidatePassRate: 33.3,
+        baselineQualityScore: 28.5,
+        candidateQualityScore: 48.4,
+        qualityScoreDelta: 19.9,
+        baselineAvgLatencyMs: 654,
+        candidateAvgLatencyMs: 795,
+        latencyDeltaPercent: 22,
+        baselineEstimatedCost: 0.0019,
+        candidateEstimatedCost: 0.0074,
+        regressedCasesCount: 0,
+        improvedCasesCount: 3,
+      },
+      settings: {
+        minAccuracyPercent: 95.0,
+        maxAccuracyDegradationPercent: 2.0,
+        maxLatencyIncreasePercent: 20.0,
+        maxFailureRatePercent: 5.0,
+        requiredBenchmarkCases: 27,
+      },
+      caseResults: [],
+      datasetName: 'Checkout Reliability Suite',
+    });
+
+    // 1. Gate verification
+    const degradationGate = outcome.gates.find((g) => g.gate === 'Quality Degradation Limit');
+    assert.strictEqual(degradationGate.status, 'PASS');
+    assert.strictEqual(degradationGate.isBlocking, true);
+
+    const minQualityGate = outcome.gates.find((g) => g.gate === 'Minimum Quality Threshold');
+    assert.strictEqual(minQualityGate.status, 'FAIL');
+    assert.strictEqual(minQualityGate.isBlocking, true);
+
+    const latencyGate = outcome.gates.find((g) => g.gate === 'Latency Threshold');
+    assert.strictEqual(latencyGate.status, 'FAIL');
+    assert.strictEqual(latencyGate.isBlocking, true);
+
+    const costGate = outcome.gates.find((g) => g.gate === 'Cost Threshold');
+    assert.strictEqual(costGate.status, 'WARNING');
+    assert.strictEqual(costGate.isBlocking, false);
+
+    // 2. Relative quality direction is decoupled and preserved as IMPROVEMENT
+    assert.strictEqual(outcome.dimensions.quality, 'IMPROVEMENT');
+    assert.strictEqual(outcome.isRegression, false);
+
+    // 3. Absolute release decision & overall gate status
+    assert.strictEqual(outcome.decision, 'BLOCK');
+    assert.strictEqual(outcome.overallGateStatus, 'FAIL');
+
+    // 4. Exact summary requirement
+    assert.strictEqual(
+      outcome.summary,
+      'Candidate quality improved relative to baseline, but release is blocked because absolute quality and latency gates failed.'
+    );
+  });
 }

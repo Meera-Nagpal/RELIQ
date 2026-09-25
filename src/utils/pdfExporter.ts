@@ -290,7 +290,7 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   const isParity = report.qualityDelta === 0;
 
   const failedGates = (report.releaseGates || []).filter((g) => g.status === 'FAIL');
-  const hasGateFailures = failedGates.length > 0 || (report.overallGateStatus === 'FAIL');
+  const hasGateFailures = failedGates.length > 0 || (report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED');
 
   // Background card styling
   doc.setFillColor(0.97, 0.98, 1.0);
@@ -509,7 +509,7 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   // ─────────────────────────────────────────────────────────────
   renderSectionHeader(
     'Production Release Gates Audit',
-    `Overall Gate Status: ${report.overallGateStatus || 'CLEAR / NOT CONFIGURED'}`
+    `OVERALL GATE STATUS: ${report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED' ? 'BLOCKED' : report.overallGateStatus || 'CLEAR / NOT CONFIGURED'}`
   );
 
   const gateHdrY = doc.y - 18;
