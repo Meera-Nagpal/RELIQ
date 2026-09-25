@@ -17711,6 +17711,15 @@ async function runServerEvaluation(options) {
         }
       },
       onCaseCompleted: (caseResult, current, total) => {
+        const currentJob = jobs.get(runId);
+        if (currentJob) {
+          currentJob.progress = {
+            current,
+            total,
+            caseName: caseResult?.caseName || currentJob.progress.caseName,
+            percent: total > 0 ? Math.round(current / total * 100) : 0
+          };
+        }
         evaluationDbService.recordCaseResult(runId, options.candidateVersion, caseResult);
       }
     });

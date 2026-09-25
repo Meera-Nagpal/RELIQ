@@ -1,7 +1,7 @@
 /* ============================================================
    RELIQ — Ripple Loader Component
    
-   Reusable 3-ring concentric ripple animation for:
+   Reusable 6-ring concentric ripple animation for:
    - Global page navigation transitions
    - Real-time evaluation running progress
    
@@ -44,14 +44,14 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
             border-color: ${color};
           }
           15% {
-            opacity: 0.75;
+            opacity: 0.85;
             border-color: ${color};
           }
           50% {
             border-color: ${secondaryColor};
           }
           100% {
-            transform: scale(2.4);
+            transform: scale(2.6);
             opacity: 0;
             border-color: ${color};
           }
@@ -72,23 +72,39 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
         }
 
         .reliq-ripple-ring-1 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s /* 2.5s duration compatibility */' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.72s /* 2.5s duration compatibility */' : '2.1s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
           animation-delay: 0s;
+          opacity: 0.9;
         }
 
         .reliq-ripple-ring-2 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.12s' : '0.45s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.72s' : '2.1s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.10s' : '0.35s'};
+          opacity: 0.8;
         }
 
         .reliq-ripple-ring-3 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.24s' : '0.90s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.72s' : '2.1s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.20s' : '0.70s'};
+          opacity: 0.7;
         }
 
         .reliq-ripple-ring-4 {
-          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.68s' : '1.8s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: ${mode === 'pulse' ? '0.36s' : '1.35s'};
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.72s' : '2.1s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.30s' : '1.05s'};
+          opacity: 0.6;
+        }
+
+        .reliq-ripple-ring-5 {
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.72s' : '2.1s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.40s' : '1.40s'};
+          opacity: 0.5;
+        }
+
+        .reliq-ripple-ring-6 {
+          animation: reliqRippleAnimation ${mode === 'pulse' ? '0.72s' : '2.1s'} cubic-bezier(0.22, 0.61, 0.36, 1) ${mode === 'pulse' ? 'forwards' : 'infinite'};
+          animation-delay: ${mode === 'pulse' ? '0.50s' : '1.75s'};
+          opacity: 0.4;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -123,11 +139,13 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
           }}
         />
 
-        {/* 4 Concentric Ripple Rings */}
+        {/* 6 Concentric Ripple Rings */}
         <div className="ripple reliq-ripple-ring reliq-ripple-ring-1" />
         <div className="ripple reliq-ripple-ring reliq-ripple-ring-2" />
         <div className="ripple reliq-ripple-ring reliq-ripple-ring-3" />
         <div className="ripple reliq-ripple-ring reliq-ripple-ring-4" />
+        <div className="ripple reliq-ripple-ring reliq-ripple-ring-5" />
+        <div className="ripple reliq-ripple-ring reliq-ripple-ring-6" />
       </div>
     </div>
   );

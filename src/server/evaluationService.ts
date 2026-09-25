@@ -464,6 +464,15 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
         }
       },
       onCaseCompleted: (caseResult, current, total) => {
+        const currentJob = jobs.get(runId);
+        if (currentJob) {
+          currentJob.progress = {
+            current,
+            total,
+            caseName: caseResult?.caseName || currentJob.progress.caseName,
+            percent: total > 0 ? Math.round((current / total) * 100) : 0,
+          };
+        }
         // Authoritative per-case persistence into SQLite evaluation_results table
         evaluationDbService.recordCaseResult(runId, options.candidateVersion, caseResult);
       },

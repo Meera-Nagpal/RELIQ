@@ -24,6 +24,8 @@ export interface EvaluationProgressModalProps {
   progressPercent: number;
   progressCounts: { current: number; total: number } | null;
   currentStageText: string;
+  caseName?: string;
+  phase?: string;
   runId: string | null;
   error: string | null;
   onCancel: () => void;
@@ -42,6 +44,8 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
   progressPercent,
   progressCounts,
   currentStageText,
+  caseName,
+  phase,
   runId,
   error,
   onCancel,
@@ -311,13 +315,42 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                 textOverflow: 'ellipsis',
                 fontStyle: 'italic',
               }}
-              title={currentStageText}
+              title={caseName ? `Scenario: ${caseName}` : currentStageText}
             >
-              {currentStageText || 'Executing model telemetry and criteria evaluation...'}
+              {caseName
+                ? `Scenario: ${caseName}`
+                : currentStageText || 'Executing model telemetry and criteria evaluation...'}
             </div>
 
+            {/* Live Progress Telemetry Counters (Completed vs Remaining) */}
+            {progressCounts && progressCounts.current > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  fontSize: '0.72rem',
+                  fontFamily: 'monospace',
+                }}
+              >
+                <div style={{ color: '#2ECC71' }}>
+                  COMPLETED: <strong>{currentCaseNumber}</strong>
+                </div>
+                <div style={{ color: '#8899AA' }}>
+                  REMAINING: <strong style={{ color: '#FFFFFF' }}>{Math.max(0, targetTotal - currentCaseNumber)}</strong>
+                </div>
+                <div style={{ color: 'var(--reliq-accent, #FF6B35)' }}>
+                  TIME: <strong>{formattedTime}</strong>
+                </div>
+              </div>
+            )}
+
             {/* Evaluator Engine Status Chips */}
-            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.4rem' }}>
+            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
               <span
                 style={{
                   fontSize: '0.65rem',
@@ -344,6 +377,21 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               >
                 LLM Judge: {judgeEnabled ? 'ACTIVE' : 'OFF'}
               </span>
+              {phase && (
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '4px',
+                    background: 'rgba(255, 107, 53, 0.15)',
+                    color: 'var(--reliq-accent, #FF6B35)',
+                    border: '1px solid rgba(255, 107, 53, 0.3)',
+                  }}
+                >
+                  Phase: {phase}
+                </span>
+              )}
             </div>
           </div>
         ) : (

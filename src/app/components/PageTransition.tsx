@@ -37,8 +37,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
         justifyContent: 'center',
         pointerEvents: 'auto', // Prevents double clicks during transition
         overflow: 'hidden',
-        /* 2.5s duration compatibility */
-        animation: 'reliqTransitionFade 0.68s cubic-bezier(0.22, 0.61, 0.36, 1) forwards',
+        animation: 'reliqTransitionFade 2.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards',
       }}
     >
       <style>{`

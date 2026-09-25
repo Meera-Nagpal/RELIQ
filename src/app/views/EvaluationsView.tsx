@@ -155,6 +155,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   const [maxCasesToRun, setMaxCasesToRun] = useState<number>(0);
   const [progressPercent, setProgressPercent] = useState(0);
   const [currentProgressText, setCurrentProgressText] = useState('');
+  const [currentCaseName, setCurrentCaseName] = useState<string>('');
+  const [currentPhase, setCurrentPhase] = useState<string>('Initializing');
   const [progressCounts, setProgressCounts] = useState<{ current: number; total: number } | null>(null);
   const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
@@ -307,6 +309,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     setCurrentRunId(null);
     setProgressPercent(0);
     setProgressCounts(null);
+    setCurrentCaseName('');
+    setCurrentPhase('Initializing Harness');
     setCurrentProgressText('Initializing model providers & telemetry harness...');
 
     try {
@@ -358,6 +362,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       const runId = initData.runId;
       console.log('[RELIQ UI] runId:', runId);
       setCurrentRunId(runId);
+      setCurrentPhase('Running Benchmark Scenarios');
 
       // Poll /api/evaluations/status/:runId until completed or failed
       let run: EvaluationRun | null = null;
@@ -385,6 +390,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             const { current, total, caseName, percent } = statusData.progress;
             setProgressPercent(percent);
             setProgressCounts({ current, total });
+            if (caseName) setCurrentCaseName(caseName);
+            const activePhase = judgeEnabled ? 'Semantic Evaluation + LLM Judge' : 'Semantic Criteria Evaluation';
+            setCurrentPhase(activePhase);
             setCurrentProgressText(
               caseName ? `Evaluating scenario ${current}/${total}: ${caseName}` : `Processing scenario ${current}/${total}`
             );
@@ -1588,6 +1596,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         progressPercent={progressPercent}
         progressCounts={progressCounts}
         currentStageText={currentProgressText}
+        caseName={currentCaseName}
+        phase={currentPhase}
         runId={currentRunId}
         error={evaluationError}
         onCancel={() => {

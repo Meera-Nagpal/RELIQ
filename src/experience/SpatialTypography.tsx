@@ -190,9 +190,9 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 05: INVESTIGATION (INVESTIGATE — 47 Failed Cases) ── */}
-      <group ref={state5Group} position={[-1.8, 0.2, 0.8]} rotation={[0, 0.35, 0]}>
+      <group ref={state5Group} position={[-0.75, 0.25, 0.3]} rotation={[0, 0.3, 0]}>
         <Text
-          fontSize={1.4}
+          fontSize={1.15}
           letterSpacing={0.15}
           color="#FF9955"
           anchorX="center"
@@ -202,8 +202,8 @@ export function SpatialTypography() {
           INVESTIGATE
         </Text>
         <Text
-          position={[0, -0.75, 0]}
-          fontSize={0.8}
+          position={[0, -0.65, 0]}
+          fontSize={0.7}
           letterSpacing={0.05}
           color="#FFFFFF"
           anchorX="center"
@@ -213,8 +213,8 @@ export function SpatialTypography() {
           47
         </Text>
         <Text
-          position={[0, -1.2, 0]}
-          fontSize={0.22}
+          position={[0, -1.05, 0]}
+          fontSize={0.2}
           letterSpacing={0.2}
           color="#888888"
           anchorX="center"
@@ -226,11 +226,11 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 06: CONFIDENCE / TRANSITION (SHIP — 96.8% Target) ── */}
-      <group ref={state6Group} position={[0, 0.2, 1.4]}>
+      <group ref={state6Group} position={[0, 0.18, 0.4]}>
         <Text
-          position={[0, 1.2, 0]}
-          fontSize={0.3}
-          letterSpacing={0.35}
+          position={[0, 0.78, 0]}
+          fontSize={0.2}
+          letterSpacing={0.3}
           color="#4DA6FF"
           anchorX="center"
           anchorY="middle"
@@ -239,8 +239,8 @@ export function SpatialTypography() {
           ROOT-CAUSE ISOLATED
         </Text>
         <Text
-          position={[0, 0.3, 0]}
-          fontSize={1.6}
+          position={[0, 0.18, 0]}
+          fontSize={1.2}
           letterSpacing={0.04}
           color="#FFFFFF"
           anchorX="center"
@@ -250,8 +250,8 @@ export function SpatialTypography() {
           96.8%
         </Text>
         <Text
-          position={[0, -0.6, 0]}
-          fontSize={0.22}
+          position={[0, -0.38, 0]}
+          fontSize={0.16}
           letterSpacing={0.25}
           color="#FF6B35"
           anchorX="center"
