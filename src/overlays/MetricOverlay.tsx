@@ -60,12 +60,12 @@ export function MetricOverlay() {
   const { displayValue, hasPercent, label } = useMemo(() => {
     if (!currentState) return { displayValue: '', hasPercent: false, label: '' };
 
-    // State 1: DATA (Dynamic test case count from active harness, standard 500)
+    // State 1: DATA (Dynamic test case count from active harness)
     if (currentStateIndex === 1) {
       return {
-        displayValue: String(activeCaseCount || 500),
+        displayValue: String(activeCaseCount || 27),
         hasPercent: false,
-        label: 'ACTIVE TEST CASES IN HARNESS',
+        label: 'TEST CASES IN HARNESS',
       };
     }
 
