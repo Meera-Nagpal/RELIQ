@@ -67,7 +67,7 @@ export function StateTypography() {
       {/* Headline */}
       <h2
         style={{
-          fontSize: 'clamp(1.7rem, 3.2vw, 2.8rem)',
+          fontSize: 'clamp(1.8rem, 3.2vw, 3rem)',
           fontWeight: 800,
           letterSpacing: '-0.03em',
           color: '#F5F5F5',
