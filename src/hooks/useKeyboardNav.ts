@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
+import gsap from 'gsap';
 import { useExperienceStore } from '../store/experienceStore';
-import { triggerGlobalTransition } from '../router/useRouter';
 
 /**
  * Hook for keyboard navigation between states
@@ -29,13 +29,21 @@ export function useKeyboardNav() {
     };
 
     const scrollToState = (index: number) => {
-      // Calculate target scroll position from state index: (stateIndex / 6) * totalScrollHeight
+      // Calculate target scroll position from state index: ((clampedIndex + 0.45) / 6) * totalScrollHeight
       const clampedIndex = Math.min(Math.max(index, 0), 5);
       const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const targetScroll = (clampedIndex / 6) * totalScrollHeight;
-      triggerGlobalTransition(() => {
-        window.scrollTo({ top: targetScroll, behavior: 'auto' });
-      }, 680);
+      const targetScroll = ((clampedIndex + 0.45) / 6) * totalScrollHeight;
+
+      const scrollObj = { y: window.scrollY };
+      gsap.killTweensOf(scrollObj);
+      gsap.to(scrollObj, {
+        y: targetScroll,
+        duration: 2.6,
+        ease: 'power3.inOut',
+        onUpdate: () => {
+          window.scrollTo(0, scrollObj.y);
+        },
+      });
     };
 
     window.addEventListener('keydown', handleKeyDown);

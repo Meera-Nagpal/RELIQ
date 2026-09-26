@@ -51,10 +51,10 @@ export function SpatialTypography() {
     };
 
     updateGroupOpacity(state1Group.current, getOpacity(0));
-    updateGroupOpacity(state2Group.current, getOpacity(1));
+    updateGroupOpacity(state2Group.current, 0); // State 02 (RUN) rendered with viewport clamp in RunStageOverlay
     updateGroupOpacity(state3Group.current, getOpacity(2));
     updateGroupOpacity(state4Group.current, getOpacity(3));
-    updateGroupOpacity(state5Group.current, getOpacity(4));
+    updateGroupOpacity(state5Group.current, 0); // State 05 (INVESTIGATE) rendered with viewport clamp in InvestigationStageOverlay
     updateGroupOpacity(state6Group.current, getOpacity(5));
 
     // Jitter state 4 (DETECT / REGRESSION) during regression

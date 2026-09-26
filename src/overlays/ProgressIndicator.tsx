@@ -1,6 +1,5 @@
 import React from 'react';
 import { useExperienceStore } from '../store/experienceStore';
-import { useRouter } from '../router/useRouter';
 
 const STEP_LABELS = [
   { index: 0, tag: '01', name: 'SYSTEM' },
@@ -16,17 +15,26 @@ const STEP_LABELS = [
  * Displays the current step along the 6-state journey,
  * with clickable step dots for instant state jumping.
  */
+import gsap from 'gsap';
+
 export function ProgressIndicator() {
   const currentStateIndex = useExperienceStore((state) => state.currentStateIndex);
   const scrollProgress = useExperienceStore((state) => state.scrollProgress);
-  const { triggerTransition } = useRouter();
 
   const handleStepClick = (stepIndex: number) => {
     if (stepIndex === currentStateIndex) return;
     const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const targetScroll = (stepIndex / 6 + 0.02) * totalScrollHeight;
-    triggerTransition(() => {
-      window.scrollTo({ top: targetScroll, behavior: 'auto' });
+    const targetScroll = ((stepIndex + 0.45) / 6) * totalScrollHeight;
+
+    const scrollObj = { y: window.scrollY };
+    gsap.killTweensOf(scrollObj);
+    gsap.to(scrollObj, {
+      y: targetScroll,
+      duration: 2.6,
+      ease: 'power3.inOut',
+      onUpdate: () => {
+        window.scrollTo(0, scrollObj.y);
+      },
     });
   };
 
