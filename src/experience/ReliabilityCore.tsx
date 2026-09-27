@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { coreShader } from './shaders/coreShader';
 import { useExperienceStore } from '../store/experienceStore';
@@ -14,7 +14,6 @@ import { useExperienceStore } from '../store/experienceStore';
  * - Orbiting telemetry markers
  */
 export function ReliabilityCore() {
-  const rootGroupRef = useRef<THREE.Group>(null);
   const coreRef = useRef<THREE.Mesh>(null);
   const shellRef = useRef<THREE.Mesh>(null);
   const ring1Ref = useRef<THREE.Group>(null);
@@ -27,7 +26,6 @@ export function ReliabilityCore() {
   const ringMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
 
   const { scrollProgress, healthStatus } = useExperienceStore();
-  const { size, viewport } = useThree();
 
   const shaderArgs = useMemo(() => {
     return {
@@ -157,44 +155,10 @@ export function ReliabilityCore() {
         child.position.y = sat.y + Math.sin(time * 2 + i) * 0.1;
       });
     }
-
-    // ── Lusion-Style Responsive Sphere Scaling & Parallax Motion ──
-    // Responsive sphere diameter: clamp(280px, 32vw, 520px)
-    const targetPixelDiameter = THREE.MathUtils.clamp(size.width * 0.30, 280, 500);
-    const pixelsPerUnit = size.height / (viewport.height || 4.3);
-    const targetScale = THREE.MathUtils.clamp(
-      targetPixelDiameter / (3.4 * (pixelsPerUnit || 180)),
-      0.56,
-      0.76
-    );
-
-    // Subtle Lusion-style counter-parallax on the 3D sphere
-    let sphereParallaxX = 0;
-    if (scrollProgress >= 0.14 && scrollProgress <= 0.34) {
-      // RUN stage (State 1): counter-drifts subtly as typography glides
-      const p = THREE.MathUtils.clamp((scrollProgress - 0.14) / 0.20, 0, 1);
-      const t = (p - 0.5) * 2;
-      sphereParallaxX = -t * 0.28;
-    } else if (scrollProgress >= 0.64 && scrollProgress <= 0.84) {
-      // INVESTIGATION stage (State 4): counter-drifts subtly
-      const p = THREE.MathUtils.clamp((scrollProgress - 0.64) / 0.20, 0, 1);
-      const t = (p - 0.5) * 2;
-      sphereParallaxX = -t * 0.32;
-    }
-
-    if (rootGroupRef.current) {
-      rootGroupRef.current.scale.setScalar(targetScale);
-      rootGroupRef.current.position.x = THREE.MathUtils.damp(
-        rootGroupRef.current.position.x,
-        sphereParallaxX,
-        4.0,
-        delta
-      );
-    }
   });
 
   return (
-    <group ref={rootGroupRef} position={[0, 0, 0]}>
+    <group position={[0, 0, 0]}>
       {/* ── Inner Solid Procedural Crystal ── */}
       <mesh ref={coreRef}>
         <icosahedronGeometry args={[1, 4]} />

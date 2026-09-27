@@ -1,10 +1,9 @@
 /* ============================================================
    RELIQ — Viewport-Safe Stage Architectures
-   Lusion-style interactive scroll-synchronized motion for
-   RUN and INVESTIGATION stages.
+   Dedicated for RUN, INVESTIGATION, and horizontal stage choreography
    ============================================================ */
 
-/* Stage Root Viewport — Exactly 100svh, never creates document scroll */
+/* Stage Root Wrapper — Exactly 100svh, never overflows document */
 .stage-viewport {
   position: fixed;
   inset: 0;
@@ -17,66 +16,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  transition: opacity 0.3s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* Stage Scene Canvas Wrapper */
-.stage-scene-canvas {
+/* Horizontally Animated Stage Composition Track */
+.stage-track {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(1.5rem, 5vw, 6rem);
+  box-sizing: border-box;
+  will-change: transform, opacity;
   pointer-events: none;
 }
 
-/* Re-enable interactive elements */
-.stage-scene-canvas button,
-.stage-scene-canvas a {
+/* Re-enable pointer events for interactive elements inside the stage */
+.stage-track button,
+.stage-track a {
   pointer-events: auto;
 }
 
-/* ── Top Metric Display (e.g. 27 TEST CASES IN HARNESS) ── */
-.stage-stat--top {
-  position: absolute;
-  top: clamp(1.75rem, 5.5vh, 4rem);
-  right: clamp(6.5rem, 18vw, 22rem);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-  z-index: 3;
-  will-change: transform;
-}
-
-.stage-stat-number {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(2.4rem, 4.5vw, 4.8rem);
-  font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.03em;
-  color: #FFFFFF;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);
-}
-
-.stage-stat-label {
-  font-size: clamp(0.62rem, 0.8vw, 0.75rem);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--text-muted, #888888);
-  font-weight: 600;
-  margin-top: 0.35rem;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
-}
-
-/* ── Stage Left Rail: Narrative / Stage Metadata ── */
+/* Stage Left Rail — Stage metadata & label */
 .stage-rail--left {
-  position: absolute;
-  left: clamp(1.5rem, 5vw, 6rem);
-  top: 50%;
-  transform: translateY(-50%);
-  width: clamp(200px, 20vw, 300px);
-  max-width: 300px;
+  flex: 0 0 auto;
+  width: clamp(220px, 20vw, 320px);
+  max-width: 320px;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -89,7 +57,7 @@
 
 .stage-badge-tag {
   font-family: monospace;
-  font-size: clamp(0.68rem, 0.85vw, 0.8rem);
+  font-size: clamp(0.7rem, 0.85vw, 0.82rem);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--accent, #FF6B35);
@@ -114,10 +82,9 @@
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
 }
 
-/* ── Stage Center Hero: Monumental Typography around 3D Sphere ── */
+/* Stage Center Hero — Monumental typography anchored with central 3D visualization */
 .stage-center-hero {
-  position: absolute;
-  inset: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -129,82 +96,103 @@
   will-change: transform;
 }
 
-/* Monumental RUN Display Typography */
+/* Monumental RUN display typography */
 .stage-display-text--run {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(5rem, 13vw, 13.5rem);
+  font-size: clamp(5.5rem, 13vw, 14rem);
   font-weight: 900;
-  line-height: 0.82;
+  line-height: 0.88;
   letter-spacing: -0.04em;
   text-transform: uppercase;
   color: #FF6B35;
   text-shadow: 0 0 60px rgba(255, 107, 53, 0.4);
   user-select: none;
-  margin: 0;
 }
 
-/* Monumental INVESTIGATE Display Typography */
+/* Monumental INVESTIGATE display typography */
 .stage-display-text--investigate {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(3.2rem, 7.2vw, 7.8rem);
+  font-size: clamp(3.2rem, 7.2vw, 8.2rem);
   font-weight: 900;
-  line-height: 0.88;
+  line-height: 0.92;
   letter-spacing: -0.03em;
   text-transform: uppercase;
   color: #FF9955;
   text-shadow: 0 0 55px rgba(255, 153, 85, 0.35);
   user-select: none;
-  margin: 0;
 }
 
-/* Visual Aperture window framing the 3D Sphere in WebGL */
-.stage-sphere-aperture {
-  width: clamp(200px, 24vw, 320px);
-  height: clamp(160px, 20vh, 260px);
-  margin: 0.25rem 0;
-  pointer-events: none;
-}
-
-/* Center Subtitle Group below sphere */
+/* Center Subtitle Group */
 .stage-center-subgroup {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  margin: 0;
-  will-change: transform;
+  gap: 0.2rem;
+  margin-top: 0.75rem;
 }
 
 .stage-center-count {
-  font-size: clamp(2rem, 3.8vw, 3.8rem);
+  font-size: clamp(2rem, 4.5vw, 4.5rem);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
   color: #FFFFFF;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
 }
 
 .stage-center-count-label {
-  font-size: clamp(0.65rem, 0.8vw, 0.78rem);
+  font-size: clamp(0.68rem, 0.9vw, 0.82rem);
   font-weight: 600;
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: #888888;
   margin-top: 0.25rem;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
 }
 
-/* Status Pill for Investigation warnings */
+/* Stage Right Rail — Counter & metric displays */
+.stage-rail--right {
+  flex: 0 0 auto;
+  width: clamp(200px, 20vw, 300px);
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  z-index: 2;
+  margin-right: clamp(4.5rem, 6.5vw, 7.5rem); /* Keeps breathing room before fixed right stage nav */
+  will-change: transform;
+}
+
+.stage-counter-huge {
+  font-size: clamp(3.2rem, 6.5vw, 6.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+}
+
+.stage-counter-caption {
+  font-size: clamp(0.68rem, 0.85vw, 0.8rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted, #888888);
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
 .stage-status-pill {
-  margin-top: 0.65rem;
-  padding: 0.35rem 0.8rem;
+  margin-top: 0.85rem;
+  padding: 0.4rem 0.85rem;
   background: rgba(229, 103, 62, 0.15);
   border: 1px solid rgba(229, 103, 62, 0.6);
   color: #FF7A50;
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.15em;
   box-shadow: 0 0 20px rgba(229, 103, 62, 0.3);
   animation: pulse 1.4s ease-in-out infinite;
 }
@@ -222,29 +210,30 @@
 
 /* Mobile & tablet responsive adaptations */
 @media (max-width: 900px) {
-  .stage-stat--top {
-    position: static;
-    align-items: center;
-    text-align: center;
-    margin-top: 2rem;
+  .stage-track {
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0 1.5rem;
   }
   .stage-rail--left {
-    position: static;
-    transform: none !important;
     width: 100%;
     max-width: 100%;
     align-items: center;
     text-align: center;
     padding: 0.75rem;
-    margin-top: 1rem;
+  }
+  .stage-rail--right {
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+    text-align: center;
+    margin-right: 0;
   }
   .stage-display-text--run {
-    font-size: clamp(3.6rem, 14vw, 6rem);
+    font-size: clamp(3.8rem, 15vw, 6.5rem);
   }
   .stage-display-text--investigate {
-    font-size: clamp(2.4rem, 9.5vw, 4rem);
-  }
-  .stage-sphere-aperture {
-    height: clamp(120px, 16vh, 180px);
+    font-size: clamp(2.4rem, 10vw, 4.2rem);
   }
 }
