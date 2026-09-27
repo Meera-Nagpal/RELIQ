@@ -1,5 +1,4 @@
 import React from 'react';
-import gsap from 'gsap';
 import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
 import { useRouter } from '../router/useRouter';
@@ -18,17 +17,7 @@ export function HeroOverlay() {
 
   const scrollToStart = () => {
     const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const targetScroll = ((1 + 0.45) / 6) * totalScrollHeight;
-    const scrollObj = { y: window.scrollY };
-    gsap.killTweensOf(scrollObj);
-    gsap.to(scrollObj, {
-      y: targetScroll,
-      duration: 2.6,
-      ease: 'power3.inOut',
-      onUpdate: () => {
-        window.scrollTo(0, scrollObj.y);
-      },
-    });
+    window.scrollTo({ top: totalScrollHeight * 0.18, behavior: 'smooth' });
   };
 
   return (

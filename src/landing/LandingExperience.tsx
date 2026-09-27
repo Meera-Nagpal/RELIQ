@@ -20,8 +20,6 @@ import { StaticHero } from '../fallback/StaticHero';
 
 // Overlay components
 import { HeroOverlay } from '../overlays/HeroOverlay';
-import { RunStageOverlay } from '../overlays/RunStageOverlay';
-import { InvestigationStageOverlay } from '../overlays/InvestigationStageOverlay';
 import { MetricOverlay } from '../overlays/MetricOverlay';
 import { StateTypography } from '../overlays/StateTypography';
 import { ProgressIndicator } from '../overlays/ProgressIndicator';
@@ -72,8 +70,6 @@ export const LandingExperience: React.FC = () => {
 
       {/* ── Fixed overlay components ─────────────────────── */}
       <HeroOverlay />
-      <RunStageOverlay />
-      <InvestigationStageOverlay />
       <StateTypography />
       <MetricOverlay />
       <ProgressIndicator />

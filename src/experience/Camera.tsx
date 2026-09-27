@@ -17,13 +17,13 @@ export function Camera() {
     // State 0: SYSTEM — Wide cinematic view framing RELIQ & calm Core
     { position: new THREE.Vector3(0, 0.8, 7.8), lookAt: new THREE.Vector3(0, 0.1, 0) },
     // State 1: DATA — Glide forward-left towards flowing data nodes & RUN
-    { position: new THREE.Vector3(-2.6, 0.5, 5.2), lookAt: new THREE.Vector3(-0.35, 0.2, 0) },
+    { position: new THREE.Vector3(-2.6, 0.5, 5.2), lookAt: new THREE.Vector3(-0.6, 0.2, 0) },
     // State 2: EVALUATION — Sweeping orbit to the right, elevated comparison angle
     { position: new THREE.Vector3(2.8, 1.2, 4.4), lookAt: new THREE.Vector3(0.4, 0.1, 0) },
     // State 3: REGRESSION — Low-tension angle with slight focal distortion
     { position: new THREE.Vector3(0.6, 1.6, 5.8), lookAt: new THREE.Vector3(0, 0.3, 0) },
     // State 4: INVESTIGATION — Deep pivot towards isolated failed clusters
-    { position: new THREE.Vector3(-1.6, -0.2, 4.0), lookAt: new THREE.Vector3(-0.3, 0.1, 0) },
+    { position: new THREE.Vector3(-1.6, -0.2, 4.0), lookAt: new THREE.Vector3(-0.4, 0.1, 0) },
     // State 5: CONFIDENCE — Straight dolly directly into 96.8% for UI transition
     { position: new THREE.Vector3(0, 0.32, 2.7), lookAt: new THREE.Vector3(0, 0.32, 0) }
   ], []);

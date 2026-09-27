@@ -45,8 +45,6 @@ export function MetricOverlay() {
   // so we keep this overlay subtle or focused on the core metric pulse.
   const opacity = useMemo(() => {
     if (currentStateIndex === 0) return 0; // SYSTEM (Hero handles title)
-    if (currentStateIndex === 1) return 0; // State 1 (RUN handles its own counter in RunStageOverlay)
-    if (currentStateIndex === 4) return 0; // State 4 (INVESTIGATION handles its counter in InvestigationStageOverlay)
     if (currentStateIndex === 5) return 0; // CONFIDENCE / DashboardTransition handles final UI
 
     // Fade in at start (0 to 0.15), fade out at end (0.85 to 1.0)

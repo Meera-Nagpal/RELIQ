@@ -17748,7 +17748,7 @@ async function runServerEvaluation(options) {
           currentJob.progress = {
             current,
             total,
-            caseName: caseResult?.testCaseName || caseResult?.caseName || currentJob.progress.caseName,
+            caseName: caseResult?.caseName || currentJob.progress.caseName,
             percent: total > 0 ? Math.round(current / total * 100) : 0
           };
         }

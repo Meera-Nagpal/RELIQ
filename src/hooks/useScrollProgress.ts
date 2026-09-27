@@ -20,7 +20,7 @@ export function useScrollProgress() {
       trigger: '.experience-scroll-container',
       start: 'top top',
       end: 'bottom bottom',
-      scrub: 2.5,
+      scrub: 1.5,
       onUpdate: (self) => {
         const now = Date.now();
         const dt = now - lastTime || 16;
