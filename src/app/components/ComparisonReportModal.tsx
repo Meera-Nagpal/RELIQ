@@ -1809,7 +1809,156 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
         </div>
 
-        {/* ── 4. Evidence & Diagnostics ── */}
+        {/* ── 4. Individual Scenario Evaluation Reports (Deterministic Suite) ── */}
+        {report.caseResults && report.caseResults.length > 0 && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.6rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', color: '#FFFFFF', margin: 0, fontWeight: 700 }}>
+                  Individual Scenario Reports
+                </h3>
+                <div style={{ fontSize: '0.85rem', color: '#8899AA', marginTop: '0.2rem' }}>
+                  Deterministic sequence: {report.caseResults.length} scenarios evaluated (Sorted #1..#{report.caseResults.length})
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: '#2ECC71', background: 'rgba(46, 204, 113, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700 }}>
+                  {report.caseResults.filter((c) => c.passed === true).length} PASS
+                </span>
+                <span style={{ fontSize: '0.8rem', color: '#FF4422', background: 'rgba(255, 68, 34, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700 }}>
+                  {report.caseResults.filter((c) => c.passed === false).length} FAIL
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {[...report.caseResults].sort((a, b) => {
+                const orderA = typeof a.order === 'number' ? a.order : parseInt(String(a.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
+                const orderB = typeof b.order === 'number' ? b.order : parseInt(String(b.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
+                if (orderA !== orderB) return orderA - orderB;
+                return String(a.testCaseId || '').localeCompare(String(b.testCaseId || ''), undefined, { numeric: true });
+              }).map((c, i) => {
+                const caseOrder = c.order ?? (i + 1);
+                const rawId = c.testCaseId || `tc-${String(caseOrder).padStart(2, '0')}`;
+                const caseCode = rawId.startsWith('tc-') ? `CASE-${rawId.slice(3).padStart(3, '0')}` : rawId.toUpperCase();
+                const isPass = c.passed === true;
+                const isFail = c.passed === false;
+                const statusBadgeBg = isPass ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 68, 34, 0.15)';
+                const statusBadgeColor = isPass ? '#2ECC71' : '#FF4422';
+                const statusBadgeBorder = isPass ? 'rgba(46, 204, 113, 0.35)' : 'rgba(255, 68, 34, 0.35)';
+
+                const statusLabel = isPass
+                  ? 'PASS'
+                  : c.executionStatus === 'PROVIDER_RATE_LIMIT'
+                  ? 'RATE LIMIT (429)'
+                  : c.executionStatus === 'AUTHENTICATION_ERROR'
+                  ? 'AUTH ERROR (401)'
+                  : isFail
+                  ? 'QUALITY FAILURE'
+                  : (c.executionStatus || 'ERROR');
+
+                const inTok = c.candidateUsage?.inputTokens ?? 0;
+                const outTok = c.candidateUsage?.outputTokens ?? 0;
+
+                return (
+                  <div
+                    key={c.testCaseId || i}
+                    style={{
+                      background: '#0D1117',
+                      border: isPass ? '1px solid rgba(46, 204, 113, 0.22)' : '1px solid rgba(255, 68, 34, 0.3)',
+                      borderRadius: '8px',
+                      padding: '1.1rem 1.25rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.65rem',
+                    }}
+                  >
+                    {/* Header: CASE ID, ORDER, TITLE, CATEGORY, STATUS */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent, #FF6B35)', background: 'rgba(255, 107, 53, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                          {caseCode} (#{caseOrder})
+                        </span>
+                        <span style={{ fontSize: '1rem', fontWeight: 700, color: '#FFFFFF' }}>
+                          {c.title || c.testCaseName || `Scenario ${caseOrder}`}
+                        </span>
+                        <span style={{ fontSize: '0.78rem', color: '#8899AA', background: 'rgba(255, 255, 255, 0.05)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                          {c.category}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '4px',
+                          background: statusBadgeBg,
+                          color: statusBadgeColor,
+                          border: `1px solid ${statusBadgeBorder}`,
+                        }}
+                      >
+                        {statusLabel}
+                      </span>
+                    </div>
+
+                    {/* Input / Prompt */}
+                    <div style={{ fontSize: '0.86rem', color: '#CCCCCC', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                      <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                        Input / Prompt:
+                      </span>
+                      {c.prompt || c.input || '—'}
+                    </div>
+
+                    {/* Expected Behavior */}
+                    <div style={{ fontSize: '0.86rem', color: '#B0C0D0', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                      <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                        Expected Behavior:
+                      </span>
+                      {c.expected_behavior || c.expectedOutput || '—'}
+                    </div>
+
+                    {/* Candidate Output & Baseline Output Comparison */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.65rem' }}>
+                      <div style={{ fontSize: '0.84rem', color: '#ECECEC', background: 'rgba(77, 166, 255, 0.03)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(77, 166, 255, 0.15)' }}>
+                        <span style={{ color: '#4DA6FF', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                          Candidate Output:
+                        </span>
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
+                          {c.candidateOutput || '—'}
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: '0.84rem', color: '#AAAAAA', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                        <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                          Baseline Output:
+                        </span>
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
+                          {c.baselineOutput || '—'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Telemetry Footer Row: Score, Latency, Tokens, Failure Reason / Criteria */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '0.5rem', fontSize: '0.8rem', color: '#8899AA' }}>
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <span>Score: <strong style={{ color: isPass ? '#2ECC71' : '#FF4422' }}>{c.candidateScore !== null && c.candidateScore !== undefined ? `${c.candidateScore.toFixed(2)} / 1.00` : '—'}</strong></span>
+                        <span>Latency: <strong style={{ color: '#ECECEC' }}>{c.candidateLatencyMs !== null && c.candidateLatencyMs !== undefined ? `${c.candidateLatencyMs}ms` : '—'}</strong></span>
+                        <span>Tokens: <strong style={{ color: '#ECECEC' }}>{(inTok > 0 || outTok > 0) ? `In: ${inTok} | Out: ${outTok}` : '—'}</strong></span>
+                      </div>
+                      {c.failureReason && (
+                        <div style={{ color: '#FF7766', fontSize: '0.8rem' }}>
+                          Reason: {c.failureReason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. Evidence & Diagnostics ── */}
         {report.evidence.length > 0 && (
           <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <h4 style={{ margin: '0 0 0.6rem 0', fontSize: '0.85rem', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>

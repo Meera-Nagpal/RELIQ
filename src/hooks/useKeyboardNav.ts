@@ -33,9 +33,11 @@ export function useKeyboardNav() {
       const clampedIndex = Math.min(Math.max(index, 0), 5);
       const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       const targetScroll = (clampedIndex / 6) * totalScrollHeight;
+      // Slower cinematic transition: 2.5s-3.5s (3.5s for investigation -> confidence/ship)
+      const duration = clampedIndex >= 4 ? 3500 : 2800;
       triggerGlobalTransition(() => {
         window.scrollTo({ top: targetScroll, behavior: 'auto' });
-      }, 680);
+      }, duration);
     };
 
     window.addEventListener('keydown', handleKeyDown);

@@ -178,7 +178,7 @@ var SCENARIO_CATEGORIES = [
   "Multi-step Reasoning",
   "Regression Detection"
 ];
-var CANONICAL_SCENARIOS = [
+var RAW_CANONICAL_SCENARIOS = [
   // ── 01 to 05: Core 5-Scenario Smoke Suite ──
   {
     id: "tc-01",
@@ -701,9 +701,20 @@ var CANONICAL_SCENARIOS = [
     }
   })
 ];
+var CANONICAL_SCENARIOS = RAW_CANONICAL_SCENARIOS.map((sc, idx) => ({
+  ...sc,
+  order: typeof sc.order === "number" ? sc.order : idx + 1,
+  title: sc.title || sc.name,
+  prompt: sc.prompt || sc.input,
+  expected_behavior: sc.expected_behavior || sc.expectedOutput,
+  evaluation_criteria: sc.evaluation_criteria || sc.evaluatorConfig
+}));
 function getScenarioSuite(count) {
   if (count <= CANONICAL_SCENARIOS.length) {
-    return CANONICAL_SCENARIOS.slice(0, count).sort((a, b) => a.id.localeCompare(b.id, void 0, { numeric: true }));
+    return CANONICAL_SCENARIOS.slice(0, count).map((tc, idx) => ({
+      ...tc,
+      order: tc.order ?? idx + 1
+    })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }
   const result = [...CANONICAL_SCENARIOS];
   const needed = count - CANONICAL_SCENARIOS.length;
@@ -716,14 +727,17 @@ function getScenarioSuite(count) {
     result.push({
       ...base,
       id: `tc-${pad}`,
+      order: idx,
       name: `${base.title || base.name} [Variant ${pad}]`,
       title: `${base.title || base.name} [Variant ${pad}]`,
       category: cat,
       input: `${base.input} (Run parameter: seq-${pad})`,
-      prompt: `${base.input} (Run parameter: seq-${pad})`
+      prompt: `${base.input} (Run parameter: seq-${pad})`,
+      expected_behavior: base.expected_behavior || base.expectedOutput,
+      evaluation_criteria: base.evaluation_criteria || base.evaluatorConfig
     });
   }
-  return result.sort((a, b) => a.id.localeCompare(b.id, void 0, { numeric: true }));
+  return result.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
 // src/evaluation/semanticEvaluator.ts
@@ -2844,7 +2858,8 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
     totalInfrastructureCostUsd: options.runMetrics?.totalInfrastructureCost ?? null,
     judgeModel: options.runMetrics?.judgeModel || caseResults.find((r) => r.llmJudgeEvaluation)?.llmJudgeEvaluation?.judgeModel,
     judgeEvaluatedCases: options.runMetrics?.judgeEvaluatedCases ?? caseResults.filter((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error).length,
-    safetyBreakdown: releaseOutcome.safetyBreakdown
+    safetyBreakdown: releaseOutcome.safetyBreakdown,
+    caseResults
   };
 }
 function createEmptyReport(datasetId, datasetName, baselineVersion, candidateVersion) {
@@ -14409,10 +14424,22 @@ var EvaluationRunner = class {
       concurrency = 5,
       onProgress
     } = options;
-    const allCases = (dataset.cases || []).map((tc) => ({
+    const rawCases = dataset.cases || [];
+    const sortedCases = [...rawCases].sort((a, b) => {
+      const orderA = typeof a.order === "number" ? a.order : parseInt(String(a.id || "").replace(/\D+/g, ""), 10) || 0;
+      const orderB = typeof b.order === "number" ? b.order : parseInt(String(b.id || "").replace(/\D+/g, ""), 10) || 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return String(a.id || "").localeCompare(String(b.id || ""), void 0, { numeric: true });
+    });
+    const allCases = sortedCases.map((tc, idx) => ({
       ...tc,
+      order: typeof tc.order === "number" ? tc.order : idx + 1,
+      title: tc.title || tc.name,
+      prompt: tc.prompt || tc.input,
+      expected_behavior: tc.expected_behavior || tc.expectedBehavior || tc.expectedOutput || "",
       expectedOutput: tc.expectedOutput ?? tc.expected_behavior ?? tc.expectedBehavior ?? "",
-      evaluatorType: tc.evaluatorType ?? tc.evaluator_type ?? "normalized_text"
+      evaluatorType: tc.evaluatorType ?? tc.evaluator_type ?? "normalized_text",
+      evaluation_criteria: tc.evaluation_criteria || tc.evaluatorConfig
     }));
     const cases = maxCases && maxCases > 0 ? allCases.slice(0, maxCases) : allCases;
     const totalCases = cases.length;
@@ -14710,11 +14737,17 @@ var EvaluationRunner = class {
           }
           const result = {
             testCaseId: testCase.id,
+            order: testCase.order ?? caseIndex,
             testCaseName: testCase.name,
+            title: testCase.title || testCase.name,
             category: testCase.category,
             severity: testCase.severity,
             input: testCase.input,
+            prompt: testCase.prompt || testCase.input,
             expectedOutput: testCase.expectedOutput,
+            expected_behavior: testCase.expected_behavior || testCase.expectedOutput,
+            evaluation_criteria: testCase.evaluation_criteria || testCase.evaluatorConfig,
+            testCase,
             baselineOutput: baselineResp.output ?? "",
             candidateOutput: candidateResp.output ?? "",
             baselineScore,

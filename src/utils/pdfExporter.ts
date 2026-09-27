@@ -623,7 +623,112 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.y = costBoxY - 14;
 
   // ─────────────────────────────────────────────────────────────
-  // 7. DIAGNOSTIC EVIDENCE & DECISION RATIONALE
+  // 7. INDIVIDUAL SCENARIO EVALUATION REPORTS (DETERMINISTIC SUITE)
+  // ─────────────────────────────────────────────────────────────
+  const executedCases = [...(report.caseResults || [])].sort((a, b) => {
+    const orderA = typeof a.order === 'number' ? a.order : parseInt(String(a.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
+    const orderB = typeof b.order === 'number' ? b.order : parseInt(String(b.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return String(a.testCaseId || '').localeCompare(String(b.testCaseId || ''), undefined, { numeric: true });
+  });
+
+  if (executedCases.length > 0) {
+    renderSectionHeader(
+      'Individual Scenario Evaluation Reports',
+      `Deterministic Order: ${executedCases.length} Scenarios Evaluated`
+    );
+
+    for (let i = 0; i < executedCases.length; i++) {
+      const c = executedCases[i];
+      const caseOrder = c.order ?? (i + 1);
+      const rawId = c.testCaseId || `tc-${String(caseOrder).padStart(2, '0')}`;
+      const caseCode = rawId.startsWith('tc-') ? `CASE-${rawId.slice(3).padStart(3, '0')}` : rawId.toUpperCase();
+      const title = c.title || c.testCaseName || `Scenario ${caseOrder}`;
+      const category = c.category || 'General';
+      const promptText = c.prompt || c.input || '';
+      const expectedText = c.expected_behavior || c.expectedOutput || '';
+      const baselineText = c.baselineOutput || '—';
+      const candidateText = c.candidateOutput || '—';
+
+      const isPass = c.passed === true;
+      const isFail = c.passed === false;
+      const statusLabel = isPass
+        ? 'PASS'
+        : c.executionStatus === 'PROVIDER_RATE_LIMIT'
+        ? 'RATE LIMIT (429)'
+        : c.executionStatus === 'AUTHENTICATION_ERROR'
+        ? 'AUTH ERROR (401)'
+        : isFail
+        ? 'QUALITY FAILURE'
+        : (c.executionStatus || 'ERROR');
+
+      const scoreStr = c.candidateScore !== null && c.candidateScore !== undefined ? `${c.candidateScore.toFixed(2)} / 1.00` : '—';
+      const latencyStr = c.candidateLatencyMs !== null && c.candidateLatencyMs !== undefined ? `${c.candidateLatencyMs}ms` : '—';
+      const inTok = c.candidateUsage?.inputTokens ?? 0;
+      const outTok = c.candidateUsage?.outputTokens ?? 0;
+      const tokStr = (inTok > 0 || outTok > 0) ? `In: ${inTok} | Out: ${outTok}` : '—';
+      const failureReason = c.failureReason || (!isPass ? 'Did not satisfy evaluator criteria.' : 'Met all deterministic criteria.');
+
+      const cardH = 82;
+      doc.ensureSpace(cardH + 8);
+      const cY = doc.y - cardH;
+
+      // Card Background & Border
+      doc.setFillColor(0.98, 0.985, 0.995);
+      doc.setStrokeColor(0.88, 0.9, 0.93);
+      doc.drawRect(left, cY, width, cardH, true, true);
+
+      // Status Left Color Bar
+      doc.setFillColor(isPass ? 0.18 : 0.92, isPass ? 0.75 : 0.25, isPass ? 0.4 : 0.25);
+      doc.drawRect(left, cY, 4, cardH, true, false);
+
+      // Header Row: [CASE-001] #1 - Title + Category + Status
+      doc.setFillColor(0.1, 0.13, 0.18);
+      doc.drawText(`[${caseCode}]  #${caseOrder} — ${title.slice(0, 52)}`, left + 10, cY + cardH - 13, 8, 'Helvetica-Bold');
+
+      doc.setFillColor(0.45, 0.5, 0.58);
+      doc.drawText(`Category: ${category}`, left + width - 170, cY + cardH - 13, 7, 'Helvetica');
+
+      doc.setFillColor(isPass ? 0.1 : 0.85, isPass ? 0.6 : 0.15, isPass ? 0.25 : 0.15);
+      doc.drawText(statusLabel, left + width - 10, cY + cardH - 13, 8, 'Helvetica-Bold', 'right');
+
+      // Prompt
+      doc.setFillColor(0.4, 0.44, 0.5);
+      doc.drawText('PROMPT:', left + 10, cY + cardH - 26, 6.5, 'Helvetica-Bold');
+      doc.setFillColor(0.18, 0.22, 0.28);
+      doc.drawText(promptText.slice(0, 105), left + 55, cY + cardH - 26, 7, 'Helvetica');
+
+      // Expected
+      doc.setFillColor(0.4, 0.44, 0.5);
+      doc.drawText('EXPECTED:', left + 10, cY + cardH - 38, 6.5, 'Helvetica-Bold');
+      doc.setFillColor(0.18, 0.22, 0.28);
+      doc.drawText(expectedText.slice(0, 105), left + 55, cY + cardH - 38, 7, 'Helvetica');
+
+      // Candidate Output
+      doc.setFillColor(0.4, 0.44, 0.5);
+      doc.drawText('CANDIDATE:', left + 10, cY + cardH - 50, 6.5, 'Helvetica-Bold');
+      doc.setFillColor(0.1, 0.12, 0.15);
+      doc.drawText(candidateText.slice(0, 105), left + 55, cY + cardH - 50, 7, 'Helvetica');
+
+      // Baseline Output
+      doc.setFillColor(0.4, 0.44, 0.5);
+      doc.drawText('BASELINE:', left + 10, cY + cardH - 62, 6.5, 'Helvetica-Bold');
+      doc.setFillColor(0.3, 0.35, 0.4);
+      doc.drawText(baselineText.slice(0, 105), left + 55, cY + cardH - 62, 7, 'Helvetica');
+
+      // Telemetry Sub-bar (Score, Latency, Tokens, Diagnostics)
+      doc.setFillColor(0.93, 0.94, 0.96);
+      doc.drawRect(left + 6, cY + 3, width - 12, 14, true, false);
+
+      doc.setFillColor(0.3, 0.35, 0.4);
+      doc.drawText(`Score: ${scoreStr}   •   Latency: ${latencyStr}   •   Tokens: ${tokStr}   •   Diagnostics: ${failureReason.slice(0, 52)}`, left + 10, cY + 7, 6.5, 'Helvetica');
+
+      doc.y = cY - 6;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 8. DIAGNOSTIC EVIDENCE & DECISION RATIONALE
   // ─────────────────────────────────────────────────────────────
   if (report.evidence && report.evidence.length > 0) {
     renderSectionHeader('Diagnostic Evidence & Decision Rationale');
@@ -640,12 +745,19 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 8. METHODOLOGICAL DISCLOSURES & LIMITATIONS
+  // 9. METHODOLOGICAL DISCLOSURES & LIMITATIONS
   // ─────────────────────────────────────────────────────────────
-  if (report.limitations && report.limitations.length > 0) {
+  const displayLimitations = [...(report.limitations || [])];
+  if (report.totalCases < 27) {
+    displayLimitations.push(
+      `Scope Notice: ${report.totalCases}/${report.totalCases} selected scenarios completed. Run the full 27-scenario suite for broader production certification.`
+    );
+  }
+
+  if (displayLimitations.length > 0) {
     renderSectionHeader('Methodological Disclosures & Limitations');
 
-    for (const lim of report.limitations) {
+    for (const lim of displayLimitations) {
       doc.ensureSpace(18);
       const limY = doc.y - 14;
       doc.setFillColor(0.5, 0.55, 0.6);

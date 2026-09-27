@@ -120,6 +120,7 @@ export type SeverityLevel = 'critical' | 'high' | 'medium' | 'low';
 
 export interface TestCase {
   id: string;
+  order?: number;
   name: string;
   title?: string;
   category: TestCaseCategory;
@@ -246,11 +247,17 @@ export interface ProviderReliabilitySummary {
 
 export interface TestCaseResult {
   testCaseId: string;
+  order?: number;
   testCaseName: string;
+  title?: string;
   category: TestCaseCategory;
   severity: SeverityLevel;
   input: string;
+  prompt?: string;
   expectedOutput: string;
+  expected_behavior?: string;
+  evaluation_criteria?: any;
+  testCase?: TestCase;
   baselineOutput: string | null;
   candidateOutput: string | null;
   baselineScore: number | null;

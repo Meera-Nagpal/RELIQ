@@ -48,7 +48,7 @@ export const SCENARIO_CATEGORIES: TestCaseCategory[] = [
 /**
  * 100 Canonical AI Reliability Test Cases
  */
-export const CANONICAL_SCENARIOS: TestCase[] = [
+const RAW_CANONICAL_SCENARIOS: TestCase[] = [
   // ── 01 to 05: Core 5-Scenario Smoke Suite ──
   {
     id: 'tc-01',
@@ -579,13 +579,29 @@ export const CANONICAL_SCENARIOS: TestCase[] = [
 ];
 
 /**
+ * Authoritative 100 Canonical Scenarios with guaranteed deterministic ordering (1..100)
+ */
+export const CANONICAL_SCENARIOS: TestCase[] = RAW_CANONICAL_SCENARIOS.map((sc, idx) => ({
+  ...sc,
+  order: typeof sc.order === 'number' ? sc.order : idx + 1,
+  title: sc.title || sc.name,
+  prompt: sc.prompt || sc.input,
+  expected_behavior: sc.expected_behavior || sc.expectedOutput,
+  evaluation_criteria: sc.evaluation_criteria || sc.evaluatorConfig,
+}));
+
+/**
  * Returns a deterministically sorted suite of test cases matching the requested count.
+ * Test cases are strictly ordered by numeric sequence (1..N).
  * For counts <= 100: takes the exact slice of CANONICAL_SCENARIOS.
  * For counts > 100 (e.g. 500, 1000): deterministically expands from base scenarios.
  */
 export function getScenarioSuite(count: number): TestCase[] {
   if (count <= CANONICAL_SCENARIOS.length) {
-    return CANONICAL_SCENARIOS.slice(0, count).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    return CANONICAL_SCENARIOS.slice(0, count).map((tc, idx) => ({
+      ...tc,
+      order: tc.order ?? (idx + 1),
+    })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }
 
   // Deterministic expansion for 500 or 1000 suites
@@ -602,13 +618,17 @@ export function getScenarioSuite(count: number): TestCase[] {
     result.push({
       ...base,
       id: `tc-${pad}`,
+      order: idx,
       name: `${base.title || base.name} [Variant ${pad}]`,
       title: `${base.title || base.name} [Variant ${pad}]`,
       category: cat,
       input: `${base.input} (Run parameter: seq-${pad})`,
       prompt: `${base.input} (Run parameter: seq-${pad})`,
+      expected_behavior: base.expected_behavior || base.expectedOutput,
+      evaluation_criteria: base.evaluation_criteria || base.evaluatorConfig,
     });
   }
 
-  return result.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  return result.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
+

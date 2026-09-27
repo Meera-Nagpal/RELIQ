@@ -335,10 +335,23 @@ export class EvaluationRunner {
       onProgress,
     } = options;
 
-    const allCases = (dataset.cases || []).map((tc: any) => ({
+    const rawCases = dataset.cases || [];
+    const sortedCases = [...rawCases].sort((a: any, b: any) => {
+      const orderA = typeof a.order === 'number' ? a.order : parseInt(String(a.id || '').replace(/\D+/g, ''), 10) || 0;
+      const orderB = typeof b.order === 'number' ? b.order : parseInt(String(b.id || '').replace(/\D+/g, ''), 10) || 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return String(a.id || '').localeCompare(String(b.id || ''), undefined, { numeric: true });
+    });
+
+    const allCases = sortedCases.map((tc: any, idx: number) => ({
       ...tc,
+      order: typeof tc.order === 'number' ? tc.order : (idx + 1),
+      title: tc.title || tc.name,
+      prompt: tc.prompt || tc.input,
+      expected_behavior: tc.expected_behavior || tc.expectedBehavior || tc.expectedOutput || '',
       expectedOutput: tc.expectedOutput ?? tc.expected_behavior ?? tc.expectedBehavior ?? '',
       evaluatorType: tc.evaluatorType ?? tc.evaluator_type ?? 'normalized_text',
+      evaluation_criteria: tc.evaluation_criteria || tc.evaluatorConfig,
     }));
     const cases = maxCases && maxCases > 0 ? allCases.slice(0, maxCases) : allCases;
     const totalCases = cases.length;
@@ -735,11 +748,17 @@ export class EvaluationRunner {
 
           const result: TestCaseResult = {
             testCaseId: testCase.id,
+            order: testCase.order ?? caseIndex,
             testCaseName: testCase.name,
+            title: testCase.title || testCase.name,
             category: testCase.category,
             severity: testCase.severity,
             input: testCase.input,
+            prompt: testCase.prompt || testCase.input,
             expectedOutput: testCase.expectedOutput,
+            expected_behavior: testCase.expected_behavior || testCase.expectedOutput,
+            evaluation_criteria: testCase.evaluation_criteria || testCase.evaluatorConfig,
+            testCase,
             baselineOutput: baselineResp.output ?? '',
             candidateOutput: candidateResp.output ?? '',
             baselineScore,

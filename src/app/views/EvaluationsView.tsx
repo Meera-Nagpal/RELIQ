@@ -161,6 +161,19 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   const [progressCounts, setProgressCounts] = useState<{ current: number; total: number } | null>(null);
   const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
+  const [completedScenarios, setCompletedScenarios] = useState<string[]>([]);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isRunning) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isRunning]);
 
   // Active Comparison Report Modal
   const [activeReport, setActiveReport] = useState<ComparisonReport | null>(null);
@@ -311,6 +324,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     setProgressPercent(0);
     setProgressCounts(null);
     setCurrentCaseName('');
+    setCompletedScenarios([]);
+    setElapsedSeconds(0);
     setCurrentPhase('Initializing Harness');
     setCurrentProgressText('Initializing model providers & telemetry harness...');
 
@@ -391,7 +406,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             const { current, total, caseName, percent } = statusData.progress;
             setProgressPercent(percent);
             setProgressCounts({ current, total });
-            if (caseName) setCurrentCaseName(caseName);
+            if (caseName) {
+              setCurrentCaseName((prev) => {
+                if (prev && prev !== caseName) {
+                  setCompletedScenarios((list) => list.includes(prev) ? list : [...list, prev]);
+                }
+                return caseName;
+              });
+            }
             const activePhase = judgeEnabled ? 'Semantic Evaluation + LLM Judge' : 'Semantic Criteria Evaluation';
             setCurrentPhase(activePhase);
             setCurrentProgressText(
@@ -402,6 +424,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           if (statusData.status === 'COMPLETED' && statusData.run) {
             run = statusData.run;
             completed = true;
+            if (currentCaseName) {
+              setCompletedScenarios((list) => list.includes(currentCaseName) ? list : [...list, currentCaseName]);
+            }
           } else if (statusData.status === 'FAILED') {
             throw new Error(statusData.error || 'Server evaluation execution failed');
           }
@@ -747,6 +772,132 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </div>
           </div>
         </div>
+
+        {/* ── Live Evaluation Progress Card (Plain-Language Non-Technical HUD) ── */}
+        {isRunning && (
+          <div
+            style={{
+              background: 'rgba(255, 107, 53, 0.04)',
+              border: '1px solid rgba(255, 107, 53, 0.35)',
+              borderRadius: '8px',
+              padding: '1.2rem 1.4rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.9rem',
+              animation: 'fadeIn 0.3s ease',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: 'var(--accent, #FF6B35)',
+                    boxShadow: '0 0 8px var(--accent, #FF6B35)',
+                  }}
+                />
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.12em', color: '#FFFFFF', textTransform: 'uppercase' }}>
+                  EVALUATION PROGRESS
+                </span>
+              </div>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent, #FF6B35)', fontFamily: 'monospace' }}>
+                {progressPercent}% COMPLETE
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div
+              style={{
+                width: '100%',
+                height: '8px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                borderRadius: '4px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${Math.max(4, Math.min(100, progressPercent))}%`,
+                  background: 'linear-gradient(90deg, #FF6B35 0%, #FF9955 100%)',
+                  borderRadius: '4px',
+                  transition: 'width 0.4s ease-out',
+                }}
+              />
+            </div>
+
+            {/* Status numbers: Completed, Remaining, Elapsed, Stage */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '0.8rem',
+                fontSize: '0.82rem',
+                color: '#8899AA',
+              }}
+            >
+              <div>
+                <span style={{ color: '#667788', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase' }}>Completed</span>
+                <strong style={{ color: '#FFFFFF', fontSize: '0.95rem' }}>
+                  {progressCounts?.current ?? 0} of {progressCounts?.total ?? (selectedDataset?.cases?.length || 27)}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: '#667788', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase' }}>Remaining</span>
+                <strong style={{ color: '#FFFFFF', fontSize: '0.95rem' }}>
+                  {Math.max(0, (progressCounts?.total ?? (selectedDataset?.cases?.length || 27)) - (progressCounts?.current ?? 0))}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: '#667788', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase' }}>Elapsed Time</span>
+                <strong style={{ color: '#FFFFFF', fontSize: '0.95rem', fontFamily: 'monospace' }}>
+                  {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: '#667788', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase' }}>Current Stage</span>
+                <strong style={{ color: '#4DA6FF', fontSize: '0.85rem' }}>
+                  Evaluating response against criteria
+                </strong>
+              </div>
+            </div>
+
+            {/* Currently checking scenario */}
+            {currentCaseName && (
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '6px',
+                  padding: '0.65rem 0.85rem',
+                  fontSize: '0.85rem',
+                  color: '#ECECEC',
+                }}
+              >
+                <span style={{ color: '#8899AA', fontWeight: 600, marginRight: '0.4rem' }}>Currently checking:</span>
+                <strong>{currentCaseName}</strong>
+              </div>
+            )}
+
+            {/* Completed scenarios checklist */}
+            {completedScenarios.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '130px', overflowY: 'auto' }}>
+                <span style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+                  Completed Scenarios:
+                </span>
+                {completedScenarios.slice(-5).map((name, idx) => (
+                  <div key={idx} style={{ fontSize: '0.82rem', color: '#2ECC71', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <span>✓</span>
+                    <span style={{ color: '#C0D0E0' }}>{name} complete</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Dataset Selector ── */}
         <div>

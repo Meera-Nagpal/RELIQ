@@ -132,6 +132,7 @@ export interface ComparisonReport {
   judgeModel?: string;
   judgeEvaluatedCases?: number;
   safetyBreakdown?: import('../domain/types').SafetyBreakdownSummary;
+  caseResults?: TestCaseResult[];
 }
 
 export interface EvaluationWeights {
@@ -908,6 +909,7 @@ export function generateComparisonReport(
     judgeModel: options.runMetrics?.judgeModel || caseResults.find((r) => r.llmJudgeEvaluation)?.llmJudgeEvaluation?.judgeModel,
     judgeEvaluatedCases: options.runMetrics?.judgeEvaluatedCases ?? caseResults.filter((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error).length,
     safetyBreakdown: releaseOutcome.safetyBreakdown,
+    caseResults,
   };
 }
 

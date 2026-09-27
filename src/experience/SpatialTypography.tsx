@@ -269,7 +269,15 @@ export function SpatialTypography() {
           anchorY="middle"
           fillOpacity={1}
         >
-          96.8%
+          {(() => {
+            try {
+              if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('reliq-active-confidence');
+                if (stored) return `${parseFloat(stored).toFixed(1)}%`;
+              }
+            } catch {}
+            return "96.8%";
+          })()}
         </Text>
         <Text
           position={[0, -0.38, 0]}
