@@ -15,7 +15,7 @@ export function Particles({ count = 800 }: ParticlesProps) {
   const pointsRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   
-  const { healthStatus } = useExperienceStore();
+  const { healthStatus, scrollProgress } = useExperienceStore();
 
   const [positions, randomness, scales] = useMemo(() => {
     const pos = new Float32Array(count * 3);
@@ -84,6 +84,24 @@ export function Particles({ count = 800 }: ParticlesProps) {
     
     // Slow global rotation
     pointsRef.current.rotation.y += delta * 0.05 * (2.0 - targetHealthFactor);
+
+    // Subtle Lusion-style particle layer parallax
+    let particleParallaxX = 0;
+    if (scrollProgress >= 0.14 && scrollProgress <= 0.34) {
+      const p = THREE.MathUtils.clamp((scrollProgress - 0.14) / 0.20, 0, 1);
+      const t = (p - 0.5) * 2;
+      particleParallaxX = -t * 0.18;
+    } else if (scrollProgress >= 0.64 && scrollProgress <= 0.84) {
+      const p = THREE.MathUtils.clamp((scrollProgress - 0.64) / 0.20, 0, 1);
+      const t = (p - 0.5) * 2;
+      particleParallaxX = -t * 0.22;
+    }
+    pointsRef.current.position.x = THREE.MathUtils.damp(
+      pointsRef.current.position.x,
+      particleParallaxX,
+      3.0,
+      delta
+    );
   });
 
   return (

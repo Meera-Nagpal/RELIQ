@@ -30,7 +30,7 @@ export function ProgressIndicator() {
     gsap.killTweensOf(scrollObj);
     gsap.to(scrollObj, {
       y: targetScroll,
-      duration: 2.6,
+      duration: 2.7,
       ease: 'power3.inOut',
       onUpdate: () => {
         window.scrollTo(0, scrollObj.y);
