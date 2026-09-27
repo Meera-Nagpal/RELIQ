@@ -32,7 +32,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .vercel
-data/
+/data/runs/
+/data/test_eval_fix_db/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/

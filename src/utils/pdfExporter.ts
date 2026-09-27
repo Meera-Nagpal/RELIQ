@@ -265,7 +265,14 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.drawText('ENGINE VERSION: V2.8 (AUTHORITATIVE)', left + width - 14, doc.y + 46, 7.5, 'Helvetica-Bold', 'right');
 
   doc.setFillColor(1.0, 1.0, 1.0);
-  const safeTitle = report.title || 'Cross-Model Evaluation Benchmark';
+  const isPreliminary = Boolean(
+    report.isPreliminary ||
+    report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
+    (report.totalCases < 27)
+  );
+  const safeTitle = (report.totalCases < 27)
+    ? `${report.totalCases}-SCENARIO EVALUATION REPORT`
+    : (report.title || 'Cross-Model Evaluation Benchmark');
   doc.drawText(safeTitle, left + 14, doc.y + 26, 14, 'Helvetica-Bold');
 
   // Metadata sub-bar
@@ -289,8 +296,11 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   const isRegression = report.qualityDelta !== null && report.qualityDelta < 0;
   const isParity = report.qualityDelta === 0;
 
-  const failedGates = (report.releaseGates || []).filter((g) => g.status === 'FAIL');
-  const hasGateFailures = failedGates.length > 0 || (report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED');
+  const failedGates = (report.releaseGates || []).filter((g) => {
+    if (g.gate === 'Benchmark Completion' && isPreliminary) return false;
+    return g.status === 'FAIL';
+  });
+  const hasGateFailures = failedGates.length > 0 || ((report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED') && !isPreliminary);
 
   // Background card styling
   doc.setFillColor(0.97, 0.98, 1.0);

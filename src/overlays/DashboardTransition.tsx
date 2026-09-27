@@ -19,8 +19,8 @@ interface TestCase {
 const SAMPLE_TEST_CASES: TestCase[] = [
   {
     id: 'TC-104',
-    name: 'Cart checkout with Apple Pay & discount code',
-    category: 'Tool Calling',
+    name: 'Structured JSON response & schema validation',
+    category: 'Structured Output',
     baseline: '200 OK (Validated)',
     candidate: 'JSON Syntax Error in schema',
     status: 'regression',

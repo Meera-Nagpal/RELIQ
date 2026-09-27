@@ -31,6 +31,9 @@ export function StateTypography() {
   if (isTransitioning || currentStateIndex === 0 || !currentState || opacity <= 0.01) return null;
 
   const paddedIndex = (currentStateIndex + 1).toString().padStart(2, '0');
+  const driftX = (currentStateIndex === 1 || currentStateIndex === 4)
+    ? (stateProgress - 0.5) * 40
+    : 0;
 
   return (
     <div
@@ -38,7 +41,8 @@ export function StateTypography() {
         position: 'fixed',
         left: 'clamp(1.5rem, 6vw, 6rem)',
         top: '50%',
-        transform: 'translateY(-50%)',
+        transform: `translate3d(${driftX}px, -50%, 0)`,
+        willChange: 'transform',
         zIndex: 12,
         pointerEvents: 'none',
         opacity,

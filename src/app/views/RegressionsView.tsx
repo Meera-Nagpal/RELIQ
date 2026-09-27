@@ -212,6 +212,18 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
     return matchStatus && matchCategory;
   });
 
+  // Deterministic sorting (tc-01, tc-02, ...)
+  const sortedCases = [...filteredCases].sort((a, b) => {
+    const idA = a.testCaseId || '';
+    const idB = b.testCaseId || '';
+    const numA = parseInt(idA.replace(/\D/g, ''), 10);
+    const numB = parseInt(idB.replace(/\D/g, ''), 10);
+    if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+      return numA - numB;
+    }
+    return idA.localeCompare(idB, undefined, { numeric: true });
+  });
+
   const handleDecision = async (status: ReleaseDecisionStatus, reason: string) => {
     await onUpdateReleaseDecision(status, reason);
     setIsOverrideModalOpen(false);
@@ -711,7 +723,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               )}
             </div>
           ) : (
-            filteredCases.map((c) => {
+            sortedCases.map((c) => {
               const isRegression = c.isRegression;
               const isRateLimit =
                 c.executionStatus === 'PROVIDER_RATE_LIMIT' ||
@@ -726,28 +738,28 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '80px 1.4fr 120px 140px 1.5fr 100px',
-                    padding: '1rem 1.2rem',
+                    padding: '1.05rem 1.2rem',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                    fontSize: '0.82rem',
+                    fontSize: '0.94rem',
                     alignItems: 'center',
                     cursor: 'pointer',
                     background: isRegression ? 'rgba(255, 34, 0, 0.03)' : isRateLimit ? 'rgba(192, 132, 252, 0.03)' : 'transparent',
                   }}
                 >
-                  <div style={{ fontFamily: 'monospace', color: '#4DA6FF', fontWeight: 600 }}>
+                  <div style={{ fontFamily: 'monospace', color: '#4DA6FF', fontWeight: 600, fontSize: '0.92rem' }}>
                     {c.testCaseId}
                   </div>
                   <div>
-                    <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{c.testCaseName}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#778899' }}>Severity: {c.severity}</div>
+                    <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: '0.98rem' }}>{c.testCaseName}</div>
+                    <div style={{ fontSize: '0.78rem', color: '#778899' }}>Severity: {c.severity}</div>
                   </div>
                   <div>
                     <span
                       style={{
-                        padding: '0.2rem 0.5rem',
+                        padding: '0.25rem 0.55rem',
                         borderRadius: '4px',
                         background: 'rgba(255, 255, 255, 0.06)',
-                        fontSize: '0.72rem',
+                        fontSize: '0.82rem',
                         color: '#CCCCCC',
                       }}
                     >
@@ -760,9 +772,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                       return (
                         <span
                           style={{
-                            padding: '0.2rem 0.6rem',
+                            padding: '0.25rem 0.65rem',
                             borderRadius: '4px',
-                            fontSize: '0.72rem',
+                            fontSize: '0.82rem',
                             fontWeight: 700,
                             background: badge.bg,
                             color: badge.color,
@@ -778,7 +790,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                   <div
                     style={{
                       color: isRegression ? '#FFAA99' : '#AAAAAA',
-                      fontSize: '0.78rem',
+                      fontSize: '0.88rem',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -793,9 +805,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         background: 'rgba(255, 255, 255, 0.08)',
                         border: '1px solid rgba(255, 255, 255, 0.15)',
                         color: '#FFFFFF',
-                        padding: '0.35rem 0.75rem',
+                        padding: '0.4rem 0.8rem',
                         borderRadius: '4px',
-                        fontSize: '0.72rem',
+                        fontSize: '0.82rem',
                         fontWeight: 600,
                         cursor: 'pointer',
                       }}

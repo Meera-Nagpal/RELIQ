@@ -93,6 +93,16 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
     return matchesSearch && matchesCategory && matchesSeverity;
   });
 
+  // Deterministic sorting (tc-01, tc-02, ...)
+  const sortedCases = [...filteredCases].sort((a, b) => {
+    const numA = parseInt(a.id.replace(/\D/g, ''), 10);
+    const numB = parseInt(b.id.replace(/\D/g, ''), 10);
+    if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+      return numA - numB;
+    }
+    return a.id.localeCompare(b.id, undefined, { numeric: true });
+  });
+
   const handleOpenAddCase = () => {
     if (!activeDataset) {
       setIsNewDatasetModalOpen(true);
@@ -510,7 +520,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             )}
           </div>
         ) : (
-          filteredCases.map((tc) => {
+          sortedCases.map((tc) => {
             const isCrit = tc.severity === 'critical';
             return (
               <div
@@ -518,19 +528,19 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '80px 1.5fr 120px 1.6fr 110px 120px',
-                  padding: '0.9rem 1.2rem',
+                  padding: '0.95rem 1.2rem',
                   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                  fontSize: '0.82rem',
+                  fontSize: '0.94rem',
                   alignItems: 'center',
                 }}
               >
-                <div style={{ fontFamily: 'monospace', color: '#4DA6FF', fontWeight: 600 }}>
+                <div style={{ fontFamily: 'monospace', color: '#4DA6FF', fontWeight: 600, fontSize: '0.92rem' }}>
                   {tc.id}
                 </div>
                 <div>
-                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{tc.name}</div>
+                  <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: '0.98rem' }}>{tc.name}</div>
                   {isCrit && (
-                    <span style={{ fontSize: '0.65rem', color: '#FF4422', fontWeight: 700, letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#FF4422', fontWeight: 700, letterSpacing: '0.05em' }}>
                       CRITICAL GATE
                     </span>
                   )}
@@ -538,10 +548,10 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <div>
                   <span
                     style={{
-                      padding: '0.2rem 0.5rem',
+                      padding: '0.25rem 0.55rem',
                       borderRadius: '4px',
                       background: 'rgba(255, 255, 255, 0.06)',
-                      fontSize: '0.72rem',
+                      fontSize: '0.82rem',
                       color: '#CCCCCC',
                     }}
                   >
@@ -555,13 +565,14 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     paddingRight: '1rem',
+                    fontSize: '0.92rem',
                   }}
                   title={tc.input}
                 >
                   {tc.input}
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--accent, #FF6B35)', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--accent, #FF6B35)', fontFamily: 'monospace' }}>
                     {tc.evaluatorType}
                   </span>
                 </div>
@@ -572,9 +583,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                       background: 'transparent',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       color: '#CCCCCC',
-                      padding: '0.3rem 0.55rem',
+                      padding: '0.35rem 0.6rem',
                       borderRadius: '4px',
-                      fontSize: '0.72rem',
+                      fontSize: '0.82rem',
                       cursor: 'pointer',
                     }}
                   >
@@ -587,9 +598,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                       background: 'transparent',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       color: '#AAAAAA',
-                      padding: '0.3rem 0.55rem',
+                      padding: '0.35rem 0.6rem',
                       borderRadius: '4px',
-                      fontSize: '0.72rem',
+                      fontSize: '0.82rem',
                       cursor: 'pointer',
                     }}
                   >
@@ -602,7 +613,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                       background: 'transparent',
                       border: '1px solid rgba(255, 34, 0, 0.2)',
                       color: '#FF4422',
-                      padding: '0.3rem 0.55rem',
+                      padding: '0.35rem 0.6rem',
                       borderRadius: '4px',
                       fontSize: '0.72rem',
                       cursor: 'pointer',

@@ -57,6 +57,28 @@ export function SpatialTypography() {
     updateGroupOpacity(state5Group.current, getOpacity(4));
     updateGroupOpacity(state6Group.current, getOpacity(5));
 
+    // Progressive horizontal motion LEFT -> CENTER -> RIGHT for RUN (State 1 / state2Group)
+    if (state2Group.current) {
+      const targetX = -0.75 + (stateProgress - 0.5) * 0.7;
+      state2Group.current.position.x = THREE.MathUtils.damp(
+        state2Group.current.position.x,
+        targetX,
+        5,
+        delta
+      );
+    }
+
+    // Progressive horizontal motion LEFT -> CENTER -> RIGHT for INVESTIGATE (State 4 / state5Group)
+    if (state5Group.current) {
+      const targetX = -0.10 + (stateProgress - 0.5) * 0.6;
+      state5Group.current.position.x = THREE.MathUtils.damp(
+        state5Group.current.position.x,
+        targetX,
+        5,
+        delta
+      );
+    }
+
     // Jitter state 4 (DETECT / REGRESSION) during regression
     if (state4Group.current && healthStatus === 'regression') {
       state4Group.current.position.x = (Math.random() - 0.5) * 0.03;
@@ -93,31 +115,31 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 02: DATA (RUN — 500 Test Cases) ── */}
-      <group ref={state2Group} position={[-2.4, 0.4, 1.2]} rotation={[0, 0.25, 0]}>
+      <group ref={state2Group} position={[-0.75, 0.4, 1.2]} rotation={[0, 0.15, 0]}>
         <Text
-          fontSize={1.8}
-          letterSpacing={0.15}
+          fontSize={1.45}
+          letterSpacing={0.10}
           color="#FF6B35"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.8}
+          fillOpacity={0.85}
         >
           RUN
         </Text>
         <Text
-          position={[0, -0.9, 0]}
-          fontSize={0.65}
+          position={[0, -0.75, 0]}
+          fontSize={0.58}
           letterSpacing={0.08}
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.9}
+          fillOpacity={0.92}
         >
           500
         </Text>
         <Text
-          position={[0, -1.35, 0]}
-          fontSize={0.22}
+          position={[0, -1.15, 0]}
+          fontSize={0.20}
           letterSpacing={0.2}
           color="#888888"
           anchorX="center"
@@ -190,31 +212,31 @@ export function SpatialTypography() {
       </group>
 
       {/* ── STATE 05: INVESTIGATION (INVESTIGATE — 47 Failed Cases) ── */}
-      <group ref={state5Group} position={[-0.75, 0.25, 0.3]} rotation={[0, 0.3, 0]}>
+      <group ref={state5Group} position={[-0.10, 0.25, 0.3]} rotation={[0, 0.15, 0]}>
         <Text
-          fontSize={1.15}
-          letterSpacing={0.15}
+          fontSize={0.98}
+          letterSpacing={0.12}
           color="#FF9955"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.8}
+          fillOpacity={0.85}
         >
           INVESTIGATE
         </Text>
         <Text
-          position={[0, -0.65, 0]}
-          fontSize={0.7}
+          position={[0, -0.55, 0]}
+          fontSize={0.62}
           letterSpacing={0.05}
           color="#FFFFFF"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={0.9}
+          fillOpacity={0.92}
         >
           47
         </Text>
         <Text
-          position={[0, -1.05, 0]}
-          fontSize={0.2}
+          position={[0, -0.92, 0]}
+          fontSize={0.18}
           letterSpacing={0.2}
           color="#888888"
           anchorX="center"

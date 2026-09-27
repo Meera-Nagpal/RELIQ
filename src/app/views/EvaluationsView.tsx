@@ -15,6 +15,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ComparisonReportModal } from '../components/ComparisonReportModal';
 import { EvaluationProgressModal } from '../components/EvaluationProgressModal';
+import { LiveEvaluationHUD } from '../components/LiveEvaluationHUD';
 import {
   Dataset,
   EvaluationRun,
@@ -445,7 +446,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         </p>
       </div>
 
-      {/* ── Server Credentials Readiness Bar ── */}
+      {/* ── Provider Readiness Bar ── */}
       <div
         style={{
           background: '#161B22',
@@ -461,87 +462,113 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#FFFFFF' }}>
-            Server Proxy Credentials:
+            Provider Status:
           </span>
           <span style={{ fontSize: '0.72rem', color: '#888888' }}>
-            (Read strictly in Node.js from .env.local — zero client exposure)
+            (Enterprise Gateway & Sandboxed Evaluation Proxies)
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           {/* Demo */}
-          <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.55rem', borderRadius: '4px', background: 'rgba(46, 204, 113, 0.15)', color: '#2ECC71', fontWeight: 700 }}>
-            DEMO: READY (ZERO COST)
+          <span style={{ fontSize: '0.7rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'rgba(46, 204, 113, 0.15)', color: '#2ECC71', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2ECC71' }} />
+            DEMO: AVAILABLE
           </span>
 
           {/* Gemini */}
           <span
             style={{
               fontSize: '0.7rem',
-              padding: '0.2rem 0.55rem',
+              padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.gemini ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
-              color: serverStatus.gemini ? '#2ECC71' : '#FFAA44',
+              background: serverStatus.gemini ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              color: serverStatus.gemini ? '#2ECC71' : '#8899A6',
+              border: serverStatus.gemini ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
             }}
           >
-            GEMINI: {serverStatus.gemini ? 'API READY' : 'KEY MISSING IN .env.local'}
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.gemini ? '#2ECC71' : '#556677' }} />
+            GEMINI: {serverStatus.gemini ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
           {/* OpenAI */}
           <span
             style={{
               fontSize: '0.7rem',
-              padding: '0.2rem 0.55rem',
+              padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.openai ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
-              color: serverStatus.openai ? '#2ECC71' : '#FFAA44',
+              background: serverStatus.openai ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              color: serverStatus.openai ? '#2ECC71' : '#8899A6',
+              border: serverStatus.openai ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
             }}
           >
-            OPENAI: {serverStatus.openai ? 'API READY' : 'KEY MISSING IN .env.local'}
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.openai ? '#2ECC71' : '#556677' }} />
+            OPENAI: {serverStatus.openai ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
           {/* Anthropic */}
           <span
             style={{
               fontSize: '0.7rem',
-              padding: '0.2rem 0.55rem',
+              padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.anthropic ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
-              color: serverStatus.anthropic ? '#2ECC71' : '#FFAA44',
+              background: serverStatus.anthropic ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              color: serverStatus.anthropic ? '#2ECC71' : '#8899A6',
+              border: serverStatus.anthropic ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
             }}
           >
-            CLAUDE: {serverStatus.anthropic ? 'API READY' : 'KEY MISSING IN .env.local'}
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.anthropic ? '#2ECC71' : '#556677' }} />
+            CLAUDE: {serverStatus.anthropic ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
           {/* Groq */}
           <span
             style={{
               fontSize: '0.7rem',
-              padding: '0.2rem 0.55rem',
+              padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.groq ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
-              color: serverStatus.groq ? '#2ECC71' : '#FFAA44',
+              background: serverStatus.groq ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              color: serverStatus.groq ? '#2ECC71' : '#8899A6',
+              border: serverStatus.groq ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
             }}
           >
-            GROQ: {serverStatus.groq ? 'API READY' : 'KEY MISSING IN .env.local'}
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.groq ? '#2ECC71' : '#556677' }} />
+            GROQ: {serverStatus.groq ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
           {/* Cerebras */}
           <span
             style={{
               fontSize: '0.7rem',
-              padding: '0.2rem 0.55rem',
+              padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.cerebras ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 170, 68, 0.12)',
-              color: serverStatus.cerebras ? '#2ECC71' : '#FFAA44',
+              background: serverStatus.cerebras ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              color: serverStatus.cerebras ? '#2ECC71' : '#8899A6',
+              border: serverStatus.cerebras ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
             }}
           >
-            CEREBRAS: {serverStatus.cerebras ? 'API READY' : 'KEY MISSING IN .env.local'}
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.cerebras ? '#2ECC71' : '#556677' }} />
+            CEREBRAS: {serverStatus.cerebras ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
         </div>
       </div>
@@ -1609,6 +1636,27 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         onRetry={() => {
           setEvaluationError(null);
           handleStartEvaluation();
+        }}
+      />
+
+      {/* ── Persistent Floating Live Evaluation HUD ── */}
+      <LiveEvaluationHUD
+        isRunning={isRunning}
+        isModalOpen={isProgressModalOpen}
+        datasetName={selectedDataset?.name || 'Benchmark Dataset'}
+        baselineModel={`${effectiveBaselineModel} (${configMode === 'custom_benchmark' ? customBaselineProvider : baselineVersion?.provider || 'default'})`}
+        candidateModel={`${effectiveCandidateModel} (${configMode === 'custom_benchmark' ? customCandidateProvider : candidateVersion?.provider || 'default'})`}
+        progressPercent={progressPercent}
+        currentCount={progressCounts?.current || 0}
+        totalCount={progressCounts?.total || (maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 27))}
+        caseName={currentCaseName}
+        phase={currentPhase}
+        onOpenModal={() => setIsProgressModalOpen(true)}
+        onCancel={() => {
+          isCancelledRef.current = true;
+          setIsRunning(false);
+          setIsProgressModalOpen(false);
+          setEvaluationError(null);
         }}
       />
     </div>

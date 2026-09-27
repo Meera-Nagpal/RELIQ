@@ -361,27 +361,12 @@ const TEMPLATES: ScenarioTemplate[] = [
   },
 ];
 
+import { getScenarioSuite } from './scenarioRegistry';
+
 export function generateBenchmarkDataset(count: number, name?: string): Dataset {
-  const cases: TestCase[] = [];
-  for (let i = 0; i < count; i++) {
-    const template = TEMPLATES[i % TEMPLATES.length];
-    const generated = template.generate(i);
-    const testCase: TestCase = {
-      id: 'tc-gen-' + String(i + 1).padStart(4, '0'),
-      name: '[' + template.category + '] ' + generated.name,
-      category: template.category,
-      input: generated.input,
-      expectedOutput: generated.expectedOutput,
-      evaluatorType: template.evaluatorType,
-      evaluatorConfig: generated.evaluatorConfig,
-      tags: [...template.tags],
-      severity: template.severity,
-      createdAt: new Date().toISOString(),
-    };
-    cases.push(testCase);
-  }
-  const title = name || 'Enterprise Benchmark Suite (' + count + ' scenarios)';
-  const description = 'Dynamically generated multi-provider reliability dataset containing ' + count + ' diverse scenarios across Tool Calling, Policy Gate, Safety, Structured Output, Domain Knowledge, and Edge Cases.';
+  const cases: TestCase[] = getScenarioSuite(count);
+  const title = name || `AI Reliability Suite (${count} scenarios)`;
+  const description = `Authoritative AI & system reliability dataset containing ${count} coherent scenarios across all 12 reliability categories.`;
   return {
     id: 'ds-benchmark-' + count,
     projectId: 'proj-checkout-agent',

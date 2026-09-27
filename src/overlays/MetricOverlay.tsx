@@ -111,6 +111,9 @@ export function MetricOverlay() {
   if (isTransitioning || currentStateIndex === 0 || currentStateIndex === 5 || opacity <= 0.01) return null;
 
   const isRegressionWarning = currentStateIndex === 3 && stateProgress > 0.7;
+  const driftX = (currentStateIndex === 1 || currentStateIndex === 4)
+    ? (stateProgress - 0.5) * 40
+    : 0;
 
   return (
     <div
@@ -118,6 +121,8 @@ export function MetricOverlay() {
         position: 'fixed',
         top: '25%',
         right: 'clamp(2rem, 8vw, 8rem)',
+        transform: `translate3d(${driftX}px, 0, 0)`,
+        willChange: 'transform',
         zIndex: 12,
         pointerEvents: 'none',
         opacity,

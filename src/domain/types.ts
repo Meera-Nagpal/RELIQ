@@ -95,23 +95,38 @@ export interface BehavioralSafetyResult {
 }
 
 export type TestCaseCategory =
+  | 'Instruction Following'
+  | 'Factual Consistency'
+  | 'Structured Output'
+  | 'Error Handling'
+  | 'Context Retention'
+  | 'Edge Case Handling'
+  | 'Tool/Function Selection'
+  | 'Safety Boundary'
+  | 'Data Extraction'
+  | 'Business Logic'
+  | 'Multi-step Reasoning'
+  | 'Regression Detection'
   | 'Tool Calling'
   | 'Policy Gate'
   | 'Retrieval'
   | 'Safety'
-  | 'Structured Output'
   | 'Multi-turn'
   | 'Domain Knowledge'
-  | 'Edge Cases';
+  | 'Edge Cases'
+  | string;
 
 export type SeverityLevel = 'critical' | 'high' | 'medium' | 'low';
 
 export interface TestCase {
   id: string;
   name: string;
+  title?: string;
   category: TestCaseCategory;
   input: string;
+  prompt?: string;
   expectedOutput: string;
+  expected_behavior?: string;
   evaluatorType: EvaluatorType;
   evaluatorConfig?: {
     requiredKeywords?: string[];
@@ -120,7 +135,10 @@ export interface TestCase {
     maxLength?: number;
     minLength?: number;
     maxLatencyMs?: number;
+    checkType?: 'SECRET_LEAK' | 'REFUSAL' | 'BYPASS' | 'PROMPT_INJECTION' | string;
+    [key: string]: any;
   };
+  evaluation_criteria?: any;
   tags: string[];
   severity: SeverityLevel;
   metadata?: Record<string, any>;
@@ -504,6 +522,13 @@ export interface EvaluationRun {
   releaseDecision: ReleaseDecision;
   comparisonReport?: import('../evaluation/comparator').ComparisonReport;
   durationMs: number;
+  // Scope-aware evaluation fields
+  selectedScenarioIds?: string[];
+  selectedScenarioCount?: number;
+  completedScenarioCount?: number;
+  isScopedRun?: boolean;
+  evaluationScope?: string;
+  status?: 'RUNNING' | 'COMPLETED' | 'FAILED';
 }
 
 export interface Project {

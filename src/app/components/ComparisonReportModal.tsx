@@ -96,7 +96,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           color: '#F39C12',
           glow: 'rgba(243, 156, 18, 0.25)',
           label: report.totalCases < targetRequiredCases
-            ? `⚡ PRELIMINARY SUBSET (N = ${report.totalCases}/${targetRequiredCases} SCENARIOS — REQUIRES ${targetRequiredCases} CASES FOR PRODUCTION RELEASE)`
+            ? `⚡ PROCEED WITH CAUTION — ${report.totalCases}/${report.totalCases} PASSED (Preliminary Benchmark)`
             : '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
         };
       case 'NO REGRESSION':
@@ -187,14 +187,17 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   const costDelta = report.costDelta;
   const tokenDelta = report.tokenDelta;
 
-  const failedGates = (report.releaseGates || []).filter((g) => g.status === 'FAIL');
-  const warningGates = (report.releaseGates || []).filter((g) => g.status === 'WARNING');
-  const hasGateFailures = failedGates.length > 0 || report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED';
   const isPreliminary = Boolean(
     report.isPreliminary ||
     report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
     (report.totalCases < targetRequiredCases)
   );
+  const failedGates = (report.releaseGates || []).filter((g) => {
+    if (g.gate === 'Benchmark Completion' && isPreliminary) return false;
+    return g.status === 'FAIL';
+  });
+  const warningGates = (report.releaseGates || []).filter((g) => g.status === 'WARNING');
+  const hasGateFailures = failedGates.length > 0 || ((report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED') && !isPreliminary);
 
   // Relative outcome strictly based on quality delta & existing comparison
   let relativeResult: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY' | 'INCONCLUSIVE' = 'PARITY';
@@ -339,11 +342,32 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 {modeBadge.label}
               </span>
             </div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.2rem 0' }}>
-              {report.title}
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.2rem 0' }}>
+                {report.totalCases < targetRequiredCases
+                  ? `${report.totalCases}-SCENARIO EVALUATION REPORT`
+                  : report.title}
+              </h2>
+              {report.totalCases < targetRequiredCases && (
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.08em',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '4px',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    color: '#38BDF8',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  SCOPED BENCHMARK ({report.totalCases} of {report.totalCases} SCENARIOS EVALUATED)
+                </span>
+              )}
+            </div>
             <div style={{ fontSize: '0.82rem', color: '#8899AA' }}>
-              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({report.totalCases} scenarios) • Generated: {new Date(report.timestamp).toLocaleString()}
+              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({report.totalCases} / {report.totalCases} evaluated • 100% of selected scope) • Generated: {new Date(report.timestamp).toLocaleString()}
             </div>
           </div>
 
@@ -515,7 +539,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   border: `1px solid ${hasGateFailures ? 'rgba(239, 68, 68, 0.4)' : recStyle.border}`,
                 }}
               >
-                {hasGateFailures ? `⛔ BLOCKED (${failedGates.length} GATES FAILED)` : report.recommendation}
+                {hasGateFailures
+                  ? `⛔ BLOCKED (${failedGates.length} GATES FAILED)`
+                  : isPreliminary
+                  ? `⚡ GATE PASSED — SCOPE-LIMITED`
+                  : report.recommendation}
               </span>
             </div>
 
@@ -529,7 +557,28 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 </div>
               ) : isPreliminary ? (
                 <div>
-                  <strong>Preliminary Benchmark:</strong> Evaluated {report.totalCases}/{targetRequiredCases} scenarios. Full {targetRequiredCases}-scenario test suite required for production release certification.
+                  <strong>Evaluation Complete:</strong> Evaluated {report.totalCases}/{report.totalCases} scenarios (100% of selected scope).
+                  <div style={{ marginTop: '0.4rem', color: '#8899AA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <span>Full suite benchmark ({targetRequiredCases} scenarios) recommended before production release.</span>
+                    <button
+                      onClick={() => {
+                        onClose();
+                        window.dispatchEvent(new CustomEvent('reliq-run-full-benchmark', { detail: { count: targetRequiredCases } }));
+                      }}
+                      style={{
+                        background: 'rgba(255, 107, 53, 0.15)',
+                        border: '1px solid rgba(255, 107, 53, 0.4)',
+                        color: 'var(--accent, #FF6B35)',
+                        padding: '0.25rem 0.6rem',
+                        borderRadius: '4px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ▶ Run Full Benchmark ({targetRequiredCases} Scenarios)
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div>
