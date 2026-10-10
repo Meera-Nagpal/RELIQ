@@ -64,6 +64,10 @@ export const SEED_DATASET: Dataset = {
   description:
     'Golden evaluation dataset containing 22 high-priority multi-turn scenarios covering Tool Calling, Policy Compliance, Security Boundaries, and Structured Output.',
   cases: CHECKOUT_22_TEST_CASES,
+  sourceType: 'builtin',
+  version: '1.0.0',
+  status: 'active',
+  isImmutable: true,
   createdAt: '2026-08-12T09:00:00.000Z',
   updatedAt: '2026-09-02T16:00:00.000Z',
 };

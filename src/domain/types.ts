@@ -118,9 +118,15 @@ export type TestCaseCategory =
 
 export type SeverityLevel = 'critical' | 'high' | 'medium' | 'low';
 
+export type DatasetSourceType = 'builtin' | 'upload' | 'generated' | 'trace';
+export type DatasetStatus = 'active' | 'draft' | 'archived';
+export type DatasetFormatType = 'json' | 'jsonl' | 'ndjson' | 'csv';
+
 export interface TestCase {
   id: string;
+  caseKey?: string;
   order?: number;
+  sourceRecordNumber?: number;
   name: string;
   title?: string;
   category: TestCaseCategory;
@@ -128,6 +134,7 @@ export interface TestCase {
   prompt?: string;
   expectedOutput: string;
   expected_behavior?: string;
+  context?: string;
   evaluatorType: EvaluatorType;
   evaluatorConfig?: {
     requiredKeywords?: string[];
@@ -152,9 +159,123 @@ export interface Dataset {
   name: string;
   description: string;
   cases: TestCase[];
+  caseCount?: number;
   requiredCases?: number;
+  sourceType?: DatasetSourceType;
+  version?: string;
+  status?: DatasetStatus;
+  sourceFilename?: string;
+  contentHash?: string;
+  isImmutable?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DatasetFieldMapping {
+  inputField?: string;
+  expectedOutputField?: string;
+  rejectedOutputField?: string;
+  contextField?: string;
+  idField?: string;
+  nameField?: string;
+  categoryField?: string;
+  tagsField?: string;
+  metadataField?: string;
+  evaluatorTypeField?: string;
+  severityField?: string;
+}
+
+export type DatasetValidationIssueCode =
+  | 'EMPTY_FILE'
+  | 'FILE_TOO_LARGE'
+  | 'TOO_MANY_RECORDS'
+  | 'PARSE_ERROR'
+  | 'MISSING_INPUT'
+  | 'EMPTY_INPUT'
+  | 'DUPLICATE_ID'
+  | 'SECRET_DETECTED'
+  | 'MISSING_EXPECTED_OUTPUT'
+  | 'INVALID_CATEGORY'
+  | 'INVALID_EVALUATOR'
+  | 'INVALID_JSON_FIELD'
+  | 'EVALUATOR_INCOMPATIBILITY'
+  | 'NAME_CONFLICT'
+  | 'AMBIGUOUS_PREFERENCE_RECORD'
+  | 'MALFORMED_PREFERENCE_RECORD';
+
+export interface DatasetValidationIssue {
+  recordNumber?: number; // 1-indexed row/record number
+  field?: string;
+  severity: 'error' | 'warning';
+  code: DatasetValidationIssueCode;
+  message: string;
+}
+
+export interface DatasetEvaluatorCompatibility {
+  evaluatorType: EvaluatorType;
+  requiresExpectedOutput: boolean;
+  requiresContext: boolean;
+  eligibleCasesCount: number;
+  ineligibleCasesCount: number;
+  compatible: boolean;
+  warning?: string;
+}
+
+export interface DatasetCompatibilitySummary {
+  referenceEligibleCount: number;
+  referenceFreeCount: number;
+  contextEligibleCount: number;
+  incompatibleEvaluators: EvaluatorType[];
+  warnings: string[];
+}
+
+export interface DatasetPreviewResult {
+  valid: boolean;
+  format: DatasetFormatType;
+  detectedFormat: DatasetFormatType;
+  detectedColumns: string[];
+  detectedFields: string[];
+  inferredMapping: DatasetFieldMapping;
+  appliedMapping: DatasetFieldMapping;
+  totalRecords: number;
+  validRecords: number;
+  validRecordsCount: number;
+  errorCount: number;
+  warningCount: number;
+  recordsWithExpectedOutput: number;
+  casesWithExpectedOutput: number;
+  recordsWithContext: number;
+  casesWithContext: number;
+  sampleRecords: TestCase[];
+  normalizedCases: TestCase[];
+  issues: DatasetValidationIssue[];
+  evaluatorCompatibility: DatasetEvaluatorCompatibility[];
+  compatibility: DatasetCompatibilitySummary;
+  contentHash: string;
+  suggestedName?: string;
+  suggestedDescription?: string;
+  suggestedVersion?: string;
+}
+
+export type DatasetImportConflictResolution = 'error' | 'new_version' | 'rename';
+
+export interface DatasetImportRequest {
+  projectId?: string;
+  name: string;
+  description?: string;
+  version?: string;
+  status?: DatasetStatus;
+  format?: DatasetFormatType;
+  filename?: string;
+  sourceFilename?: string;
+  rawContent: string;
+  fieldMapping?: DatasetFieldMapping;
+  defaultCategory?: TestCaseCategory;
+  defaultEvaluatorType?: EvaluatorType;
+  defaultSeverity?: SeverityLevel;
+  selectedEvaluators?: EvaluatorType[];
+  conflictResolution?: DatasetImportConflictResolution;
+  customResolvedName?: string;
 }
 
 import { ProviderType, UsageRecord, NormalizedToolCall } from '../providers/types';
@@ -392,6 +513,8 @@ export type EvaluationEvidenceState = 'NOT_CONFIGURED' | 'CONFIGURED' | 'EXECUTE
 
 export interface BenchmarkCompletionSummary {
   status: 'FULL_BENCHMARK_COMPLETE' | 'PRELIMINARY_SUBSET';
+  statusLabel?: 'FULL_BENCHMARK_COMPLETE' | 'PRELIMINARY_SUBSET';
+  totalCases?: number;
   evaluatedCases: number;
   requiredCases: number;
   isComplete: boolean;
@@ -476,12 +599,21 @@ export interface MetricSummary {
   // Section 15: Explicit failure counters
   dispatchedCases?: number;
   evaluatedCases?: number;
+  skippedCases?: number;
+  cancelledCases?: number;
   qualityFailures?: number;
   providerFailures?: number;
   authenticationFailures?: number;
   quotaFailures?: number;
   safetyFailures?: number;
   unevaluableCases?: number;
+  metricEligibility?: {
+    referenceBasedEligibleCases: number;
+    referenceFreeEligibleCases: number;
+    groundednessEligibleCases: number;
+    skippedReferenceMetricsCases: number;
+    [key: string]: any;
+  };
   // Judge Usage & Cost Telemetry (Strictly separate from benchmark models)
   judgeModel?: string;
   judgeEvaluatedCases?: number;
@@ -516,6 +648,8 @@ export interface EvaluationRun {
   projectId: string;
   datasetId: string;
   datasetName: string;
+  datasetVersion?: string;
+  datasetSourceType?: DatasetSourceType;
   baselineVersion: ModelVersion;
   candidateVersion: ModelVersion;
   judgeConfig?: JudgeConfig;
@@ -528,11 +662,15 @@ export interface EvaluationRun {
   rootCauses: RootCauseFinding[];
   releaseDecision: ReleaseDecision;
   comparisonReport?: import('../evaluation/comparator').ComparisonReport;
+  benchmarkCompletion?: BenchmarkCompletionSummary;
   durationMs: number;
   // Scope-aware evaluation fields
+  totalScenarioCount?: number;
   selectedScenarioIds?: string[];
   selectedScenarioCount?: number;
   completedScenarioCount?: number;
+  skippedScenarioCount?: number;
+  cancelledScenarioCount?: number;
   isScopedRun?: boolean;
   evaluationScope?: string;
   status?: 'RUNNING' | 'COMPLETED' | 'FAILED';

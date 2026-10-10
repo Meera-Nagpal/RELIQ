@@ -15,6 +15,8 @@
 
 import {
   Dataset,
+  DatasetImportRequest,
+  DatasetPreviewResult,
   EvaluationRun,
   ModelVersion,
   Project,
@@ -69,10 +71,13 @@ function mapBackendTestCase(tc: any): TestCase {
 
   return {
     id: tc.id,
+    caseKey: tc.case_key || tc.caseKey || tc.id,
+    sourceRecordNumber: typeof tc.source_record_number === 'number' ? tc.source_record_number : tc.sourceRecordNumber,
     name: tc.name,
     category: tc.category,
     input: tc.input,
-    expectedOutput: tc.expected_behavior || tc.expected_output || tc.expectedOutput || '',
+    expectedOutput: tc.expected_behavior ?? tc.expected_output ?? tc.expectedOutput ?? '',
+    context: tc.context || undefined,
     evaluatorType: tc.evaluator_type || tc.evaluatorType || 'normalized_text',
     evaluatorConfig,
     tags: Array.isArray(tags) ? tags : [],
@@ -83,12 +88,21 @@ function mapBackendTestCase(tc: any): TestCase {
 }
 
 function mapBackendDataset(d: any, cases: TestCase[] = []): Dataset {
+  const sourceType = (d.source_type || d.sourceType || (d.id === 'ds-checkout-golden' || d.id === 'ds-benchmark-100' ? 'builtin' : 'upload')) as any;
+  const isImmutable = Boolean(d.is_immutable ?? d.isImmutable ?? sourceType === 'builtin');
   return {
     id: d.id,
     projectId: d.project_id || d.projectId,
     name: d.name,
     description: d.description || '',
     cases,
+    caseCount: typeof d.case_count === 'number' ? d.case_count : typeof d.caseCount === 'number' ? d.caseCount : cases.length,
+    sourceType,
+    version: d.version || '1.0.0',
+    status: (d.status || 'active') as any,
+    sourceFilename: d.source_filename || d.sourceFilename || undefined,
+    contentHash: d.content_hash || d.contentHash || undefined,
+    isImmutable,
     createdAt: d.created_at || d.createdAt || new Date().toISOString(),
     updatedAt: d.updated_at || d.updatedAt || new Date().toISOString(),
   };
@@ -286,6 +300,8 @@ export class ApiRepository implements StorageRepository {
       await this.client.put(`/api/datasets/${encodeURIComponent(dataset.id)}`, {
         name: dataset.name,
         description: dataset.description,
+        version: dataset.version,
+        status: dataset.status,
       });
       exists = true;
     } catch (err: any) {
@@ -302,6 +318,10 @@ export class ApiRepository implements StorageRepository {
         projectId: dataset.projectId,
         name: dataset.name,
         description: dataset.description,
+        sourceType: dataset.sourceType || 'upload',
+        version: dataset.version || '1.0.0',
+        status: dataset.status || 'active',
+        sourceFilename: dataset.sourceFilename,
       });
     }
 
@@ -337,10 +357,12 @@ export class ApiRepository implements StorageRepository {
           await this.client.put(
             `/api/datasets/${encodeURIComponent(dataset.id)}/cases/${encodeURIComponent(id)}`,
             {
+              caseKey: tc.caseKey,
               name: tc.name,
               category: tc.category,
               input: tc.input,
               expectedOutput: tc.expectedOutput,
+              context: tc.context,
               evaluatorType: tc.evaluatorType,
               evaluatorConfig: tc.evaluatorConfig,
               severity: tc.severity,
@@ -353,10 +375,13 @@ export class ApiRepository implements StorageRepository {
             `/api/datasets/${encodeURIComponent(dataset.id)}/cases`,
             {
               id: tc.id,
+              caseKey: tc.caseKey,
+              sourceRecordNumber: tc.sourceRecordNumber,
               name: tc.name,
               category: tc.category,
               input: tc.input,
               expectedOutput: tc.expectedOutput,
+              context: tc.context,
               evaluatorType: tc.evaluatorType,
               evaluatorConfig: tc.evaluatorConfig,
               severity: tc.severity,
@@ -367,6 +392,42 @@ export class ApiRepository implements StorageRepository {
         }
       }
     }
+  }
+
+  async previewDatasetImport(options: {
+    rawContent: string;
+    filename?: string;
+    format?: string;
+    fieldMapping?: any;
+    defaultCategory?: string;
+    defaultEvaluatorType?: string;
+    defaultSeverity?: string;
+    selectedEvaluators?: string[];
+  }): Promise<DatasetPreviewResult> {
+    return await this.client.post<DatasetPreviewResult>('/api/datasets/preview', options);
+  }
+
+  async importDataset(request: DatasetImportRequest): Promise<{
+    dataset: Dataset;
+    preview: DatasetPreviewResult;
+  }> {
+    const res = await this.client.post<any>('/api/datasets/import', request);
+    const d = res?.dataset || res;
+    const cases = Array.isArray(d?.cases) ? d.cases.map(mapBackendTestCase) : [];
+    return {
+      dataset: mapBackendDataset(d, cases),
+      preview: res?.preview,
+    };
+  }
+
+  async getDatasetTemplate(format: 'json' | 'jsonl' | 'csv'): Promise<{
+    format: string;
+    filename: string;
+    content: string;
+  }> {
+    return await this.client.get<{ format: string; filename: string; content: string }>(
+      `/api/datasets/templates/${encodeURIComponent(format)}`
+    );
   }
 
   async deleteDataset(id: string): Promise<void> {

@@ -37,6 +37,11 @@ CREATE TABLE IF NOT EXISTS datasets (
   name TEXT NOT NULL,
   description TEXT,
   case_count INTEGER NOT NULL DEFAULT 0,
+  source_type TEXT NOT NULL DEFAULT 'upload',
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  status TEXT NOT NULL DEFAULT 'active',
+  source_filename TEXT,
+  content_hash TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -46,10 +51,13 @@ CREATE TABLE IF NOT EXISTS datasets (
 CREATE TABLE IF NOT EXISTS test_cases (
   id TEXT PRIMARY KEY,
   dataset_id TEXT NOT NULL,
+  case_key TEXT,
+  source_record_number INTEGER,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
   input TEXT NOT NULL,
-  expected_behavior TEXT NOT NULL,
+  expected_behavior TEXT NOT NULL DEFAULT '',
+  context TEXT,
   evaluator_type TEXT NOT NULL DEFAULT 'normalized_text',
   evaluator_config TEXT,
   tags TEXT,
@@ -82,11 +90,16 @@ CREATE TABLE IF NOT EXISTS evaluation_runs (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL,
   dataset_id TEXT NOT NULL,
+  dataset_version TEXT,
+  dataset_source_type TEXT,
   status TEXT NOT NULL,
   total_cases INTEGER NOT NULL DEFAULT 0,
+  selected_case_count INTEGER,
   evaluated_cases INTEGER NOT NULL DEFAULT 0,
   passed_cases INTEGER NOT NULL DEFAULT 0,
   failed_cases INTEGER NOT NULL DEFAULT 0,
+  skipped_cases INTEGER DEFAULT 0,
+  cancelled_cases INTEGER DEFAULT 0,
   pass_rate REAL,
   quality_score REAL,
   started_at TEXT NOT NULL,
@@ -187,7 +200,18 @@ export function initSchema(db: Database.Database): void {
     ['candidate_version_id', 'TEXT'],
   ]);
 
+  ensureColumns('datasets', [
+    ['source_type', "TEXT NOT NULL DEFAULT 'upload'"],
+    ['version', "TEXT NOT NULL DEFAULT '1.0.0'"],
+    ['status', "TEXT NOT NULL DEFAULT 'active'"],
+    ['source_filename', 'TEXT'],
+    ['content_hash', 'TEXT'],
+  ]);
+
   ensureColumns('test_cases', [
+    ['case_key', 'TEXT'],
+    ['source_record_number', 'INTEGER'],
+    ['context', 'TEXT'],
     ['evaluator_type', "TEXT NOT NULL DEFAULT 'normalized_text'"],
     ['evaluator_config', 'TEXT'],
     ['tags', 'TEXT'],
@@ -210,7 +234,13 @@ export function initSchema(db: Database.Database): void {
 
   ensureColumns('evaluation_runs', [
     ['run_json', 'TEXT'],
+    ['dataset_version', 'TEXT'],
+    ['dataset_source_type', 'TEXT'],
+    ['selected_case_count', 'INTEGER'],
+    ['skipped_cases', 'INTEGER DEFAULT 0'],
+    ['cancelled_cases', 'INTEGER DEFAULT 0'],
   ]);
 }
+
 
 

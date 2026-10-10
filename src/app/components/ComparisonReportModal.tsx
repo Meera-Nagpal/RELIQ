@@ -310,13 +310,32 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   const getConciseInterpretation = (): string => {
     if (qualityDelta !== null && qualityDelta > 0) {
       const latWorse = latencyDelta !== null && latencyDelta > 0;
+      const latBetter = latencyDelta !== null && latencyDelta < 0;
       const cstWorse = costDelta !== null && costDelta > 0;
       const tokReduced = tokenDelta !== null && tokenDelta < 0;
-      if (latWorse || cstWorse) {
-        if (tokReduced && (latWorse || cstWorse)) {
+      if (latWorse && cstWorse) {
+        if (tokReduced) {
           return `Candidate improved quality and reduced output tokens, but introduced higher latency (+${latencyDelta}ms) and evaluation cost.`;
         }
+        return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points), but introduced higher latency (+${latencyDelta}ms) and evaluation cost.`;
+      }
+      if (latWorse) {
+        if (tokReduced) {
+          return `Candidate improved quality and reduced output tokens, but introduced higher latency (+${latencyDelta}ms).`;
+        }
         return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points), but introduced higher latency (+${latencyDelta}ms).`;
+      }
+      if (cstWorse) {
+        if (latBetter && tokReduced) {
+          return `Candidate improved quality (+${qualityDelta.toFixed(1)} quality points), reduced output tokens, and reduced latency (${latencyDelta}ms), with higher evaluation cost.`;
+        }
+        if (latBetter) {
+          return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points) and reduced latency (${latencyDelta}ms), with higher evaluation cost.`;
+        }
+        if (tokReduced) {
+          return `Candidate improved quality (+${qualityDelta.toFixed(1)} quality points) and reduced output tokens, with higher evaluation cost.`;
+        }
+        return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points), with higher evaluation cost.`;
       }
       return `Candidate achieved higher quality and correctness than the baseline, with +${qualityDelta.toFixed(1)} quality points.`;
     }
@@ -600,7 +619,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 }}
               >
                 {hasGateFailures
-                  ? `⛔ BLOCKED (${failedGates.length} GATES FAILED)`
+                  ? `⛔ BLOCKED (${failedGates.length} ${failedGates.length === 1 ? 'GATE' : 'GATES'} FAILED)`
                   : normalizedRecommendation}
               </span>
             </div>

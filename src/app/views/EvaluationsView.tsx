@@ -16,6 +16,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ComparisonReportModal } from '../components/ComparisonReportModal';
 import { EvaluationProgressModal } from '../components/EvaluationProgressModal';
 import { LiveEvaluationHUD } from '../components/LiveEvaluationHUD';
+import { DatasetUploadPanel } from '../components/DatasetUploadPanel';
 import {
   Dataset,
   EvaluationRun,
@@ -35,11 +36,13 @@ import { getEligibleJudgeModels, getDefaultJudgeModel, GROQ_MODEL_REGISTRY } fro
 interface EvaluationsViewProps {
   project: Project;
   datasets: Dataset[];
+  activeDatasetId?: string;
   versions: ModelVersion[];
   evaluationRuns: EvaluationRun[];
   onSaveRun: (run: EvaluationRun) => Promise<void>;
   onDeleteRun: (runId: string) => Promise<void>;
   onSelectActiveRun: (run: EvaluationRun) => void;
+  onDatasetImported?: (dataset: Dataset) => Promise<void>;
 }
 
 const PROVIDER_MODELS: Record<ProviderType, { id: string; label: string }[]> = {
@@ -87,11 +90,13 @@ const PROVIDER_MODELS: Record<ProviderType, { id: string; label: string }[]> = {
 export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   project,
   datasets,
+  activeDatasetId,
   versions,
   evaluationRuns,
   onSaveRun,
   onDeleteRun,
   onSelectActiveRun,
+  onDatasetImported,
 }) => {
   const { navigate, triggerTransition } = useRouter();
 
@@ -111,9 +116,10 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     providerRegistry.checkServerStatus().then(setServerStatus);
   }, []);
 
-  // Initial dataset selection helper (prioritize golden suite or populated dataset)
+  // Initial dataset selection helper (prioritize activeDatasetId, then golden suite or populated dataset)
   const selectInitialDataset = (dsets: Dataset[]): string => {
     if (!dsets || dsets.length === 0) return '';
+    if (activeDatasetId && dsets.some((d) => d.id === activeDatasetId)) return activeDatasetId;
     const golden = dsets.find((d) => d.id === 'ds-checkout-golden');
     if (golden) return golden.id;
     const populated = dsets.find((d) => (d.cases?.length || 0) > 0);
@@ -131,7 +137,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         setSelectedDatasetId(selectInitialDataset(datasets));
       }
     }
-  }, [datasets, selectedDatasetId]);
+  }, [datasets, selectedDatasetId, activeDatasetId]);
 
   const [baselineVersionId, setBaselineVersionId] = useState<string>(project?.baselineVersionId || versions?.[0]?.id || '');
   const [candidateVersionId, setCandidateVersionId] = useState<string>(project?.candidateVersionId || versions?.[1]?.id || versions?.[0]?.id || '');
@@ -744,14 +750,32 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           }}
         >
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Active Benchmark Suite
+            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span>Active Benchmark Suite</span>
+              <span
+                style={{
+                  fontSize: '0.62rem',
+                  padding: '0.08rem 0.35rem',
+                  borderRadius: '3px',
+                  fontWeight: 700,
+                  background:
+                    selectedDataset?.sourceType === 'upload'
+                      ? 'rgba(77, 166, 255, 0.18)'
+                      : 'rgba(46, 204, 113, 0.16)',
+                  color: selectedDataset?.sourceType === 'upload' ? '#4DA6FF' : '#2ECC71',
+                }}
+              >
+                {selectedDataset?.sourceType === 'upload' ? 'USER UPLOAD' : 'BUILT-IN'}
+              </span>
+              <span style={{ fontFamily: 'monospace', color: '#8899AA' }}>
+                v{selectedDataset?.version || '1.0.0'}
+              </span>
             </div>
             <div style={{ fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 700, marginTop: '0.2rem' }}>
               {selectedDataset?.name || 'Checkout Reliability Suite'}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--accent, #FF6B35)', fontWeight: 600 }}>
-              {selectedDataset?.cases?.length || 100} authoritative scenarios
+              {selectedDataset?.cases?.length || 100} scenarios ({selectedDataset?.cases?.filter((c) => Boolean(c.expectedOutput && c.expectedOutput.trim())).length ?? (selectedDataset?.cases?.length || 0)} with expected reference)
             </div>
           </div>
 
@@ -906,36 +930,60 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           </div>
         )}
 
-        {/* ── Dataset Selector ── */}
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
-            Evaluation Dataset (Identical Test Suite for Both Models)
-          </label>
-          <select
-            value={selectedDatasetId}
-            onChange={(e) => {
-              setSelectedDatasetId(e.target.value);
+        {/* ── Dataset Selector & Inline Dataset Upload Panel ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#E8E4D9', fontWeight: 600, marginBottom: '0.4rem' }}>
+              Evaluation Dataset (Identical Test Suite for Both Models)
+            </label>
+            <select
+              value={selectedDatasetId}
+              onChange={(e) => {
+                const nextId = e.target.value;
+                setSelectedDatasetId(nextId);
+                setEvaluationError(null);
+                const nextDs = datasets.find((d) => d.id === nextId);
+                if (nextDs && (nextDs.sourceType === 'upload' || (nextDs.cases?.length || 0) < 27)) {
+                  setMaxCasesToRun(0); // Default to Full Suite (Run All) for user-uploaded or smaller datasets
+                }
+              }}
+              disabled={isRunning}
+              style={{
+                width: '100%',
+                padding: '0.65rem',
+                background: '#111315',
+                border: '1px solid #343638',
+                borderRadius: '6px',
+                color: '#E8E4D9',
+                fontSize: '0.85rem',
+              }}
+            >
+              {[...datasets]
+                .sort((a, b) => (a.cases?.length || 0) - (b.cases?.length || 0))
+                .map((d) => {
+                  const badge = d.sourceType === 'upload' ? '[USER UPLOAD' : '[BUILT-IN';
+                  return (
+                    <option key={d.id} value={d.id}>
+                      {badge} v{d.version || '1.0.0'}] {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
+                    </option>
+                  );
+                })}
+            </select>
+          </div>
+
+          {/* Inline Dataset Upload Panel (.json, .jsonl, .ndjson, .csv) */}
+          <DatasetUploadPanel
+            projectId={project?.id || 'proj-checkout-agent'}
+            existingDatasets={datasets}
+            onDatasetImported={async (importedDs) => {
+              if (onDatasetImported) {
+                await onDatasetImported(importedDs);
+              }
+              setSelectedDatasetId(importedDs.id);
+              setMaxCasesToRun(0);
               setEvaluationError(null);
             }}
-            disabled={isRunning}
-            style={{
-              width: '100%',
-              padding: '0.65rem',
-              background: '#0D1117',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: '6px',
-              color: '#FFFFFF',
-              fontSize: '0.85rem',
-            }}
-          >
-            {[...datasets]
-              .sort((a, b) => (a.cases?.length || 0) - (b.cases?.length || 0))
-              .map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
-                </option>
-              ))}
-          </select>
+          />
         </div>
 
         {/* ── Mode 1: Saved Project Versions ── */}
@@ -1618,7 +1666,29 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   </div>
                 </div>
 
-                <div style={{ color: '#AAAAAA' }}>{run.datasetName || 'Dataset'}</div>
+                <div>
+                  <div style={{ color: '#CCCCCC', fontWeight: 500 }}>{run.datasetName || 'Dataset'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.2rem' }}>
+                    <span
+                      style={{
+                        fontSize: '0.62rem',
+                        padding: '0.06rem 0.3rem',
+                        borderRadius: '3px',
+                        fontWeight: 700,
+                        background:
+                          run.datasetSourceType === 'upload'
+                            ? 'rgba(77, 166, 255, 0.16)'
+                            : 'rgba(46, 204, 113, 0.14)',
+                        color: run.datasetSourceType === 'upload' ? '#4DA6FF' : '#2ECC71',
+                      }}
+                    >
+                      {run.datasetSourceType === 'upload' ? 'UPLOAD' : 'BUILT-IN'}
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: '#888888', fontFamily: 'monospace' }}>
+                      v{run.datasetVersion || '1.0.0'} • {run.metrics?.totalCases ?? 0} cases
+                    </span>
+                  </div>
+                </div>
 
                 <div>
                   <div style={{ color: isReg ? '#FF4422' : run.metrics?.candidateAccuracy !== null && run.metrics?.candidateAccuracy !== undefined ? '#2ECC71' : '#888888', fontWeight: 700, fontSize: '0.9rem' }}>

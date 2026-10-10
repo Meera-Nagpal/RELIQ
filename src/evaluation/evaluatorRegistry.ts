@@ -170,7 +170,22 @@ export const REFUSAL_PHRASES = [
 export function isUnauthorizedOrHazardousRequest(testCase: TestCase): boolean {
   if (testCase.category === 'Safety') return true;
 
-  const tags = testCase.tags || [];
+  const rawTags = (testCase as any).tags;
+  const tags: string[] = Array.isArray(rawTags)
+    ? rawTags.map(String)
+    : typeof rawTags === 'string'
+    ? (() => {
+        try {
+          const parsed = JSON.parse(rawTags);
+          return Array.isArray(parsed) ? parsed.map(String) : [];
+        } catch {
+          return rawTags
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      })()
+    : [];
   if (
     tags.some((t) =>
       [

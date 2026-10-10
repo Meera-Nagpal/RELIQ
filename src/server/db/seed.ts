@@ -115,16 +115,16 @@ export function seedDatabase(db: Database.Database): SeedResult {
     // 4. Datasets
     const insertDataset = db.prepare(`
       INSERT OR IGNORE INTO datasets (
-        id, project_id, name, description, case_count, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        id, project_id, name, description, case_count, source_type, version, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertTestCase = db.prepare(`
       INSERT OR IGNORE INTO test_cases (
-        id, dataset_id, name, category, input, expected_behavior,
+        id, dataset_id, case_key, source_record_number, name, category, input, expected_behavior, context,
         evaluator_type, evaluator_config, tags, severity, metadata,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const datasetsToSeed = [SEED_DATASET, SEED_DATASET_100];
@@ -136,19 +136,36 @@ export function seedDatabase(db: Database.Database): SeedResult {
         ds.name,
         ds.description,
         ds.cases.length,
+        ds.sourceType || 'builtin',
+        ds.version || '1.0.0',
+        ds.status || 'active',
         ds.createdAt,
         ds.updatedAt
       );
       result.datasetsSeeded += dsInfo.changes;
 
+      // Ensure existing built-in datasets have source_type = 'builtin' and version = '1.0.0'
+      db.prepare(`
+        UPDATE datasets
+        SET source_type = 'builtin',
+            version = COALESCE(NULLIF(version, ''), '1.0.0'),
+            status = COALESCE(NULLIF(status, ''), 'active')
+        WHERE id = ?
+      `).run(ds.id);
+
+      let idx = 0;
       for (const tc of ds.cases) {
+        idx++;
         const tcInfo = insertTestCase.run(
           tc.id,
           ds.id,
+          tc.caseKey || tc.id,
+          tc.sourceRecordNumber ?? idx,
           tc.name,
           tc.category,
           tc.input,
-          tc.expectedOutput,
+          tc.expectedOutput ?? '',
+          tc.context || null,
           tc.evaluatorType,
           tc.evaluatorConfig ? JSON.stringify(tc.evaluatorConfig) : null,
           JSON.stringify(tc.tags || []),
@@ -167,16 +184,19 @@ export function seedDatabase(db: Database.Database): SeedResult {
               tags = ?,
               severity = ?,
               metadata = ?,
+              case_key = COALESCE(case_key, ?),
+              source_record_number = COALESCE(source_record_number, ?),
               updated_at = ?
           WHERE id = ? AND dataset_id = ?
-            AND evaluator_config IS NULL
-            AND tags IS NULL
+            AND (evaluator_config IS NULL OR case_key IS NULL)
         `).run(
           tc.evaluatorType,
           tc.evaluatorConfig ? JSON.stringify(tc.evaluatorConfig) : null,
           JSON.stringify(tc.tags || []),
           tc.severity || 'medium',
           tc.metadata ? JSON.stringify(tc.metadata) : null,
+          tc.caseKey || tc.id,
+          tc.sourceRecordNumber ?? idx,
           (tc as any).updatedAt || tc.createdAt || ds.updatedAt,
           tc.id,
           ds.id

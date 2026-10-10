@@ -373,7 +373,13 @@ export function generateBenchmarkDataset(count: number, name?: string): Dataset 
     name: title,
     description,
     cases,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    caseCount: cases.length,
+    requiredCases: cases.length,
+    sourceType: 'builtin',
+    version: '1.0.0',
+    status: 'active',
+    isImmutable: true,
+    createdAt: '2026-08-12T09:00:00.000Z',
+    updatedAt: '2026-09-02T16:00:00.000Z',
   };
 }

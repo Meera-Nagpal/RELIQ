@@ -247,6 +247,8 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
 
   const benchmarkCompletion: import('../domain/types').BenchmarkCompletionSummary = {
     status: isBenchmarkComplete ? 'FULL_BENCHMARK_COMPLETE' : 'PRELIMINARY_SUBSET',
+    statusLabel: isBenchmarkComplete ? 'FULL_BENCHMARK_COMPLETE' : 'PRELIMINARY_SUBSET',
+    totalCases,
     evaluatedCases: candidateEvaluated,
     requiredCases,
     isComplete: isBenchmarkComplete,

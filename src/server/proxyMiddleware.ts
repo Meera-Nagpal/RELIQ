@@ -36,6 +36,7 @@ import { handleVersionRoutes } from './routes/versionRoutes';
 import { handleSettingsRoutes } from './routes/settingsRoutes';
 import { handleEvaluationDbRoutes } from './routes/evaluationDbRoutes';
 import { evaluationDbService } from './services/evaluationDbService';
+import { datasetService } from './services/datasetService';
 import { sendError } from './routes/httpUtils';
 import { getDatabase } from './db/database';
 import { seedDatabase } from './db/seed';
@@ -167,6 +168,43 @@ export function createReliqProxyMiddleware() {
       try {
         const body = await parseJsonBody(req);
         const isAsync = body.async !== false; // Default to asynchronous execution
+
+        // If datasetId was passed without an inline dataset (or with empty cases), resolve from SQLite
+        const targetDatasetId = body.datasetId || body.dataset?.id;
+        if (
+          targetDatasetId &&
+          (!body.dataset || !Array.isArray(body.dataset.cases) || body.dataset.cases.length === 0)
+        ) {
+          const resolvedDs = datasetService.getDatasetById(targetDatasetId);
+          if (resolvedDs) {
+            body.dataset = {
+              id: resolvedDs.id,
+              name: resolvedDs.name,
+              description: resolvedDs.description,
+              sourceType: resolvedDs.sourceType,
+              version: resolvedDs.version,
+              status: resolvedDs.status,
+              cases: (resolvedDs.cases || []).map((tc) => ({
+                id: tc.id,
+                caseKey: tc.caseKey,
+                sourceRecordNumber: tc.sourceRecordNumber,
+                name: tc.name,
+                category: tc.category,
+                input: tc.input,
+                expectedOutput: tc.expected_behavior,
+                context: tc.context,
+                evaluatorType: tc.evaluator_type,
+                evaluatorConfig: tc.evaluator_config,
+                severity: tc.severity,
+                tags: tc.tags,
+                metadata: tc.metadata,
+                createdAt: tc.created_at,
+              })),
+              createdAt: resolvedDs.created_at,
+              updatedAt: resolvedDs.updated_at,
+            };
+          }
+        }
 
         console.log('[BACKEND] Evaluation request received');
         if (body.dataset?.name) {

@@ -301,6 +301,11 @@ export const ReliqApp: React.FC = () => {
               onSelectDataset={setActiveDatasetId}
               onSaveDataset={handleSaveDataset}
               onDeleteDataset={handleDeleteDataset}
+              onDatasetImported={async (importedDs) => {
+                const dsets = await repository.getDatasets(activeProjectId);
+                setDatasets(dsets);
+                setActiveDatasetId(importedDs.id);
+              }}
             />
           )}
 
@@ -308,12 +313,18 @@ export const ReliqApp: React.FC = () => {
             <EvaluationsView
               project={activeProject}
               datasets={datasets}
+              activeDatasetId={activeDatasetId}
               versions={versions}
               evaluationRuns={evaluationRuns}
               onSaveRun={handleSaveRun}
               onDeleteRun={handleDeleteRun}
               onSelectActiveRun={(run) => {
                 setActiveRunId(run.id);
+              }}
+              onDatasetImported={async (importedDs) => {
+                const dsets = await repository.getDatasets(activeProjectId);
+                setDatasets(dsets);
+                setActiveDatasetId(importedDs.id);
               }}
             />
           )}

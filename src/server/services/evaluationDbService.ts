@@ -113,7 +113,10 @@ export class EvaluationDbService {
     id: string;
     projectId: string;
     datasetId: string;
+    datasetVersion?: string;
+    datasetSourceType?: string;
     totalCases: number;
+    selectedCaseCount?: number;
     startedAt?: string;
   }): void {
     const db = getDatabase();
@@ -129,21 +132,45 @@ export class EvaluationDbService {
     }
 
     // Ensure referenced dataset exists
-    const ds = db.prepare('SELECT id FROM datasets WHERE id = ?').get(data.datasetId);
+    const ds = db.prepare('SELECT id, version, source_type FROM datasets WHERE id = ?').get(data.datasetId) as any;
     if (!ds) {
       db.prepare(`
-        INSERT OR IGNORE INTO datasets (id, project_id, name, description, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(data.datasetId, data.projectId, data.datasetId, 'Auto-created dataset for evaluation run', now, now);
+        INSERT OR IGNORE INTO datasets (id, project_id, name, description, source_type, version, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
+      `).run(
+        data.datasetId,
+        data.projectId,
+        data.datasetId,
+        'Auto-created dataset for evaluation run',
+        data.datasetSourceType || 'builtin',
+        data.datasetVersion || '1.0.0',
+        now,
+        now
+      );
     }
+
+    const resolvedVersion = data.datasetVersion || ds?.version || '1.0.0';
+    const resolvedSourceType = data.datasetSourceType || ds?.source_type || 'builtin';
+    const selectedCaseCount = data.selectedCaseCount ?? data.totalCases;
 
     db.prepare(`
       INSERT OR REPLACE INTO evaluation_runs (
-        id, project_id, dataset_id, status, total_cases, evaluated_cases,
-        passed_cases, failed_cases, pass_rate, quality_score, started_at,
+        id, project_id, dataset_id, dataset_version, dataset_source_type,
+        status, total_cases, selected_case_count, evaluated_cases,
+        passed_cases, failed_cases, skipped_cases, cancelled_cases,
+        pass_rate, quality_score, started_at,
         completed_at, release_decision, release_reason
-      ) VALUES (?, ?, ?, 'RUNNING', ?, 0, 0, 0, NULL, NULL, ?, NULL, NULL, NULL)
-    `).run(data.id, data.projectId, data.datasetId, data.totalCases, now);
+      ) VALUES (?, ?, ?, ?, ?, 'RUNNING', ?, ?, 0, 0, 0, 0, 0, NULL, NULL, ?, NULL, NULL, NULL)
+    `).run(
+      data.id,
+      data.projectId,
+      data.datasetId,
+      resolvedVersion,
+      resolvedSourceType,
+      data.totalCases,
+      selectedCaseCount,
+      now
+    );
   }
 
   /**
@@ -275,13 +302,19 @@ export class EvaluationDbService {
     const runId = finalRun.id;
     const now = finalRun.timestamp || new Date().toISOString();
 
+    const totalCases = finalRun.metrics?.totalCases ?? finalRun.caseResults?.length ?? 0;
+    const selectedCaseCount = finalRun.selectedScenarioCount ?? totalCases;
     const evaluatedCases = finalRun.metrics?.evaluatedCases ?? finalRun.metrics?.candidateEvaluatedCases ?? 0;
     const passedCases = finalRun.metrics?.candidatePassed ?? 0;
     const failedCases = Math.max(0, evaluatedCases - passedCases);
+    const skippedCases = finalRun.skippedScenarioCount ?? finalRun.metrics?.skippedCases ?? 0;
+    const cancelledCases = finalRun.cancelledScenarioCount ?? finalRun.metrics?.cancelledCases ?? 0;
     const passRate = evaluatedCases > 0 ? (finalRun.metrics?.candidatePassRate ?? null) : null;
     const qualityScore = evaluatedCases > 0 ? (finalRun.metrics?.candidateQualityScore ?? null) : null;
     const releaseDecision = finalRun.releaseDecision?.status || null;
     const releaseReason = finalRun.releaseDecision?.reason || null;
+    const datasetVersion = finalRun.datasetVersion || '1.0.0';
+    const datasetSourceType = finalRun.datasetSourceType || 'builtin';
     let serializedRun: string | null = null;
     try {
       serializedRun = JSON.stringify(finalRun);
@@ -290,10 +323,15 @@ export class EvaluationDbService {
     db.prepare(`
       UPDATE evaluation_runs
       SET status = 'COMPLETED',
+          dataset_version = ?,
+          dataset_source_type = ?,
           total_cases = ?,
+          selected_case_count = ?,
           evaluated_cases = ?,
           passed_cases = ?,
           failed_cases = ?,
+          skipped_cases = ?,
+          cancelled_cases = ?,
           pass_rate = ?,
           quality_score = ?,
           completed_at = ?,
@@ -302,10 +340,15 @@ export class EvaluationDbService {
           run_json = ?
       WHERE id = ?
     `).run(
-      finalRun.metrics?.totalCases ?? finalRun.caseResults?.length ?? 0,
+      datasetVersion,
+      datasetSourceType,
+      totalCases,
+      selectedCaseCount,
       evaluatedCases,
       passedCases,
       failedCases,
+      skippedCases,
+      cancelledCases,
       passRate,
       qualityScore,
       now,
@@ -314,6 +357,32 @@ export class EvaluationDbService {
       serializedRun,
       runId
     );
+  }
+
+  /**
+   * Persists a completed evaluation run (creates row if missing, records case results, and finalizes).
+   */
+  saveEvaluationRun(finalRun: any): void {
+    const db = getDatabase();
+    const existing = db.prepare('SELECT id FROM evaluation_runs WHERE id = ?').get(finalRun.id);
+    if (!existing) {
+      this.createEvaluationRun({
+        id: finalRun.id,
+        projectId: finalRun.projectId || 'proj-checkout-agent',
+        datasetId: finalRun.datasetId || 'ds-checkout-golden',
+        datasetVersion: finalRun.datasetVersion || '1.0.0',
+        datasetSourceType: finalRun.datasetSourceType || 'builtin',
+        totalCases: finalRun.metrics?.totalCases ?? finalRun.totalScenarioCount ?? finalRun.caseResults?.length ?? 0,
+        selectedCaseCount: finalRun.selectedScenarioCount ?? finalRun.metrics?.totalCases ?? finalRun.caseResults?.length ?? 0,
+        startedAt: finalRun.timestamp,
+      });
+    }
+    if (Array.isArray(finalRun.caseResults)) {
+      for (const caseResult of finalRun.caseResults) {
+        this.recordCaseResult(finalRun.id, finalRun.candidateVersion, caseResult);
+      }
+    }
+    this.finalizeEvaluationRun(finalRun);
   }
 
   /**
@@ -361,6 +430,12 @@ export class EvaluationDbService {
         runMap.set(sRun.id, {
           ...existing,
           status: sRun.status,
+          datasetVersion: sRun.dataset_version || existing.datasetVersion || '1.0.0',
+          datasetSourceType: sRun.dataset_source_type || existing.datasetSourceType || 'builtin',
+          totalScenarioCount: existing.totalScenarioCount ?? sRun.total_cases,
+          selectedScenarioCount: sRun.selected_case_count ?? existing.selectedScenarioCount ?? sRun.total_cases,
+          skippedScenarioCount: sRun.skipped_cases ?? existing.skippedScenarioCount ?? 0,
+          cancelledScenarioCount: sRun.cancelled_cases ?? existing.cancelledScenarioCount ?? 0,
           metrics: {
             ...existing.metrics,
             totalCases: sRun.total_cases,
@@ -369,6 +444,8 @@ export class EvaluationDbService {
             candidatePassed: sRun.passed_cases,
             candidatePassRate: sRun.pass_rate,
             candidateQualityScore: sRun.quality_score,
+            skippedCases: sRun.skipped_cases ?? existing.metrics?.skippedCases ?? 0,
+            cancelledCases: sRun.cancelled_cases ?? existing.metrics?.cancelledCases ?? 0,
           },
           releaseDecision: {
             ...existing.releaseDecision,
@@ -382,6 +459,12 @@ export class EvaluationDbService {
           id: sRun.id,
           projectId: sRun.project_id,
           datasetId: sRun.dataset_id,
+          datasetVersion: sRun.dataset_version || '1.0.0',
+          datasetSourceType: sRun.dataset_source_type || 'builtin',
+          totalScenarioCount: sRun.total_cases + (sRun.skipped_cases ?? 0),
+          selectedScenarioCount: sRun.selected_case_count ?? sRun.total_cases,
+          skippedScenarioCount: sRun.skipped_cases ?? 0,
+          cancelledScenarioCount: sRun.cancelled_cases ?? 0,
           status: sRun.status,
           timestamp: sRun.started_at,
           durationMs: sRun.completed_at
@@ -394,6 +477,8 @@ export class EvaluationDbService {
             candidatePassed: sRun.passed_cases,
             candidatePassRate: sRun.pass_rate,
             candidateQualityScore: sRun.quality_score,
+            skippedCases: sRun.skipped_cases ?? 0,
+            cancelledCases: sRun.cancelled_cases ?? 0,
           },
           regressionDecision: {
             isRegression: isReg,
@@ -439,6 +524,12 @@ export class EvaluationDbService {
       return {
         ...dRun,
         status: sRun.status,
+        datasetVersion: sRun.dataset_version || dRun.datasetVersion || '1.0.0',
+        datasetSourceType: sRun.dataset_source_type || dRun.datasetSourceType || 'builtin',
+        totalScenarioCount: dRun.totalScenarioCount ?? (sRun.total_cases + (sRun.skipped_cases ?? 0)),
+        selectedScenarioCount: sRun.selected_case_count ?? dRun.selectedScenarioCount ?? sRun.total_cases,
+        skippedScenarioCount: sRun.skipped_cases ?? dRun.skippedScenarioCount ?? 0,
+        cancelledScenarioCount: sRun.cancelled_cases ?? dRun.cancelledScenarioCount ?? 0,
         metrics: {
           ...dRun.metrics,
           totalCases: sRun.total_cases,
@@ -447,6 +538,8 @@ export class EvaluationDbService {
           candidatePassed: sRun.passed_cases,
           candidatePassRate: sRun.pass_rate,
           candidateQualityScore: sRun.quality_score,
+          skippedCases: sRun.skipped_cases ?? dRun.metrics?.skippedCases ?? 0,
+          cancelledCases: sRun.cancelled_cases ?? dRun.metrics?.cancelledCases ?? 0,
         },
         releaseDecision: {
           ...dRun.releaseDecision,
@@ -471,6 +564,12 @@ export class EvaluationDbService {
         id: sRun.id,
         projectId: sRun.project_id,
         datasetId: sRun.dataset_id,
+        datasetVersion: sRun.dataset_version || '1.0.0',
+        datasetSourceType: sRun.dataset_source_type || 'builtin',
+        totalScenarioCount: sRun.total_cases + (sRun.skipped_cases ?? 0),
+        selectedScenarioCount: sRun.selected_case_count ?? sRun.total_cases,
+        skippedScenarioCount: sRun.skipped_cases ?? 0,
+        cancelledScenarioCount: sRun.cancelled_cases ?? 0,
         status: sRun.status,
         timestamp: sRun.started_at,
         durationMs: sRun.completed_at
@@ -483,6 +582,8 @@ export class EvaluationDbService {
           candidatePassed: sRun.passed_cases,
           candidatePassRate: sRun.pass_rate,
           candidateQualityScore: sRun.quality_score,
+          skippedCases: sRun.skipped_cases ?? 0,
+          cancelledCases: sRun.cancelled_cases ?? 0,
         },
         regressionDecision: {
           isRegression: isReg,

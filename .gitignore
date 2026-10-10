@@ -34,6 +34,9 @@ pnpm-debug.log*
 .vercel
 /data/runs/
 /data/test_eval_fix_db/
+/data/test_dataset_upgrade_db/
+*.db-shm
+*.db-wal
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/

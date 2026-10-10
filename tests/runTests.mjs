@@ -6864,6 +6864,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runBenchmark100ExecutionJudgeTests } = await import('./benchmark100ExecutionJudge.test.mjs');
     await runBenchmark100ExecutionJudgeTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Dataset-Driven Evaluation Upgrade Tests (Phase 1A + 1D)
+    // -------------------------------------------------------------
+    const { runDatasetDrivenUpgradeTests } = await import('./datasetDrivenUpgrade.test.mjs');
+    await runDatasetDrivenUpgradeTests({ test, asyncTest }, server);
   } finally {
     try {
       const { closeDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');

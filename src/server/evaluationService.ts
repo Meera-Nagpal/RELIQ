@@ -382,7 +382,10 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     id: runId,
     projectId: effectiveProject.id,
     datasetId: safeDataset.id,
+    datasetVersion: safeDataset.version || '1.0.0',
+    datasetSourceType: safeDataset.sourceType || 'builtin',
     totalCases,
+    selectedCaseCount: totalCases,
     startedAt: new Date(job.startTime).toISOString(),
   });
 
