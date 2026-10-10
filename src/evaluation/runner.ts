@@ -696,27 +696,48 @@ export class EvaluationRunner {
           let failureReason: string | undefined = undefined;
           let failureCategory = candidateClassification.failureCategory;
 
-          if (candidateClassification.status === 'PROVIDER_RATE_LIMIT') {
-            failureReason = `[Provider Rate Limit 429] ${
+          if (
+            candidateClassification.status === 'PROVIDER_RATE_LIMIT' ||
+            candidateClassification.status === 'PROVIDER_CREDITS_EXHAUSTED' ||
+            candidateClassification.status === 'PAYMENT_REQUIRED'
+          ) {
+            const label =
+              candidateClassification.status === 'PROVIDER_RATE_LIMIT'
+                ? 'Provider Rate Limit 429'
+                : 'Provider Credits Exhausted 402';
+            failureReason = `[${label}] ${
               candidateClassification.errorDetail?.message || 'Rate limit or quota exceeded'
             }`;
             failureCategory = 'PROVIDER_QUOTA';
-          } else if (candidateClassification.status === 'TIMEOUT') {
+          } else if (
+            candidateClassification.status === 'TIMEOUT' ||
+            candidateClassification.status === 'PROVIDER_TIMEOUT'
+          ) {
             failureReason = `[Provider Timeout] ${
               candidateClassification.errorDetail?.message || 'Request timed out'
             }`;
             failureCategory = 'PROVIDER_NETWORK';
-          } else if (candidateClassification.status === 'AUTHENTICATION_ERROR') {
+          } else if (
+            candidateClassification.status === 'AUTHENTICATION_ERROR' ||
+            candidateClassification.status === 'PROVIDER_FORBIDDEN'
+          ) {
             failureReason = `[Provider Auth Error] ${
               candidateClassification.errorDetail?.message || 'Authentication failed'
             }`;
             failureCategory = 'PROVIDER_AUTHENTICATION';
-          } else if (candidateClassification.status === 'NETWORK_ERROR') {
+          } else if (
+            candidateClassification.status === 'NETWORK_ERROR' ||
+            candidateClassification.status === 'PROVIDER_NETWORK_ERROR'
+          ) {
             failureReason = `[Network Error] ${
               candidateClassification.errorDetail?.message || 'Network connectivity error'
             }`;
             failureCategory = 'PROVIDER_NETWORK';
-          } else if (candidateClassification.status === 'PROVIDER_ERROR') {
+          } else if (
+            candidateClassification.status === 'PROVIDER_ERROR' ||
+            candidateClassification.status === 'PROVIDER_SERVER_ERROR' ||
+            (candidateClassification.status as string) === 'INVALID_REQUEST'
+          ) {
             failureReason = `[Provider Error] ${
               candidateClassification.errorDetail?.message || 'Server error'
             }`;
@@ -724,6 +745,10 @@ export class EvaluationRunner {
           } else if (candidateClassification.status === 'QUALITY_FAILURE') {
             failureReason = candidateEval?.primaryScore.details || 'Did not meet evaluation criteria';
             failureCategory = 'QUALITY_FAILURE';
+          } else if (!baselineClassification.isEvaluated && candidateClassification.status === 'PASS') {
+            failureReason = `[Baseline Provider Failure] ${
+              baselineClassification.errorDetail?.message || baselineClassification.status
+            }`;
           }
 
           // Safety classification check
@@ -878,18 +903,62 @@ export class EvaluationRunner {
         if (item.isImprovement) improvedCount++;
 
         // Baseline reliability accounting
-        if (item.baselineClassification.status === 'PROVIDER_RATE_LIMIT') baselineRateLimitCount++;
-        else if (item.baselineClassification.status === 'TIMEOUT') baselineTimeoutCount++;
-        else if (item.baselineClassification.status === 'AUTHENTICATION_ERROR') baselineAuthCount++;
-        else if (item.baselineClassification.status === 'NETWORK_ERROR') baselineNetworkCount++;
-        else if (item.baselineClassification.status === 'PROVIDER_ERROR') baselineOtherCount++;
+        if (
+          item.baselineClassification.status === 'PROVIDER_RATE_LIMIT' ||
+          item.baselineClassification.status === 'PROVIDER_CREDITS_EXHAUSTED' ||
+          item.baselineClassification.status === 'PAYMENT_REQUIRED'
+        ) {
+          baselineRateLimitCount++;
+        } else if (
+          item.baselineClassification.status === 'TIMEOUT' ||
+          item.baselineClassification.status === 'PROVIDER_TIMEOUT'
+        ) {
+          baselineTimeoutCount++;
+        } else if (
+          item.baselineClassification.status === 'AUTHENTICATION_ERROR' ||
+          item.baselineClassification.status === 'PROVIDER_FORBIDDEN'
+        ) {
+          baselineAuthCount++;
+        } else if (
+          item.baselineClassification.status === 'NETWORK_ERROR' ||
+          item.baselineClassification.status === 'PROVIDER_NETWORK_ERROR'
+        ) {
+          baselineNetworkCount++;
+        } else if (
+          item.baselineClassification.status !== 'PASS' &&
+          item.baselineClassification.status !== 'QUALITY_FAILURE'
+        ) {
+          baselineOtherCount++;
+        }
 
         // Candidate reliability accounting
-        if (item.candidateClassification.status === 'PROVIDER_RATE_LIMIT') candidateRateLimitCount++;
-        else if (item.candidateClassification.status === 'TIMEOUT') candidateTimeoutCount++;
-        else if (item.candidateClassification.status === 'AUTHENTICATION_ERROR') candidateAuthCount++;
-        else if (item.candidateClassification.status === 'NETWORK_ERROR') candidateNetworkCount++;
-        else if (item.candidateClassification.status === 'PROVIDER_ERROR') candidateOtherCount++;
+        if (
+          item.candidateClassification.status === 'PROVIDER_RATE_LIMIT' ||
+          item.candidateClassification.status === 'PROVIDER_CREDITS_EXHAUSTED' ||
+          item.candidateClassification.status === 'PAYMENT_REQUIRED'
+        ) {
+          candidateRateLimitCount++;
+        } else if (
+          item.candidateClassification.status === 'TIMEOUT' ||
+          item.candidateClassification.status === 'PROVIDER_TIMEOUT'
+        ) {
+          candidateTimeoutCount++;
+        } else if (
+          item.candidateClassification.status === 'AUTHENTICATION_ERROR' ||
+          item.candidateClassification.status === 'PROVIDER_FORBIDDEN'
+        ) {
+          candidateAuthCount++;
+        } else if (
+          item.candidateClassification.status === 'NETWORK_ERROR' ||
+          item.candidateClassification.status === 'PROVIDER_NETWORK_ERROR'
+        ) {
+          candidateNetworkCount++;
+        } else if (
+          item.candidateClassification.status !== 'PASS' &&
+          item.candidateClassification.status !== 'QUALITY_FAILURE'
+        ) {
+          candidateOtherCount++;
+        }
 
         if (item.baselineClassification.transportSuccess && item.baselineClassification.evaluationEligible) {
           baselineTotalCost += item.baselineResp.usage.estimatedCostUsd || 0;
@@ -912,8 +981,21 @@ export class EvaluationRunner {
         onProgress(completedCount, totalCases, lastCaseName);
       }
 
-      // Conservative pacing between chunks for rate-sensitive providers
-      if (isRateLimitedProvider && chunkStart + clampedConcurrency < totalCases) {
+      // Conservative pacing between chunks for live rate-sensitive providers
+      const isLiveProvider =
+        baselineProvider.name?.includes('Live') ||
+        baselineProvider.name?.includes('Server') ||
+        candidateProvider.name?.includes('Live') ||
+        candidateProvider.name?.includes('Server');
+      const hasSuccessOrRateLimit = chunkResults.some(
+        (r) =>
+          r.baselineClassification.transportSuccess ||
+          r.candidateClassification.transportSuccess ||
+          r.baselineClassification.status === 'PROVIDER_RATE_LIMIT' ||
+          r.candidateClassification.status === 'PROVIDER_RATE_LIMIT'
+      );
+
+      if (isRateLimitedProvider && isLiveProvider && hasSuccessOrRateLimit && chunkStart + clampedConcurrency < totalCases) {
         const retryAfterSec = chunkResults.reduce((max, r) => {
           const bRetry = r.baselineResp.usage.rateLimit?.retryAfter;
           const cRetry = r.candidateResp.usage.rateLimit?.retryAfter;
@@ -1029,9 +1111,13 @@ export class EvaluationRunner {
 
     // Evidence strength MUST be based on evaluated evidence count (Section 10)
     const evidenceStrength = calculateEvidenceStrength(candidateEvaluatedCount);
+    const requiredCasesForEvidence =
+      (typeof regressionSettings?.requiredBenchmarkCases === 'number')
+        ? regressionSettings.requiredBenchmarkCases
+        : (totalCases > 0 ? totalCases : 27);
     const evidenceStrengthReason = getEvidenceStrengthReason(
       candidateEvaluatedCount,
-      totalCases || 27,
+      requiredCasesForEvidence,
       100
     );
 
@@ -1062,12 +1148,19 @@ export class EvaluationRunner {
         safetyFailures++;
       }
     }
-    const providerFailures =
+    const candidateProviderFailures =
       candidateRateLimitCount +
       candidateTimeoutCount +
       candidateAuthCount +
       candidateNetworkCount +
       candidateOtherCount;
+    const baselineProviderFailures =
+      baselineRateLimitCount +
+      baselineTimeoutCount +
+      baselineAuthCount +
+      baselineNetworkCount +
+      baselineOtherCount;
+    const providerFailures = candidateProviderFailures || baselineProviderFailures;
     const unevaluableCases = totalCases - candidateEvaluatedCount;
 
     const metrics: MetricSummary = {
@@ -1154,8 +1247,8 @@ export class EvaluationRunner {
       evaluatedCases: candidateEvaluatedCount,
       qualityFailures,
       providerFailures,
-      authenticationFailures: candidateAuthCount,
-      quotaFailures: candidateRateLimitCount,
+      authenticationFailures: candidateAuthCount || baselineAuthCount,
+      quotaFailures: candidateRateLimitCount || baselineRateLimitCount,
       safetyFailures,
       unevaluableCases,
     };

@@ -398,7 +398,7 @@ export function generateComparisonReport(
       bReliableCount++;
       const bScore = r.baselineScore ?? (r.baselineOutput === r.expectedOutput ? 1.0 : 0.0);
       bQualitySum += bScore;
-      if (r.baselineScore !== null && r.baselineScore !== undefined ? r.baselineScore >= 0.8 : bStatus === 'PASS') {
+      if (r.baselineExecutionStatus ? bStatus === 'PASS' : (r.baselineScore !== null && r.baselineScore !== undefined ? r.baselineScore >= 0.8 : bStatus === 'PASS')) {
         bPassed++;
       } else {
         bQualityFailures++;
@@ -426,7 +426,7 @@ export function generateComparisonReport(
     // Regressions evaluated ONLY on scenarios where both received valid model responses
     if (bIsEvaluated && cIsEvaluated) {
       const bScore = r.baselineScore ?? (r.baselineOutput === r.expectedOutput ? 1.0 : 0.0);
-      const bPass = bScore >= 0.8;
+      const bPass = r.baselineExecutionStatus ? bStatus === 'PASS' : bScore >= 0.8;
       const cPass = r.passed;
 
       if (bPass && !cPass) {
@@ -614,10 +614,9 @@ export function generateComparisonReport(
   let winnerReason = '';
 
   const datasetRequiredCases =
-    settings.requiredBenchmarkCases ??
-    ((datasetName && datasetName.includes('Checkout Reliability'))
-      ? (totalCases >= 27 ? totalCases : 27)
-      : totalCases > 0 ? totalCases : 27);
+    (typeof settings?.requiredBenchmarkCases === 'number')
+      ? settings.requiredBenchmarkCases
+      : (totalCases > 0 ? totalCases : 27);
   const isPreliminary = cEvaluatedCount < datasetRequiredCases;
 
   if (bEvaluatedCount === 0 || cEvaluatedCount === 0) {
@@ -779,14 +778,18 @@ export function generateComparisonReport(
 
   // Benchmark-Completion & Evidence Strength Aware Confidence Score Scaling:
   let sampleConfidence = 0;
-  if (isInsufficientCoverage || cEvaluatedCount === 0) {
+  if (isInsufficientCoverage || cEvaluatedCount === 0 || bEvaluatedCount === 0) {
     sampleConfidence = 15;
     evidence.push(`Evidence Strength: INSUFFICIENT (${Math.min(bCoverage, cCoverage).toFixed(1)}% coverage < ${minCoverage}% threshold).`);
   } else if (isPreliminary) {
     sampleConfidence = Math.min(48, Math.round((cEvaluatedCount / datasetRequiredCases) * 45));
     evidence.push(`Evidence Strength: LOW — ${releaseOutcome.evidenceStrengthReason}`);
+  } else if (releaseOutcome.evidenceStrength === 'LOW') {
+    // Completed small-scope evaluation (e.g. 5/5 or 10/10 completed without premature truncation)
+    sampleConfidence = 75 + Math.min(5, Math.round((cEvaluatedCount / datasetRequiredCases) * 5));
+    evidence.push(`Evidence Strength: LOW — ${releaseOutcome.evidenceStrengthReason}`);
   } else if (releaseOutcome.evidenceStrength === 'MODERATE') {
-    sampleConfidence = 78 + Math.min(10, Math.round(((cEvaluatedCount - datasetRequiredCases) / 73) * 10));
+    sampleConfidence = 80 + Math.min(10, Math.round((Math.max(0, cEvaluatedCount - datasetRequiredCases) / 73) * 10));
     evidence.push(`Evidence Strength: MODERATE — ${releaseOutcome.evidenceStrengthReason}`);
   } else {
     sampleConfidence = 92 + Math.min(6, Math.round(((cEvaluatedCount - 100) / 400) * 6));
@@ -980,9 +983,9 @@ export function createEmptyReport(
     benchmarkCompletion: {
       status: 'PRELIMINARY_SUBSET',
       evaluatedCases: 0,
-      requiredCases: 27,
+      requiredCases: 0,
       isComplete: false,
-      label: '0/27 scenarios evaluated',
+      label: '0 scenarios evaluated',
     },
     releaseGates: [],
     overallGateStatus: 'INCONCLUSIVE',

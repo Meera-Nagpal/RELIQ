@@ -46,6 +46,9 @@ export async function handleProjectRoutes(
         id: typeof body.id === 'string' ? body.id : undefined,
         name: body.name,
         description: typeof body.description === 'string' ? body.description : undefined,
+        defaultDatasetId: typeof body.defaultDatasetId === 'string' ? body.defaultDatasetId : undefined,
+        baselineVersionId: typeof body.baselineVersionId === 'string' ? body.baselineVersionId : undefined,
+        candidateVersionId: typeof body.candidateVersionId === 'string' ? body.candidateVersionId : undefined,
       });
       sendJson(res, 201, created);
     } catch (err: any) {
@@ -88,6 +91,9 @@ export async function handleProjectRoutes(
         const updated = projectService.updateProject(id, {
           name: body.name,
           description: typeof body.description === 'string' ? body.description : undefined,
+          defaultDatasetId: typeof body.defaultDatasetId === 'string' ? body.defaultDatasetId : undefined,
+          baselineVersionId: typeof body.baselineVersionId === 'string' ? body.baselineVersionId : undefined,
+          candidateVersionId: typeof body.candidateVersionId === 'string' ? body.candidateVersionId : undefined,
         });
 
         if (!updated) {

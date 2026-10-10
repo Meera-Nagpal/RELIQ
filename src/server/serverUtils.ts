@@ -11,13 +11,25 @@ import fs from 'fs';
 import path from 'path';
 import type { IncomingMessage, ServerResponse } from 'http';
 
+const MAX_BODY_BYTES = 25 * 1024 * 1024; // 25 MB limit
+
 export function parseJsonBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = '';
+    let receivedBytes = 0;
+    let aborted = false;
     req.on('data', (chunk: Buffer | string) => {
+      if (aborted) return;
+      receivedBytes += typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length;
+      if (receivedBytes > MAX_BODY_BYTES) {
+        aborted = true;
+        reject(new Error('Request body exceeds maximum allowed size (25 MB)'));
+        return;
+      }
       body += chunk;
     });
     req.on('end', () => {
+      if (aborted) return;
       try {
         resolve(body ? JSON.parse(body) : {});
       } catch (err) {

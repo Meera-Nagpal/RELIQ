@@ -14,6 +14,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
+  cancelEvaluationJob,
   deleteRunFromDisk,
   getJobStatus,
   getRunFromDisk,
@@ -234,6 +235,19 @@ export function createReliqProxyMiddleware() {
       return;
     }
 
+    // ── Evaluations API: POST /api/evaluations/cancel/:runId ────
+    if (req.method === 'POST' && parsedUrl.startsWith('/api/evaluations/cancel/')) {
+      const runId = parsedUrl.replace('/api/evaluations/cancel/', '').trim();
+      const cancelled = cancelEvaluationJob(runId);
+      sendJson(res, 200, {
+        success: true,
+        cancelled,
+        runId,
+        status: 'FAILED',
+      });
+      return;
+    }
+
     // ── Evaluations API: GET /api/evaluations/runs ──────────────
     if (req.method === 'GET' && parsedUrl === '/api/evaluations/runs') {
       try {
@@ -246,8 +260,9 @@ export function createReliqProxyMiddleware() {
     }
 
     // ── Evaluations API: GET /api/evaluations/runs/:id ──────────
-    if (req.method === 'GET' && parsedUrl.startsWith('/api/evaluations/runs/')) {
-      const runId = parsedUrl.replace('/api/evaluations/runs/', '').trim();
+    const runIdGetMatch = req.method === 'GET' ? parsedUrl.match(/^\/api\/evaluations\/runs\/([^/]+)$/) : null;
+    if (runIdGetMatch) {
+      const runId = runIdGetMatch[1].trim();
       const run = evaluationDbService.getEvaluationRunById(runId);
       if (!run) {
         sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run '${runId}' not found`);
@@ -258,8 +273,9 @@ export function createReliqProxyMiddleware() {
     }
 
     // ── Evaluations API: DELETE /api/evaluations/runs/:id ───────
-    if (req.method === 'DELETE' && parsedUrl.startsWith('/api/evaluations/runs/')) {
-      const runId = parsedUrl.replace('/api/evaluations/runs/', '').trim();
+    const runIdDelMatch = req.method === 'DELETE' ? parsedUrl.match(/^\/api\/evaluations\/runs\/([^/]+)$/) : null;
+    if (runIdDelMatch) {
+      const runId = runIdDelMatch[1].trim();
       let deletedFromDb = false;
       try {
         const db = getDatabase();

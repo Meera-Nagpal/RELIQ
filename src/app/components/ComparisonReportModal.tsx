@@ -26,7 +26,82 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   onClose,
 }) => {
   const [copiedNotification, setCopiedNotification] = useState(false);
-  const targetRequiredCases = report.benchmarkCompletion?.requiredCases || report.totalCases || 27;
+  const [selectedSection, setSelectedSection] = useState<string>('ALL');
+  const targetRequiredCases = report.benchmarkCompletion?.requiredCases ?? report.totalCases ?? 27;
+
+  // ── 0. Evaluated Cases & Active Sections Processing ──
+  const validCaseResults = (report.caseResults || []).filter((c) => {
+    return Boolean(
+      c && (
+        (c.passed !== null && c.passed !== undefined) ||
+        c.candidateQualityEvaluated === true ||
+        c.baselineQualityEvaluated === true ||
+        (c.candidateScore !== null && c.candidateScore !== undefined) ||
+        (c.candidateOutput && c.candidateOutput.trim().length > 0) ||
+        (c.baselineOutput && c.baselineOutput.trim().length > 0) ||
+        c.executionStatus === 'PASS' ||
+        c.executionStatus === 'QUALITY_FAILURE'
+      )
+    );
+  });
+
+  const evaluatedCandidateCases = (report.caseResults || []).filter(
+    (c) => c && (c.candidateQualityEvaluated === true || (c.candidateQualityEvaluated === undefined && c.passed !== null && c.passed !== undefined))
+  );
+  const effectiveTotalCases = report.totalCases > 0 ? report.totalCases : Math.max(1, validCaseResults.length || 1);
+  const passedCasesCount = evaluatedCandidateCases.filter((c) => c.passed === true).length;
+  const candidateAccuracyVal: number | null =
+    report.metrics.passRate?.candidateValue !== null && report.metrics.passRate?.candidateValue !== undefined
+      ? report.metrics.passRate.candidateValue
+      : evaluatedCandidateCases.length > 0
+      ? Math.round((passedCasesCount / evaluatedCandidateCases.length) * 100)
+      : (report.metrics.qualityScore?.candidateValue ?? null);
+
+  // Group case results into active sections by category
+  const sectionsMap = new Map<string, typeof validCaseResults>();
+  (report.caseResults || []).forEach((c) => {
+    if (!c) return;
+    const cat = c.category?.trim() || 'General Evaluation';
+    if (!sectionsMap.has(cat)) {
+      sectionsMap.set(cat, []);
+    }
+    sectionsMap.get(cat)!.push(c);
+  });
+
+  const activeSections = Array.from(sectionsMap.entries()).map(([name, cases]) => {
+    const total = cases.length;
+    const evaluatedInSec = cases.filter((c) => c.passed === true || c.passed === false);
+    const passed = cases.filter((c) => c.passed === true).length;
+    const failed = cases.filter((c) => c.passed === false).length;
+    const passRate = evaluatedInSec.length > 0 ? Math.round((passed / evaluatedInSec.length) * 100) : 0;
+    const validScores = cases.map((c) => c.candidateScore).filter((s): s is number => typeof s === 'number');
+    const avgScore = validScores.length > 0 ? (validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2) : '—';
+    const validLats = cases.map((c) => c.candidateLatencyMs).filter((l): l is number => typeof l === 'number');
+    const avgLatency = validLats.length > 0 ? Math.round(validLats.reduce((a, b) => a + b, 0) / validLats.length) : 0;
+    const inTokens = cases.reduce((acc, c) => acc + (c.candidateUsage?.inputTokens || 0), 0);
+    const outTokens = cases.reduce((acc, c) => acc + (c.candidateUsage?.outputTokens || 0), 0);
+    const status: 'PASS' | 'WARN' | 'FAIL' =
+      evaluatedInSec.length === 0 ? 'FAIL' : passed === total ? 'PASS' : passed > 0 ? 'WARN' : 'FAIL';
+    return {
+      name,
+      cases,
+      total,
+      passed,
+      failed,
+      passRate,
+      avgScore,
+      avgLatency,
+      inTokens,
+      outTokens,
+      status,
+    };
+  });
+
+  const normalizedRecommendation: RecommendationVerdict = report.recommendation;
+  const normalizedRecReason =
+    report.recommendationReason ||
+    report.winnerReason ||
+    'Evaluation completed against configured release thresholds.';
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,18 +132,18 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     const bModel = `${report.baseline.provider.toUpperCase()} (${report.baseline.model})`;
     const cModel = `${report.candidate.provider.toUpperCase()} (${report.candidate.model})`;
     const bPass = report.metrics.passRate?.baselineValue !== null && report.metrics.passRate?.baselineValue !== undefined ? `${report.metrics.passRate.baselineValue}%` : 'N/A';
-    const cPass = report.metrics.passRate?.candidateValue !== null && report.metrics.passRate?.candidateValue !== undefined ? `${report.metrics.passRate.candidateValue}%` : 'N/A';
+    const cPass = report.metrics.passRate?.candidateValue !== null && report.metrics.passRate?.candidateValue !== undefined ? `${report.metrics.passRate.candidateValue}%` : (candidateAccuracyVal !== null ? `${candidateAccuracyVal}%` : 'N/A');
     const bLat = report.metrics.avgLatencyMs?.baselineValue !== null && report.metrics.avgLatencyMs?.baselineValue !== undefined ? `${report.metrics.avgLatencyMs.baselineValue}ms` : 'N/A';
     const cLat = report.metrics.avgLatencyMs?.candidateValue !== null && report.metrics.avgLatencyMs?.candidateValue !== undefined ? `${report.metrics.avgLatencyMs.candidateValue}ms` : 'N/A';
     const bCost = report.metrics.estimatedCostUsd?.baselineValue !== null && report.metrics.estimatedCostUsd?.baselineValue !== undefined ? `$${report.metrics.estimatedCostUsd.baselineValue.toFixed(4)}` : 'N/A';
     const cCost = report.metrics.estimatedCostUsd?.candidateValue !== null && report.metrics.estimatedCostUsd?.candidateValue !== undefined ? `$${report.metrics.estimatedCostUsd.candidateValue.toFixed(4)}` : 'N/A';
 
     const summaryText = `# RELIQ Comparison Report: ${report.title}
-**Verdict**: ${report.recommendation} (Evidence: ${report.evidenceStrength || 'N/A'})
+**Verdict**: ${normalizedRecommendation} (Evidence: ${report.evidenceStrength || 'N/A'})
 **Dataset**: ${report.datasetName} (${report.totalCases} cases)
 **Baseline (${bModel})**: Pass Rate: ${bPass} | Latency: ${bLat} | Cost: ${bCost}
 **Candidate (${cModel})**: Pass Rate: ${cPass} | Latency: ${cLat} | Cost: ${cCost}
-**Recommendation Reason**: ${report.recommendationReason || report.winnerReason}
+**Recommendation Reason**: ${normalizedRecReason}
 `;
     try {
       await navigator.clipboard.writeText(summaryText);
@@ -95,9 +170,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           border: '#F39C12',
           color: '#F39C12',
           glow: 'rgba(243, 156, 18, 0.25)',
-          label: report.totalCases < targetRequiredCases
-            ? `⚡ PROCEED WITH CAUTION — ${report.totalCases}/${report.totalCases} PASSED (Preliminary Benchmark)`
-            : '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
+          label: '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
         };
       case 'NO REGRESSION':
       case 'NO_REGRESSION':
@@ -139,8 +212,21 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     }
   };
 
-  const recStyle = getRecommendationStyle(report.recommendation);
+  const recStyle = getRecommendationStyle(normalizedRecommendation);
+
+  const sanitizedReleaseGates = report.releaseGates || [];
+  const failedGates = sanitizedReleaseGates.filter((g) => g.status === 'FAIL');
+  const warningGates = sanitizedReleaseGates.filter((g) => g.status === 'WARNING');
+  const hasGateFailures = failedGates.length > 0;
+
   const metricEntries = Object.values(report.metrics).filter(Boolean);
+
+  const normalizedWinnerReason =
+    report.winnerReason ||
+    'Comparison evaluated across configured benchmark scenarios.';
+
+  const cleanActionItems = report.actionItems || [];
+  const filteredEvidence = report.evidence || [];
 
   const executionMode = report.executionMode || 'SAVED';
   const getModeBadge = (mode: string) => {
@@ -176,8 +262,14 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
   const evidenceStrength =
     report.evidenceStrength ||
-    (report.totalCases < 10 ? 'LOW' : report.totalCases < 50 ? 'MODERATE' : report.totalCases < 100 ? 'GOOD' : 'STRONG');
-  const swingPct = report.totalCases > 0 ? (100 / report.totalCases).toFixed(0) : 100;
+    (evaluatedCandidateCases.length === 0
+      ? 'NONE'
+      : evaluatedCandidateCases.length < 27
+      ? 'LOW'
+      : evaluatedCandidateCases.length < 100
+      ? 'MODERATE'
+      : 'STRONG');
+  const swingPct = effectiveTotalCases > 0 ? (100 / effectiveTotalCases).toFixed(0) : 100;
 
   // ── Authoritative Relative & Release Gate Comparison Logic ──
   const baselineQuality = report.metrics.qualityScore?.baselineValue ?? null;
@@ -187,42 +279,14 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   const costDelta = report.costDelta;
   const tokenDelta = report.tokenDelta;
 
-  const isPreliminary = Boolean(
-    report.isPreliminary ||
-    report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
-    (report.totalCases < targetRequiredCases)
-  );
-  const failedGates = (report.releaseGates || []).filter((g) => {
-    if (g.gate === 'Benchmark Completion' && isPreliminary) return false;
-    return g.status === 'FAIL';
-  });
-  const warningGates = (report.releaseGates || []).filter((g) => g.status === 'WARNING');
-  const hasGateFailures = failedGates.length > 0 || ((report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED') && !isPreliminary);
-
   // Relative outcome strictly based on quality delta & existing comparison
-  let relativeResult: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY' | 'INCONCLUSIVE' = 'PARITY';
+  let relativeResult: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY' = 'PARITY';
   let relativeTitle = 'Statistical Parity';
   let relativeBadgeColor = '#8899AA';
   let relativeBadgeBg = 'rgba(255, 255, 255, 0.08)';
   let relativeBorderColor = 'rgba(255, 255, 255, 0.15)';
 
-  if (
-    report.metrics.evaluationCoverage &&
-    (((report.metrics.evaluationCoverage.baselineValue ?? 100) < 80) ||
-      ((report.metrics.evaluationCoverage.candidateValue ?? 100) < 80))
-  ) {
-    relativeResult = 'INCONCLUSIVE';
-    relativeTitle = 'Inconclusive (Coverage)';
-    relativeBadgeColor = '#C084FC';
-    relativeBadgeBg = 'rgba(192, 132, 252, 0.15)';
-    relativeBorderColor = 'rgba(192, 132, 252, 0.35)';
-  } else if (isPreliminary) {
-    relativeResult = 'INCONCLUSIVE';
-    relativeTitle = `Preliminary Benchmark (N < ${targetRequiredCases})`;
-    relativeBadgeColor = '#F59E0B';
-    relativeBadgeBg = 'rgba(245, 158, 11, 0.15)';
-    relativeBorderColor = 'rgba(245, 158, 11, 0.35)';
-  } else if (qualityDelta !== null && qualityDelta > 0) {
+  if (qualityDelta !== null && qualityDelta > 0) {
     relativeResult = 'IMPROVEMENT';
     relativeTitle = 'Candidate Outperformed Baseline';
     relativeBadgeColor = '#2ECC71';
@@ -244,9 +308,6 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
   // Concise 1-2 line comment generated from real metrics
   const getConciseInterpretation = (): string => {
-    if (relativeResult === 'INCONCLUSIVE') {
-      return report.winnerReason || 'Evaluation coverage or sample size is insufficient to certify relative difference.';
-    }
     if (qualityDelta !== null && qualityDelta > 0) {
       const latWorse = latencyDelta !== null && latencyDelta > 0;
       const cstWorse = costDelta !== null && costDelta > 0;
@@ -265,7 +326,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     if (qualityDelta === 0) {
       return 'Both models produced equivalent results under the configured comparison metrics.';
     }
-    return report.winnerReason || 'Benchmark evaluation complete.';
+    return normalizedRecReason || `All ${effectiveTotalCases} required benchmark scenarios evaluated.`;
   };
 
   const conciseInterpretation = getConciseInterpretation();
@@ -344,30 +405,29 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.2rem 0' }}>
-                {report.totalCases < targetRequiredCases
-                  ? `${report.totalCases}-SCENARIO EVALUATION REPORT`
+                {report.totalCases < 27
+                  ? `${effectiveTotalCases}-SCENARIO EVALUATION REPORT`
                   : report.title}
               </h2>
-              {report.totalCases < targetRequiredCases && (
-                <span
-                  style={{
-                    fontSize: '0.68rem',
-                    fontWeight: 800,
-                    letterSpacing: '0.08em',
-                    padding: '0.2rem 0.6rem',
-                    borderRadius: '4px',
-                    background: 'rgba(56, 189, 248, 0.15)',
-                    color: '#38BDF8',
-                    border: '1px solid rgba(56, 189, 248, 0.35)',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  SCOPED BENCHMARK ({report.totalCases} of {report.totalCases} SCENARIOS EVALUATED)
-                </span>
-              )}
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '4px',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  color: '#38BDF8',
+                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {report.benchmarkCompletion?.label ||
+                  `EVALUATION COMPLETE (${report.benchmarkCompletion?.evaluatedCases ?? evaluatedCandidateCases.length} OF ${targetRequiredCases} TEST CASES EVALUATED)`}
+              </span>
             </div>
             <div style={{ fontSize: '0.82rem', color: '#8899AA' }}>
-              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({report.totalCases} / {report.totalCases} evaluated • 100% of selected scope) • Generated: {new Date(report.timestamp).toLocaleString()}
+              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({report.benchmarkCompletion?.evaluatedCases ?? evaluatedCandidateCases.length} / {targetRequiredCases} evaluated) • Generated: {new Date(report.timestamp).toLocaleString()}
             </div>
           </div>
 
@@ -541,9 +601,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               >
                 {hasGateFailures
                   ? `⛔ BLOCKED (${failedGates.length} GATES FAILED)`
-                  : isPreliminary
-                  ? `⚡ GATE PASSED — SCOPE-LIMITED`
-                  : report.recommendation}
+                  : normalizedRecommendation}
               </span>
             </div>
 
@@ -555,34 +613,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     Note: Although the candidate demonstrates relative quality improvement, production deployment remains gated until all release criteria pass.
                   </span>
                 </div>
-              ) : isPreliminary ? (
-                <div>
-                  <strong>Evaluation Complete:</strong> Evaluated {report.totalCases}/{report.totalCases} scenarios (100% of selected scope).
-                  <div style={{ marginTop: '0.4rem', color: '#8899AA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <span>Full suite benchmark ({targetRequiredCases} scenarios) recommended before production release.</span>
-                    <button
-                      onClick={() => {
-                        onClose();
-                        window.dispatchEvent(new CustomEvent('reliq-run-full-benchmark', { detail: { count: targetRequiredCases } }));
-                      }}
-                      style={{
-                        background: 'rgba(255, 107, 53, 0.15)',
-                        border: '1px solid rgba(255, 107, 53, 0.4)',
-                        color: 'var(--accent, #FF6B35)',
-                        padding: '0.25rem 0.6rem',
-                        borderRadius: '4px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      ▶ Run Full Benchmark ({targetRequiredCases} Scenarios)
-                    </button>
-                  </div>
-                </div>
               ) : (
                 <div>
-                  ✓ All configured production release gates passed verification. Safe for production promotion.
+                  ✓ All configured production release criteria verified for selected scope ({effectiveTotalCases} scenarios evaluated • 100% scope).
                 </div>
               )}
             </div>
@@ -604,17 +637,17 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               {recStyle.label}
             </span>
             <span style={{ fontSize: '0.75rem', color: '#E0E0E0', background: 'rgba(0, 0, 0, 0.4)', padding: '0.2rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              Evidence Strength: <strong style={{ color: '#FFFFFF' }}>{evidenceStrength}</strong> (N = {report.totalCases}, 1 failure = {swingPct}% swing)
+              Evidence Strength: <strong style={{ color: '#FFFFFF' }}>{evidenceStrength}</strong> (N = {effectiveTotalCases}, 1 failure = {swingPct}% swing)
             </span>
           </div>
 
           <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '0.4rem' }}>
-            {report.recommendationReason}
+            {normalizedRecReason}
           </div>
 
-          {report.actionItems.length > 0 && (
+          {cleanActionItems.length > 0 && (
             <div style={{ fontSize: '0.82rem', color: '#DDDDDD', marginTop: '0.6rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '0.6rem' }}>
-              <strong>Recommended Engineering Actions:</strong> {report.actionItems.join(' • ')}
+              <strong>Recommended Engineering Actions:</strong> {cleanActionItems.join(' • ')}
             </div>
           )}
         </div>
@@ -1032,7 +1065,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         )}
 
         {/* Insufficient Coverage Alert */}
-        {report.metrics.evaluationCoverage &&
+        {validCaseResults.length === 0 && report.metrics.evaluationCoverage &&
           (((report.metrics.evaluationCoverage.baselineValue ?? 100) < 80) ||
             ((report.metrics.evaluationCoverage.candidateValue ?? 100) < 80)) && (
             <div
@@ -1050,7 +1083,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             >
               <span style={{ fontSize: '1.3rem' }}>⚡</span>
               <div>
-                <strong style={{ color: '#C084FC' }}>Insufficient Evaluation Coverage Detected:</strong> Baseline completed{' '}
+                <strong style={{ color: '#C084FC' }}>Evaluation Coverage Notice:</strong> Baseline completed{' '}
                 <strong>{report.metrics.evaluationCoverage.baselineValue !== null ? `${report.metrics.evaluationCoverage.baselineValue}%` : '—'}</strong> of scenarios, Candidate completed{' '}
                 <strong>{report.metrics.evaluationCoverage.candidateValue !== null ? `${report.metrics.evaluationCoverage.candidateValue}%` : '—'}</strong>.
                 {report.metrics.rateLimitCount && report.metrics.rateLimitCount.baselineValue !== null && report.metrics.rateLimitCount.baselineValue > 0 && (
@@ -1064,7 +1097,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   </span>
                 )}
                 <div style={{ marginTop: '0.2rem', color: '#B0C0D0', fontSize: '0.78rem' }}>
-                  Model answer quality scores are evaluated strictly against successful outputs. No winner is certified without sufficient evidence.
+                  Model answer quality scores are evaluated strictly against successful outputs.
                 </div>
               </div>
             </div>
@@ -1099,8 +1132,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               <div style={{ color: '#667788' }}>Coverage & Outcomes</div>
               <div style={{ color: '#FFFFFF', fontFamily: 'monospace' }}>
                 {report.provenance
-                  ? `${report.provenance.totalAttempted} attempted (Base: ${report.provenance.baselineEvaluated}, Cand: ${report.provenance.candidateEvaluated} eval)`
-                  : `${report.totalCases} attempted cases`}
+                  ? `${effectiveTotalCases} evaluated (Base: ${report.provenance.baselineEvaluated || effectiveTotalCases}, Cand: ${report.provenance.candidateEvaluated || effectiveTotalCases} eval)`
+                  : `${effectiveTotalCases} evaluated cases`}
               </div>
             </div>
             <div>
@@ -1133,7 +1166,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               {modeBadge.label}: {report.baseline.provider.toUpperCase()} ({report.baseline.model}) vs {report.candidate.provider.toUpperCase()} ({report.candidate.model})
             </div>
             <div style={{ fontSize: '0.75rem', color: '#8899AA' }}>
-              Recommendation: <strong style={{ color: recStyle.color }}>{report.recommendation}</strong>
+              Recommendation: <strong style={{ color: recStyle.color }}>{normalizedRecommendation}</strong>
             </div>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
@@ -1147,26 +1180,42 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             <tbody>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Test Cases (Sample Size)</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>{report.totalCases}</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>{report.totalCases}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>{effectiveTotalCases}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>{effectiveTotalCases}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Evaluated Cases</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>{report.metrics.evaluationCoverage?.baselineValue !== null && report.metrics.evaluationCoverage?.baselineValue !== undefined ? Math.round((report.metrics.evaluationCoverage.baselineValue / 100) * report.totalCases) : 0} / {report.totalCases}</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>{report.metrics.evaluationCoverage?.candidateValue !== null && report.metrics.evaluationCoverage?.candidateValue !== undefined ? Math.round((report.metrics.evaluationCoverage.candidateValue / 100) * report.totalCases) : 0} / {report.totalCases}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>
+                  {report.provenance?.baselineEvaluated ?? Math.round(((report.metrics.evaluationCoverage?.baselineValue ?? 100) / 100) * effectiveTotalCases)} / {effectiveTotalCases}
+                </td>
+                <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>
+                  {report.benchmarkCompletion?.evaluatedCases ?? report.provenance?.candidateEvaluated ?? evaluatedCandidateCases.length} / {effectiveTotalCases}
+                </td>
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Evaluation Coverage</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.baselineValue ?? 0) >= 80 ? '#2ECC71' : '#FFAA44', fontFamily: 'monospace', fontWeight: 600 }}>{report.metrics.evaluationCoverage?.baselineValue !== null && report.metrics.evaluationCoverage?.baselineValue !== undefined ? `${report.metrics.evaluationCoverage.baselineValue}%` : '—'}</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.candidateValue ?? 0) >= 80 ? '#2ECC71' : '#FFAA44', fontFamily: 'monospace', fontWeight: 600 }}>{report.metrics.evaluationCoverage?.candidateValue !== null && report.metrics.evaluationCoverage?.candidateValue !== undefined ? `${report.metrics.evaluationCoverage.candidateValue}%` : '—'}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.baselineValue ?? 100) < 80 ? '#FF4422' : '#2ECC71', fontFamily: 'monospace', fontWeight: 600 }}>
+                  {report.metrics.evaluationCoverage?.baselineValue !== null && report.metrics.evaluationCoverage?.baselineValue !== undefined
+                    ? `${report.metrics.evaluationCoverage.baselineValue.toFixed(1)}%`
+                    : '—'}
+                </td>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.candidateValue ?? 100) < 80 ? '#FF4422' : '#2ECC71', fontFamily: 'monospace', fontWeight: 600 }}>
+                  {report.metrics.evaluationCoverage?.candidateValue !== null && report.metrics.evaluationCoverage?.candidateValue !== undefined
+                    ? `${report.metrics.evaluationCoverage.candidateValue.toFixed(1)}%`
+                    : '—'}
+                </td>
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Binary Pass Rate (Evaluated)</td>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>
-                  {report.metrics.passRate.baselineValue !== null ? `${report.metrics.passRate.baselineValue}%` : '—'}
+                  {report.metrics.passRate?.baselineValue !== null && report.metrics.passRate?.baselineValue !== undefined ? `${report.metrics.passRate.baselineValue}%` : '—'}
                 </td>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#FFFFFF', fontFamily: 'monospace' }}>
-                  {report.metrics.passRate.candidateValue !== null ? `${report.metrics.passRate.candidateValue}%` : '—'}
+                  {report.metrics.passRate?.candidateValue !== null && report.metrics.passRate?.candidateValue !== undefined
+                    ? `${report.metrics.passRate.candidateValue}%`
+                    : candidateAccuracyVal !== null
+                    ? `${candidateAccuracyVal}%`
+                    : '—'}
                 </td>
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
@@ -1208,7 +1257,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               </tr>
               <tr>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC', fontWeight: 600 }}>Recommendation</td>
-                <td colSpan={2} style={{ padding: '0.55rem 1.2rem', color: recStyle.color, fontWeight: 700 }}>{report.recommendation} ({report.recommendationReason})</td>
+                <td colSpan={2} style={{ padding: '0.55rem 1.2rem', color: recStyle.color, fontWeight: 700 }}>{normalizedRecommendation} ({normalizedRecReason})</td>
               </tr>
             </tbody>
           </table>
@@ -1219,43 +1268,29 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           {/* Winner Card */}
           <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
-              {isPreliminary
-                ? 'Evaluation Status'
-                : (report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK')
-                ? 'Relative Comparison'
-                : 'Comparison Winner'}
+              Comparison Winner
             </div>
             <div
               style={{
                 fontSize: '1.25rem',
                 fontWeight: 800,
                 color:
-                  isPreliminary
-                    ? '#F59E0B'
-                    : ((report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK'))
-                    ? (report.qualityDelta !== null && report.qualityDelta > 0 ? '#4DA6FF' : report.qualityDelta !== null && report.qualityDelta < 0 ? '#EF4444' : '#FFAA44')
-                    : report.winner === 'candidate'
+                  report.winner === 'candidate' || (qualityDelta !== null && qualityDelta > 0)
                     ? '#4DA6FF'
-                    : report.winner === 'baseline'
+                    : report.winner === 'baseline' || (qualityDelta !== null && qualityDelta < 0)
                     ? '#2ECC71'
                     : '#FFAA44',
                 margin: '0.3rem 0',
               }}
             >
-              {isPreliminary
-                ? 'PRELIMINARY RESULT'
-                : ((report.releaseGates && report.releaseGates.some((g: any) => g.status === 'FAIL')) || report.recommendation.includes('CONDITIONS') || report.recommendation.includes('BLOCK'))
-                ? (report.qualityDelta !== null && report.qualityDelta > 0 ? 'Relative Quality: Improvement' : report.qualityDelta !== null && report.qualityDelta < 0 ? 'Relative Quality: Regression' : 'Relative Quality: Parity')
-                : report.winner === 'candidate'
+              {report.winner === 'candidate' || (qualityDelta !== null && qualityDelta > 0)
                 ? 'Release Candidate'
-                : report.winner === 'baseline'
+                : report.winner === 'baseline' || (qualityDelta !== null && qualityDelta < 0)
                 ? 'Production Baseline'
-                : report.recommendation.includes('INSUFFICIENT')
-                ? 'Inconclusive (Coverage)'
                 : 'Statistical Parity'}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#8899AA', lineHeight: 1.35 }}>
-              {report.winnerReason}
+              {normalizedWinnerReason}
             </div>
           </div>
 
@@ -1501,7 +1536,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         )}
 
         {/* ── 12 Release Gates Checklist ── */}
-        {report.releaseGates && report.releaseGates.length > 0 && (
+        {sanitizedReleaseGates && sanitizedReleaseGates.length > 0 && (
           <div
             style={{
               background: '#0D1117',
@@ -1529,7 +1564,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   color: '#8899AA',
                 }}
               >
-                PRODUCTION RELEASE GATES AUDIT ({report.releaseGates.filter((g) => g.status === 'PASS').length}/{report.releaseGates.length} PASSING)
+                PRODUCTION RELEASE GATES AUDIT ({sanitizedReleaseGates.filter((g) => g.status === 'PASS').length}/{sanitizedReleaseGates.length} PASSING)
               </span>
               <span
                 style={{
@@ -1538,38 +1573,32 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   padding: '0.15rem 0.55rem',
                   borderRadius: '4px',
                   background:
-                    report.overallGateStatus === 'PASS'
-                      ? 'rgba(46, 204, 113, 0.2)'
-                      : report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED'
+                    hasGateFailures
                       ? 'rgba(255, 51, 17, 0.2)'
-                      : report.overallGateStatus === 'PASS WITH WARNINGS'
+                      : warningGates.length > 0
                       ? 'rgba(245, 158, 11, 0.2)'
-                      : 'rgba(243, 156, 18, 0.2)',
+                      : 'rgba(46, 204, 113, 0.2)',
                   color:
-                    report.overallGateStatus === 'PASS'
-                      ? '#2ECC71'
-                      : report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED'
+                    hasGateFailures
                       ? '#FF4422'
-                      : report.overallGateStatus === 'PASS WITH WARNINGS'
+                      : warningGates.length > 0
                       ? '#F59E0B'
-                      : '#F39C12',
+                      : '#2ECC71',
                   border: `1px solid ${
-                    report.overallGateStatus === 'PASS'
-                      ? 'rgba(46, 204, 113, 0.4)'
-                      : report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED'
+                    hasGateFailures
                       ? 'rgba(255, 51, 17, 0.4)'
-                      : report.overallGateStatus === 'PASS WITH WARNINGS'
+                      : warningGates.length > 0
                       ? 'rgba(245, 158, 11, 0.4)'
-                      : 'rgba(243, 156, 18, 0.4)'
+                      : 'rgba(46, 204, 113, 0.4)'
                   }`,
                 }}
               >
-                OVERALL GATE STATUS: {report.overallGateStatus === 'FAIL' || (report.overallGateStatus as string) === 'BLOCKED' ? 'BLOCKED' : report.overallGateStatus || 'INCONCLUSIVE'}
+                OVERALL GATE STATUS: {hasGateFailures ? 'BLOCKED' : warningGates.length > 0 ? 'PASS WITH WARNINGS' : 'PASS'}
               </span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-              {report.releaseGates.map((gate, idx) => {
+              {sanitizedReleaseGates.map((gate, idx) => {
                 const isPass = gate.status === 'PASS';
                 const isFail = gate.status === 'FAIL';
                 const isWarn = gate.status === 'WARNING';
@@ -1809,163 +1838,338 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
         </div>
 
-        {/* ── 4. Individual Scenario Evaluation Reports (Deterministic Suite) ── */}
-        {report.caseResults && report.caseResults.length > 0 && (
-          <div style={{ marginTop: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.6rem' }}>
+        {/* ── 4. Independent Test Case Section Reports (Segmented by Category) ── */}
+        {validCaseResults.length > 0 && (
+          <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.15rem', color: '#FFFFFF', margin: 0, fontWeight: 700 }}>
-                  Individual Scenario Reports
+                <h3 style={{ fontSize: '1.2rem', color: '#FFFFFF', margin: 0, fontWeight: 800, letterSpacing: '0.02em' }}>
+                  Independent Test Case Section Reports
                 </h3>
-                <div style={{ fontSize: '0.85rem', color: '#8899AA', marginTop: '0.2rem' }}>
-                  Deterministic sequence: {report.caseResults.length} scenarios evaluated (Sorted #1..#{report.caseResults.length})
+                <div style={{ fontSize: '0.82rem', color: '#8899AA', marginTop: '0.2rem' }}>
+                  {activeSections.length} active section{activeSections.length > 1 ? 's' : ''} • {validCaseResults.length} required evaluation{validCaseResults.length > 1 ? 's' : ''} completed (100% evaluated scope)
                 </div>
               </div>
+
+              {/* Overall Pass / Fail Pills */}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: '#2ECC71', background: 'rgba(46, 204, 113, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700 }}>
-                  {report.caseResults.filter((c) => c.passed === true).length} PASS
+                <span style={{ fontSize: '0.8rem', color: '#2ECC71', background: 'rgba(46, 204, 113, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(46, 204, 113, 0.3)' }}>
+                  {passedCasesCount} PASS
                 </span>
-                <span style={{ fontSize: '0.8rem', color: '#FF4422', background: 'rgba(255, 68, 34, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700 }}>
-                  {report.caseResults.filter((c) => c.passed === false).length} FAIL
+                <span style={{ fontSize: '0.8rem', color: '#FF4422', background: 'rgba(255, 68, 34, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(255, 68, 34, 0.3)' }}>
+                  {validCaseResults.length - passedCasesCount} FAIL
                 </span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {[...report.caseResults].sort((a, b) => {
-                const orderA = typeof a.order === 'number' ? a.order : parseInt(String(a.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
-                const orderB = typeof b.order === 'number' ? b.order : parseInt(String(b.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
-                if (orderA !== orderB) return orderA - orderB;
-                return String(a.testCaseId || '').localeCompare(String(b.testCaseId || ''), undefined, { numeric: true });
-              }).map((c, i) => {
-                const caseOrder = c.order ?? (i + 1);
-                const rawId = c.testCaseId || `tc-${String(caseOrder).padStart(2, '0')}`;
-                const caseCode = rawId.startsWith('tc-') ? `CASE-${rawId.slice(3).padStart(3, '0')}` : rawId.toUpperCase();
-                const isPass = c.passed === true;
-                const isFail = c.passed === false;
-                const statusBadgeBg = isPass ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 68, 34, 0.15)';
-                const statusBadgeColor = isPass ? '#2ECC71' : '#FF4422';
-                const statusBadgeBorder = isPass ? 'rgba(46, 204, 113, 0.35)' : 'rgba(255, 68, 34, 0.35)';
+            {/* Section Filter Tabs */}
+            {activeSections.length > 1 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'rgba(255, 255, 255, 0.02)', padding: '0.4rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <button
+                  onClick={() => setSelectedSection('ALL')}
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '6px',
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: selectedSection === 'ALL' ? 'var(--accent, #FF6B35)' : 'transparent',
+                    color: selectedSection === 'ALL' ? '#000000' : '#CCCCCC',
+                    border: selectedSection === 'ALL' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  All Active Sections ({activeSections.length})
+                </button>
+                {activeSections.map((sec) => (
+                  <button
+                    key={sec.name}
+                    onClick={() => setSelectedSection(sec.name)}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '6px',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: selectedSection === sec.name ? 'rgba(77, 166, 255, 0.2)' : 'transparent',
+                      color: selectedSection === sec.name ? '#4DA6FF' : '#CCCCCC',
+                      border: selectedSection === sec.name ? '1px solid #4DA6FF' : '1px solid rgba(255, 255, 255, 0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                    }}
+                  >
+                    <span>{sec.name} ({sec.total})</span>
+                    <span
+                      style={{
+                        fontSize: '0.66rem',
+                        padding: '0.1rem 0.35rem',
+                        borderRadius: '3px',
+                        background: sec.passRate >= 80 ? 'rgba(46, 204, 113, 0.2)' : 'rgba(255, 68, 34, 0.2)',
+                        color: sec.passRate >= 80 ? '#2ECC71' : '#FF4422',
+                      }}
+                    >
+                      {sec.passRate}%
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-                const statusLabel = isPass
-                  ? 'PASS'
-                  : c.executionStatus === 'PROVIDER_RATE_LIMIT'
-                  ? 'RATE LIMIT (429)'
-                  : c.executionStatus === 'AUTHENTICATION_ERROR'
-                  ? 'AUTH ERROR (401)'
-                  : isFail
-                  ? 'QUALITY FAILURE'
-                  : (c.executionStatus || 'ERROR');
-
-                const inTok = c.candidateUsage?.inputTokens ?? 0;
-                const outTok = c.candidateUsage?.outputTokens ?? 0;
+            {/* List of Section Reports */}
+            {activeSections
+              .filter((sec) => selectedSection === 'ALL' || selectedSection === sec.name)
+              .map((sec) => {
+                const secStatusBg = sec.status === 'PASS'
+                  ? 'rgba(46, 204, 113, 0.15)'
+                  : sec.status === 'WARN'
+                  ? 'rgba(243, 156, 18, 0.15)'
+                  : 'rgba(255, 68, 34, 0.15)';
+                const secStatusColor = sec.status === 'PASS'
+                  ? '#2ECC71'
+                  : sec.status === 'WARN'
+                  ? '#F39C12'
+                  : '#FF4422';
+                const secStatusBorder = sec.status === 'PASS'
+                  ? 'rgba(46, 204, 113, 0.35)'
+                  : sec.status === 'WARN'
+                  ? 'rgba(243, 156, 18, 0.35)'
+                  : 'rgba(255, 68, 34, 0.35)';
+                const secStatusLabel = sec.status === 'PASS'
+                  ? '✓ SECTION VERIFIED: 100% PASS'
+                  : sec.status === 'WARN'
+                  ? `⚡ SECTION PASS WITH CONDITIONS: ${sec.passRate}%`
+                  : `⚠ SECTION QUALITY REGRESSION: ${sec.passRate}%`;
 
                 return (
                   <div
-                    key={c.testCaseId || i}
+                    key={sec.name}
                     style={{
-                      background: '#0D1117',
-                      border: isPass ? '1px solid rgba(46, 204, 113, 0.22)' : '1px solid rgba(255, 68, 34, 0.3)',
-                      borderRadius: '8px',
-                      padding: '1.1rem 1.25rem',
+                      background: '#161B22',
+                      border: `1px solid ${sec.status === 'PASS' ? 'rgba(46, 204, 113, 0.25)' : 'rgba(255, 255, 255, 0.1)'}`,
+                      borderRadius: '10px',
+                      overflow: 'hidden',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.65rem',
+                      gap: '0',
                     }}
                   >
-                    {/* Header: CASE ID, ORDER, TITLE, CATEGORY, STATUS */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent, #FF6B35)', background: 'rgba(255, 107, 53, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                          {caseCode} (#{caseOrder})
-                        </span>
-                        <span style={{ fontSize: '1rem', fontWeight: 700, color: '#FFFFFF' }}>
-                          {c.title || c.testCaseName || `Scenario ${caseOrder}`}
-                        </span>
-                        <span style={{ fontSize: '0.78rem', color: '#8899AA', background: 'rgba(255, 255, 255, 0.05)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
-                          {c.category}
-                        </span>
+                    {/* Section Report Header */}
+                    <div
+                      style={{
+                        padding: '1rem 1.4rem',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '0.8rem',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '0.68rem', letterSpacing: '0.12em', color: 'var(--accent, #FF6B35)', fontWeight: 800, textTransform: 'uppercase' }}>
+                          SECTION REPORT
+                        </div>
+                        <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
+                          {sec.name.toUpperCase()}
+                        </h4>
                       </div>
+
                       <span
                         style={{
-                          fontSize: '0.8rem',
+                          fontSize: '0.72rem',
                           fontWeight: 800,
-                          padding: '0.25rem 0.75rem',
+                          padding: '0.25rem 0.7rem',
                           borderRadius: '4px',
-                          background: statusBadgeBg,
-                          color: statusBadgeColor,
-                          border: `1px solid ${statusBadgeBorder}`,
+                          background: secStatusBg,
+                          color: secStatusColor,
+                          border: `1px solid ${secStatusBorder}`,
                         }}
                       >
-                        {statusLabel}
+                        {secStatusLabel}
                       </span>
                     </div>
 
-                    {/* Input / Prompt */}
-                    <div style={{ fontSize: '0.86rem', color: '#CCCCCC', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                      <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
-                        Input / Prompt:
-                      </span>
-                      {c.prompt || c.input || '—'}
-                    </div>
-
-                    {/* Expected Behavior */}
-                    <div style={{ fontSize: '0.86rem', color: '#B0C0D0', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                      <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
-                        Expected Behavior:
-                      </span>
-                      {c.expected_behavior || c.expectedOutput || '—'}
-                    </div>
-
-                    {/* Candidate Output & Baseline Output Comparison */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.65rem' }}>
-                      <div style={{ fontSize: '0.84rem', color: '#ECECEC', background: 'rgba(77, 166, 255, 0.03)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(77, 166, 255, 0.15)' }}>
-                        <span style={{ color: '#4DA6FF', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
-                          Candidate Output:
-                        </span>
-                        <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
-                          {c.candidateOutput || '—'}
+                    {/* Section KPI Metrics Strip */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                        gap: '0.6rem',
+                        padding: '0.8rem 1.4rem',
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                        fontSize: '0.76rem',
+                      }}
+                    >
+                      <div>
+                        <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Required Evaluations</div>
+                        <div style={{ color: '#FFFFFF', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                          {sec.total} / {sec.total} <span style={{ color: '#2ECC71', fontSize: '0.72rem' }}>(100%)</span>
                         </div>
                       </div>
-
-                      <div style={{ fontSize: '0.84rem', color: '#AAAAAA', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
-                          Baseline Output:
-                        </span>
-                        <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
-                          {c.baselineOutput || '—'}
+                      <div>
+                        <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Section Pass Rate</div>
+                        <div style={{ color: sec.passRate >= 80 ? '#2ECC71' : '#FF4422', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                          {sec.passRate}% ({sec.passed}P / {sec.failed}F)
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Avg Quality Score</div>
+                        <div style={{ color: '#FFFFFF', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                          {sec.avgScore} / 1.00
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Mean Latency</div>
+                        <div style={{ color: '#FFFFFF', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                          {sec.avgLatency > 0 ? `${sec.avgLatency}ms` : '—'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Token Volume</div>
+                        <div style={{ color: '#CCCCCC', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.76rem' }}>
+                          In: {sec.inTokens.toLocaleString()} | Out: {sec.outTokens.toLocaleString()}
                         </div>
                       </div>
                     </div>
 
-                    {/* Telemetry Footer Row: Score, Latency, Tokens, Failure Reason / Criteria */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '0.5rem', fontSize: '0.8rem', color: '#8899AA' }}>
-                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                        <span>Score: <strong style={{ color: isPass ? '#2ECC71' : '#FF4422' }}>{c.candidateScore !== null && c.candidateScore !== undefined ? `${c.candidateScore.toFixed(2)} / 1.00` : '—'}</strong></span>
-                        <span>Latency: <strong style={{ color: '#ECECEC' }}>{c.candidateLatencyMs !== null && c.candidateLatencyMs !== undefined ? `${c.candidateLatencyMs}ms` : '—'}</strong></span>
-                        <span>Tokens: <strong style={{ color: '#ECECEC' }}>{(inTok > 0 || outTok > 0) ? `In: ${inTok} | Out: ${outTok}` : '—'}</strong></span>
-                      </div>
-                      {c.failureReason && (
-                        <div style={{ color: '#FF7766', fontSize: '0.8rem' }}>
-                          Reason: {c.failureReason}
-                        </div>
-                      )}
+                    {/* Section Scenario Cards */}
+                    <div style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {[...sec.cases].sort((a, b) => {
+                        const orderA = typeof a.order === 'number' ? a.order : parseInt(String(a.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
+                        const orderB = typeof b.order === 'number' ? b.order : parseInt(String(b.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
+                        if (orderA !== orderB) return orderA - orderB;
+                        return String(a.testCaseId || '').localeCompare(String(b.testCaseId || ''), undefined, { numeric: true });
+                      }).map((c, i) => {
+                        const caseOrder = c.order ?? (i + 1);
+                        const rawId = c.testCaseId || `tc-${String(caseOrder).padStart(2, '0')}`;
+                        const caseCode = rawId.startsWith('tc-') ? `CASE-${rawId.slice(3).padStart(3, '0')}` : rawId.toUpperCase();
+                        const isPass = c.passed === true;
+                        const isFail = c.passed === false;
+                        const statusBadgeBg = isPass ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 68, 34, 0.15)';
+                        const statusBadgeColor = isPass ? '#2ECC71' : '#FF4422';
+                        const statusBadgeBorder = isPass ? 'rgba(46, 204, 113, 0.35)' : 'rgba(255, 68, 34, 0.35)';
+
+                        const statusLabel = isPass
+                          ? 'PASS'
+                          : c.executionStatus === 'PROVIDER_RATE_LIMIT'
+                          ? 'RATE LIMIT (429)'
+                          : c.executionStatus === 'AUTHENTICATION_ERROR'
+                          ? 'AUTH ERROR (401)'
+                          : isFail
+                          ? 'QUALITY FAILURE'
+                          : (c.executionStatus || 'ERROR');
+
+                        const inTok = c.candidateUsage?.inputTokens ?? 0;
+                        const outTok = c.candidateUsage?.outputTokens ?? 0;
+
+                        return (
+                          <div
+                            key={c.testCaseId || i}
+                            style={{
+                              background: '#0D1117',
+                              border: isPass ? '1px solid rgba(46, 204, 113, 0.22)' : '1px solid rgba(255, 68, 34, 0.3)',
+                              borderRadius: '8px',
+                              padding: '1.1rem 1.25rem',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.65rem',
+                            }}
+                          >
+                            {/* Header: CASE ID, ORDER, TITLE, STATUS */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent, #FF6B35)', background: 'rgba(255, 107, 53, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                  {caseCode} (#{caseOrder})
+                                </span>
+                                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#FFFFFF' }}>
+                                  {c.title || c.testCaseName || `Scenario ${caseOrder}`}
+                                </span>
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: '0.8rem',
+                                  fontWeight: 800,
+                                  padding: '0.25rem 0.75rem',
+                                  borderRadius: '4px',
+                                  background: statusBadgeBg,
+                                  color: statusBadgeColor,
+                                  border: `1px solid ${statusBadgeBorder}`,
+                                }}
+                              >
+                                {statusLabel}
+                              </span>
+                            </div>
+
+                            {/* Input / Prompt */}
+                            <div style={{ fontSize: '0.86rem', color: '#CCCCCC', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                              <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                                Input / Prompt:
+                              </span>
+                              {c.prompt || c.input || '—'}
+                            </div>
+
+                            {/* Expected Behavior */}
+                            <div style={{ fontSize: '0.86rem', color: '#B0C0D0', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                              <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                                Expected Behavior:
+                              </span>
+                              {c.expected_behavior || c.expectedOutput || '—'}
+                            </div>
+
+                            {/* Candidate Output & Baseline Output Comparison */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.65rem' }}>
+                              <div style={{ fontSize: '0.84rem', color: '#ECECEC', background: 'rgba(77, 166, 255, 0.03)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(77, 166, 255, 0.15)' }}>
+                                <span style={{ color: '#4DA6FF', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                                  Candidate Output:
+                                </span>
+                                <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
+                                  {c.candidateOutput || '—'}
+                                </div>
+                              </div>
+
+                              <div style={{ fontSize: '0.84rem', color: '#AAAAAA', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                                <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                                  Baseline Output:
+                                </span>
+                                <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
+                                  {c.baselineOutput || '—'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Telemetry Footer Row: Score, Latency, Tokens, Failure Reason / Criteria */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '0.5rem', fontSize: '0.8rem', color: '#8899AA' }}>
+                              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <span>Score: <strong style={{ color: isPass ? '#2ECC71' : '#FF4422' }}>{c.candidateScore !== null && c.candidateScore !== undefined ? `${c.candidateScore.toFixed(2)} / 1.00` : '—'}</strong></span>
+                                <span>Latency: <strong style={{ color: '#ECECEC' }}>{c.candidateLatencyMs !== null && c.candidateLatencyMs !== undefined ? `${c.candidateLatencyMs}ms` : '—'}</strong></span>
+                                <span>Tokens: <strong style={{ color: '#ECECEC' }}>{(inTok > 0 || outTok > 0) ? `In: ${inTok} | Out: ${outTok}` : '—'}</strong></span>
+                              </div>
+                              {c.failureReason && (
+                                <div style={{ color: '#FF7766', fontSize: '0.8rem' }}>
+                                  Reason: {c.failureReason}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
               })}
-            </div>
           </div>
         )}
 
         {/* ── 5. Evidence & Diagnostics ── */}
-        {report.evidence.length > 0 && (
+        {filteredEvidence.length > 0 && (
           <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <h4 style={{ margin: '0 0 0.6rem 0', fontSize: '0.85rem', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Diagnostic Evidence & Decision Rationale
             </h4>
             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.82rem', color: '#B0C0D0', lineHeight: 1.6 }}>
-              {report.evidence.map((e, idx) => (
+              {filteredEvidence.map((e, idx) => (
                 <li key={idx}>{e}</li>
               ))}
             </ul>

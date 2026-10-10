@@ -100,9 +100,11 @@ function mapBackendVersion(v: any): ModelVersion {
     name: v.display_name || v.displayName || v.model,
     provider: v.provider,
     modelIdentifier: v.model || v.modelIdentifier,
-    promptVersion: v.prompt_version || '1.0',
+    promptVersion: v.prompt_version || v.promptVersion || '1.0',
     systemPrompt: v.system_prompt || v.systemPrompt || '',
-    temperature: 0.7,
+    temperature: typeof v.temperature === 'number' ? v.temperature : 0.2,
+    maxTokens: typeof v.max_tokens === 'number' ? v.max_tokens : typeof v.maxTokens === 'number' ? v.maxTokens : 2048,
+    reasoningEffort: v.reasoning_effort || v.reasoningEffort || undefined,
     createdAt: v.created_at || v.createdAt || new Date().toISOString(),
   };
 }
@@ -113,9 +115,9 @@ function mapBackendSettings(s: any): RegressionSettings {
     minAccuracyPercent: s.minAccuracy ?? s.min_accuracy ?? DEFAULT_REGRESSION_SETTINGS.minAccuracyPercent,
     maxAccuracyDegradationPercent: s.maxDegradation ?? s.max_degradation ?? DEFAULT_REGRESSION_SETTINGS.maxAccuracyDegradationPercent,
     maxLatencyIncreasePercent: s.latencyTolerance ?? s.latency_tolerance ?? DEFAULT_REGRESSION_SETTINGS.maxLatencyIncreasePercent,
-    maxFailureRatePercent: DEFAULT_REGRESSION_SETTINGS.maxFailureRatePercent,
-    minEvaluationCoveragePercent: DEFAULT_REGRESSION_SETTINGS.minEvaluationCoveragePercent,
-    minimumEvaluatedCases: DEFAULT_REGRESSION_SETTINGS.minimumEvaluatedCases,
+    maxFailureRatePercent: s.maxFailureRate ?? s.max_failure_rate ?? DEFAULT_REGRESSION_SETTINGS.maxFailureRatePercent,
+    minEvaluationCoveragePercent: s.minCoverage ?? s.min_coverage ?? DEFAULT_REGRESSION_SETTINGS.minEvaluationCoveragePercent,
+    minimumEvaluatedCases: s.minEvaluatedCases ?? s.min_evaluated_cases ?? DEFAULT_REGRESSION_SETTINGS.minimumEvaluatedCases,
   };
 }
 
@@ -200,6 +202,9 @@ export class ApiRepository implements StorageRepository {
       await this.client.put(`/api/projects/${encodeURIComponent(project.id)}`, {
         name: project.name,
         description: project.description,
+        defaultDatasetId: project.defaultDatasetId,
+        baselineVersionId: project.baselineVersionId,
+        candidateVersionId: project.candidateVersionId,
       });
       exists = true;
     } catch (err: any) {
@@ -215,6 +220,9 @@ export class ApiRepository implements StorageRepository {
         id: project.id,
         name: project.name,
         description: project.description,
+        defaultDatasetId: project.defaultDatasetId,
+        baselineVersionId: project.baselineVersionId,
+        candidateVersionId: project.candidateVersionId,
       });
     }
 
@@ -440,8 +448,14 @@ export class ApiRepository implements StorageRepository {
     let exists = false;
     try {
       await this.client.put(`/api/versions/${encodeURIComponent(version.id)}`, {
+        provider: version.provider,
+        model: version.modelIdentifier,
         displayName: version.name,
         systemPrompt: version.systemPrompt,
+        promptVersion: version.promptVersion,
+        temperature: version.temperature,
+        maxTokens: version.maxTokens,
+        reasoningEffort: version.reasoningEffort,
       });
       exists = true;
     } catch (err: any) {
@@ -460,6 +474,10 @@ export class ApiRepository implements StorageRepository {
         model: version.modelIdentifier,
         displayName: version.name,
         systemPrompt: version.systemPrompt,
+        promptVersion: version.promptVersion,
+        temperature: version.temperature,
+        maxTokens: version.maxTokens,
+        reasoningEffort: version.reasoningEffort,
       });
     }
   }
@@ -486,6 +504,9 @@ export class ApiRepository implements StorageRepository {
       minAccuracy: settings.minAccuracyPercent,
       maxDegradation: settings.maxAccuracyDegradationPercent,
       latencyTolerance: settings.maxLatencyIncreasePercent,
+      maxFailureRate: settings.maxFailureRatePercent,
+      minCoverage: settings.minEvaluationCoveragePercent,
+      minEvaluatedCases: settings.minimumEvaluatedCases,
     });
   }
 
@@ -511,12 +532,12 @@ export class ApiRepository implements StorageRepository {
         datasetName: run.datasetName || 'Checkout Reliability Suite',
         executionMode: mode,
         caseResults: Array.isArray(run.caseResults) ? run.caseResults : Array.isArray((run as any).results) ? (run as any).results : [],
-        regressionDecision: run.regressionDecision || {
-          isRegression: isReg,
-          verdict: !hasData ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
-          summary: !hasData ? 'No completed evaluation data' : isReg ? 'Regression detected in evaluation' : 'No regressions detected',
-          violatedRules: [],
-          regressionCategories: [],
+        regressionDecision: {
+          isRegression: run.regressionDecision?.isRegression ?? isReg,
+          verdict: run.regressionDecision?.verdict ?? (!hasData ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION'),
+          summary: run.regressionDecision?.summary ?? (!hasData ? 'No completed evaluation data' : isReg ? 'Regression detected in evaluation' : 'No regressions detected'),
+          violatedRules: Array.isArray(run.regressionDecision?.violatedRules) ? run.regressionDecision.violatedRules : [],
+          regressionCategories: Array.isArray(run.regressionDecision?.regressionCategories) ? run.regressionDecision.regressionCategories : [],
         },
         releaseDecision: run.releaseDecision || {
           status: !hasData ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'BLOCK' : 'PASS',
@@ -541,7 +562,21 @@ export class ApiRepository implements StorageRepository {
   async getEvaluationRunById(id: string): Promise<EvaluationRun | null> {
     try {
       const res = await this.client.get<EvaluationRun>(`/api/evaluations/runs/${encodeURIComponent(id)}`);
-      return res || null;
+      if (!res) return null;
+      const totalCases = res.metrics?.totalCases ?? (res.caseResults?.length || 0);
+      const hasData = totalCases > 0 && (res.metrics?.candidateAccuracy != null || res.metrics?.candidateQualityScore != null);
+      const isReg = hasData && Boolean(res.regressionDecision?.isRegression);
+      return {
+        ...res,
+        caseResults: Array.isArray(res.caseResults) ? res.caseResults : Array.isArray((res as any).results) ? (res as any).results : [],
+        regressionDecision: {
+          isRegression: res.regressionDecision?.isRegression ?? isReg,
+          verdict: res.regressionDecision?.verdict ?? (!hasData ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION'),
+          summary: res.regressionDecision?.summary ?? (!hasData ? 'No completed evaluation data' : isReg ? 'Regression detected in evaluation' : 'No regressions detected'),
+          violatedRules: Array.isArray(res.regressionDecision?.violatedRules) ? res.regressionDecision.violatedRules : [],
+          regressionCategories: Array.isArray(res.regressionDecision?.regressionCategories) ? res.regressionDecision.regressionCategories : [],
+        },
+      };
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 404) {
         return null;
@@ -567,13 +602,14 @@ export class ApiRepository implements StorageRepository {
   async updateReleaseDecision(runId: string, decision: string, justification?: string): Promise<any> {
     return this.client.patch(`/api/evaluations/runs/${encodeURIComponent(runId)}/release-decision`, {
       decision,
-      justification,
+      justification: justification?.trim() || `Release decision: ${decision}`,
     });
   }
 
   async saveEvaluationRun(run: EvaluationRun): Promise<void> {
     if (run.releaseDecision?.status) {
-      await this.updateReleaseDecision(run.id, run.releaseDecision.status, run.releaseDecision.reason);
+      const justification = run.releaseDecision.reason?.trim() || `Release decision: ${run.releaseDecision.status}`;
+      await this.updateReleaseDecision(run.id, run.releaseDecision.status, justification);
     }
   }
 

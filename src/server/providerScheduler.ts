@@ -134,9 +134,10 @@ export class ProviderScheduler {
       };
     }
 
-    // Cooldown has expired, auto-restore status if it was cooling down
-    if (state.status === 'COOLING_DOWN') {
+    // Cooldown has expired, auto-restore status if it was cooling down or quota exhausted
+    if (state.status === 'COOLING_DOWN' || state.status === 'QUOTA_EXHAUSTED') {
       state.status = 'AVAILABLE';
+      state.coolingDownUntil = 0;
       state.consecutiveRateLimits = 0;
     }
 
@@ -221,9 +222,10 @@ export class ProviderScheduler {
 
     // Auto-clear cooldown if time has passed
     let status = state.status;
-    if (remainingMs === 0 && status === 'COOLING_DOWN') {
+    if (remainingMs === 0 && (status === 'COOLING_DOWN' || status === 'QUOTA_EXHAUSTED')) {
       status = 'AVAILABLE';
       state.status = 'AVAILABLE';
+      state.coolingDownUntil = 0;
     }
 
     return {

@@ -15,6 +15,10 @@ export interface ModelVersionRecord {
   model: string;
   display_name: string;
   system_prompt: string | null;
+  prompt_version?: string | null;
+  temperature?: number | null;
+  max_tokens?: number | null;
+  reasoning_effort?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,11 +31,11 @@ export class VersionService {
     const db = getDatabase();
     if (projectId) {
       return db
-        .prepare('SELECT id, project_id, provider, model, display_name, system_prompt, created_at, updated_at FROM model_versions WHERE project_id = ? ORDER BY created_at DESC')
+        .prepare('SELECT id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at FROM model_versions WHERE project_id = ? ORDER BY created_at DESC')
         .all(projectId) as ModelVersionRecord[];
     }
     return db
-      .prepare('SELECT id, project_id, provider, model, display_name, system_prompt, created_at, updated_at FROM model_versions ORDER BY created_at DESC')
+      .prepare('SELECT id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at FROM model_versions ORDER BY created_at DESC')
       .all() as ModelVersionRecord[];
   }
 
@@ -41,7 +45,7 @@ export class VersionService {
   getVersionById(id: string): ModelVersionRecord | null {
     const db = getDatabase();
     const row = db
-      .prepare('SELECT id, project_id, provider, model, display_name, system_prompt, created_at, updated_at FROM model_versions WHERE id = ?')
+      .prepare('SELECT id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at FROM model_versions WHERE id = ?')
       .get(id) as ModelVersionRecord | undefined;
     return row || null;
   }
@@ -56,6 +60,10 @@ export class VersionService {
     model: string;
     displayName: string;
     systemPrompt?: string;
+    promptVersion?: string;
+    temperature?: number;
+    maxTokens?: number;
+    reasoningEffort?: string;
   }): ModelVersionRecord {
     const db = getDatabase();
     const project = projectService.getProjectById(data.projectId);
@@ -68,10 +76,14 @@ export class VersionService {
     const id = data.id?.trim() || `ver-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
     const systemPrompt = data.systemPrompt !== undefined ? data.systemPrompt : null;
+    const promptVersion = data.promptVersion !== undefined ? data.promptVersion : '1.0';
+    const temperature = typeof data.temperature === 'number' ? data.temperature : 0.2;
+    const maxTokens = typeof data.maxTokens === 'number' ? data.maxTokens : 2048;
+    const reasoningEffort = data.reasoningEffort !== undefined ? data.reasoningEffort : null;
 
     db.prepare(`
-      INSERT INTO model_versions (id, project_id, provider, model, display_name, system_prompt, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO model_versions (id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       data.projectId,
@@ -79,6 +91,10 @@ export class VersionService {
       data.model.trim(),
       data.displayName.trim(),
       systemPrompt,
+      promptVersion,
+      temperature,
+      maxTokens,
+      reasoningEffort,
       now,
       now
     );
@@ -90,6 +106,10 @@ export class VersionService {
       model: data.model.trim(),
       display_name: data.displayName.trim(),
       system_prompt: systemPrompt,
+      prompt_version: promptVersion,
+      temperature,
+      max_tokens: maxTokens,
+      reasoning_effort: reasoningEffort,
       created_at: now,
       updated_at: now,
     };
@@ -105,6 +125,10 @@ export class VersionService {
       model?: string;
       displayName?: string;
       systemPrompt?: string;
+      promptVersion?: string;
+      temperature?: number;
+      maxTokens?: number;
+      reasoningEffort?: string;
     }
   ): ModelVersionRecord | null {
     const db = getDatabase();
@@ -115,13 +139,17 @@ export class VersionService {
     const model = data.model !== undefined ? data.model.trim() : existing.model;
     const displayName = data.displayName !== undefined ? data.displayName.trim() : existing.display_name;
     const systemPrompt = data.systemPrompt !== undefined ? data.systemPrompt : existing.system_prompt;
+    const promptVersion = data.promptVersion !== undefined ? data.promptVersion : (existing.prompt_version ?? '1.0');
+    const temperature = typeof data.temperature === 'number' ? data.temperature : (existing.temperature ?? 0.2);
+    const maxTokens = typeof data.maxTokens === 'number' ? data.maxTokens : (existing.max_tokens ?? 2048);
+    const reasoningEffort = data.reasoningEffort !== undefined ? data.reasoningEffort : (existing.reasoning_effort ?? null);
     const now = new Date().toISOString();
 
     db.prepare(`
       UPDATE model_versions
-      SET provider = ?, model = ?, display_name = ?, system_prompt = ?, updated_at = ?
+      SET provider = ?, model = ?, display_name = ?, system_prompt = ?, prompt_version = ?, temperature = ?, max_tokens = ?, reasoning_effort = ?, updated_at = ?
       WHERE id = ?
-    `).run(provider, model, displayName, systemPrompt, now, id);
+    `).run(provider, model, displayName, systemPrompt, promptVersion, temperature, maxTokens, reasoningEffort, now, id);
 
     return {
       id,
@@ -130,6 +158,10 @@ export class VersionService {
       model,
       display_name: displayName,
       system_prompt: systemPrompt,
+      prompt_version: promptVersion,
+      temperature,
+      max_tokens: maxTokens,
+      reasoning_effort: reasoningEffort,
       created_at: existing.created_at,
       updated_at: now,
     };

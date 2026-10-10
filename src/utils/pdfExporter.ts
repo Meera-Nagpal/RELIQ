@@ -16,6 +16,17 @@ import { ComparisonReport } from '../evaluation/comparator';
 function escapePdfText(str: string): string {
   if (!str) return '';
   return str
+    .replace(/\u2022/g, '-')
+    .replace(/\u2014/g, '--')
+    .replace(/\u2013/g, '-')
+    .replace(/\u2265/g, '>=')
+    .replace(/\u2264/g, '<=')
+    .replace(/\u2192/g, '->')
+    .replace(/\u2713|\u2714/g, '[PASS]')
+    .replace(/\u2717|\u2718/g, '[FAIL]')
+    .replace(/\u26A0/g, '[WARN]')
+    .replace(/\u26D4/g, '[BLOCK]')
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, '')
     .replace(/\\/g, '\\\\')
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)')
@@ -187,21 +198,21 @@ class PdfDocumentBuilder {
     // Content streams
     for (let i = 0; i < totalPages; i++) {
       const streamData = this.pages[i].content.join('\n');
-      const streamLen = new TextEncoder().encode(streamData).length;
+      const streamLen = streamData.length;
       addObject(`<< /Length ${streamLen} >>\nstream\n${streamData}\nendstream`);
     }
 
-    // Build byte buffer
-    let header = `%PDF-1.4\n%\xE2\xE3\xCF\xD3\n`;
+    // Build byte buffer (1 byte per Latin1/WinAnsi char)
+    const header = `%PDF-1.4\n%\xE2\xE3\xCF\xD3\n`;
     let bodyBytes = '';
-    let currentOffset = new TextEncoder().encode(header).length;
+    let currentOffset = header.length;
 
     offsets.push(0); // index 0 unused in xref
     for (let i = 0; i < objects.length; i++) {
       offsets.push(currentOffset);
       const objStr = `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
       bodyBytes += objStr;
-      currentOffset += new TextEncoder().encode(objStr).length;
+      currentOffset += objStr.length;
     }
 
     const startXref = currentOffset;
@@ -214,7 +225,11 @@ class PdfDocumentBuilder {
     const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${startXref}\n%%EOF\n`;
 
     const fullDoc = header + bodyBytes + xref + trailer;
-    return new TextEncoder().encode(fullDoc);
+    const bytes = new Uint8Array(fullDoc.length);
+    for (let i = 0; i < fullDoc.length; i++) {
+      bytes[i] = fullDoc.charCodeAt(i) & 0xff;
+    }
+    return bytes;
   }
 }
 
@@ -267,8 +282,7 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.setFillColor(1.0, 1.0, 1.0);
   const isPreliminary = Boolean(
     report.isPreliminary ||
-    report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
-    (report.totalCases < 27)
+    report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET'
   );
   const safeTitle = (report.totalCases < 27)
     ? `${report.totalCases}-SCENARIO EVALUATION REPORT`
@@ -367,11 +381,11 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.setFillColor(hasGateFailures ? 0.85 : 0.12, hasGateFailures ? 0.15 : 0.65, hasGateFailures ? 0.15 : 0.35);
   doc.drawText(recVerdict, releaseBoxX + 10, releaseBoxY + releaseBoxH - 28, 9.5, 'Helvetica-Bold');
 
-  const targetRequired = report.benchmarkCompletion?.requiredCases || report.totalCases || 27;
+  const targetRequired = report.benchmarkCompletion?.requiredCases ?? report.totalCases ?? 27;
   const gateFailReason = failedGates.length > 0
     ? `${failedGates.length} failed gate(s): ${failedGates.map((g) => g.gate).slice(0, 2).join(', ')}`
-    : report.totalCases < targetRequired
-    ? `Preliminary: requires ${targetRequired} scenarios`
+    : !report.benchmarkCompletion?.isComplete
+    ? `Preliminary: ${report.benchmarkCompletion?.evaluatedCases ?? report.totalCases}/${targetRequired} scenarios`
     : `All production gates verified`;
   doc.setFillColor(0.4, 0.45, 0.5);
   doc.drawText(gateFailReason.slice(0, 42), releaseBoxX + 10, releaseBoxY + 8, 6.5, 'Helvetica');
@@ -750,7 +764,7 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   const displayLimitations = [...(report.limitations || [])];
   if (report.totalCases < 27) {
     displayLimitations.push(
-      `Scope Notice: ${report.totalCases}/${report.totalCases} selected scenarios completed. Run the full 27-scenario suite for broader production certification.`
+      `Scope Notice: ${report.totalCases}/${report.totalCases} selected scenarios completed. For broader coverage, consider running the 27-case suite.`
     );
   }
 

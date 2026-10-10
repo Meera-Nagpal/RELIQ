@@ -5,7 +5,7 @@
    and resetting demo data.
    ============================================================ */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project, RegressionSettings } from '../../domain/types';
 import { providerRegistry } from '../../providers/registry';
 import { apiRepository } from '../../services/apiRepository';
@@ -39,6 +39,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [minCoverage, setMinCoverage] = useState(
     project.regressionSettings.minEvaluationCoveragePercent ?? 80.0
   );
+
+  useEffect(() => {
+    setMinAccuracy(project.regressionSettings.minAccuracyPercent);
+    setMaxDegradation(project.regressionSettings.maxAccuracyDegradationPercent);
+    setMaxLatency(project.regressionSettings.maxLatencyIncreasePercent);
+    setMaxFailure(project.regressionSettings.maxFailureRatePercent);
+    setMinCoverage(project.regressionSettings.minEvaluationCoveragePercent ?? 80.0);
+  }, [project]);
 
   const [savedSuccess, setSavedSuccess] = useState(false);
 

@@ -63,7 +63,7 @@ const TEMPLATES: ScenarioTemplate[] = [
     generate: (i) => {
       const codes = ['SUMMER20', 'SAVE15', 'VIP10', 'FLASH25', 'WELCOME50'];
       const code = codes[i % codes.length];
-      const pct = parseInt(code.replace(/\\D/g, ''), 10) || 15;
+      const pct = parseInt(code.replace(/\D/g, ''), 10) || 15;
       return {
         name: 'Apply promotional voucher ' + code + ' (subtotal $' + (100 + i * 5) + ')',
         input: 'Apply promo code ' + code + ' to active cart with subtotal $' + (100 + i * 5),

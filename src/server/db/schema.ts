@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
+  default_dataset_id TEXT,
+  baseline_version_id TEXT,
+  candidate_version_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -65,6 +68,10 @@ CREATE TABLE IF NOT EXISTS model_versions (
   model TEXT NOT NULL,
   display_name TEXT NOT NULL,
   system_prompt TEXT,
+  prompt_version TEXT DEFAULT '1.0',
+  temperature REAL DEFAULT 0.2,
+  max_tokens INTEGER DEFAULT 2048,
+  reasoning_effort TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -86,6 +93,7 @@ CREATE TABLE IF NOT EXISTS evaluation_runs (
   completed_at TEXT,
   release_decision TEXT,
   release_reason TEXT,
+  run_json TEXT,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
 );
@@ -122,6 +130,9 @@ CREATE TABLE IF NOT EXISTS project_settings (
   min_accuracy REAL NOT NULL,
   max_degradation REAL NOT NULL,
   latency_tolerance REAL NOT NULL,
+  max_failure_rate REAL NOT NULL DEFAULT 5.0,
+  min_coverage REAL NOT NULL DEFAULT 80.0,
+  min_evaluated_cases INTEGER NOT NULL DEFAULT 100,
   raw_output_privacy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -159,23 +170,47 @@ export function initSchema(db: Database.Database): void {
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA_SQL);
 
-  // Backward-compatible migration for databases created before evaluator
-  // metadata became part of the authoritative SQLite dataset model.
-  const columns = new Set(
-    (db.prepare('PRAGMA table_info(test_cases)').all() as Array<{ name: string }>).map((c) => c.name)
-  );
-  const migrations: Array<[string, string]> = [
+  const ensureColumns = (table: string, migrations: Array<[string, string]>) => {
+    const columns = new Set(
+      (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((c) => c.name)
+    );
+    for (const [name, definition] of migrations) {
+      if (!columns.has(name)) {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+      }
+    }
+  };
+
+  ensureColumns('projects', [
+    ['default_dataset_id', 'TEXT'],
+    ['baseline_version_id', 'TEXT'],
+    ['candidate_version_id', 'TEXT'],
+  ]);
+
+  ensureColumns('test_cases', [
     ['evaluator_type', "TEXT NOT NULL DEFAULT 'normalized_text'"],
     ['evaluator_config', 'TEXT'],
     ['tags', 'TEXT'],
     ['severity', "TEXT NOT NULL DEFAULT 'medium'"],
     ['metadata', 'TEXT'],
-  ];
+  ]);
 
-  for (const [name, definition] of migrations) {
-    if (!columns.has(name)) {
-      db.exec(`ALTER TABLE test_cases ADD COLUMN ${name} ${definition}`);
-    }
-  }
+  ensureColumns('model_versions', [
+    ['prompt_version', "TEXT DEFAULT '1.0'"],
+    ['temperature', 'REAL DEFAULT 0.2'],
+    ['max_tokens', 'INTEGER DEFAULT 2048'],
+    ['reasoning_effort', 'TEXT'],
+  ]);
+
+  ensureColumns('project_settings', [
+    ['max_failure_rate', 'REAL NOT NULL DEFAULT 5.0'],
+    ['min_coverage', 'REAL NOT NULL DEFAULT 80.0'],
+    ['min_evaluated_cases', 'INTEGER NOT NULL DEFAULT 100'],
+  ]);
+
+  ensureColumns('evaluation_runs', [
+    ['run_json', 'TEXT'],
+  ]);
 }
+
 

@@ -185,7 +185,13 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
     );
   }
 
-  const regressionDecision = run.regressionDecision || { isRegression: false };
+  const regressionDecision = {
+    isRegression: run.regressionDecision?.isRegression ?? false,
+    verdict: run.regressionDecision?.verdict ?? ('NO_REGRESSION' as const),
+    summary: run.regressionDecision?.summary ?? '',
+    violatedRules: Array.isArray(run.regressionDecision?.violatedRules) ? run.regressionDecision.violatedRules : ([] as string[]),
+    regressionCategories: Array.isArray(run.regressionDecision?.regressionCategories) ? run.regressionDecision.regressionCategories : ([] as any[]),
+  };
   const isReg = Boolean(regressionDecision.isRegression);
   const releaseDecision = run.releaseDecision || { status: isReg ? 'BLOCK' : 'PASS' };
   const rootCauses = Array.isArray(run.rootCauses) ? run.rootCauses : [];
@@ -1014,10 +1020,10 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         textTransform: 'uppercase',
                       }}
                     >
-                      {selectedCase.baselineUsage?.provider || run.baselineVersion.provider}
+                      {selectedCase.baselineUsage?.provider || run.baselineVersion?.provider || 'baseline'}
                     </span>
                     <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#2ECC71' }}>
-                      {run.baselineVersion.name}
+                      {run.baselineVersion?.name || 'Baseline'}
                     </span>
                   </div>
                   <span style={{ fontSize: '0.72rem', color: '#888888' }}>
@@ -1109,10 +1115,10 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         textTransform: 'uppercase',
                       }}
                     >
-                      {selectedCase.candidateUsage?.provider || run.candidateVersion.provider}
+                      {selectedCase.candidateUsage?.provider || run.candidateVersion?.provider || 'candidate'}
                     </span>
                     <span style={{ fontSize: '0.78rem', fontWeight: 700, color: selectedCase.isRegression ? '#FF4422' : '#4DA6FF' }}>
-                      {run.candidateVersion.name}
+                      {run.candidateVersion?.name || 'Candidate'}
                     </span>
                   </div>
                   <span style={{ fontSize: '0.72rem', color: selectedCase.isRegression ? '#FF4422' : '#2ECC71', fontWeight: 700 }}>

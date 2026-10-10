@@ -452,19 +452,33 @@ export class ServerGroqProvider implements ModelProvider {
               ? data.error.failed_generation
               : JSON.stringify(data.error.failed_generation);
           console.log(`[RELIQ Server Provider] <- GROQ RECOVERED tool_use_failed generation: ${recoveredOutput.slice(0, 80)}...`);
+          const recInputTokens = data.usage?.prompt_tokens ?? 0;
+          const recOutputTokens = data.usage?.completion_tokens ?? 0;
+          const recReasoningTokens = data.usage?.completion_tokens_details?.reasoning_tokens;
+          const recCachedTokens = data.usage?.prompt_tokens_details?.cached_tokens;
+          const recCost = this.calculateCost({
+            model,
+            provider: 'groq',
+            inputTokens: recInputTokens,
+            outputTokens: recOutputTokens,
+            reasoningTokens: recReasoningTokens,
+            cachedTokens: recCachedTokens,
+          });
           return {
             output: recoveredOutput,
             usage: {
               provider: 'groq',
               model,
               modelVersion: request.promptVersion,
-              inputTokens: data.usage?.prompt_tokens ?? 0,
-              outputTokens: data.usage?.completion_tokens ?? 0,
-              totalTokens: data.usage?.total_tokens ?? 0,
+              inputTokens: recInputTokens,
+              outputTokens: recOutputTokens,
+              reasoningTokens: recReasoningTokens,
+              cachedTokens: recCachedTokens,
+              totalTokens: data.usage?.total_tokens ?? (recInputTokens + recOutputTokens),
               latencyMs,
               retries,
               rateLimit,
-              estimatedCostUsd: 0,
+              estimatedCostUsd: recCost,
             },
             isDemoMode: false,
           };
@@ -700,11 +714,26 @@ export class ServerOpenAIProvider implements ModelProvider {
       };
     }
 
+    const isReasoningModel = /^o[13](-|$)/i.test(model);
     const messages: any[] = [];
     if (request.systemPrompt) {
-      messages.push({ role: 'system', content: request.systemPrompt });
+      messages.push({ role: isReasoningModel ? 'developer' : 'system', content: request.systemPrompt });
     }
     messages.push({ role: 'user', content: request.input });
+
+    const openAiPayload: Record<string, any> = {
+      model,
+      messages,
+    };
+    if (isReasoningModel) {
+      openAiPayload.max_completion_tokens = request.maxTokens ?? 2048;
+      if (request.reasoningEffort) {
+        openAiPayload.reasoning_effort = request.reasoningEffort;
+      }
+    } else {
+      openAiPayload.temperature = request.temperature ?? 0.0;
+      openAiPayload.max_tokens = request.maxTokens ?? 2048;
+    }
 
     try {
       const { response, retries, latencyMs } = await fetchWithRetry({
@@ -715,12 +744,7 @@ export class ServerOpenAIProvider implements ModelProvider {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
           },
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature: request.temperature ?? 0.0,
-            max_tokens: request.maxTokens ?? 2048,
-          }),
+          body: JSON.stringify(openAiPayload),
         },
         maxRetries: 3,
         baseDelayMs: 1000,

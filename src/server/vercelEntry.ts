@@ -38,7 +38,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const rawUrl = req.url || '';
 
     // Diagnostic inspection endpoint for production troubleshooting
-    if (rawUrl.includes('/diag') || rawUrl.includes('/ping') || rawUrl === '/api/debug') {
+    const [checkPath] = rawUrl.split('?');
+    if (checkPath === '/api/diag' || checkPath === '/api/ping' || checkPath === '/api/debug' || checkPath === '/diag' || checkPath === '/ping') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
       let sqliteInfo: any = null;

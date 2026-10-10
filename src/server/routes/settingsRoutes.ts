@@ -60,6 +60,9 @@ export async function handleSettingsRoutes(
         minAccuracy: body.minAccuracy,
         maxDegradation: body.maxDegradation,
         latencyTolerance: body.latencyTolerance,
+        maxFailureRate: typeof body.maxFailureRate === 'number' ? body.maxFailureRate : undefined,
+        minCoverage: typeof body.minCoverage === 'number' ? body.minCoverage : undefined,
+        minEvaluatedCases: typeof body.minEvaluatedCases === 'number' ? body.minEvaluatedCases : undefined,
         rawOutputPrivacy: body.rawOutputPrivacy !== undefined ? Boolean(body.rawOutputPrivacy) : true,
       });
       sendJson(res, 200, updated);

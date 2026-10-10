@@ -172,16 +172,9 @@ export const ReliqApp: React.FC = () => {
       if (repository.updateReleaseDecision) {
         await repository.updateReleaseDecision(activeRun.id, status, reason);
       }
-      const updatedRun: EvaluationRun = {
-        ...activeRun,
-        releaseDecision: {
-          status,
-          decidedBy: 'Supervisor / Release Engineer',
-          decidedAt: new Date().toISOString(),
-          reason,
-        },
-      };
-      await handleSaveRun(updatedRun);
+      const runs = await repository.getEvaluationRuns(activeProjectId);
+      setEvaluationRuns(runs);
+      setActiveRunId(activeRun.id);
     } catch (err: any) {
       alert(`Failed to update release decision: ${err.message}`);
       throw err;

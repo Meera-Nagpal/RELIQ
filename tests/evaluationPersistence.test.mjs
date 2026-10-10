@@ -32,7 +32,7 @@ export async function runEvaluationPersistenceTests(testRunner, viteServer) {
 
   const { initializeDatabase, getDatabase, closeDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');
   const { evaluationDbService } = await server.ssrLoadModule('/src/server/services/evaluationDbService.ts');
-  const { generateCanonicalRunId, runServerEvaluation, getRunsFromDisk, saveRunToDisk } = await server.ssrLoadModule('/src/server/evaluationService.ts');
+  const { generateCanonicalRunId, runServerEvaluation, getRunsFromDisk, saveRunToDisk, deleteRunFromDisk } = await server.ssrLoadModule('/src/server/evaluationService.ts');
   const { classifyResponseStatus, EvaluationRunner, calculateMedian, calculateP95 } = await server.ssrLoadModule('/src/evaluation/runner.ts');
 
   const { test, asyncTest } = testRunner;
@@ -1024,6 +1024,9 @@ export async function runEvaluationPersistenceTests(testRunner, viteServer) {
       const dbRun = evaluationDbService.getEvaluationRunById(runId);
       assert.ok(dbRun, 'Run must be readable from SQLite');
       assert.strictEqual(dbRun.id, runId);
+
+      // Clean up temporary disk run file
+      deleteRunFromDisk(runId);
     });
 
     test('EVAL-PERSIST-39: Closing and re-opening database preserves all evaluation runs, results, and metrics across restarts', () => {

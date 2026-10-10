@@ -239,10 +239,9 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
 
   // 1. Benchmark Completion Configuration & Calculation
   const requiredCases =
-    settings.requiredBenchmarkCases ??
-    ((datasetName && datasetName.includes('Checkout Reliability'))
-      ? (totalCases >= 27 ? totalCases : 27)
-      : totalCases > 0 ? totalCases : 27);
+    (typeof settings?.requiredBenchmarkCases === 'number')
+      ? settings.requiredBenchmarkCases
+      : (totalCases > 0 ? totalCases : 27);
   const strongEvidenceCases = settings.strongEvidenceCases ?? 100;
   const isBenchmarkComplete = candidateEvaluated >= requiredCases;
 
@@ -368,7 +367,7 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
   }
 
   // 4. Coverage & Provider Reliability
-  const isCandidateCoverageLow = candidateCoverage < minCoverage || metrics.isInsufficientCoverage === true;
+  const isCandidateCoverageLow = candidateCoverage < minCoverage;
   const isBaselineCoverageLow = baselineCoverage < minCoverage;
   const isCoverageInsufficient = isCandidateCoverageLow || isBaselineCoverageLow;
 
@@ -376,6 +375,15 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     regressionCategories.push('COVERAGE_REGRESSION');
     violatedRules.push(
       `Candidate evaluation coverage (${candidateCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%) due to provider rate-limiting or errors.`
+    );
+  }
+
+  if (isBaselineCoverageLow) {
+    if (!regressionCategories.includes('COVERAGE_REGRESSION')) {
+      regressionCategories.push('COVERAGE_REGRESSION');
+    }
+    violatedRules.push(
+      `Baseline evaluation coverage (${baselineCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%) due to provider rate-limiting or errors.`
     );
   }
 
@@ -569,6 +577,7 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     (c) =>
       c.failureCategory === 'PROVIDER_AUTHENTICATION' ||
       c.candidateExecutionStatus === 'AUTHENTICATION_ERROR' ||
+      c.candidateExecutionStatus === 'PROVIDER_FORBIDDEN' ||
       c.candidateUsage?.error?.status === 401 ||
       c.candidateUsage?.error?.status === 403 ||
       (c.candidateErrorDetail && c.candidateErrorDetail.category === 'AUTHENTICATION')
@@ -587,6 +596,28 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     );
   }
 
+  const baselineCaseAuthFailures = caseResults.filter(
+    (c) =>
+      c.baselineExecutionStatus === 'AUTHENTICATION_ERROR' ||
+      c.baselineExecutionStatus === 'PROVIDER_FORBIDDEN' ||
+      c.baselineUsage?.error?.status === 401 ||
+      c.baselineUsage?.error?.status === 403 ||
+      (c.baselineErrorDetail && c.baselineErrorDetail.category === 'AUTHENTICATION')
+  );
+  const baselineAuthCount =
+    metrics.baselineReliability?.authErrorCount ||
+    baselineCaseAuthFailures.length ||
+    0;
+  if (baselineAuthCount > 0) {
+    if (!regressionCategories.includes('RELIABILITY_REGRESSION')) {
+      regressionCategories.push('RELIABILITY_REGRESSION');
+    }
+    violatedRules.push(
+      `[Authentication Failure] Baseline failed with ${baselineAuthCount} authentication error(s) (HTTP 401/403). API key missing or invalid.`
+    );
+  }
+  const totalAuthCount = candidateAuthCount + baselineAuthCount;
+
   // 9. Evaluate Transparent Release Gates (12 Discrete Gates)
   const gates: import('../domain/types').ReleaseGateResult[] = [
     {
@@ -603,12 +634,17 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     {
       gate: 'Evaluation Coverage',
       category: 'COVERAGE',
-      status: !isCandidateCoverageLow ? 'PASS' : 'FAIL',
-      observed: `${candidateCoverage.toFixed(1)}%`,
+      status: !isCoverageInsufficient ? 'PASS' : 'FAIL',
+      observed:
+        isBaselineCoverageLow && !isCandidateCoverageLow
+          ? `B: ${baselineCoverage.toFixed(1)}% / C: ${candidateCoverage.toFixed(1)}%`
+          : `${candidateCoverage.toFixed(1)}%`,
       threshold: `>= ${minCoverage.toFixed(1)}%`,
-      details: !isCandidateCoverageLow
+      details: !isCoverageInsufficient
         ? 'Evaluation coverage meets tolerance.'
-        : `Coverage (${candidateCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%).`,
+        : isCandidateCoverageLow
+        ? `Coverage (${candidateCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%).`
+        : `Baseline coverage (${baselineCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%).`,
       isBlocking: true,
     },
     {
@@ -778,14 +814,14 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     ((metrics as any).datasetId && (metrics as any).datasetId.includes('checkout'))
   );
   const minCasesTarget = minEvaluatedCases ?? 100;
-  const isSmallSampleGeneric = !isCheckoutSuite && candidateEvaluated < minCasesTarget;
+  const isSmallSampleGeneric = candidateEvaluated < minCasesTarget;
 
   // Precedence 1: BLOCK (Actual safety regression or fatal Authentication Error)
-  if (actualSafetyViolations.length > 0 || candidateAuthCount > 0) {
+  if (actualSafetyViolations.length > 0 || totalAuthCount > 0) {
     decision = 'BLOCK';
     isRegression = actualSafetyViolations.length > 0;
-    if (candidateAuthCount > 0 && actualSafetyViolations.length === 0) {
-      summary = `Release blocked: Fatal provider authentication failure (${candidateAuthCount} error(s)).`;
+    if (totalAuthCount > 0 && actualSafetyViolations.length === 0) {
+      summary = `Release blocked: Fatal provider authentication failure (${totalAuthCount} error(s)).`;
       reason = `Provider authentication failure prevented evaluation. Quality: NOT DETERMINABLE.`;
     } else if (anySecretsLeaked) {
       summary = `Release blocked: Critical security violation (${credentialLeaks.length} credential leak(s) detected).`;
@@ -814,8 +850,8 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     reason = `Cannot certify release quality because only ${Math.min(baselineCoverage, candidateCoverage).toFixed(1)}% of test cases completed successfully. Upstream rate limits must be resolved before gating.`;
     actionItems.push('Increase upstream API quota / rate limits or pace evaluation requests, then re-run the benchmark.');
   }
-  // Precedence 2B: Incomplete Named Benchmark Subset (e.g. 5/27 on Checkout Suite)
-  else if (isCheckoutSuite && !isBenchmarkComplete) {
+  // Precedence 2B: Incomplete Benchmark Subset (e.g. interrupted run or unfulfilled explicit benchmark target)
+  else if (!isBenchmarkComplete) {
     decision = 'INSUFFICIENT_EVIDENCE';
     isRegression = false;
     summary = `Preliminary evaluation subset (${candidateEvaluated}/${requiredCases} scenarios evaluated). Expand to full ${requiredCases} cases before production release.`;

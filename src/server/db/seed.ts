@@ -43,14 +43,18 @@ export function seedDatabase(db: Database.Database): SeedResult {
   const seedTransaction = db.transaction(() => {
     // 1. Projects
     const insertProject = db.prepare(`
-      INSERT OR IGNORE INTO projects (id, name, description, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO projects (
+        id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const projInfo = insertProject.run(
       SEED_PROJECT.id,
       SEED_PROJECT.name,
       SEED_PROJECT.description,
+      SEED_PROJECT.defaultDatasetId || 'ds-checkout-golden',
+      SEED_PROJECT.baselineVersionId || 'ver-v1-4',
+      SEED_PROJECT.candidateVersionId || 'ver-v1-5',
       SEED_PROJECT.createdAt,
       SEED_PROJECT.updatedAt
     );
@@ -59,8 +63,10 @@ export function seedDatabase(db: Database.Database): SeedResult {
     // 2. Project Settings
     const insertSettings = db.prepare(`
       INSERT OR IGNORE INTO project_settings (
-        id, project_id, min_accuracy, max_degradation, latency_tolerance, raw_output_privacy, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, project_id, min_accuracy, max_degradation, latency_tolerance,
+        max_failure_rate, min_coverage, min_evaluated_cases,
+        raw_output_privacy, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const settingsId = `settings-${SEED_PROJECT.id}`;
@@ -70,6 +76,9 @@ export function seedDatabase(db: Database.Database): SeedResult {
       SEED_PROJECT.regressionSettings.minAccuracyPercent,
       SEED_PROJECT.regressionSettings.maxAccuracyDegradationPercent,
       SEED_PROJECT.regressionSettings.maxLatencyIncreasePercent,
+      SEED_PROJECT.regressionSettings.maxFailureRatePercent ?? 5.0,
+      SEED_PROJECT.regressionSettings.minEvaluationCoveragePercent ?? 80.0,
+      SEED_PROJECT.regressionSettings.minimumEvaluatedCases ?? 100,
       1, // default raw output privacy enabled
       SEED_PROJECT.createdAt,
       SEED_PROJECT.updatedAt
@@ -79,8 +88,10 @@ export function seedDatabase(db: Database.Database): SeedResult {
     // 3. Model Versions
     const insertVersion = db.prepare(`
       INSERT OR IGNORE INTO model_versions (
-        id, project_id, provider, model, display_name, system_prompt, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, project_id, provider, model, display_name, system_prompt,
+        prompt_version, temperature, max_tokens, reasoning_effort,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const v of [SEED_BASELINE_VERSION, SEED_CANDIDATE_VERSION]) {
@@ -91,6 +102,10 @@ export function seedDatabase(db: Database.Database): SeedResult {
         v.modelIdentifier,
         v.name,
         v.systemPrompt || '',
+        v.promptVersion || '1.0',
+        v.temperature ?? 0.2,
+        v.maxTokens ?? 2048,
+        v.reasoningEffort || null,
         v.createdAt,
         v.createdAt
       );
@@ -168,6 +183,12 @@ export function seedDatabase(db: Database.Database): SeedResult {
         );
         result.testCasesSeeded += tcInfo.changes;
       }
+
+      db.prepare(`
+        UPDATE datasets
+        SET case_count = (SELECT COUNT(*) FROM test_cases WHERE dataset_id = ?)
+        WHERE id = ?
+      `).run(ds.id, ds.id);
     }
   });
 

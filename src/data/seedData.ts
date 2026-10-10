@@ -172,9 +172,9 @@ export function buildDeterministicGoldenRun(): EvaluationRun {
     if (isImprovement) improvedCount++;
 
     const bInTokens = Math.max(60, Math.floor((baselineVersion.systemPrompt.length + testCase.input.length) / 3.8));
-    const bOutTokens = Math.max(12, Math.floor(baselineOutput.length / 3.4));
+    const bOutTokens = Math.max(12, Math.floor(baselineOutput.length / 3.4)) + baselineReasoning;
     const bCached = 120;
-    const bTotalTokens = bInTokens + bOutTokens + baselineReasoning;
+    const bTotalTokens = bInTokens + bOutTokens;
     const bCost = defaultModelProvider.calculateCost({
       model: baselineVersion.modelIdentifier,
       inputTokens: bInTokens,
@@ -184,9 +184,9 @@ export function buildDeterministicGoldenRun(): EvaluationRun {
     });
 
     const cInTokens = Math.max(50, Math.floor((candidateVersion.systemPrompt.length + testCase.input.length) / 3.8));
-    const cOutTokens = Math.max(12, Math.floor(candidateOutput.length / 3.4));
+    const cOutTokens = Math.max(12, Math.floor(candidateOutput.length / 3.4)) + candidateReasoning;
     const cCached = 120;
-    const cTotalTokens = cInTokens + cOutTokens + candidateReasoning;
+    const cTotalTokens = cInTokens + cOutTokens;
     const cCost = defaultModelProvider.calculateCost({
       model: candidateVersion.modelIdentifier,
       inputTokens: cInTokens,

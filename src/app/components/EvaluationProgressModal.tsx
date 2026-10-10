@@ -206,8 +206,36 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
           >
             {isFailed ? 'EVALUATION FAILED' : 'EVALUATION IN PROGRESS'}
           </h2>
-          <div style={{ fontSize: '0.8rem', color: '#8899AA', marginTop: '0.3rem' }}>
-            {datasetName} • {targetTotal} scenarios • Elapsed: <strong style={{ color: '#FFFFFF' }}>{formattedTime}</strong>
+          <div
+            style={{
+              fontSize: '0.82rem',
+              color: '#8899AA',
+              marginTop: '0.35rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <span>{datasetName}</span>
+            <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
+            <span
+              style={{
+                color: progressPercent >= 100 ? '#2ECC71' : 'var(--reliq-accent, #FF6B35)',
+                fontWeight: 700,
+                letterSpacing: '0.02em',
+              }}
+            >
+              {progressPercent}% Completed
+            </span>
+            <span style={{ color: '#C0D0E0', fontSize: '0.78rem' }}>
+              ({currentCaseNumber} of {targetTotal} evaluated)
+            </span>
+            <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
+            <span>
+              Elapsed: <strong style={{ color: '#FFFFFF', fontFamily: 'monospace' }}>{formattedTime}</strong>
+            </span>
           </div>
         </div>
 
@@ -262,11 +290,11 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
               <span style={{ color: '#CCCCCC', fontWeight: 600 }}>
                 {progressCounts && progressCounts.current > 0
-                  ? `Processing scenario ${currentCaseNumber} / ${targetTotal}`
+                  ? `Evaluating scenario ${currentCaseNumber} of ${targetTotal}`
                   : 'EVALUATION IN PROGRESS'}
               </span>
               <span style={{ color: 'var(--reliq-accent, #FF6B35)', fontWeight: 800 }}>
-                {progressPercent > 0 ? `${progressPercent}%` : ''}
+                {progressPercent > 0 ? `${progressPercent}% Complete` : ''}
               </span>
             </div>
 
@@ -318,8 +346,10 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               title={caseName ? `Scenario: ${caseName}` : currentStageText}
             >
               {caseName
-                ? `Scenario: ${caseName}`
-                : currentStageText || 'Executing model telemetry and criteria evaluation...'}
+                ? `Current: ${caseName}`
+                : currentStageText && !currentStageText.includes(' 0/')
+                ? currentStageText
+                : 'Initializing test criteria and model evaluation...'}
             </div>
 
             {/* Live Progress Telemetry Counters (Completed vs Remaining) */}

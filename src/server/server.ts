@@ -63,7 +63,7 @@ const MIME_TYPES: Record<string, string> = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
-function serveStaticFile(res: http.ServerResponse, filePath: string) {
+function serveStaticFile(res: http.ServerResponse, filePath: string, method = 'GET') {
   try {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
@@ -76,7 +76,17 @@ function serveStaticFile(res: http.ServerResponse, filePath: string) {
     } else {
       res.setHeader('Cache-Control', 'no-cache');
     }
+    if (method === 'HEAD') {
+      res.end();
+      return;
+    }
     const stream = fs.createReadStream(filePath);
+    stream.on('error', () => {
+      if (!res.headersSent) {
+        res.statusCode = 500;
+      }
+      res.end();
+    });
     stream.pipe(res);
   } catch {
     res.statusCode = 500;
@@ -132,18 +142,17 @@ async function startServer() {
         const distDir = path.resolve(process.cwd(), 'dist');
         if (fs.existsSync(distDir)) {
           // Normalize requested path to prevent directory traversal
-          const safePath = path.normalize(url).replace(/^(\.\.[\/\\])+/, '');
-          const candidatePath = path.join(distDir, safePath);
+          const candidatePath = path.resolve(distDir, '.' + url);
 
-          if (fs.existsSync(candidatePath) && fs.statSync(candidatePath).isFile()) {
-            serveStaticFile(res, candidatePath);
+          if (candidatePath.startsWith(distDir) && fs.existsSync(candidatePath) && fs.statSync(candidatePath).isFile()) {
+            serveStaticFile(res, candidatePath, method);
             return;
           }
 
           // SPA Fallback: serve dist/index.html
           const indexPath = path.join(distDir, 'index.html');
           if (fs.existsSync(indexPath)) {
-            serveStaticFile(res, indexPath);
+            serveStaticFile(res, indexPath, method);
             return;
           }
         }

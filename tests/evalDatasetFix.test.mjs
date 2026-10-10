@@ -19,10 +19,10 @@ export async function runDatasetFixTests(testRunner, viteServer) {
     shouldCloseServer = true;
   }
 
-  const { initializeDatabase, getDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');
+  const { initializeDatabase, getDatabase, closeDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');
   const { datasetService } = await server.ssrLoadModule('/src/server/services/datasetService.ts');
   const { evaluationDbService } = await server.ssrLoadModule('/src/server/services/evaluationDbService.ts');
-  const { runServerEvaluation, validateEvaluationOptions } = await server.ssrLoadModule('/src/server/evaluationService.ts');
+  const { runServerEvaluation, validateEvaluationOptions, deleteRunFromDisk } = await server.ssrLoadModule('/src/server/evaluationService.ts');
 
   const { test, asyncTest } = testRunner;
   const testDbDir = path.resolve(process.cwd(), 'data', 'test_eval_fix_db');
@@ -174,12 +174,21 @@ export async function runDatasetFixTests(testRunner, viteServer) {
 
       const results = evaluationDbService.getRunResults(run.id);
       assert.ok(results.length > 0, 'Must have recorded results in evaluation_results');
+      deleteRunFromDisk(run.id);
     } catch (err) {
       // If providers failed due to network / dummy env keys, confirm failure was tracked in SQLite
       const runsCount = (db.prepare('SELECT count(*) as count FROM evaluation_runs').get()).count;
       assert.ok(runsCount > initialRunsCount, 'Evaluation run must have been created in evaluation_runs table');
     }
   });
+
+  try {
+    closeDatabase();
+    if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+    if (fs.existsSync(`${testDbPath}-wal`)) fs.unlinkSync(`${testDbPath}-wal`);
+    if (fs.existsSync(`${testDbPath}-shm`)) fs.unlinkSync(`${testDbPath}-shm`);
+    if (fs.existsSync(testDbDir)) fs.rmdirSync(testDbDir);
+  } catch {}
 
   if (shouldCloseServer) {
     await server.close();

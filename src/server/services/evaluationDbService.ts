@@ -19,6 +19,10 @@ export const ALLOWED_RELEASE_DECISIONS = new Set([
   'INSUFFICIENT_EVIDENCE',
   'NO_REGRESSION',
   'REGRESSION_DETECTED',
+  'GO',
+  'WARN',
+  'NO_GO',
+  'HOLD',
 ]);
 
 export interface ReleaseDecisionAuditRecord {
@@ -278,6 +282,10 @@ export class EvaluationDbService {
     const qualityScore = evaluatedCases > 0 ? (finalRun.metrics?.candidateQualityScore ?? null) : null;
     const releaseDecision = finalRun.releaseDecision?.status || null;
     const releaseReason = finalRun.releaseDecision?.reason || null;
+    let serializedRun: string | null = null;
+    try {
+      serializedRun = JSON.stringify(finalRun);
+    } catch {}
 
     db.prepare(`
       UPDATE evaluation_runs
@@ -290,7 +298,8 @@ export class EvaluationDbService {
           quality_score = ?,
           completed_at = ?,
           release_decision = ?,
-          release_reason = ?
+          release_reason = ?,
+          run_json = ?
       WHERE id = ?
     `).run(
       finalRun.metrics?.totalCases ?? finalRun.caseResults?.length ?? 0,
@@ -302,6 +311,7 @@ export class EvaluationDbService {
       now,
       releaseDecision,
       releaseReason,
+      serializedRun,
       runId
     );
   }
@@ -340,7 +350,13 @@ export class EvaluationDbService {
 
     // Override/supplement with SQLite runs
     for (const sRun of dbRuns) {
-      const existing = runMap.get(sRun.id);
+      let parsedJsonRun: any = null;
+      if (sRun.run_json) {
+        try {
+          parsedJsonRun = JSON.parse(sRun.run_json);
+        } catch {}
+      }
+      const existing = runMap.get(sRun.id) || parsedJsonRun;
       if (existing) {
         runMap.set(sRun.id, {
           ...existing,
@@ -361,6 +377,7 @@ export class EvaluationDbService {
           },
         });
       } else {
+        const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
         runMap.set(sRun.id, {
           id: sRun.id,
           projectId: sRun.project_id,
@@ -378,11 +395,19 @@ export class EvaluationDbService {
             candidatePassRate: sRun.pass_rate,
             candidateQualityScore: sRun.quality_score,
           },
+          regressionDecision: {
+            isRegression: isReg,
+            verdict: sRun.evaluated_cases === 0 ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+            summary: sRun.release_reason || '',
+            violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+            regressionCategories: [],
+          },
           releaseDecision: {
             status: sRun.release_decision,
             reason: sRun.release_reason,
             decidedAt: sRun.completed_at || sRun.started_at,
           },
+          rootCauses: [],
         });
       }
     }
@@ -401,7 +426,13 @@ export class EvaluationDbService {
   getEvaluationRunById(id: string): any | null {
     const db = getDatabase();
     const sRun = db.prepare('SELECT * FROM evaluation_runs WHERE id = ?').get(id) as any;
-    const dRun = getRunFromDisk(id);
+    let parsedJsonRun: any = null;
+    if (sRun?.run_json) {
+      try {
+        parsedJsonRun = JSON.parse(sRun.run_json);
+      } catch {}
+    }
+    const dRun = getRunFromDisk(id) || parsedJsonRun;
 
     if (sRun && dRun) {
       const results = this.getRunResults(id);
@@ -435,6 +466,7 @@ export class EvaluationDbService {
 
     if (sRun) {
       const results = this.getRunResults(id);
+      const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
       return {
         id: sRun.id,
         projectId: sRun.project_id,
@@ -452,11 +484,19 @@ export class EvaluationDbService {
           candidatePassRate: sRun.pass_rate,
           candidateQualityScore: sRun.quality_score,
         },
+        regressionDecision: {
+          isRegression: isReg,
+          verdict: sRun.evaluated_cases === 0 ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+          summary: sRun.release_reason || '',
+          violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+          regressionCategories: [],
+        },
         releaseDecision: {
           status: sRun.release_decision,
           reason: sRun.release_reason,
           decidedAt: sRun.completed_at || sRun.started_at,
         },
+        rootCauses: [],
         caseResults: results,
         results,
         ...sRun,

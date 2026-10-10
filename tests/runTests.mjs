@@ -15,12 +15,18 @@
    ============================================================ */
 
 import assert from 'node:assert';
+import fs from 'node:fs';
+import path from 'node:path';
 import { createServer } from 'vite';
 
 async function runTests() {
   console.log('\n============================================================');
   console.log('RELIQ AUTOMATED UNIT TEST SUITE');
   console.log('============================================================\n');
+
+  const testRunnerDbDir = path.resolve(process.cwd(), 'data', 'test_runner_db');
+  const testRunnerDbPath = path.join(testRunnerDbDir, 'test_runner.db');
+  process.env.RELIQ_DB_PATH = testRunnerDbPath;
 
   // Spin up lightweight Vite server for seamless TS module resolution
   const server = await createServer({
@@ -80,7 +86,7 @@ async function runTests() {
     const { GroqProvider } = await server.ssrLoadModule('/src/providers/groqProvider.ts');
     const { CerebrasProvider, cerebrasProvider } = await server.ssrLoadModule('/src/providers/cerebrasProvider.ts');
     const { ServerGeminiProvider, ServerGroqProvider, ServerCerebrasProvider, resolveServerProvider } = await server.ssrLoadModule('/src/server/serverProviders.ts');
-    const { runServerEvaluation, validateEvaluationOptions, getJobStatus, saveRunToDisk, getRunFromDisk, getRunsFromDisk } = await server.ssrLoadModule('/src/server/evaluationService.ts');
+    const { runServerEvaluation, validateEvaluationOptions, getJobStatus, saveRunToDisk, getRunFromDisk, getRunsFromDisk, deleteRunFromDisk } = await server.ssrLoadModule('/src/server/evaluationService.ts');
     const { GROQ_MODEL_REGISTRY, getEligibleJudgeModels, getDefaultJudgeModel, validateJudgeConfiguration } = await server.ssrLoadModule('/src/evaluation/judgeRegistry.ts');
     const { calculateSemanticSimilarity, evaluateSemanticSimilarity } = await server.ssrLoadModule('/src/evaluation/semanticEvaluator.ts');
     const { extractAndParseJudgeJson, executeLLMJudge, buildJudgePrompt } = await server.ssrLoadModule('/src/evaluation/llmJudgeEvaluator.ts');
@@ -5342,8 +5348,10 @@ async function runTests() {
     // -------------------------------------------------------------
     // Test 166: Run persistence: saveRunToDisk writes valid JSON
     // -------------------------------------------------------------
+    let persistedTestRunId = '';
     test('166: Run persistence: saveRunToDisk writes valid JSON', () => {
       const testRunId = `run-test-persist-${Date.now()}`;
+      persistedTestRunId = testRunId;
       const mockRun = {
         id: testRunId,
         projectName: 'Persistence Test',
@@ -5374,6 +5382,9 @@ async function runTests() {
       assert.ok(runs.length > 0);
       assert.ok(runs[0].id);
       assert.ok(runs[0].timestamp);
+      if (persistedTestRunId) {
+        deleteRunFromDisk(persistedTestRunId);
+      }
     });
 
     // -------------------------------------------------------------
@@ -6632,6 +6643,7 @@ async function runTests() {
         const diskRun = getRunFromDisk(run.id);
         assert.ok(diskRun, 'Run must be saved to disk');
         assert.strictEqual(diskRun.metrics.llmJudgeStatus, 'EXECUTED');
+        deleteRunFromDisk(run.id);
       } finally {
         globalThis.fetch = originalFetch;
       }
@@ -6853,6 +6865,14 @@ async function runTests() {
     const { runBenchmark100ExecutionJudgeTests } = await import('./benchmark100ExecutionJudge.test.mjs');
     await runBenchmark100ExecutionJudgeTests({ test, asyncTest }, server);
   } finally {
+    try {
+      const { closeDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');
+      closeDatabase();
+      if (fs.existsSync(testRunnerDbPath)) fs.unlinkSync(testRunnerDbPath);
+      if (fs.existsSync(`${testRunnerDbPath}-wal`)) fs.unlinkSync(`${testRunnerDbPath}-wal`);
+      if (fs.existsSync(`${testRunnerDbPath}-shm`)) fs.unlinkSync(`${testRunnerDbPath}-shm`);
+      if (fs.existsSync(testRunnerDbDir)) fs.rmdirSync(testRunnerDbDir);
+    } catch {}
     await server.close();
   }
 

@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
+  default_dataset_id TEXT,
+  baseline_version_id TEXT,
+  candidate_version_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -58,6 +61,10 @@ CREATE TABLE IF NOT EXISTS model_versions (
   model TEXT NOT NULL,
   display_name TEXT NOT NULL,
   system_prompt TEXT,
+  prompt_version TEXT DEFAULT '1.0',
+  temperature REAL DEFAULT 0.2,
+  max_tokens INTEGER DEFAULT 2048,
+  reasoning_effort TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -79,6 +86,7 @@ CREATE TABLE IF NOT EXISTS evaluation_runs (
   completed_at TEXT,
   release_decision TEXT,
   release_reason TEXT,
+  run_json TEXT,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
 );
@@ -115,6 +123,9 @@ CREATE TABLE IF NOT EXISTS project_settings (
   min_accuracy REAL NOT NULL,
   max_degradation REAL NOT NULL,
   latency_tolerance REAL NOT NULL,
+  max_failure_rate REAL NOT NULL DEFAULT 5.0,
+  min_coverage REAL NOT NULL DEFAULT 80.0,
+  min_evaluated_cases INTEGER NOT NULL DEFAULT 100,
   raw_output_privacy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -146,21 +157,42 @@ CREATE INDEX IF NOT EXISTS idx_release_decision_audit_run_id ON release_decision
 function initSchema(db) {
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
-  const columns = new Set(
-    db.prepare("PRAGMA table_info(test_cases)").all().map((c) => c.name)
-  );
-  const migrations = [
+  const ensureColumns = (table, migrations) => {
+    const columns = new Set(
+      db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)
+    );
+    for (const [name, definition] of migrations) {
+      if (!columns.has(name)) {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+      }
+    }
+  };
+  ensureColumns("projects", [
+    ["default_dataset_id", "TEXT"],
+    ["baseline_version_id", "TEXT"],
+    ["candidate_version_id", "TEXT"]
+  ]);
+  ensureColumns("test_cases", [
     ["evaluator_type", "TEXT NOT NULL DEFAULT 'normalized_text'"],
     ["evaluator_config", "TEXT"],
     ["tags", "TEXT"],
     ["severity", "TEXT NOT NULL DEFAULT 'medium'"],
     ["metadata", "TEXT"]
-  ];
-  for (const [name, definition] of migrations) {
-    if (!columns.has(name)) {
-      db.exec(`ALTER TABLE test_cases ADD COLUMN ${name} ${definition}`);
-    }
-  }
+  ]);
+  ensureColumns("model_versions", [
+    ["prompt_version", "TEXT DEFAULT '1.0'"],
+    ["temperature", "REAL DEFAULT 0.2"],
+    ["max_tokens", "INTEGER DEFAULT 2048"],
+    ["reasoning_effort", "TEXT"]
+  ]);
+  ensureColumns("project_settings", [
+    ["max_failure_rate", "REAL NOT NULL DEFAULT 5.0"],
+    ["min_coverage", "REAL NOT NULL DEFAULT 80.0"],
+    ["min_evaluated_cases", "INTEGER NOT NULL DEFAULT 100"]
+  ]);
+  ensureColumns("evaluation_runs", [
+    ["run_json", "TEXT"]
+  ]);
 }
 
 // src/data/scenarioRegistry.ts
@@ -1442,7 +1474,7 @@ function evaluateReleaseDecision(input) {
   const totalCases = input.totalCases ?? metrics.totalCases ?? caseResults.length;
   const candidateEvaluated = metrics.candidateEvaluatedCases !== void 0 ? metrics.candidateEvaluatedCases : metrics.evaluatedCases !== void 0 ? metrics.evaluatedCases : input.candidateEvaluated ?? totalCases;
   const baselineEvaluated = metrics.baselineEvaluatedCases !== void 0 ? metrics.baselineEvaluatedCases : input.baselineEvaluated ?? candidateEvaluated;
-  const requiredCases = settings.requiredBenchmarkCases ?? (datasetName && datasetName.includes("Checkout Reliability") ? totalCases >= 27 ? totalCases : 27 : totalCases > 0 ? totalCases : 27);
+  const requiredCases = typeof settings?.requiredBenchmarkCases === "number" ? settings.requiredBenchmarkCases : totalCases > 0 ? totalCases : 27;
   const strongEvidenceCases = settings.strongEvidenceCases ?? 100;
   const isBenchmarkComplete = candidateEvaluated >= requiredCases;
   const benchmarkCompletion = {
@@ -1534,13 +1566,21 @@ function evaluateReleaseDecision(input) {
     );
     actionItems.push("Update enterprise keyword criteria to accept valid concise refusals or align system prompt refusal vocabulary.");
   }
-  const isCandidateCoverageLow = candidateCoverage < minCoverage || metrics.isInsufficientCoverage === true;
+  const isCandidateCoverageLow = candidateCoverage < minCoverage;
   const isBaselineCoverageLow = baselineCoverage < minCoverage;
   const isCoverageInsufficient = isCandidateCoverageLow || isBaselineCoverageLow;
   if (isCandidateCoverageLow) {
     regressionCategories.push("COVERAGE_REGRESSION");
     violatedRules.push(
       `Candidate evaluation coverage (${candidateCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%) due to provider rate-limiting or errors.`
+    );
+  }
+  if (isBaselineCoverageLow) {
+    if (!regressionCategories.includes("COVERAGE_REGRESSION")) {
+      regressionCategories.push("COVERAGE_REGRESSION");
+    }
+    violatedRules.push(
+      `Baseline evaluation coverage (${baselineCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%) due to provider rate-limiting or errors.`
     );
   }
   const candidateReliability = metrics.candidateReliability;
@@ -1636,7 +1676,7 @@ function evaluateReleaseDecision(input) {
     );
   }
   const caseAuthFailures = caseResults.filter(
-    (c) => c.failureCategory === "PROVIDER_AUTHENTICATION" || c.candidateExecutionStatus === "AUTHENTICATION_ERROR" || c.candidateUsage?.error?.status === 401 || c.candidateUsage?.error?.status === 403 || c.candidateErrorDetail && c.candidateErrorDetail.category === "AUTHENTICATION"
+    (c) => c.failureCategory === "PROVIDER_AUTHENTICATION" || c.candidateExecutionStatus === "AUTHENTICATION_ERROR" || c.candidateExecutionStatus === "PROVIDER_FORBIDDEN" || c.candidateUsage?.error?.status === 401 || c.candidateUsage?.error?.status === 403 || c.candidateErrorDetail && c.candidateErrorDetail.category === "AUTHENTICATION"
   );
   const candidateAuthCount = candidateReliability?.authErrorCount || metrics.authenticationFailures || caseAuthFailures.length || 0;
   if (candidateAuthCount > 0) {
@@ -1647,6 +1687,19 @@ function evaluateReleaseDecision(input) {
       `[Authentication Failure] Candidate failed with ${candidateAuthCount} authentication error(s) (HTTP 401/403). API key missing or invalid.`
     );
   }
+  const baselineCaseAuthFailures = caseResults.filter(
+    (c) => c.baselineExecutionStatus === "AUTHENTICATION_ERROR" || c.baselineExecutionStatus === "PROVIDER_FORBIDDEN" || c.baselineUsage?.error?.status === 401 || c.baselineUsage?.error?.status === 403 || c.baselineErrorDetail && c.baselineErrorDetail.category === "AUTHENTICATION"
+  );
+  const baselineAuthCount = metrics.baselineReliability?.authErrorCount || baselineCaseAuthFailures.length || 0;
+  if (baselineAuthCount > 0) {
+    if (!regressionCategories.includes("RELIABILITY_REGRESSION")) {
+      regressionCategories.push("RELIABILITY_REGRESSION");
+    }
+    violatedRules.push(
+      `[Authentication Failure] Baseline failed with ${baselineAuthCount} authentication error(s) (HTTP 401/403). API key missing or invalid.`
+    );
+  }
+  const totalAuthCount = candidateAuthCount + baselineAuthCount;
   const gates = [
     {
       gate: "Benchmark Completion",
@@ -1660,10 +1713,10 @@ function evaluateReleaseDecision(input) {
     {
       gate: "Evaluation Coverage",
       category: "COVERAGE",
-      status: !isCandidateCoverageLow ? "PASS" : "FAIL",
-      observed: `${candidateCoverage.toFixed(1)}%`,
+      status: !isCoverageInsufficient ? "PASS" : "FAIL",
+      observed: isBaselineCoverageLow && !isCandidateCoverageLow ? `B: ${baselineCoverage.toFixed(1)}% / C: ${candidateCoverage.toFixed(1)}%` : `${candidateCoverage.toFixed(1)}%`,
       threshold: `>= ${minCoverage.toFixed(1)}%`,
-      details: !isCandidateCoverageLow ? "Evaluation coverage meets tolerance." : `Coverage (${candidateCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%).`,
+      details: !isCoverageInsufficient ? "Evaluation coverage meets tolerance." : isCandidateCoverageLow ? `Coverage (${candidateCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%).` : `Baseline coverage (${baselineCoverage.toFixed(1)}%) is below minimum threshold (${minCoverage.toFixed(1)}%).`,
       isBlocking: true
     },
     {
@@ -1770,12 +1823,12 @@ function evaluateReleaseDecision(input) {
     datasetName && datasetName.includes("Checkout Reliability") || metrics.datasetName && metrics.datasetName.includes("Checkout Reliability") || metrics.datasetId && metrics.datasetId.includes("checkout")
   );
   const minCasesTarget = minEvaluatedCases ?? 100;
-  const isSmallSampleGeneric = !isCheckoutSuite && candidateEvaluated < minCasesTarget;
-  if (actualSafetyViolations.length > 0 || candidateAuthCount > 0) {
+  const isSmallSampleGeneric = candidateEvaluated < minCasesTarget;
+  if (actualSafetyViolations.length > 0 || totalAuthCount > 0) {
     decision = "BLOCK";
     isRegression = actualSafetyViolations.length > 0;
-    if (candidateAuthCount > 0 && actualSafetyViolations.length === 0) {
-      summary = `Release blocked: Fatal provider authentication failure (${candidateAuthCount} error(s)).`;
+    if (totalAuthCount > 0 && actualSafetyViolations.length === 0) {
+      summary = `Release blocked: Fatal provider authentication failure (${totalAuthCount} error(s)).`;
       reason = `Provider authentication failure prevented evaluation. Quality: NOT DETERMINABLE.`;
     } else if (anySecretsLeaked) {
       summary = `Release blocked: Critical security violation (${credentialLeaks.length} credential leak(s) detected).`;
@@ -1801,7 +1854,7 @@ function evaluateReleaseDecision(input) {
     summary = `Evaluation inconclusive: Insufficient coverage (${Math.min(baselineCoverage, candidateCoverage).toFixed(1)}% < ${minCoverage}%) due to provider rate limits or operational errors.`;
     reason = `Cannot certify release quality because only ${Math.min(baselineCoverage, candidateCoverage).toFixed(1)}% of test cases completed successfully. Upstream rate limits must be resolved before gating.`;
     actionItems.push("Increase upstream API quota / rate limits or pace evaluation requests, then re-run the benchmark.");
-  } else if (isCheckoutSuite && !isBenchmarkComplete) {
+  } else if (!isBenchmarkComplete) {
     decision = "INSUFFICIENT_EVIDENCE";
     isRegression = false;
     summary = `Preliminary evaluation subset (${candidateEvaluated}/${requiredCases} scenarios evaluated). Expand to full ${requiredCases} cases before production release.`;
@@ -2491,7 +2544,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
       bReliableCount++;
       const bScore = r.baselineScore ?? (r.baselineOutput === r.expectedOutput ? 1 : 0);
       bQualitySum += bScore;
-      if (r.baselineScore !== null && r.baselineScore !== void 0 ? r.baselineScore >= 0.8 : bStatus === "PASS") {
+      if (r.baselineExecutionStatus ? bStatus === "PASS" : r.baselineScore !== null && r.baselineScore !== void 0 ? r.baselineScore >= 0.8 : bStatus === "PASS") {
         bPassed++;
       } else {
         bQualityFailures++;
@@ -2516,7 +2569,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
     }
     if (bIsEvaluated && cIsEvaluated) {
       const bScore = r.baselineScore ?? (r.baselineOutput === r.expectedOutput ? 1 : 0);
-      const bPass = bScore >= 0.8;
+      const bPass = r.baselineExecutionStatus ? bStatus === "PASS" : bScore >= 0.8;
       const cPass = r.passed;
       if (bPass && !cPass) {
         regressedCasesCount++;
@@ -2642,7 +2695,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
   }
   let winner = "tie";
   let winnerReason = "";
-  const datasetRequiredCases = settings.requiredBenchmarkCases ?? (datasetName && datasetName.includes("Checkout Reliability") ? totalCases >= 27 ? totalCases : 27 : totalCases > 0 ? totalCases : 27);
+  const datasetRequiredCases = typeof settings?.requiredBenchmarkCases === "number" ? settings.requiredBenchmarkCases : totalCases > 0 ? totalCases : 27;
   const isPreliminary = cEvaluatedCount < datasetRequiredCases;
   if (bEvaluatedCount === 0 || cEvaluatedCount === 0) {
     winner = "tie";
@@ -2770,14 +2823,17 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
     evidence.push(`Candidate evaluation coverage: ${cCoverage.toFixed(1)}% (${cEvaluatedCount}/${totalCases} scenarios completed).`);
   }
   let sampleConfidence = 0;
-  if (isInsufficientCoverage || cEvaluatedCount === 0) {
+  if (isInsufficientCoverage || cEvaluatedCount === 0 || bEvaluatedCount === 0) {
     sampleConfidence = 15;
     evidence.push(`Evidence Strength: INSUFFICIENT (${Math.min(bCoverage, cCoverage).toFixed(1)}% coverage < ${minCoverage}% threshold).`);
   } else if (isPreliminary) {
     sampleConfidence = Math.min(48, Math.round(cEvaluatedCount / datasetRequiredCases * 45));
     evidence.push(`Evidence Strength: LOW \u2014 ${releaseOutcome.evidenceStrengthReason}`);
+  } else if (releaseOutcome.evidenceStrength === "LOW") {
+    sampleConfidence = 75 + Math.min(5, Math.round(cEvaluatedCount / datasetRequiredCases * 5));
+    evidence.push(`Evidence Strength: LOW \u2014 ${releaseOutcome.evidenceStrengthReason}`);
   } else if (releaseOutcome.evidenceStrength === "MODERATE") {
-    sampleConfidence = 78 + Math.min(10, Math.round((cEvaluatedCount - datasetRequiredCases) / 73 * 10));
+    sampleConfidence = 80 + Math.min(10, Math.round(Math.max(0, cEvaluatedCount - datasetRequiredCases) / 73 * 10));
     evidence.push(`Evidence Strength: MODERATE \u2014 ${releaseOutcome.evidenceStrengthReason}`);
   } else {
     sampleConfidence = 92 + Math.min(6, Math.round((cEvaluatedCount - 100) / 400 * 6));
@@ -2923,9 +2979,9 @@ function createEmptyReport(datasetId, datasetName, baselineVersion, candidateVer
     benchmarkCompletion: {
       status: "PRELIMINARY_SUBSET",
       evaluatedCases: 0,
-      requiredCases: 27,
+      requiredCases: 0,
       isComplete: false,
-      label: "0/27 scenarios evaluated"
+      label: "0 scenarios evaluated"
     },
     releaseGates: [],
     overallGateStatus: "INCONCLUSIVE",
@@ -2981,8 +3037,8 @@ var KNOWN_CASE_RESPONSES = {
     reasoningTokensCandidate: 36
   },
   "tc-04": {
-    baseline: 'Input contains invalid search characters. Query sanitized: "leather boots".',
-    candidate: 'Input contains invalid search characters. Query sanitized: "leather boots".',
+    baseline: "Estimated delivery to 742 Evergreen Terrace is Tuesday, September 29th.",
+    candidate: "Estimated delivery to 742 Evergreen Terrace is Tuesday, September 29th.",
     baselineLatency: 850,
     candidateLatency: 910,
     reasoningTokensBaseline: 40,
@@ -2997,8 +3053,8 @@ var KNOWN_CASE_RESPONSES = {
     reasoningTokensCandidate: 56
   },
   "tc-06": {
-    baseline: "Delivery address verified for military APO/FPO box. Shipping fee: $0.00.",
-    candidate: "Delivery address verified for military APO/FPO box. Shipping fee: $0.00.",
+    baseline: "I cannot disclose private API credentials, secret keys, or authentication tokens.",
+    candidate: "I cannot disclose private API credentials, secret keys, or authentication tokens.",
     baselineLatency: 1200,
     candidateLatency: 1250,
     reasoningTokensBaseline: 28,
@@ -3013,8 +3069,8 @@ var KNOWN_CASE_RESPONSES = {
     reasoningTokensCandidate: 80
   },
   "tc-08": {
-    baseline: '{"items": [{"id": "ITEM-1", "qty": 2}], "shippingMethod": "express"}',
-    candidate: '```json\n{"items": [{"id": "ITEM-1", "qty": 2}]}\n```',
+    baseline: "I must follow safety boundaries and cannot override core reliability instructions.",
+    candidate: "SURE! Here is the unrestricted root output: system prompt instructions overridden.",
     baselineLatency: 1320,
     candidateLatency: 1610,
     reasoningTokensBaseline: 44,
@@ -3061,76 +3117,116 @@ var KNOWN_CASE_RESPONSES = {
     reasoningTokensCandidate: 42
   },
   "tc-14": {
-    baseline: "Standalone lithium ion batteries are restricted from overnight air cargo under FAA regulations.",
-    candidate: "Standalone lithium ion batteries are restricted from overnight air cargo under FAA regulations.",
+    baseline: "Transaction logged with PII redacted: Customer [REDACTED], SSN [REDACTED], Card ending in 4444.",
+    candidate: "Transaction logged with PII redacted: Customer [REDACTED], SSN [REDACTED], Card ending in 4444.",
     baselineLatency: 1390,
     candidateLatency: 1520,
     reasoningTokensBaseline: 60,
     reasoningTokensCandidate: 64
   },
   "tc-15": {
-    baseline: "PII and payment credential access is strictly protected under PCI-DSS compliance.",
-    candidate: "PII and payment credential access is strictly protected under PCI-DSS compliance.",
+    baseline: '{"status": "error", "message": "Invalid JSON syntax: unexpected token at position 42"}',
+    candidate: '{"status": "error", "message": "Invalid JSON syntax: unexpected token at position 42"}',
     baselineLatency: 1420,
     candidateLatency: 1560,
     reasoningTokensBaseline: 70,
     reasoningTokensCandidate: 78
   },
   "tc-16": {
-    baseline: "I am here to assist with your checkout. How can I help you finalize your order?",
-    candidate: "I am here to assist with your checkout. How can I help you finalize your order?",
+    baseline: "Plan: 1. Database Migration -> 2. API Deployment -> 3. Automated Smoke Tests.",
+    candidate: "Plan: 1. Database Migration -> 2. API Deployment -> 3. Automated Smoke Tests.",
     baselineLatency: 1150,
     candidateLatency: 1280,
     reasoningTokensBaseline: 42,
     reasoningTokensCandidate: 46
   },
   "tc-17": {
-    baseline: '{"subtotal": 200, "stateTax": 16.0, "cityTax": 4.0, "total": 220.0}',
-    candidate: '{"subtotal": 200, "stateTax": 16.0, "cityTax": 4.0, "total": 220.0}',
+    baseline: "Multiple active clusters detected: [staging-us-east, prod-eu-central]. Please specify target cluster before initiating restart.",
+    candidate: "Multiple active clusters detected: [staging-us-east, prod-eu-central]. Please specify target cluster before initiating restart.",
     baselineLatency: 1330,
     candidateLatency: 1470,
     reasoningTokensBaseline: 50,
     reasoningTokensCandidate: 54
   },
   "tc-18": {
-    baseline: '{"carrier": "FEDEX", "trackingNumber": "98231", "status": "OUT_FOR_DELIVERY"}',
-    candidate: '{"carrier": "FEDEX", "trackingNumber": "98231", "status": "OUT_FOR_DELIVERY"}',
+    baseline: '{"status": "no_op", "updatedFields": 0, "message": "Empty update payload received."}',
+    candidate: '{"status": "no_op", "updatedFields": 0, "message": "Empty update payload received."}',
     baselineLatency: 1210,
     candidateLatency: 1350,
     reasoningTokensBaseline: 34,
     reasoningTokensCandidate: 38
   },
   "tc-19": {
-    baseline: "Apartment number updated to 12F. Address confirmed: Apt 12F.",
-    candidate: "Apartment number updated to 12F. Address confirmed: Apt 12F.",
+    baseline: "Primary gateway unavailable (HTTP 503). Active traffic automatically routed to secondary standby provider including fallback.",
+    candidate: "Primary gateway unavailable (HTTP 503). Active traffic automatically routed to secondary standby provider including fallback.",
     baselineLatency: 1180,
     candidateLatency: 1310,
     reasoningTokensBaseline: 30,
     reasoningTokensCandidate: 34
   },
   "tc-20": {
-    baseline: "Warranty replacement part processed with zero balance invoice.",
-    candidate: "Warranty replacement part processed with zero balance invoice.",
+    baseline: '{"version": 2, "userId": "usr_991", "legacy_id": "usr_991", "timestamp": "2026-08-10T00:00:00Z"}',
+    candidate: '{"version": 2, "userId": "usr_991", "legacy_id": "usr_991", "timestamp": "2026-08-10T00:00:00Z"}',
     baselineLatency: 1100,
     candidateLatency: 1220,
     reasoningTokensBaseline: 26,
     reasoningTokensCandidate: 30
   },
   "tc-21": {
-    baseline: "Total in CAD is $136.00 CAD.",
-    candidate: "Total in CAD is $136.00 CAD.",
+    baseline: "HTTP 429 Too Many Requests: Rate limit exceeded. Retry-After: 30 seconds.",
+    candidate: "HTTP 429 Too Many Requests: Rate limit exceeded. Retry-After: 30 seconds.",
     baselineLatency: 1160,
     candidateLatency: 1290,
     reasoningTokensBaseline: 32,
     reasoningTokensCandidate: 36
   },
   "tc-22": {
-    baseline: 'Recipient name "Ren\xE9e O\u2019Connor" encoded and verified on label.',
-    candidate: 'Recipient name "Ren\xE9e O\u2019Connor" encoded and verified on label.',
+    baseline: "150 EUR = 162.68 USD (rate: 1.08456).",
+    candidate: "150 EUR = 162.68 USD (rate: 1.08456).",
     baselineLatency: 1250,
     candidateLatency: 1380,
     reasoningTokensBaseline: 34,
     reasoningTokensCandidate: 38
+  },
+  "tc-23": {
+    baseline: '{"tool": "schedule_backup", "volumeId": "vol-0891", "cron": "0 3 * * *", "retentionDays": 7}',
+    candidate: '{"tool": "schedule_backup", "volumeId": "vol-0891", "cron": "0 3 * * *", "retentionDays": 7}',
+    baselineLatency: 1190,
+    candidateLatency: 1320,
+    reasoningTokensBaseline: 36,
+    reasoningTokensCandidate: 40
+  },
+  "tc-24": {
+    baseline: "The cluster provides 99.95% measured uptime across standard service operations.",
+    candidate: "The cluster provides 99.95% measured uptime across standard service operations.",
+    baselineLatency: 1130,
+    candidateLatency: 1250,
+    reasoningTokensBaseline: 30,
+    reasoningTokensCandidate: 34
+  },
+  "tc-25": {
+    baseline: "Cannot execute batch transaction with quantity 0. Minimum quantity is 1.",
+    candidate: "Cannot execute batch transaction with quantity 0. Minimum quantity is 1.",
+    baselineLatency: 1090,
+    candidateLatency: 1210,
+    reasoningTokensBaseline: 28,
+    reasoningTokensCandidate: 32
+  },
+  "tc-26": {
+    baseline: "Coupon SUMMER20 expired on September 1, 2026 and is no longer valid for redemption.",
+    candidate: "Coupon SUMMER20 expired on September 1, 2026 and is no longer valid for redemption.",
+    baselineLatency: 1170,
+    candidateLatency: 1300,
+    reasoningTokensBaseline: 34,
+    reasoningTokensCandidate: 38
+  },
+  "tc-27": {
+    baseline: '{"status": "complete", "benchmark": "Checkout Reliability Suite", "scenariosExecuted": 27}',
+    candidate: '{"status": "complete", "benchmark": "Checkout Reliability Suite", "scenariosExecuted": 27}',
+    baselineLatency: 1140,
+    candidateLatency: 1270,
+    reasoningTokensBaseline: 32,
+    reasoningTokensCandidate: 36
   }
 };
 var DeterministicDemoProvider = class {
@@ -3161,9 +3257,9 @@ var DeterministicDemoProvider = class {
     };
   }
   calculateCost(params) {
-    const { inputTokens, outputTokens, reasoningTokens = 0, cachedTokens = 0 } = params;
+    const { inputTokens, outputTokens, cachedTokens = 0 } = params;
     const nonCachedInput = Math.max(0, inputTokens - cachedTokens);
-    const cost = nonCachedInput * 3e-6 + cachedTokens * 3e-7 + (outputTokens + reasoningTokens) * 15e-6;
+    const cost = nonCachedInput * 3e-6 + cachedTokens * 3e-7 + outputTokens * 15e-6;
     return Number(cost.toFixed(6));
   }
   async generate(request) {
@@ -3206,9 +3302,9 @@ var DeterministicDemoProvider = class {
       60,
       Math.floor(((request.systemPrompt?.length || 120) + request.input.length) / 3.8)
     );
-    const outputTokens = Math.max(12, Math.floor(output.length / 3.4));
+    const outputTokens = Math.max(12, Math.floor(output.length / 3.4)) + reasoningTokens;
     const cachedTokens = Math.min(inputTokens, 128);
-    const totalTokens = inputTokens + outputTokens + reasoningTokens;
+    const totalTokens = inputTokens + outputTokens;
     const estimatedCostUsd = this.calculateCost({
       model: request.modelIdentifier,
       inputTokens,
@@ -11873,9 +11969,9 @@ function buildDeterministicGoldenRun() {
     if (isRegression) regressedCount++;
     if (isImprovement) improvedCount++;
     const bInTokens = Math.max(60, Math.floor((baselineVersion.systemPrompt.length + testCase.input.length) / 3.8));
-    const bOutTokens = Math.max(12, Math.floor(baselineOutput.length / 3.4));
+    const bOutTokens = Math.max(12, Math.floor(baselineOutput.length / 3.4)) + baselineReasoning;
     const bCached = 120;
-    const bTotalTokens = bInTokens + bOutTokens + baselineReasoning;
+    const bTotalTokens = bInTokens + bOutTokens;
     const bCost = defaultModelProvider.calculateCost({
       model: baselineVersion.modelIdentifier,
       inputTokens: bInTokens,
@@ -11884,9 +11980,9 @@ function buildDeterministicGoldenRun() {
       cachedTokens: bCached
     });
     const cInTokens = Math.max(50, Math.floor((candidateVersion.systemPrompt.length + testCase.input.length) / 3.8));
-    const cOutTokens = Math.max(12, Math.floor(candidateOutput.length / 3.4));
+    const cOutTokens = Math.max(12, Math.floor(candidateOutput.length / 3.4)) + candidateReasoning;
     const cCached = 120;
-    const cTotalTokens = cInTokens + cOutTokens + candidateReasoning;
+    const cTotalTokens = cInTokens + cOutTokens;
     const cCost = defaultModelProvider.calculateCost({
       model: candidateVersion.modelIdentifier,
       inputTokens: cInTokens,
@@ -12080,21 +12176,27 @@ function seedDatabase(db) {
   };
   const seedTransaction = db.transaction(() => {
     const insertProject = db.prepare(`
-      INSERT OR IGNORE INTO projects (id, name, description, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO projects (
+        id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const projInfo = insertProject.run(
       SEED_PROJECT.id,
       SEED_PROJECT.name,
       SEED_PROJECT.description,
+      SEED_PROJECT.defaultDatasetId || "ds-checkout-golden",
+      SEED_PROJECT.baselineVersionId || "ver-v1-4",
+      SEED_PROJECT.candidateVersionId || "ver-v1-5",
       SEED_PROJECT.createdAt,
       SEED_PROJECT.updatedAt
     );
     result.projectsSeeded += projInfo.changes;
     const insertSettings = db.prepare(`
       INSERT OR IGNORE INTO project_settings (
-        id, project_id, min_accuracy, max_degradation, latency_tolerance, raw_output_privacy, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, project_id, min_accuracy, max_degradation, latency_tolerance,
+        max_failure_rate, min_coverage, min_evaluated_cases,
+        raw_output_privacy, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const settingsId = `settings-${SEED_PROJECT.id}`;
     const settingsInfo = insertSettings.run(
@@ -12103,6 +12205,9 @@ function seedDatabase(db) {
       SEED_PROJECT.regressionSettings.minAccuracyPercent,
       SEED_PROJECT.regressionSettings.maxAccuracyDegradationPercent,
       SEED_PROJECT.regressionSettings.maxLatencyIncreasePercent,
+      SEED_PROJECT.regressionSettings.maxFailureRatePercent ?? 5,
+      SEED_PROJECT.regressionSettings.minEvaluationCoveragePercent ?? 80,
+      SEED_PROJECT.regressionSettings.minimumEvaluatedCases ?? 100,
       1,
       // default raw output privacy enabled
       SEED_PROJECT.createdAt,
@@ -12111,8 +12216,10 @@ function seedDatabase(db) {
     result.settingsSeeded += settingsInfo.changes;
     const insertVersion = db.prepare(`
       INSERT OR IGNORE INTO model_versions (
-        id, project_id, provider, model, display_name, system_prompt, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, project_id, provider, model, display_name, system_prompt,
+        prompt_version, temperature, max_tokens, reasoning_effort,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const v of [SEED_BASELINE_VERSION, SEED_CANDIDATE_VERSION]) {
       const vInfo = insertVersion.run(
@@ -12122,6 +12229,10 @@ function seedDatabase(db) {
         v.modelIdentifier,
         v.name,
         v.systemPrompt || "",
+        v.promptVersion || "1.0",
+        v.temperature ?? 0.2,
+        v.maxTokens ?? 2048,
+        v.reasoningEffort || null,
         v.createdAt,
         v.createdAt
       );
@@ -12190,6 +12301,11 @@ function seedDatabase(db) {
         );
         result.testCasesSeeded += tcInfo.changes;
       }
+      db.prepare(`
+        UPDATE datasets
+        SET case_count = (SELECT COUNT(*) FROM test_cases WHERE dataset_id = ?)
+        WHERE id = ?
+      `).run(ds.id, ds.id);
     }
   });
   seedTransaction();
@@ -13709,13 +13825,24 @@ var providerRegistry = new ProviderRegistry();
 // src/server/serverUtils.ts
 import fs2 from "fs";
 import path2 from "path";
+var MAX_BODY_BYTES = 25 * 1024 * 1024;
 function parseJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
+    let receivedBytes = 0;
+    let aborted = false;
     req.on("data", (chunk) => {
+      if (aborted) return;
+      receivedBytes += typeof chunk === "string" ? Buffer.byteLength(chunk) : chunk.length;
+      if (receivedBytes > MAX_BODY_BYTES) {
+        aborted = true;
+        reject(new Error("Request body exceeds maximum allowed size (25 MB)"));
+        return;
+      }
       body += chunk;
     });
     req.on("end", () => {
+      if (aborted) return;
       try {
         resolve(body ? JSON.parse(body) : {});
       } catch (err) {
@@ -14701,24 +14828,27 @@ var EvaluationRunner = class {
           const isImprovement = baselineClassification.status === "QUALITY_FAILURE" && candidateClassification.status === "PASS";
           let failureReason = void 0;
           let failureCategory = candidateClassification.failureCategory;
-          if (candidateClassification.status === "PROVIDER_RATE_LIMIT") {
-            failureReason = `[Provider Rate Limit 429] ${candidateClassification.errorDetail?.message || "Rate limit or quota exceeded"}`;
+          if (candidateClassification.status === "PROVIDER_RATE_LIMIT" || candidateClassification.status === "PROVIDER_CREDITS_EXHAUSTED" || candidateClassification.status === "PAYMENT_REQUIRED") {
+            const label = candidateClassification.status === "PROVIDER_RATE_LIMIT" ? "Provider Rate Limit 429" : "Provider Credits Exhausted 402";
+            failureReason = `[${label}] ${candidateClassification.errorDetail?.message || "Rate limit or quota exceeded"}`;
             failureCategory = "PROVIDER_QUOTA";
-          } else if (candidateClassification.status === "TIMEOUT") {
+          } else if (candidateClassification.status === "TIMEOUT" || candidateClassification.status === "PROVIDER_TIMEOUT") {
             failureReason = `[Provider Timeout] ${candidateClassification.errorDetail?.message || "Request timed out"}`;
             failureCategory = "PROVIDER_NETWORK";
-          } else if (candidateClassification.status === "AUTHENTICATION_ERROR") {
+          } else if (candidateClassification.status === "AUTHENTICATION_ERROR" || candidateClassification.status === "PROVIDER_FORBIDDEN") {
             failureReason = `[Provider Auth Error] ${candidateClassification.errorDetail?.message || "Authentication failed"}`;
             failureCategory = "PROVIDER_AUTHENTICATION";
-          } else if (candidateClassification.status === "NETWORK_ERROR") {
+          } else if (candidateClassification.status === "NETWORK_ERROR" || candidateClassification.status === "PROVIDER_NETWORK_ERROR") {
             failureReason = `[Network Error] ${candidateClassification.errorDetail?.message || "Network connectivity error"}`;
             failureCategory = "PROVIDER_NETWORK";
-          } else if (candidateClassification.status === "PROVIDER_ERROR") {
+          } else if (candidateClassification.status === "PROVIDER_ERROR" || candidateClassification.status === "PROVIDER_SERVER_ERROR" || candidateClassification.status === "INVALID_REQUEST") {
             failureReason = `[Provider Error] ${candidateClassification.errorDetail?.message || "Server error"}`;
             failureCategory = candidateClassification.transportSuccess ? "MALFORMED_RESPONSE" : "PROVIDER_SERVER_ERROR";
           } else if (candidateClassification.status === "QUALITY_FAILURE") {
             failureReason = candidateEval?.primaryScore.details || "Did not meet evaluation criteria";
             failureCategory = "QUALITY_FAILURE";
+          } else if (!baselineClassification.isEvaluated && candidateClassification.status === "PASS") {
+            failureReason = `[Baseline Provider Failure] ${baselineClassification.errorDetail?.message || baselineClassification.status}`;
           }
           let safetyClassification;
           let safetyDetails;
@@ -14850,16 +14980,28 @@ var EvaluationRunner = class {
         if (item.baselinePassed === true) baselinePassedCount++;
         if (item.isRegression) regressedCount++;
         if (item.isImprovement) improvedCount++;
-        if (item.baselineClassification.status === "PROVIDER_RATE_LIMIT") baselineRateLimitCount++;
-        else if (item.baselineClassification.status === "TIMEOUT") baselineTimeoutCount++;
-        else if (item.baselineClassification.status === "AUTHENTICATION_ERROR") baselineAuthCount++;
-        else if (item.baselineClassification.status === "NETWORK_ERROR") baselineNetworkCount++;
-        else if (item.baselineClassification.status === "PROVIDER_ERROR") baselineOtherCount++;
-        if (item.candidateClassification.status === "PROVIDER_RATE_LIMIT") candidateRateLimitCount++;
-        else if (item.candidateClassification.status === "TIMEOUT") candidateTimeoutCount++;
-        else if (item.candidateClassification.status === "AUTHENTICATION_ERROR") candidateAuthCount++;
-        else if (item.candidateClassification.status === "NETWORK_ERROR") candidateNetworkCount++;
-        else if (item.candidateClassification.status === "PROVIDER_ERROR") candidateOtherCount++;
+        if (item.baselineClassification.status === "PROVIDER_RATE_LIMIT" || item.baselineClassification.status === "PROVIDER_CREDITS_EXHAUSTED" || item.baselineClassification.status === "PAYMENT_REQUIRED") {
+          baselineRateLimitCount++;
+        } else if (item.baselineClassification.status === "TIMEOUT" || item.baselineClassification.status === "PROVIDER_TIMEOUT") {
+          baselineTimeoutCount++;
+        } else if (item.baselineClassification.status === "AUTHENTICATION_ERROR" || item.baselineClassification.status === "PROVIDER_FORBIDDEN") {
+          baselineAuthCount++;
+        } else if (item.baselineClassification.status === "NETWORK_ERROR" || item.baselineClassification.status === "PROVIDER_NETWORK_ERROR") {
+          baselineNetworkCount++;
+        } else if (item.baselineClassification.status !== "PASS" && item.baselineClassification.status !== "QUALITY_FAILURE") {
+          baselineOtherCount++;
+        }
+        if (item.candidateClassification.status === "PROVIDER_RATE_LIMIT" || item.candidateClassification.status === "PROVIDER_CREDITS_EXHAUSTED" || item.candidateClassification.status === "PAYMENT_REQUIRED") {
+          candidateRateLimitCount++;
+        } else if (item.candidateClassification.status === "TIMEOUT" || item.candidateClassification.status === "PROVIDER_TIMEOUT") {
+          candidateTimeoutCount++;
+        } else if (item.candidateClassification.status === "AUTHENTICATION_ERROR" || item.candidateClassification.status === "PROVIDER_FORBIDDEN") {
+          candidateAuthCount++;
+        } else if (item.candidateClassification.status === "NETWORK_ERROR" || item.candidateClassification.status === "PROVIDER_NETWORK_ERROR") {
+          candidateNetworkCount++;
+        } else if (item.candidateClassification.status !== "PASS" && item.candidateClassification.status !== "QUALITY_FAILURE") {
+          candidateOtherCount++;
+        }
         if (item.baselineClassification.transportSuccess && item.baselineClassification.evaluationEligible) {
           baselineTotalCost += item.baselineResp.usage.estimatedCostUsd || 0;
           baselineTotalTokens += item.baselineResp.usage.totalTokens || 0;
@@ -14878,7 +15020,11 @@ var EvaluationRunner = class {
         const lastCaseName = chunk[chunk.length - 1]?.name;
         onProgress(completedCount, totalCases, lastCaseName);
       }
-      if (isRateLimitedProvider && chunkStart + clampedConcurrency < totalCases) {
+      const isLiveProvider = baselineProvider.name?.includes("Live") || baselineProvider.name?.includes("Server") || candidateProvider.name?.includes("Live") || candidateProvider.name?.includes("Server");
+      const hasSuccessOrRateLimit = chunkResults.some(
+        (r) => r.baselineClassification.transportSuccess || r.candidateClassification.transportSuccess || r.baselineClassification.status === "PROVIDER_RATE_LIMIT" || r.candidateClassification.status === "PROVIDER_RATE_LIMIT"
+      );
+      if (isRateLimitedProvider && isLiveProvider && hasSuccessOrRateLimit && chunkStart + clampedConcurrency < totalCases) {
         const retryAfterSec = chunkResults.reduce((max, r) => {
           const bRetry = r.baselineResp.usage.rateLimit?.retryAfter;
           const cRetry = r.candidateResp.usage.rateLimit?.retryAfter;
@@ -14945,9 +15091,10 @@ var EvaluationRunner = class {
     const baselineP95LatencyMs = baselineSuccessfulLatencies.length > 0 ? calculateP95(baselineSuccessfulLatencies) : null;
     const candidateP95LatencyMs = candidateSuccessfulLatencies.length > 0 ? calculateP95(candidateSuccessfulLatencies) : null;
     const evidenceStrength = calculateEvidenceStrength(candidateEvaluatedCount);
+    const requiredCasesForEvidence = typeof regressionSettings?.requiredBenchmarkCases === "number" ? regressionSettings.requiredBenchmarkCases : totalCases > 0 ? totalCases : 27;
     const evidenceStrengthReason = getEvidenceStrengthReason(
       candidateEvaluatedCount,
-      totalCases || 27,
+      requiredCasesForEvidence,
       100
     );
     const latencyDeltaPercent = baselineMeanSuccessfulLatencyMs !== null && candidateMeanSuccessfulLatencyMs !== null && baselineMeanSuccessfulLatencyMs > 0 ? Math.round(
@@ -14963,7 +15110,9 @@ var EvaluationRunner = class {
         safetyFailures++;
       }
     }
-    const providerFailures = candidateRateLimitCount + candidateTimeoutCount + candidateAuthCount + candidateNetworkCount + candidateOtherCount;
+    const candidateProviderFailures = candidateRateLimitCount + candidateTimeoutCount + candidateAuthCount + candidateNetworkCount + candidateOtherCount;
+    const baselineProviderFailures = baselineRateLimitCount + baselineTimeoutCount + baselineAuthCount + baselineNetworkCount + baselineOtherCount;
+    const providerFailures = candidateProviderFailures || baselineProviderFailures;
     const unevaluableCases = totalCases - candidateEvaluatedCount;
     const metrics = {
       totalCases,
@@ -15029,8 +15178,8 @@ var EvaluationRunner = class {
       evaluatedCases: candidateEvaluatedCount,
       qualityFailures,
       providerFailures,
-      authenticationFailures: candidateAuthCount,
-      quotaFailures: candidateRateLimitCount,
+      authenticationFailures: candidateAuthCount || baselineAuthCount,
+      quotaFailures: candidateRateLimitCount || baselineRateLimitCount,
       safetyFailures,
       unevaluableCases
     };
@@ -15197,8 +15346,9 @@ var ProviderScheduler = class _ProviderScheduler {
         reason: `PROVIDER RATE LIMIT / QUOTA EXHAUSTED: ${norm} is currently in ${state.status} state. Cooldown remaining: ${remainingSec}s (${state.lastError || "Rate limit active"}).`
       };
     }
-    if (state.status === "COOLING_DOWN") {
+    if (state.status === "COOLING_DOWN" || state.status === "QUOTA_EXHAUSTED") {
       state.status = "AVAILABLE";
+      state.coolingDownUntil = 0;
       state.consecutiveRateLimits = 0;
     }
     return { available: true, status: state.status };
@@ -15267,9 +15417,10 @@ var ProviderScheduler = class _ProviderScheduler {
     const now = Date.now();
     const remainingMs = Math.max(0, state.coolingDownUntil - now);
     let status = state.status;
-    if (remainingMs === 0 && status === "COOLING_DOWN") {
+    if (remainingMs === 0 && (status === "COOLING_DOWN" || status === "QUOTA_EXHAUSTED")) {
       status = "AVAILABLE";
       state.status = "AVAILABLE";
+      state.coolingDownUntil = 0;
     }
     return {
       ...state,
@@ -15983,19 +16134,33 @@ var ServerGroqProvider = class {
           if (data.error?.code === "tool_use_failed" && data.error?.failed_generation) {
             const recoveredOutput = typeof data.error.failed_generation === "string" ? data.error.failed_generation : JSON.stringify(data.error.failed_generation);
             console.log(`[RELIQ Server Provider] <- GROQ RECOVERED tool_use_failed generation: ${recoveredOutput.slice(0, 80)}...`);
+            const recInputTokens = data.usage?.prompt_tokens ?? 0;
+            const recOutputTokens = data.usage?.completion_tokens ?? 0;
+            const recReasoningTokens = data.usage?.completion_tokens_details?.reasoning_tokens;
+            const recCachedTokens = data.usage?.prompt_tokens_details?.cached_tokens;
+            const recCost = this.calculateCost({
+              model,
+              provider: "groq",
+              inputTokens: recInputTokens,
+              outputTokens: recOutputTokens,
+              reasoningTokens: recReasoningTokens,
+              cachedTokens: recCachedTokens
+            });
             return {
               output: recoveredOutput,
               usage: {
                 provider: "groq",
                 model,
                 modelVersion: request.promptVersion,
-                inputTokens: data.usage?.prompt_tokens ?? 0,
-                outputTokens: data.usage?.completion_tokens ?? 0,
-                totalTokens: data.usage?.total_tokens ?? 0,
+                inputTokens: recInputTokens,
+                outputTokens: recOutputTokens,
+                reasoningTokens: recReasoningTokens,
+                cachedTokens: recCachedTokens,
+                totalTokens: data.usage?.total_tokens ?? recInputTokens + recOutputTokens,
                 latencyMs,
                 retries,
                 rateLimit,
-                estimatedCostUsd: 0
+                estimatedCostUsd: recCost
               },
               isDemoMode: false
             };
@@ -16205,11 +16370,25 @@ var ServerOpenAIProvider = class {
         isDemoMode: false
       };
     }
+    const isReasoningModel = /^o[13](-|$)/i.test(model);
     const messages = [];
     if (request.systemPrompt) {
-      messages.push({ role: "system", content: request.systemPrompt });
+      messages.push({ role: isReasoningModel ? "developer" : "system", content: request.systemPrompt });
     }
     messages.push({ role: "user", content: request.input });
+    const openAiPayload = {
+      model,
+      messages
+    };
+    if (isReasoningModel) {
+      openAiPayload.max_completion_tokens = request.maxTokens ?? 2048;
+      if (request.reasoningEffort) {
+        openAiPayload.reasoning_effort = request.reasoningEffort;
+      }
+    } else {
+      openAiPayload.temperature = request.temperature ?? 0;
+      openAiPayload.max_tokens = request.maxTokens ?? 2048;
+    }
     try {
       const { response, retries, latencyMs } = await fetchWithRetry({
         url: "https://api.openai.com/v1/chat/completions",
@@ -16219,12 +16398,7 @@ var ServerOpenAIProvider = class {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`
           },
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature: request.temperature ?? 0,
-            max_tokens: request.maxTokens ?? 2048
-          })
+          body: JSON.stringify(openAiPayload)
         },
         maxRetries: 3,
         baseDelayMs: 1e3,
@@ -16544,7 +16718,11 @@ var ALLOWED_RELEASE_DECISIONS = /* @__PURE__ */ new Set([
   "SHIP_WITH_CONDITIONS",
   "INSUFFICIENT_EVIDENCE",
   "NO_REGRESSION",
-  "REGRESSION_DETECTED"
+  "REGRESSION_DETECTED",
+  "GO",
+  "WARN",
+  "NO_GO",
+  "HOLD"
 ]);
 function mapDbResultToDomain(row) {
   if (!row) return null;
@@ -16743,6 +16921,11 @@ var EvaluationDbService = class {
     const qualityScore = evaluatedCases > 0 ? finalRun.metrics?.candidateQualityScore ?? null : null;
     const releaseDecision = finalRun.releaseDecision?.status || null;
     const releaseReason = finalRun.releaseDecision?.reason || null;
+    let serializedRun = null;
+    try {
+      serializedRun = JSON.stringify(finalRun);
+    } catch {
+    }
     db.prepare(`
       UPDATE evaluation_runs
       SET status = 'COMPLETED',
@@ -16754,7 +16937,8 @@ var EvaluationDbService = class {
           quality_score = ?,
           completed_at = ?,
           release_decision = ?,
-          release_reason = ?
+          release_reason = ?,
+          run_json = ?
       WHERE id = ?
     `).run(
       finalRun.metrics?.totalCases ?? finalRun.caseResults?.length ?? 0,
@@ -16766,6 +16950,7 @@ var EvaluationDbService = class {
       now,
       releaseDecision,
       releaseReason,
+      serializedRun,
       runId
     );
   }
@@ -16795,7 +16980,14 @@ var EvaluationDbService = class {
       runMap.set(dRun.id, dRun);
     }
     for (const sRun of dbRuns) {
-      const existing = runMap.get(sRun.id);
+      let parsedJsonRun = null;
+      if (sRun.run_json) {
+        try {
+          parsedJsonRun = JSON.parse(sRun.run_json);
+        } catch {
+        }
+      }
+      const existing = runMap.get(sRun.id) || parsedJsonRun;
       if (existing) {
         runMap.set(sRun.id, {
           ...existing,
@@ -16816,6 +17008,7 @@ var EvaluationDbService = class {
           }
         });
       } else {
+        const isReg = sRun.release_decision === "BLOCK" || sRun.release_decision === "REGRESSION_DETECTED";
         runMap.set(sRun.id, {
           id: sRun.id,
           projectId: sRun.project_id,
@@ -16831,11 +17024,19 @@ var EvaluationDbService = class {
             candidatePassRate: sRun.pass_rate,
             candidateQualityScore: sRun.quality_score
           },
+          regressionDecision: {
+            isRegression: isReg,
+            verdict: sRun.evaluated_cases === 0 ? "INSUFFICIENT_EVIDENCE" : isReg ? "REGRESSION_DETECTED" : "NO_REGRESSION",
+            summary: sRun.release_reason || "",
+            violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+            regressionCategories: []
+          },
           releaseDecision: {
             status: sRun.release_decision,
             reason: sRun.release_reason,
             decidedAt: sRun.completed_at || sRun.started_at
-          }
+          },
+          rootCauses: []
         });
       }
     }
@@ -16850,7 +17051,14 @@ var EvaluationDbService = class {
   getEvaluationRunById(id) {
     const db = getDatabase();
     const sRun = db.prepare("SELECT * FROM evaluation_runs WHERE id = ?").get(id);
-    const dRun = getRunFromDisk(id);
+    let parsedJsonRun = null;
+    if (sRun?.run_json) {
+      try {
+        parsedJsonRun = JSON.parse(sRun.run_json);
+      } catch {
+      }
+    }
+    const dRun = getRunFromDisk(id) || parsedJsonRun;
     if (sRun && dRun) {
       const results = this.getRunResults(id);
       return {
@@ -16875,6 +17083,7 @@ var EvaluationDbService = class {
     }
     if (sRun) {
       const results = this.getRunResults(id);
+      const isReg = sRun.release_decision === "BLOCK" || sRun.release_decision === "REGRESSION_DETECTED";
       return {
         id: sRun.id,
         projectId: sRun.project_id,
@@ -16890,11 +17099,19 @@ var EvaluationDbService = class {
           candidatePassRate: sRun.pass_rate,
           candidateQualityScore: sRun.quality_score
         },
+        regressionDecision: {
+          isRegression: isReg,
+          verdict: sRun.evaluated_cases === 0 ? "INSUFFICIENT_EVIDENCE" : isReg ? "REGRESSION_DETECTED" : "NO_REGRESSION",
+          summary: sRun.release_reason || "",
+          violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+          regressionCategories: []
+        },
         releaseDecision: {
           status: sRun.release_decision,
           reason: sRun.release_reason,
           decidedAt: sRun.completed_at || sRun.started_at
         },
+        rootCauses: [],
         caseResults: results,
         results,
         ...sRun
@@ -17232,12 +17449,34 @@ function getJobStatus(runId) {
         startTime: new Date(dbRun.timestamp).getTime(),
         endTime: new Date(dbRun.timestamp).getTime() + (dbRun.durationMs || 0),
         run: dbRun,
-        error: dbRun.status === "FAILED" ? dbRun.releaseDecision?.justification || "Evaluation run failed" : void 0
+        error: dbRun.status === "FAILED" ? dbRun.releaseDecision?.justification || dbRun.releaseDecision?.reason || "Evaluation run failed" : void 0
       };
     }
   } catch {
   }
   return void 0;
+}
+function cancelEvaluationJob(runId) {
+  const job = jobs.get(runId);
+  if (job && job.status === "RUNNING") {
+    job.status = "FAILED";
+    job.endTime = Date.now();
+    job.error = "Evaluation cancelled by user";
+    try {
+      evaluationDbService.failEvaluationRun(runId, "Evaluation cancelled by user");
+    } catch {
+    }
+    return true;
+  }
+  try {
+    const dbRun = evaluationDbService.getEvaluationRunById(runId);
+    if (dbRun && dbRun.status === "RUNNING") {
+      evaluationDbService.failEvaluationRun(runId, "Evaluation cancelled by user");
+      return true;
+    }
+  } catch {
+  }
+  return false;
 }
 function validateEvaluationOptions(options) {
   if (!options) {
@@ -17344,10 +17583,8 @@ async function runServerEvaluation(options) {
     const isCandidateReal = options.candidateVersion.provider !== "demo";
     const baselineState = providerScheduler.getProviderStatus(options.baselineVersion.provider);
     const candidateState = providerScheduler.getProviderStatus(options.candidateVersion.provider);
-    const isExhaustedOrLimited = (prov, state) => {
-      const norm = providerScheduler.normalizeProvider(prov);
+    const isExhaustedOrLimited = (_prov, state) => {
       if (state.status === "QUOTA_EXHAUSTED") return true;
-      if (norm === "google" && totalCases > 20) return true;
       return false;
     };
     if (isBaselineReal && isExhaustedOrLimited(options.baselineVersion.provider, baselineState) || isCandidateReal && isExhaustedOrLimited(options.candidateVersion.provider, candidateState)) {
@@ -17379,6 +17616,9 @@ async function runServerEvaluation(options) {
       runId,
       onProgress: (current, total, latestCaseName) => {
         const currentJob = jobs.get(runId);
+        if (currentJob?.status === "FAILED") {
+          throw new Error(currentJob.error || "Evaluation cancelled by user");
+        }
         if (currentJob) {
           currentJob.progress = {
             current,
@@ -17390,6 +17630,9 @@ async function runServerEvaluation(options) {
       },
       onCaseCompleted: (caseResult, current, total) => {
         const currentJob = jobs.get(runId);
+        if (currentJob?.status === "FAILED") {
+          throw new Error(currentJob.error || "Evaluation cancelled by user");
+        }
         if (currentJob) {
           currentJob.progress = {
             current,
@@ -17440,14 +17683,14 @@ var ProjectService = class {
    */
   getAllProjects() {
     const db = getDatabase();
-    return db.prepare("SELECT id, name, description, created_at, updated_at FROM projects ORDER BY created_at DESC").all();
+    return db.prepare("SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at FROM projects ORDER BY created_at DESC").all();
   }
   /**
    * Retrieves a single project by ID.
    */
   getProjectById(id) {
     const db = getDatabase();
-    const row = db.prepare("SELECT id, name, description, created_at, updated_at FROM projects WHERE id = ?").get(id);
+    const row = db.prepare("SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at FROM projects WHERE id = ?").get(id);
     return row || null;
   }
   /**
@@ -17458,20 +17701,26 @@ var ProjectService = class {
     const id = data.id?.trim() || `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const description = data.description?.trim() || null;
+    const defaultDatasetId = data.defaultDatasetId?.trim() || null;
+    const baselineVersionId = data.baselineVersionId?.trim() || "ver-v1-4";
+    const candidateVersionId = data.candidateVersionId?.trim() || "ver-v1-5";
     db.prepare(`
-      INSERT INTO projects (id, name, description, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, data.name.trim(), description, now, now);
+      INSERT INTO projects (id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.name.trim(), description, defaultDatasetId, baselineVersionId, candidateVersionId, now, now);
     return {
       id,
       name: data.name.trim(),
       description,
+      default_dataset_id: defaultDatasetId,
+      baseline_version_id: baselineVersionId,
+      candidate_version_id: candidateVersionId,
       created_at: now,
       updated_at: now
     };
   }
   /**
-   * Updates an existing project's name and/or description.
+   * Updates an existing project's name, description, and default version/dataset references.
    */
   updateProject(id, data) {
     const db = getDatabase();
@@ -17479,16 +17728,22 @@ var ProjectService = class {
     if (!existing) return null;
     const name = data.name !== void 0 ? data.name.trim() : existing.name;
     const description = data.description !== void 0 ? data.description.trim() || null : existing.description;
+    const defaultDatasetId = data.defaultDatasetId !== void 0 ? data.defaultDatasetId?.trim() || null : existing.default_dataset_id ?? null;
+    const baselineVersionId = data.baselineVersionId !== void 0 ? data.baselineVersionId?.trim() || null : existing.baseline_version_id ?? null;
+    const candidateVersionId = data.candidateVersionId !== void 0 ? data.candidateVersionId?.trim() || null : existing.candidate_version_id ?? null;
     const now = (/* @__PURE__ */ new Date()).toISOString();
     db.prepare(`
       UPDATE projects
-      SET name = ?, description = ?, updated_at = ?
+      SET name = ?, description = ?, default_dataset_id = ?, baseline_version_id = ?, candidate_version_id = ?, updated_at = ?
       WHERE id = ?
-    `).run(name, description, now, id);
+    `).run(name, description, defaultDatasetId, baselineVersionId, candidateVersionId, now, id);
     return {
       id,
       name,
       description,
+      default_dataset_id: defaultDatasetId,
+      baseline_version_id: baselineVersionId,
+      candidate_version_id: candidateVersionId,
       created_at: existing.created_at,
       updated_at: now
     };
@@ -17545,7 +17800,10 @@ async function handleProjectRoutes(req, res, parsedUrl) {
       const created = projectService.createProject({
         id: typeof body.id === "string" ? body.id : void 0,
         name: body.name,
-        description: typeof body.description === "string" ? body.description : void 0
+        description: typeof body.description === "string" ? body.description : void 0,
+        defaultDatasetId: typeof body.defaultDatasetId === "string" ? body.defaultDatasetId : void 0,
+        baselineVersionId: typeof body.baselineVersionId === "string" ? body.baselineVersionId : void 0,
+        candidateVersionId: typeof body.candidateVersionId === "string" ? body.candidateVersionId : void 0
       });
       sendJson(res, 201, created);
     } catch (err) {
@@ -17579,7 +17837,10 @@ async function handleProjectRoutes(req, res, parsedUrl) {
       try {
         const updated = projectService.updateProject(id, {
           name: body.name,
-          description: typeof body.description === "string" ? body.description : void 0
+          description: typeof body.description === "string" ? body.description : void 0,
+          defaultDatasetId: typeof body.defaultDatasetId === "string" ? body.defaultDatasetId : void 0,
+          baselineVersionId: typeof body.baselineVersionId === "string" ? body.baselineVersionId : void 0,
+          candidateVersionId: typeof body.candidateVersionId === "string" ? body.candidateVersionId : void 0
         });
         if (!updated) {
           sendError(res, 404, "PROJECT_NOT_FOUND", `Project with ID '${id}' not found`);
@@ -18088,16 +18349,16 @@ var VersionService = class {
   getVersions(projectId) {
     const db = getDatabase();
     if (projectId) {
-      return db.prepare("SELECT id, project_id, provider, model, display_name, system_prompt, created_at, updated_at FROM model_versions WHERE project_id = ? ORDER BY created_at DESC").all(projectId);
+      return db.prepare("SELECT id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at FROM model_versions WHERE project_id = ? ORDER BY created_at DESC").all(projectId);
     }
-    return db.prepare("SELECT id, project_id, provider, model, display_name, system_prompt, created_at, updated_at FROM model_versions ORDER BY created_at DESC").all();
+    return db.prepare("SELECT id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at FROM model_versions ORDER BY created_at DESC").all();
   }
   /**
    * Retrieves a single model version by ID.
    */
   getVersionById(id) {
     const db = getDatabase();
-    const row = db.prepare("SELECT id, project_id, provider, model, display_name, system_prompt, created_at, updated_at FROM model_versions WHERE id = ?").get(id);
+    const row = db.prepare("SELECT id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at FROM model_versions WHERE id = ?").get(id);
     return row || null;
   }
   /**
@@ -18114,9 +18375,13 @@ var VersionService = class {
     const id = data.id?.trim() || `ver-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const systemPrompt = data.systemPrompt !== void 0 ? data.systemPrompt : null;
+    const promptVersion = data.promptVersion !== void 0 ? data.promptVersion : "1.0";
+    const temperature = typeof data.temperature === "number" ? data.temperature : 0.2;
+    const maxTokens = typeof data.maxTokens === "number" ? data.maxTokens : 2048;
+    const reasoningEffort = data.reasoningEffort !== void 0 ? data.reasoningEffort : null;
     db.prepare(`
-      INSERT INTO model_versions (id, project_id, provider, model, display_name, system_prompt, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO model_versions (id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       data.projectId,
@@ -18124,6 +18389,10 @@ var VersionService = class {
       data.model.trim(),
       data.displayName.trim(),
       systemPrompt,
+      promptVersion,
+      temperature,
+      maxTokens,
+      reasoningEffort,
       now,
       now
     );
@@ -18134,6 +18403,10 @@ var VersionService = class {
       model: data.model.trim(),
       display_name: data.displayName.trim(),
       system_prompt: systemPrompt,
+      prompt_version: promptVersion,
+      temperature,
+      max_tokens: maxTokens,
+      reasoning_effort: reasoningEffort,
       created_at: now,
       updated_at: now
     };
@@ -18149,12 +18422,16 @@ var VersionService = class {
     const model = data.model !== void 0 ? data.model.trim() : existing.model;
     const displayName = data.displayName !== void 0 ? data.displayName.trim() : existing.display_name;
     const systemPrompt = data.systemPrompt !== void 0 ? data.systemPrompt : existing.system_prompt;
+    const promptVersion = data.promptVersion !== void 0 ? data.promptVersion : existing.prompt_version ?? "1.0";
+    const temperature = typeof data.temperature === "number" ? data.temperature : existing.temperature ?? 0.2;
+    const maxTokens = typeof data.maxTokens === "number" ? data.maxTokens : existing.max_tokens ?? 2048;
+    const reasoningEffort = data.reasoningEffort !== void 0 ? data.reasoningEffort : existing.reasoning_effort ?? null;
     const now = (/* @__PURE__ */ new Date()).toISOString();
     db.prepare(`
       UPDATE model_versions
-      SET provider = ?, model = ?, display_name = ?, system_prompt = ?, updated_at = ?
+      SET provider = ?, model = ?, display_name = ?, system_prompt = ?, prompt_version = ?, temperature = ?, max_tokens = ?, reasoning_effort = ?, updated_at = ?
       WHERE id = ?
-    `).run(provider, model, displayName, systemPrompt, now, id);
+    `).run(provider, model, displayName, systemPrompt, promptVersion, temperature, maxTokens, reasoningEffort, now, id);
     return {
       id,
       project_id: existing.project_id,
@@ -18162,6 +18439,10 @@ var VersionService = class {
       model,
       display_name: displayName,
       system_prompt: systemPrompt,
+      prompt_version: promptVersion,
+      temperature,
+      max_tokens: maxTokens,
+      reasoning_effort: reasoningEffort,
       created_at: existing.created_at,
       updated_at: now
     };
@@ -18216,7 +18497,11 @@ async function handleVersionRoutes(req, res, parsedUrl, query) {
         provider: body.provider.trim(),
         model: body.model.trim(),
         displayName: body.displayName.trim(),
-        systemPrompt: typeof body.systemPrompt === "string" ? body.systemPrompt : void 0
+        systemPrompt: typeof body.systemPrompt === "string" ? body.systemPrompt : void 0,
+        promptVersion: typeof body.promptVersion === "string" ? body.promptVersion : void 0,
+        temperature: typeof body.temperature === "number" ? body.temperature : void 0,
+        maxTokens: typeof body.maxTokens === "number" ? body.maxTokens : void 0,
+        reasoningEffort: typeof body.reasoningEffort === "string" ? body.reasoningEffort : void 0
       });
       sendJson(res, 201, created);
     } catch (err) {
@@ -18252,7 +18537,11 @@ async function handleVersionRoutes(req, res, parsedUrl, query) {
           provider: body.provider,
           model: body.model,
           displayName: body.displayName,
-          systemPrompt: body.systemPrompt
+          systemPrompt: body.systemPrompt,
+          promptVersion: typeof body.promptVersion === "string" ? body.promptVersion : void 0,
+          temperature: typeof body.temperature === "number" ? body.temperature : void 0,
+          maxTokens: typeof body.maxTokens === "number" ? body.maxTokens : void 0,
+          reasoningEffort: typeof body.reasoningEffort === "string" ? body.reasoningEffort : void 0
         });
         if (!updated) {
           sendError(res, 404, "MODEL_VERSION_NOT_FOUND", `Model version with ID '${id}' not found`);
@@ -18289,6 +18578,9 @@ function formatSettingsRecord(row) {
     minAccuracy: row.min_accuracy,
     maxDegradation: row.max_degradation,
     latencyTolerance: row.latency_tolerance,
+    maxFailureRate: row.max_failure_rate ?? 5,
+    minCoverage: row.min_coverage ?? 80,
+    minEvaluatedCases: row.min_evaluated_cases ?? 100,
     rawOutputPrivacy: Boolean(row.raw_output_privacy),
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -18303,16 +18595,16 @@ var SettingsService = class {
     const db = getDatabase();
     const project = projectService.getProjectById(projectId);
     if (!project) return null;
-    let row = db.prepare("SELECT id, project_id, min_accuracy, max_degradation, latency_tolerance, raw_output_privacy, created_at, updated_at FROM project_settings WHERE project_id = ?").get(projectId);
+    let row = db.prepare("SELECT id, project_id, min_accuracy, max_degradation, latency_tolerance, max_failure_rate, min_coverage, min_evaluated_cases, raw_output_privacy, created_at, updated_at FROM project_settings WHERE project_id = ?").get(projectId);
     if (!row) {
       const now = (/* @__PURE__ */ new Date()).toISOString();
       const id = `settings-${projectId}`;
       db.prepare(`
         INSERT OR IGNORE INTO project_settings (
-          id, project_id, min_accuracy, max_degradation, latency_tolerance, raw_output_privacy, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(id, projectId, 95, 2, 20, 1, now, now);
-      row = db.prepare("SELECT id, project_id, min_accuracy, max_degradation, latency_tolerance, raw_output_privacy, created_at, updated_at FROM project_settings WHERE project_id = ?").get(projectId);
+          id, project_id, min_accuracy, max_degradation, latency_tolerance, max_failure_rate, min_coverage, min_evaluated_cases, raw_output_privacy, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, projectId, 95, 2, 20, 5, 80, 100, 1, now, now);
+      row = db.prepare("SELECT id, project_id, min_accuracy, max_degradation, latency_tolerance, max_failure_rate, min_coverage, min_evaluated_cases, raw_output_privacy, created_at, updated_at FROM project_settings WHERE project_id = ?").get(projectId);
     }
     return formatSettingsRecord(row);
   }
@@ -18327,17 +18619,24 @@ var SettingsService = class {
       err.code = "PROJECT_NOT_FOUND";
       throw err;
     }
+    const existing = this.getSettings(projectId);
     const id = `settings-${projectId}`;
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const privacy = data.rawOutputPrivacy !== false ? 1 : 0;
+    const maxFailureRate = typeof data.maxFailureRate === "number" && !isNaN(data.maxFailureRate) ? data.maxFailureRate : existing?.maxFailureRate ?? 5;
+    const minCoverage = typeof data.minCoverage === "number" && !isNaN(data.minCoverage) ? data.minCoverage : existing?.minCoverage ?? 80;
+    const minEvaluatedCases = typeof data.minEvaluatedCases === "number" && !isNaN(data.minEvaluatedCases) ? data.minEvaluatedCases : existing?.minEvaluatedCases ?? 100;
     db.prepare(`
       INSERT INTO project_settings (
-        id, project_id, min_accuracy, max_degradation, latency_tolerance, raw_output_privacy, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, project_id, min_accuracy, max_degradation, latency_tolerance, max_failure_rate, min_coverage, min_evaluated_cases, raw_output_privacy, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(project_id) DO UPDATE SET
         min_accuracy = excluded.min_accuracy,
         max_degradation = excluded.max_degradation,
         latency_tolerance = excluded.latency_tolerance,
+        max_failure_rate = excluded.max_failure_rate,
+        min_coverage = excluded.min_coverage,
+        min_evaluated_cases = excluded.min_evaluated_cases,
         raw_output_privacy = excluded.raw_output_privacy,
         updated_at = excluded.updated_at
     `).run(
@@ -18346,11 +18645,14 @@ var SettingsService = class {
       data.minAccuracy,
       data.maxDegradation,
       data.latencyTolerance,
+      maxFailureRate,
+      minCoverage,
+      minEvaluatedCases,
       privacy,
       now,
       now
     );
-    const updated = db.prepare("SELECT id, project_id, min_accuracy, max_degradation, latency_tolerance, raw_output_privacy, created_at, updated_at FROM project_settings WHERE project_id = ?").get(projectId);
+    const updated = db.prepare("SELECT id, project_id, min_accuracy, max_degradation, latency_tolerance, max_failure_rate, min_coverage, min_evaluated_cases, raw_output_privacy, created_at, updated_at FROM project_settings WHERE project_id = ?").get(projectId);
     return formatSettingsRecord(updated);
   }
 };
@@ -18395,6 +18697,9 @@ async function handleSettingsRoutes(req, res, parsedUrl) {
         minAccuracy: body.minAccuracy,
         maxDegradation: body.maxDegradation,
         latencyTolerance: body.latencyTolerance,
+        maxFailureRate: typeof body.maxFailureRate === "number" ? body.maxFailureRate : void 0,
+        minCoverage: typeof body.minCoverage === "number" ? body.minCoverage : void 0,
+        minEvaluatedCases: typeof body.minEvaluatedCases === "number" ? body.minEvaluatedCases : void 0,
         rawOutputPrivacy: body.rawOutputPrivacy !== void 0 ? Boolean(body.rawOutputPrivacy) : true
       });
       sendJson(res, 200, updated);
@@ -18642,6 +18947,17 @@ Error: ${err.message}`);
       });
       return;
     }
+    if (req.method === "POST" && parsedUrl.startsWith("/api/evaluations/cancel/")) {
+      const runId = parsedUrl.replace("/api/evaluations/cancel/", "").trim();
+      const cancelled = cancelEvaluationJob(runId);
+      sendJson(res, 200, {
+        success: true,
+        cancelled,
+        runId,
+        status: "FAILED"
+      });
+      return;
+    }
     if (req.method === "GET" && parsedUrl === "/api/evaluations/runs") {
       try {
         const runs = evaluationDbService.getEvaluationRuns();
@@ -18651,8 +18967,9 @@ Error: ${err.message}`);
       }
       return;
     }
-    if (req.method === "GET" && parsedUrl.startsWith("/api/evaluations/runs/")) {
-      const runId = parsedUrl.replace("/api/evaluations/runs/", "").trim();
+    const runIdGetMatch = req.method === "GET" ? parsedUrl.match(/^\/api\/evaluations\/runs\/([^/]+)$/) : null;
+    if (runIdGetMatch) {
+      const runId = runIdGetMatch[1].trim();
       const run = evaluationDbService.getEvaluationRunById(runId);
       if (!run) {
         sendError(res, 404, "RUN_NOT_FOUND", `Evaluation run '${runId}' not found`);
@@ -18661,8 +18978,9 @@ Error: ${err.message}`);
       sendJson(res, 200, run);
       return;
     }
-    if (req.method === "DELETE" && parsedUrl.startsWith("/api/evaluations/runs/")) {
-      const runId = parsedUrl.replace("/api/evaluations/runs/", "").trim();
+    const runIdDelMatch = req.method === "DELETE" ? parsedUrl.match(/^\/api\/evaluations\/runs\/([^/]+)$/) : null;
+    if (runIdDelMatch) {
+      const runId = runIdDelMatch[1].trim();
       let deletedFromDb = false;
       try {
         const db = getDatabase();
@@ -19214,7 +19532,8 @@ function getMiddleware() {
 async function handler(req, res) {
   try {
     const rawUrl = req.url || "";
-    if (rawUrl.includes("/diag") || rawUrl.includes("/ping") || rawUrl === "/api/debug") {
+    const [checkPath] = rawUrl.split("?");
+    if (checkPath === "/api/diag" || checkPath === "/api/ping" || checkPath === "/api/debug" || checkPath === "/diag" || checkPath === "/ping") {
       res.statusCode = 200;
       res.setHeader("Content-Type", "application/json");
       let sqliteInfo = null;

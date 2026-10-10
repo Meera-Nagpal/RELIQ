@@ -76,32 +76,33 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
   const [caseSeverity, setCaseSeverity] = useState<SeverityLevel>('high');
   const [caseTags, setCaseTags] = useState('');
 
-  if (!activeDataset && datasets.length > 0) {
-    onSelectDataset(datasets[0].id);
-  }
+  useEffect(() => {
+    if (!activeDataset && datasets.length > 0) {
+      onSelectDataset(datasets[0].id);
+    }
+  }, [activeDataset, datasets, onSelectDataset]);
 
   const cases = activeDataset?.cases || [];
 
-  // Filter cases
-  const filteredCases = cases.filter((c) => {
-    const matchesSearch =
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.input.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || c.category === selectedCategory;
-    const matchesSeverity = selectedSeverity === 'All' || c.severity === selectedSeverity;
-    return matchesSearch && matchesCategory && matchesSeverity;
-  });
+  // Filter and sort cases in ascending order
+  const filteredCases = cases
+    .filter((c) => {
+      const matchesSearch =
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.input.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'All' || c.category === selectedCategory;
+      const matchesSeverity = selectedSeverity === 'All' || c.severity === selectedSeverity;
+      return matchesSearch && matchesCategory && matchesSeverity;
+    })
+    .sort((a, b) => {
+      const ordA = typeof a.order === 'number' ? a.order : parseInt(String(a.id || '').replace(/\D+/g, ''), 10) || 0;
+      const ordB = typeof b.order === 'number' ? b.order : parseInt(String(b.id || '').replace(/\D+/g, ''), 10) || 0;
+      if (ordA !== ordB) return ordA - ordB;
+      return String(a.id || '').localeCompare(String(b.id || ''), undefined, { numeric: true });
+    });
 
-  // Deterministic sorting (tc-01, tc-02, ...)
-  const sortedCases = [...filteredCases].sort((a, b) => {
-    const numA = parseInt(a.id.replace(/\D/g, ''), 10);
-    const numB = parseInt(b.id.replace(/\D/g, ''), 10);
-    if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
-      return numA - numB;
-    }
-    return a.id.localeCompare(b.id, undefined, { numeric: true });
-  });
+  const sortedCases = filteredCases;
 
   const handleOpenAddCase = () => {
     if (!activeDataset) {
@@ -732,6 +733,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     <option value="json_validity">JSON Validity</option>
                     <option value="exact_match">Exact Match</option>
                     <option value="response_length">Response Length</option>
+                    <option value="behavioral_safety">Behavioral Safety</option>
+                    <option value="refusal_criteria">Refusal Criteria</option>
                   </select>
                 </div>
               </div>

@@ -16,6 +16,7 @@ import React from 'react';
 interface RippleLoaderProps {
   size?: number;
   mode?: 'continuous' | 'pulse';
+  duration?: string;
   color?: string;
   secondaryColor?: string;
   className?: string;
@@ -24,11 +25,12 @@ interface RippleLoaderProps {
 export const RippleLoader: React.FC<RippleLoaderProps> = ({
   size = 100,
   mode = 'continuous',
+  duration: customDuration,
   color = 'var(--reliq-accent, #FF6B35)',
   secondaryColor = 'var(--reliq-accent-secondary, #FF8C5A)',
   className = '',
 }) => {
-  const duration = mode === 'pulse' ? '2.5s' : '4.2s';
+  const duration = customDuration ?? (mode === 'pulse' ? '2.5s' : '6.4s');
   const timingFn = 'cubic-bezier(0.18, 0.65, 0.32, 1)';
 
   return (
@@ -84,43 +86,43 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
         .reliq-ripple-ring-2 {
           border: 1.8px solid ${secondaryColor};
           animation: reliqPulseAnimation2 ${duration} ${timingFn} ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: 0.25s;
+          animation-delay: 0.40s;
         }
 
         .reliq-ripple-ring-3 {
           border: 2px solid ${color};
           animation: reliqPulseAnimation3 ${duration} ${timingFn} ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: 0.50s;
+          animation-delay: 0.80s;
         }
 
         .reliq-ripple-ring-4 {
           border: 1.6px solid ${secondaryColor};
           animation: reliqPulseAnimation1 ${duration} ${timingFn} ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: 0.75s;
+          animation-delay: 1.20s;
         }
 
         .reliq-ripple-ring-5 {
           border: 2px solid ${color};
           animation: reliqPulseAnimation2 ${duration} ${timingFn} ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: 1.00s;
+          animation-delay: 1.60s;
         }
 
         .reliq-ripple-ring-6 {
           border: 1.7px solid ${secondaryColor};
           animation: reliqPulseAnimation3 ${duration} ${timingFn} ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: 1.25s;
+          animation-delay: 2.00s;
         }
 
         .reliq-ripple-ring-7 {
           border: 1.5px solid ${color};
           animation: reliqPulseAnimation1 ${duration} ${timingFn} ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: 1.50s;
+          animation-delay: 2.40s;
         }
 
         .reliq-ripple-ring-8 {
           border: 1.8px solid ${secondaryColor};
           animation: reliqPulseAnimation2 ${duration} ${timingFn} ${mode === 'pulse' ? 'forwards' : 'infinite'};
-          animation-delay: 1.75s;
+          animation-delay: 2.80s;
         }
 
         @media (prefers-reduced-motion: reduce) {

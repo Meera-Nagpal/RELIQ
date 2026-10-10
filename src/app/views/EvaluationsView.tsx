@@ -153,7 +153,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   const [isRunning, setIsRunning] = useState(false);
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
   const isCancelledRef = useRef(false);
-  const [maxCasesToRun, setMaxCasesToRun] = useState<number>(0);
+  const [maxCasesToRun, setMaxCasesToRun] = useState<number>(5);
   const [progressPercent, setProgressPercent] = useState(0);
   const [currentProgressText, setCurrentProgressText] = useState('');
   const [currentCaseName, setCurrentCaseName] = useState<string>('');
@@ -354,7 +354,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           temperature: 0.1,
           maxTokens: 1024,
         } : undefined,
-        regressionSettings: project.regressionSettings,
+        regressionSettings: {
+          ...project.regressionSettings,
+          requiredBenchmarkCases:
+            maxCasesToRun > 0
+              ? Math.min(maxCasesToRun, datasetToEvaluate?.cases?.length || maxCasesToRun)
+              : (datasetToEvaluate?.cases?.length || 27),
+        },
         maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
         concurrency: 1,
         async: true,
@@ -424,8 +430,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           if (statusData.status === 'COMPLETED' && statusData.run) {
             run = statusData.run;
             completed = true;
-            if (currentCaseName) {
-              setCompletedScenarios((list) => list.includes(currentCaseName) ? list : [...list, currentCaseName]);
+            const finalCaseName = statusData.progress?.caseName || currentCaseName;
+            if (finalCaseName) {
+              setCompletedScenarios((list) => list.includes(finalCaseName) ? list : [...list, finalCaseName]);
             }
           } else if (statusData.status === 'FAILED') {
             throw new Error(statusData.error || 'Server evaluation execution failed');
@@ -744,7 +751,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               {selectedDataset?.name || 'Checkout Reliability Suite'}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--accent, #FF6B35)', fontWeight: 600 }}>
-              {selectedDataset?.cases?.length || 27} authoritative scenarios
+              {selectedDataset?.cases?.length || 100} authoritative scenarios
             </div>
           </div>
 
@@ -842,13 +849,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               <div>
                 <span style={{ color: '#667788', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase' }}>Completed</span>
                 <strong style={{ color: '#FFFFFF', fontSize: '0.95rem' }}>
-                  {progressCounts?.current ?? 0} of {progressCounts?.total ?? (selectedDataset?.cases?.length || 27)}
+                  {progressCounts?.current ?? 0} of {progressCounts?.total ?? (selectedDataset?.cases?.length || 100)}
                 </strong>
               </div>
               <div>
                 <span style={{ color: '#667788', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase' }}>Remaining</span>
                 <strong style={{ color: '#FFFFFF', fontSize: '0.95rem' }}>
-                  {Math.max(0, (progressCounts?.total ?? (selectedDataset?.cases?.length || 27)) - (progressCounts?.current ?? 0))}
+                  {Math.max(0, (progressCounts?.total ?? (selectedDataset?.cases?.length || 100)) - (progressCounts?.current ?? 0))}
                 </strong>
               </div>
               <div>
@@ -921,11 +928,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               fontSize: '0.85rem',
             }}
           >
-            {datasets.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
-              </option>
-            ))}
+            {[...datasets]
+              .sort((a, b) => (a.cases?.length || 0) - (b.cases?.length || 0))
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
+                </option>
+              ))}
           </select>
         </div>
 
@@ -1299,7 +1308,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#AAAAAA' }}>Reasoning Effort:</span>
-                  <span style={{ color: '#4E95FF', fontWeight: 600 }}>Medium</span>
+                  <span style={{ color: '#4E95FF', fontWeight: 600, textTransform: 'capitalize' }}>
+                    {configMode === 'custom_benchmark'
+                      ? `${customBaselineReasoningEffort} / ${customCandidateReasoningEffort}`
+                      : (candidateVersion?.reasoningEffort || baselineVersion?.reasoningEffort || 'medium')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1427,14 +1440,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 fontSize: '0.82rem',
               }}
             >
-              <option value={0}>Full Suite ({selectedDataset?.cases?.length || 27} scenarios - Run All)</option>
-              <option value={27}>Checkout Reliability Suite (27 scenarios - Required Benchmark)</option>
-              <option value={100}>Enterprise Scale Benchmark (100 scenarios)</option>
               <option value={5}>Validation Smoke Test (5 scenarios)</option>
               <option value={10}>Targeted Benchmark (10 scenarios)</option>
               <option value={20}>Standard Suite (20 scenarios)</option>
+              <option value={27}>Checkout Reliability Suite (27 scenarios - Required Benchmark)</option>
+              <option value={100}>Enterprise Scale Benchmark (100 scenarios)</option>
               <option value={500}>High-Capacity Benchmark (500 scenarios)</option>
               <option value={1000}>Stress Benchmark (1,000 scenarios)</option>
+              <option value={0}>Full Suite ({selectedDataset?.cases?.length || 27} scenarios - Run All)</option>
             </select>
           </div>
 
@@ -1765,7 +1778,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       <EvaluationProgressModal
         isOpen={isProgressModalOpen}
         datasetName={selectedDataset?.name || 'Benchmark Dataset'}
-        totalScenarios={maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 27)}
+        totalScenarios={maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 100)}
         baselineModel={`${effectiveBaselineModel} (${configMode === 'custom_benchmark' ? customBaselineProvider : baselineVersion?.provider || 'default'})`}
         candidateModel={`${effectiveCandidateModel} (${configMode === 'custom_benchmark' ? customCandidateProvider : candidateVersion?.provider || 'default'})`}
         judgeModel={selectedJudgeModel}
@@ -1780,6 +1793,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         error={evaluationError}
         onCancel={() => {
           isCancelledRef.current = true;
+          if (currentRunId) {
+            fetch(`/api/evaluations/cancel/${currentRunId}`, { method: 'POST' }).catch(() => {});
+          }
           setIsRunning(false);
           setIsProgressModalOpen(false);
           setEvaluationError(null);
@@ -1799,12 +1815,15 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         candidateModel={`${effectiveCandidateModel} (${configMode === 'custom_benchmark' ? customCandidateProvider : candidateVersion?.provider || 'default'})`}
         progressPercent={progressPercent}
         currentCount={progressCounts?.current || 0}
-        totalCount={progressCounts?.total || (maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 27))}
+        totalCount={progressCounts?.total || (maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 100))}
         caseName={currentCaseName}
         phase={currentPhase}
         onOpenModal={() => setIsProgressModalOpen(true)}
         onCancel={() => {
           isCancelledRef.current = true;
+          if (currentRunId) {
+            fetch(`/api/evaluations/cancel/${currentRunId}`, { method: 'POST' }).catch(() => {});
+          }
           setIsRunning(false);
           setIsProgressModalOpen(false);
           setEvaluationError(null);

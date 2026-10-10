@@ -62,6 +62,10 @@ export async function handleVersionRoutes(
         model: body.model.trim(),
         displayName: body.displayName.trim(),
         systemPrompt: typeof body.systemPrompt === 'string' ? body.systemPrompt : undefined,
+        promptVersion: typeof body.promptVersion === 'string' ? body.promptVersion : undefined,
+        temperature: typeof body.temperature === 'number' ? body.temperature : undefined,
+        maxTokens: typeof body.maxTokens === 'number' ? body.maxTokens : undefined,
+        reasoningEffort: typeof body.reasoningEffort === 'string' ? body.reasoningEffort : undefined,
       });
       sendJson(res, 201, created);
     } catch (err: any) {
@@ -105,6 +109,10 @@ export async function handleVersionRoutes(
           model: body.model,
           displayName: body.displayName,
           systemPrompt: body.systemPrompt,
+          promptVersion: typeof body.promptVersion === 'string' ? body.promptVersion : undefined,
+          temperature: typeof body.temperature === 'number' ? body.temperature : undefined,
+          maxTokens: typeof body.maxTokens === 'number' ? body.maxTokens : undefined,
+          reasoningEffort: typeof body.reasoningEffort === 'string' ? body.reasoningEffort : undefined,
         });
 
         if (!updated) {

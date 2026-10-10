@@ -259,12 +259,36 @@ export function getJobStatus(runId: string): EvaluationJob | undefined {
         startTime: new Date(dbRun.timestamp).getTime(),
         endTime: new Date(dbRun.timestamp).getTime() + (dbRun.durationMs || 0),
         run: dbRun,
-        error: dbRun.status === 'FAILED' ? (dbRun.releaseDecision?.justification || 'Evaluation run failed') : undefined,
+        error: dbRun.status === 'FAILED' ? ((dbRun.releaseDecision as any)?.justification || dbRun.releaseDecision?.reason || 'Evaluation run failed') : undefined,
       };
     }
   } catch {}
 
   return undefined;
+}
+
+/**
+ * Cancels an active evaluation job by runId.
+ */
+export function cancelEvaluationJob(runId: string): boolean {
+  const job = jobs.get(runId);
+  if (job && job.status === 'RUNNING') {
+    job.status = 'FAILED';
+    job.endTime = Date.now();
+    job.error = 'Evaluation cancelled by user';
+    try {
+      evaluationDbService.failEvaluationRun(runId, 'Evaluation cancelled by user');
+    } catch {}
+    return true;
+  }
+  try {
+    const dbRun = evaluationDbService.getEvaluationRunById(runId);
+    if (dbRun && dbRun.status === 'RUNNING') {
+      evaluationDbService.failEvaluationRun(runId, 'Evaluation cancelled by user');
+      return true;
+    }
+  } catch {}
+  return false;
 }
 
 /**
@@ -410,10 +434,8 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     const baselineState = providerScheduler.getProviderStatus(options.baselineVersion.provider);
     const candidateState = providerScheduler.getProviderStatus(options.candidateVersion.provider);
 
-    const isExhaustedOrLimited = (prov: string, state: any) => {
-      const norm = providerScheduler.normalizeProvider(prov);
+    const isExhaustedOrLimited = (_prov: string, state: any) => {
       if (state.status === 'QUOTA_EXHAUSTED') return true;
-      if (norm === 'google' && totalCases > 20) return true;
       return false;
     };
 
@@ -454,6 +476,9 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       runId,
       onProgress: (current, total, latestCaseName) => {
         const currentJob = jobs.get(runId);
+        if (currentJob?.status === 'FAILED') {
+          throw new Error(currentJob.error || 'Evaluation cancelled by user');
+        }
         if (currentJob) {
           currentJob.progress = {
             current,
@@ -465,6 +490,9 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       },
       onCaseCompleted: (caseResult, current, total) => {
         const currentJob = jobs.get(runId);
+        if (currentJob?.status === 'FAILED') {
+          throw new Error(currentJob.error || 'Evaluation cancelled by user');
+        }
         if (currentJob) {
           currentJob.progress = {
             current,
