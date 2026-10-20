@@ -2656,7 +2656,7 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
     datasetName,
     baselineVersion,
     candidateVersion,
-    caseResults,
+    caseResults: rawCaseResults,
     settings = {
       minAccuracyPercent: 95,
       maxAccuracyDegradationPercent: 2,
@@ -2671,10 +2671,17 @@ function generateComparisonReport(optionsOrBaseline, candidateVersionArg, caseRe
       safetyWeight: 0.1
     }
   } = options;
-  const totalCases = caseResults.length;
+  const evaluatedCaseResults = (rawCaseResults || []).filter((c) => {
+    return Boolean(
+      c && (c.candidateQualityEvaluated === true || c.baselineQualityEvaluated === true || c.passed !== null && c.passed !== void 0 || c.candidateOutput && c.candidateOutput.trim().length > 0 || c.baselineOutput && c.baselineOutput.trim().length > 0 || c.executionStatus === "PASS" || c.executionStatus === "QUALITY_FAILURE")
+    );
+  });
+  const activeCaseResults = evaluatedCaseResults.length > 0 ? evaluatedCaseResults : rawCaseResults || [];
+  const totalCases = activeCaseResults.length;
   if (totalCases === 0) {
     return createEmptyReport(datasetId, datasetName, baselineVersion, candidateVersion);
   }
+  const caseResults = activeCaseResults;
   for (const r of caseResults) {
     if (!r.groundednessEvaluation && (r.candidateOutput || r.expectedOutput)) {
       const syntheticCase = {
@@ -15998,12 +16005,18 @@ var EvaluationRunner = class {
       hadOperationalErrors: baselineRateLimitCount > 0 || candidateRateLimitCount > 0 || baselineAuthCount > 0 || candidateAuthCount > 0 || baselineTimeoutCount > 0 || candidateTimeoutCount > 0 || baselineNetworkCount > 0 || candidateNetworkCount > 0 || baselineOtherCount > 0 || candidateOtherCount > 0,
       isLiveExecution: true
     };
+    const evaluatedCaseResults = caseResults.filter((c) => {
+      return Boolean(
+        c && (c.candidateQualityEvaluated === true || c.baselineQualityEvaluated === true || c.passed !== null && c.passed !== void 0 || c.candidateOutput && c.candidateOutput.trim().length > 0 || c.baselineOutput && c.baselineOutput.trim().length > 0 || c.executionStatus === "PASS" || c.executionStatus === "QUALITY_FAILURE")
+      );
+    });
+    const finalCaseResults = evaluatedCaseResults.length > 0 ? evaluatedCaseResults : caseResults;
     const comparisonReport = generateComparisonReport({
       datasetId: dataset.id,
       datasetName: dataset.name,
       baselineVersion,
       candidateVersion,
-      caseResults,
+      caseResults: finalCaseResults,
       runMetrics: metrics,
       settings: effectiveRegressionSettings,
       executionMode: "LIVE",
@@ -16043,7 +16056,7 @@ var EvaluationRunner = class {
       executionMode: "LIVE",
       provenance,
       metrics,
-      caseResults,
+      caseResults: finalCaseResults,
       regressionDecision,
       rootCauses,
       releaseDecision: {
@@ -18176,11 +18189,11 @@ async function runServerEvaluation(options) {
     seenCaseIds.add(c.id);
     return true;
   });
+  const totalCases = options.maxCases && options.maxCases > 0 ? Math.min(options.maxCases, deduplicatedCases.length) : deduplicatedCases.length;
   const safeDataset = {
     ...options.dataset,
-    cases: deduplicatedCases
+    cases: options.maxCases && options.maxCases > 0 ? deduplicatedCases.slice(0, options.maxCases) : deduplicatedCases
   };
-  const totalCases = options.maxCases && options.maxCases > 0 ? Math.min(options.maxCases, safeDataset.cases.length) : safeDataset.cases.length;
   const job = {
     runId,
     status: "RUNNING",
@@ -18275,6 +18288,11 @@ async function runServerEvaluation(options) {
     const baselineProvider = resolveServerProvider(options.baselineVersion);
     const candidateProvider = resolveServerProvider(options.candidateVersion);
     const runner = new EvaluationRunner();
+    const resolvedRegressionSettings = {
+      ...effectiveProject.regressionSettings,
+      ...options.regressionSettings,
+      requiredBenchmarkCases: options.maxCases && options.maxCases > 0 ? totalCases : options.regressionSettings?.requiredBenchmarkCases ?? effectiveProject.regressionSettings.requiredBenchmarkCases ?? totalCases
+    };
     const run = await runner.run({
       project: effectiveProject,
       dataset: safeDataset,
@@ -18283,7 +18301,7 @@ async function runServerEvaluation(options) {
       baselineProvider,
       candidateProvider,
       judgeConfig: options.judgeConfig,
-      regressionSettings: options.regressionSettings || effectiveProject.regressionSettings,
+      regressionSettings: resolvedRegressionSettings,
       maxCases: options.maxCases,
       concurrency: resolvedConcurrency,
       runId,

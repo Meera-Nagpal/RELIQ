@@ -339,15 +339,18 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     seenCaseIds.add(c.id);
     return true;
   });
-  const safeDataset: Dataset = {
-    ...options.dataset,
-    cases: deduplicatedCases,
-  };
 
   const totalCases =
     options.maxCases && options.maxCases > 0
-      ? Math.min(options.maxCases, safeDataset.cases.length)
-      : safeDataset.cases.length;
+      ? Math.min(options.maxCases, deduplicatedCases.length)
+      : deduplicatedCases.length;
+
+  const safeDataset: Dataset = {
+    ...options.dataset,
+    cases: options.maxCases && options.maxCases > 0
+      ? deduplicatedCases.slice(0, options.maxCases)
+      : deduplicatedCases,
+  };
 
   const job: EvaluationJob = {
     runId,
@@ -477,6 +480,15 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
 
     const runner = new EvaluationRunner();
 
+    const resolvedRegressionSettings = {
+      ...effectiveProject.regressionSettings,
+      ...options.regressionSettings,
+      requiredBenchmarkCases:
+        options.maxCases && options.maxCases > 0
+          ? totalCases
+          : (options.regressionSettings?.requiredBenchmarkCases ?? effectiveProject.regressionSettings.requiredBenchmarkCases ?? totalCases),
+    };
+
     const run = await runner.run({
       project: effectiveProject,
       dataset: safeDataset,
@@ -485,7 +497,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       baselineProvider,
       candidateProvider,
       judgeConfig: options.judgeConfig,
-      regressionSettings: options.regressionSettings || effectiveProject.regressionSettings,
+      regressionSettings: resolvedRegressionSettings,
       maxCases: options.maxCases,
       concurrency: resolvedConcurrency,
       runId,

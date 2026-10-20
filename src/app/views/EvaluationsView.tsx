@@ -346,7 +346,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           maxCasesToRun,
           `${selectedDataset.name} (Scaled to ${maxCasesToRun})`
         );
+      } else if (maxCasesToRun > 0 && selectedDataset?.cases && selectedDataset.cases.length > maxCasesToRun) {
+        datasetToEvaluate = {
+          ...selectedDataset,
+          cases: selectedDataset.cases.slice(0, maxCasesToRun),
+        };
       }
+
+      const activeCaseCount = maxCasesToRun > 0
+        ? Math.min(maxCasesToRun, datasetToEvaluate?.cases?.length || maxCasesToRun)
+        : (datasetToEvaluate?.cases?.length || 27);
 
       const payload = {
         project,
@@ -362,10 +371,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         } : undefined,
         regressionSettings: {
           ...project.regressionSettings,
-          requiredBenchmarkCases:
-            maxCasesToRun > 0
-              ? Math.min(maxCasesToRun, datasetToEvaluate?.cases?.length || maxCasesToRun)
-              : (datasetToEvaluate?.cases?.length || 27),
+          requiredBenchmarkCases: activeCaseCount,
         },
         maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
         concurrency: 8,

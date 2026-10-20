@@ -284,8 +284,23 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
     report.isPreliminary ||
     report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET'
   );
-  const safeTitle = (report.totalCases < 27)
-    ? `${report.totalCases}-SCENARIO EVALUATION REPORT`
+  const validCaseCount = (report.caseResults || []).filter((c) => Boolean(
+    c && (
+      c.candidateQualityEvaluated === true ||
+      c.baselineQualityEvaluated === true ||
+      (c.passed !== null && c.passed !== undefined) ||
+      (c.candidateOutput && c.candidateOutput.trim().length > 0) ||
+      (c.baselineOutput && c.baselineOutput.trim().length > 0) ||
+      c.executionStatus === 'PASS' ||
+      c.executionStatus === 'QUALITY_FAILURE'
+    )
+  )).length;
+  const effectiveTotal = validCaseCount > 0 ? validCaseCount : (report.totalCases || 1);
+  const targetRequired = report.benchmarkCompletion?.isComplete || (report.benchmarkCompletion?.requiredCases !== undefined && report.benchmarkCompletion.requiredCases <= effectiveTotal)
+    ? effectiveTotal
+    : (report.benchmarkCompletion?.requiredCases ?? effectiveTotal);
+  const safeTitle = (effectiveTotal < 27)
+    ? `${effectiveTotal}-SCENARIO EVALUATION REPORT`
     : (report.title || 'Cross-Model Evaluation Benchmark');
   doc.drawText(safeTitle, left + 14, doc.y + 26, 14, 'Helvetica-Bold');
 
@@ -294,7 +309,7 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   const timestampStr = new Date(report.timestamp).toLocaleString();
   const runIdStr = report.id || 'N/A';
   doc.setFillColor(0.65, 0.72, 0.8);
-  doc.drawText(`Dataset: ${report.datasetName} (${report.totalCases} cases)  •  Mode: ${execMode}  •  Run ID: ${runIdStr}`, left + 14, doc.y + 10, 7.5, 'Helvetica');
+  doc.drawText(`Dataset: ${report.datasetName} (${effectiveTotal} cases)  •  Mode: ${execMode}  •  Run ID: ${runIdStr}`, left + 14, doc.y + 10, 7.5, 'Helvetica');
   doc.drawText(`Generated: ${timestampStr}`, left + width - 14, doc.y + 10, 7.5, 'Helvetica', 'right');
 
   doc.y -= 16;
@@ -381,11 +396,10 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.setFillColor(hasGateFailures ? 0.85 : 0.12, hasGateFailures ? 0.15 : 0.65, hasGateFailures ? 0.15 : 0.35);
   doc.drawText(recVerdict, releaseBoxX + 10, releaseBoxY + releaseBoxH - 28, 9.5, 'Helvetica-Bold');
 
-  const targetRequired = report.benchmarkCompletion?.requiredCases ?? report.totalCases ?? 27;
   const gateFailReason = failedGates.length > 0
     ? `${failedGates.length} failed gate(s): ${failedGates.map((g) => g.gate).slice(0, 2).join(', ')}`
-    : !report.benchmarkCompletion?.isComplete
-    ? `Preliminary: ${report.benchmarkCompletion?.evaluatedCases ?? report.totalCases}/${targetRequired} scenarios`
+    : !report.benchmarkCompletion?.isComplete && effectiveTotal < targetRequired
+    ? `Preliminary: ${report.benchmarkCompletion?.evaluatedCases ?? effectiveTotal}/${targetRequired} scenarios`
     : `All production gates verified`;
   doc.setFillColor(0.4, 0.45, 0.5);
   doc.drawText(gateFailReason.slice(0, 42), releaseBoxX + 10, releaseBoxY + 8, 6.5, 'Helvetica');
@@ -409,10 +423,10 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
 
   const bCovVal = report.metrics.evaluationCoverage?.baselineValue ?? 100;
   const cCovVal = report.metrics.evaluationCoverage?.candidateValue ?? 100;
-  const evStrength = report.evidenceStrength || (report.totalCases < 10 ? 'LOW' : report.totalCases < targetRequired ? 'MODERATE' : 'STRONG');
+  const evStrength = report.evidenceStrength || (effectiveTotal < 10 ? 'LOW' : effectiveTotal < targetRequired ? 'MODERATE' : 'STRONG');
 
   doc.setFillColor(0.35, 0.4, 0.45);
-  doc.drawText(`Cases: ${report.totalCases} / ${targetRequired} required benchmark cases`, left + 10, bStatusY + 28, 7.5, 'Helvetica');
+  doc.drawText(`Cases: ${effectiveTotal} / ${targetRequired} required benchmark cases`, left + 10, bStatusY + 28, 7.5, 'Helvetica');
   doc.drawText(`Coverage: Base ${bCovVal}%  •  Candidate ${cCovVal}%`, left + 10, bStatusY + 16, 7.5, 'Helvetica');
   doc.drawText(`Evidence Strength: ${evStrength} (Sample Base)`, left + 10, bStatusY + 5, 7.5, 'Helvetica');
 
@@ -639,7 +653,19 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   // ─────────────────────────────────────────────────────────────
   // 7. INDIVIDUAL SCENARIO EVALUATION REPORTS (DETERMINISTIC SUITE)
   // ─────────────────────────────────────────────────────────────
-  const executedCases = [...(report.caseResults || [])].sort((a, b) => {
+  const executedCases = [...(report.caseResults || [])]
+    .filter((c) => Boolean(
+      c && (
+        c.candidateQualityEvaluated === true ||
+        c.baselineQualityEvaluated === true ||
+        (c.passed !== null && c.passed !== undefined) ||
+        (c.candidateOutput && c.candidateOutput.trim().length > 0) ||
+        (c.baselineOutput && c.baselineOutput.trim().length > 0) ||
+        c.executionStatus === 'PASS' ||
+        c.executionStatus === 'QUALITY_FAILURE'
+      )
+    ))
+    .sort((a, b) => {
     const orderA = typeof a.order === 'number' ? a.order : parseInt(String(a.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
     const orderB = typeof b.order === 'number' ? b.order : parseInt(String(b.testCaseId || '').replace(/\D+/g, ''), 10) || 0;
     if (orderA !== orderB) return orderA - orderB;

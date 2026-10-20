@@ -258,7 +258,7 @@ export function generateComparisonReport(
     datasetName,
     baselineVersion,
     candidateVersion,
-    caseResults,
+    caseResults: rawCaseResults,
     settings = {
       minAccuracyPercent: 95.0,
       maxAccuracyDegradationPercent: 2.0,
@@ -274,11 +274,30 @@ export function generateComparisonReport(
     },
   } = options;
 
-  const totalCases = caseResults.length;
+  // Exclude test cases that were not used/evaluated in this run
+  const evaluatedCaseResults = (rawCaseResults || []).filter((c) => {
+    return Boolean(
+      c && (
+        c.candidateQualityEvaluated === true ||
+        c.baselineQualityEvaluated === true ||
+        (c.passed !== null && c.passed !== undefined) ||
+        (c.candidateOutput && c.candidateOutput.trim().length > 0) ||
+        (c.baselineOutput && c.baselineOutput.trim().length > 0) ||
+        c.executionStatus === 'PASS' ||
+        c.executionStatus === 'QUALITY_FAILURE'
+      )
+    );
+  });
+
+  const activeCaseResults = evaluatedCaseResults.length > 0 ? evaluatedCaseResults : (rawCaseResults || []);
+  const totalCases = activeCaseResults.length;
 
   if (totalCases === 0) {
     return createEmptyReport(datasetId, datasetName, baselineVersion, candidateVersion);
   }
+
+  // Authoritative caseResults for this comparison report strictly contains evaluated cases
+  const caseResults = activeCaseResults;
 
   // Ensure every case in caseResults has groundednessEvaluation populated if missing
   for (const r of caseResults) {

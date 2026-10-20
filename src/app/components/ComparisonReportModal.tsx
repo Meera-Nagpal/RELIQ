@@ -27,8 +27,6 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 }) => {
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [selectedSection, setSelectedSection] = useState<string>('ALL');
-  const targetRequiredCases = report.benchmarkCompletion?.requiredCases ?? report.totalCases ?? 27;
-
   // ── 0. Evaluated Cases & Active Sections Processing ──
   const validCaseResults = (report.caseResults || []).filter((c) => {
     return Boolean(
@@ -45,10 +43,15 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     );
   });
 
-  const evaluatedCandidateCases = (report.caseResults || []).filter(
+  const effectiveTotalCases = validCaseResults.length > 0 ? validCaseResults.length : (report.totalCases || 1);
+  const targetRequiredCases =
+    report.benchmarkCompletion?.isComplete || (report.benchmarkCompletion?.requiredCases !== undefined && report.benchmarkCompletion.requiredCases <= effectiveTotalCases)
+      ? effectiveTotalCases
+      : (report.benchmarkCompletion?.requiredCases ?? effectiveTotalCases);
+
+  const evaluatedCandidateCases = validCaseResults.filter(
     (c) => c && (c.candidateQualityEvaluated === true || (c.candidateQualityEvaluated === undefined && c.passed !== null && c.passed !== undefined))
   );
-  const effectiveTotalCases = report.totalCases > 0 ? report.totalCases : Math.max(1, validCaseResults.length || 1);
   const passedCasesCount = evaluatedCandidateCases.filter((c) => c.passed === true).length;
   const candidateAccuracyVal: number | null =
     report.metrics.passRate?.candidateValue !== null && report.metrics.passRate?.candidateValue !== undefined
@@ -57,9 +60,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
       ? Math.round((passedCasesCount / evaluatedCandidateCases.length) * 100)
       : (report.metrics.qualityScore?.candidateValue ?? null);
 
-  // Group case results into active sections by category
+  // Group strictly evaluated case results into active sections by category (excluding un-evaluated cases)
   const sectionsMap = new Map<string, typeof validCaseResults>();
-  (report.caseResults || []).forEach((c) => {
+  validCaseResults.forEach((c) => {
     if (!c) return;
     const cat = c.category?.trim() || 'General Evaluation';
     if (!sectionsMap.has(cat)) {
@@ -424,7 +427,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.2rem 0' }}>
-                {report.totalCases < 27
+                {effectiveTotalCases < 27
                   ? `${effectiveTotalCases}-SCENARIO EVALUATION REPORT`
                   : report.title}
               </h2>
@@ -441,12 +444,14 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   textTransform: 'uppercase',
                 }}
               >
-                {report.benchmarkCompletion?.label ||
-                  `EVALUATION COMPLETE (${report.benchmarkCompletion?.evaluatedCases ?? evaluatedCandidateCases.length} OF ${targetRequiredCases} TEST CASES EVALUATED)`}
+                {report.benchmarkCompletion?.isComplete || effectiveTotalCases >= targetRequiredCases
+                  ? `EVALUATION COMPLETE (${effectiveTotalCases} OF ${effectiveTotalCases} TEST CASES EVALUATED)`
+                  : (report.benchmarkCompletion?.label ||
+                      `EVALUATION COMPLETE (${effectiveTotalCases} OF ${targetRequiredCases} TEST CASES EVALUATED)`)}
               </span>
             </div>
             <div style={{ fontSize: '0.82rem', color: '#8899AA' }}>
-              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({report.benchmarkCompletion?.evaluatedCases ?? evaluatedCandidateCases.length} / {targetRequiredCases} evaluated) • Generated: {new Date(report.timestamp).toLocaleString()}
+              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({effectiveTotalCases} / {report.benchmarkCompletion?.isComplete ? effectiveTotalCases : targetRequiredCases} evaluated) • Generated: {new Date(report.timestamp).toLocaleString()}
             </div>
           </div>
 

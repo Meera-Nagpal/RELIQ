@@ -1354,13 +1354,29 @@ export class EvaluationRunner {
       isLiveExecution: true,
     };
 
+    // Ensure caseResults strictly contains test cases that were executed and evaluated
+    const evaluatedCaseResults = caseResults.filter((c) => {
+      return Boolean(
+        c && (
+          c.candidateQualityEvaluated === true ||
+          c.baselineQualityEvaluated === true ||
+          (c.passed !== null && c.passed !== undefined) ||
+          (c.candidateOutput && c.candidateOutput.trim().length > 0) ||
+          (c.baselineOutput && c.baselineOutput.trim().length > 0) ||
+          c.executionStatus === 'PASS' ||
+          c.executionStatus === 'QUALITY_FAILURE'
+        )
+      );
+    });
+    const finalCaseResults = evaluatedCaseResults.length > 0 ? evaluatedCaseResults : caseResults;
+
     // Generate comprehensive cross-model comparison report
     const comparisonReport = generateComparisonReport({
       datasetId: dataset.id,
       datasetName: dataset.name,
       baselineVersion,
       candidateVersion,
-      caseResults,
+      caseResults: finalCaseResults,
       runMetrics: metrics,
       settings: effectiveRegressionSettings,
       executionMode: 'LIVE',
@@ -1401,7 +1417,7 @@ export class EvaluationRunner {
       executionMode: 'LIVE',
       provenance,
       metrics,
-      caseResults,
+      caseResults: finalCaseResults,
       regressionDecision,
       rootCauses,
       releaseDecision: {
