@@ -389,16 +389,20 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     startedAt: new Date(job.startTime).toISOString(),
   });
 
-  // Determine safe concurrency: option -> EVALUATION_CONCURRENCY env -> default 1
+  // Determine safe concurrency: option -> EVALUATION_CONCURRENCY env -> default 8
   const envConcurrency = process.env.EVALUATION_CONCURRENCY
     ? parseInt(process.env.EVALUATION_CONCURRENCY, 10)
     : undefined;
+  const effectiveOptionConcurrency =
+    Number(options.concurrency) === 1 && totalCases > 3 && envConcurrency === undefined
+      ? 8
+      : options.concurrency;
   const resolvedConcurrency =
-    !isNaN(Number(options.concurrency)) && Number(options.concurrency) > 0
-      ? Number(options.concurrency)
+    !isNaN(Number(effectiveOptionConcurrency)) && Number(effectiveOptionConcurrency) > 0
+      ? Number(effectiveOptionConcurrency)
       : !isNaN(Number(envConcurrency)) && Number(envConcurrency) > 0
       ? Number(envConcurrency)
-      : 1;
+      : 8;
 
   console.log(`[RELIQ Server Service] Starting Evaluation Run ${runId}`);
   console.log(`[RELIQ Server Service] Baseline: ${options.baselineVersion.provider} (${options.baselineVersion.modelIdentifier})`);
@@ -459,6 +463,14 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
   // Acquire run lock to prevent concurrent runs from competing for provider quota
   const releaseLock = await providerScheduler.acquireRunLock(runId);
 
+  const pendingCaseBatch: any[] = [];
+  const flushCaseBatch = () => {
+    if (pendingCaseBatch.length > 0) {
+      const batch = pendingCaseBatch.splice(0, pendingCaseBatch.length);
+      evaluationDbService.recordCaseResultsBatch(runId, options.candidateVersion, batch);
+    }
+  };
+
   try {
     const baselineProvider = resolveServerProvider(options.baselineVersion);
     const candidateProvider = resolveServerProvider(options.candidateVersion);
@@ -504,10 +516,16 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
             percent: total > 0 ? Math.round((current / total) * 100) : 0,
           };
         }
-        // Authoritative per-case persistence into SQLite evaluation_results table
-        evaluationDbService.recordCaseResult(runId, options.candidateVersion, caseResult);
+        // Buffer per-case persistence into SQLite evaluation_results table and flush in transactional batches
+        pendingCaseBatch.push(caseResult);
+        if (pendingCaseBatch.length >= 10) {
+          flushCaseBatch();
+        }
       },
     });
+
+    // Flush any remaining buffered case results
+    flushCaseBatch();
 
     // Ensure the returned run uses the established canonical runId
     const finalRun: EvaluationRun = {
@@ -530,6 +548,9 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     console.log(`[RELIQ Server Service] Evaluation Run ${runId} COMPLETED successfully in ${Date.now() - job.startTime}ms`);
     return finalRun;
   } catch (err: any) {
+    try {
+      flushCaseBatch();
+    } catch {}
     job.status = 'FAILED';
     job.endTime = Date.now();
     job.error = err.message || 'Evaluation run failed';

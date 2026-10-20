@@ -182,73 +182,45 @@ export class EvaluationDbService {
     candidateVersion: any,
     caseResult: any
   ): void {
+    this.recordCaseResultsBatch(runId, candidateVersion, [caseResult]);
+  }
+
+  /**
+   * Persists a batch of test case results inside a single SQLite transaction,
+   * reusing prepared statements and eliminating N+1 foreign-key SELECT queries.
+   */
+  recordCaseResultsBatch(
+    runId: string,
+    candidateVersion: any,
+    caseResults: any[]
+  ): void {
+    if (!Array.isArray(caseResults) || caseResults.length === 0) return;
+
     const db = getDatabase();
     const now = new Date().toISOString();
-    const resultId = `res_${runId}_${caseResult.testCaseId || Math.random().toString(36).substring(2, 8)}`;
 
-    const passedVal = caseResult.passed === null || caseResult.passed === undefined
-      ? null
-      : caseResult.passed ? 1 : 0;
+    const runRow = db
+      .prepare('SELECT project_id, dataset_id FROM evaluation_runs WHERE id = ?')
+      .get(runId) as any;
+    const dsId = runRow?.dataset_id || 'ds-checkout-golden';
+    const pId = runRow?.project_id || 'proj-checkout-agent';
 
-    // Quality score is strictly NULL if quality was not evaluated (e.g. provider error)
-    const qualityScoreVal =
-      caseResult.candidateQualityEvaluated === false
-        ? null
-        : caseResult.candidateScore !== null && caseResult.candidateScore !== undefined
-        ? caseResult.candidateScore
-        : null;
+    const insertTestCaseStmt = db.prepare(`
+      INSERT OR IGNORE INTO test_cases (id, dataset_id, name, category, input, expected_behavior, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-    // Latency is strictly NULL if transport failed or not evaluation eligible
-    const latencyVal =
-      caseResult.candidateTransportSuccess === false || caseResult.candidateEvaluationEligible === false
-        ? null
-        : caseResult.candidateLatencyMs !== null && caseResult.candidateLatencyMs !== undefined
-        ? caseResult.candidateLatencyMs
-        : null;
+    const insertResultStmt = db.prepare(`
+      INSERT OR REPLACE INTO evaluation_results (
+        id, run_id, test_case_id, model_version_id, provider, model,
+        response, passed, quality_score, latency_ms, input_tokens,
+        output_tokens, reasoning_tokens, total_tokens, cost,
+        failure_type, failure_category, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-    const usage = caseResult.candidateUsage;
-    const inputTokens = usage?.inputTokens !== undefined && caseResult.candidateTransportSuccess !== false ? usage.inputTokens : null;
-    const outputTokens = usage?.outputTokens !== undefined && caseResult.candidateTransportSuccess !== false ? usage.outputTokens : null;
-    const reasoningTokens = usage?.reasoningTokens !== undefined && caseResult.candidateTransportSuccess !== false ? usage.reasoningTokens : null;
-    const totalTokens = usage?.totalTokens !== undefined && caseResult.candidateTransportSuccess !== false ? usage.totalTokens : null;
-    const cost = usage?.estimatedCostUsd !== undefined && caseResult.candidateTransportSuccess !== false && usage.estimatedCostUsd !== null
-      ? usage.estimatedCostUsd
-      : null;
-
-    let failureType = caseResult.candidateExecutionStatus || caseResult.executionStatus;
-    if (failureType === 'PASS') {
-      failureType = undefined;
-    }
-    const failureCategory = caseResult.failureCategory || (failureType === 'QUALITY_FAILURE' ? 'QUALITY_FAILURE' : undefined);
-
-    // Ensure test_case_id exists if referenced
-    if (caseResult.testCaseId) {
-      const tc = db.prepare('SELECT id FROM test_cases WHERE id = ?').get(caseResult.testCaseId);
-      if (!tc) {
-        const runRow = db.prepare('SELECT dataset_id FROM evaluation_runs WHERE id = ?').get(runId) as any;
-        const dsId = runRow?.dataset_id || 'ds-checkout-golden';
-        db.prepare(`
-          INSERT OR IGNORE INTO test_cases (id, dataset_id, name, category, input, expected_behavior, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          caseResult.testCaseId,
-          dsId,
-          caseResult.testCaseName || caseResult.testCaseId,
-          caseResult.category || 'General',
-          caseResult.input || '',
-          caseResult.expectedOutput || caseResult.expectedBehavior || '',
-          now,
-          now
-        );
-      }
-    }
-
-    // Ensure model_version_id exists if referenced
-    if (candidateVersion?.id) {
-      const mv = db.prepare('SELECT id FROM model_versions WHERE id = ?').get(candidateVersion.id);
-      if (!mv) {
-        const runRow = db.prepare('SELECT project_id FROM evaluation_runs WHERE id = ?').get(runId) as any;
-        const pId = runRow?.project_id || 'proj-checkout-agent';
+    const tx = db.transaction((items: any[]) => {
+      if (candidateVersion?.id) {
         db.prepare(`
           INSERT OR IGNORE INTO model_versions (id, project_id, provider, model, display_name, system_prompt, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -263,35 +235,101 @@ export class EvaluationDbService {
           now
         );
       }
-    }
 
-    db.prepare(`
-      INSERT OR REPLACE INTO evaluation_results (
-        id, run_id, test_case_id, model_version_id, provider, model,
-        response, passed, quality_score, latency_ms, input_tokens,
-        output_tokens, reasoning_tokens, total_tokens, cost,
-        failure_type, failure_category, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      resultId,
-      runId,
-      caseResult.testCaseId || null,
-      candidateVersion?.id || null,
-      candidateVersion?.provider || 'unknown',
-      candidateVersion?.modelIdentifier || 'unknown',
-      caseResult.candidateOutput || '',
-      passedVal,
-      qualityScoreVal,
-      latencyVal,
-      inputTokens,
-      outputTokens,
-      reasoningTokens,
-      totalTokens,
-      cost,
-      failureType || null,
-      failureCategory || null,
-      now
-    );
+      for (const caseResult of items) {
+        const resultId = `res_${runId}_${caseResult.testCaseId || Math.random().toString(36).substring(2, 8)}`;
+
+        const passedVal =
+          caseResult.passed === null || caseResult.passed === undefined
+            ? null
+            : caseResult.passed
+            ? 1
+            : 0;
+
+        // Quality score is strictly NULL if quality was not evaluated (e.g. provider error)
+        const qualityScoreVal =
+          caseResult.candidateQualityEvaluated === false
+            ? null
+            : caseResult.candidateScore !== null && caseResult.candidateScore !== undefined
+            ? caseResult.candidateScore
+            : null;
+
+        // Latency is strictly NULL if transport failed or not evaluation eligible
+        const latencyVal =
+          caseResult.candidateTransportSuccess === false || caseResult.candidateEvaluationEligible === false
+            ? null
+            : caseResult.candidateLatencyMs !== null && caseResult.candidateLatencyMs !== undefined
+            ? caseResult.candidateLatencyMs
+            : null;
+
+        const usage = caseResult.candidateUsage;
+        const inputTokens =
+          usage?.inputTokens !== undefined && caseResult.candidateTransportSuccess !== false
+            ? usage.inputTokens
+            : null;
+        const outputTokens =
+          usage?.outputTokens !== undefined && caseResult.candidateTransportSuccess !== false
+            ? usage.outputTokens
+            : null;
+        const reasoningTokens =
+          usage?.reasoningTokens !== undefined && caseResult.candidateTransportSuccess !== false
+            ? usage.reasoningTokens
+            : null;
+        const totalTokens =
+          usage?.totalTokens !== undefined && caseResult.candidateTransportSuccess !== false
+            ? usage.totalTokens
+            : null;
+        const cost =
+          usage?.estimatedCostUsd !== undefined &&
+          caseResult.candidateTransportSuccess !== false &&
+          usage.estimatedCostUsd !== null
+            ? usage.estimatedCostUsd
+            : null;
+
+        let failureType = caseResult.candidateExecutionStatus || caseResult.executionStatus;
+        if (failureType === 'PASS') {
+          failureType = undefined;
+        }
+        const failureCategory =
+          caseResult.failureCategory || (failureType === 'QUALITY_FAILURE' ? 'QUALITY_FAILURE' : undefined);
+
+        if (caseResult.testCaseId) {
+          insertTestCaseStmt.run(
+            caseResult.testCaseId,
+            dsId,
+            caseResult.testCaseName || caseResult.testCaseId,
+            caseResult.category || 'General',
+            caseResult.input || '',
+            caseResult.expectedOutput || caseResult.expectedBehavior || '',
+            now,
+            now
+          );
+        }
+
+        insertResultStmt.run(
+          resultId,
+          runId,
+          caseResult.testCaseId || null,
+          candidateVersion?.id || null,
+          candidateVersion?.provider || 'unknown',
+          candidateVersion?.modelIdentifier || 'unknown',
+          caseResult.candidateOutput || '',
+          passedVal,
+          qualityScoreVal,
+          latencyVal,
+          inputTokens,
+          outputTokens,
+          reasoningTokens,
+          totalTokens,
+          cost,
+          failureType || null,
+          failureCategory || null,
+          now
+        );
+      }
+    });
+
+    tx(caseResults);
   }
 
   /**
@@ -377,10 +415,8 @@ export class EvaluationDbService {
         startedAt: finalRun.timestamp,
       });
     }
-    if (Array.isArray(finalRun.caseResults)) {
-      for (const caseResult of finalRun.caseResults) {
-        this.recordCaseResult(finalRun.id, finalRun.candidateVersion, caseResult);
-      }
+    if (Array.isArray(finalRun.caseResults) && finalRun.caseResults.length > 0) {
+      this.recordCaseResultsBatch(finalRun.id, finalRun.candidateVersion, finalRun.caseResults);
     }
     this.finalizeEvaluationRun(finalRun);
   }

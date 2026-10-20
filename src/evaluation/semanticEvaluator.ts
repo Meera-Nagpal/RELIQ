@@ -12,6 +12,17 @@
 
 import { SemanticEvaluationResult } from '../domain/types';
 
+interface PrecomputedTextVector {
+  tfWords: Map<string, number>;
+  magWordsSq: number;
+  wordSet: Set<string>;
+  tfNgrams: Map<string, number>;
+  magNgramsSq: number;
+}
+
+const MAX_VECTOR_CACHE_SIZE = 1024;
+const vectorCache = new Map<string, PrecomputedTextVector>();
+
 /**
  * Tokenize text into clean normalized tokens
  */
@@ -24,53 +35,86 @@ function tokenizeWords(text: string): string[] {
 }
 
 /**
- * Generate character n-grams (length 3) to capture morphological and subword similarity
+ * Build term frequency map and squared magnitude in a single pass
  */
-function generateCharNgrams(text: string, n: number = 3): string[] {
-  const clean = text.toLowerCase().replace(/\s+/g, ' ').trim();
-  const ngrams: string[] = [];
-  if (clean.length < n) {
-    return [clean];
+function buildTermFrequencyAndMag(tokens: string[]): { tf: Map<string, number>; magSq: number } {
+  const tf = new Map<string, number>();
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    tf.set(t, (tf.get(t) || 0) + 1);
   }
-  for (let i = 0; i <= clean.length - n; i++) {
-    ngrams.push(clean.substring(i, i + n));
+  let magSq = 0;
+  for (const val of tf.values()) {
+    magSq += val * val;
   }
-  return ngrams;
+  return { tf, magSq };
 }
 
 /**
- * Build term frequency map from token array
+ * Build character 3-gram term frequency map and squared magnitude directly without allocating an intermediate substring array
  */
-function buildTermFrequency(tokens: string[]): Map<string, number> {
+function buildCharNgramTfAndMag(text: string, n: number = 3): { tf: Map<string, number>; magSq: number } {
+  const clean = text.toLowerCase().replace(/\s+/g, ' ').trim();
   const tf = new Map<string, number>();
-  for (const t of tokens) {
-    tf.set(t, (tf.get(t) || 0) + 1);
+  if (clean.length < n) {
+    tf.set(clean, 1);
+    return { tf, magSq: 1 };
   }
-  return tf;
+  const end = clean.length - n;
+  for (let i = 0; i <= end; i++) {
+    const gram = clean.substring(i, i + n);
+    tf.set(gram, (tf.get(gram) || 0) + 1);
+  }
+  let magSq = 0;
+  for (const val of tf.values()) {
+    magSq += val * val;
+  }
+  return { tf, magSq };
+}
+
+function getPrecomputedVector(text: string): PrecomputedTextVector {
+  const cached = vectorCache.get(text);
+  if (cached) return cached;
+
+  const words = tokenizeWords(text);
+  const { tf: tfWords, magSq: magWordsSq } = buildTermFrequencyAndMag(words);
+  const wordSet = new Set(words);
+  const { tf: tfNgrams, magSq: magNgramsSq } = buildCharNgramTfAndMag(text, 3);
+
+  const vec: PrecomputedTextVector = {
+    tfWords,
+    magWordsSq,
+    wordSet,
+    tfNgrams,
+    magNgramsSq,
+  };
+
+  if (vectorCache.size >= MAX_VECTOR_CACHE_SIZE) {
+    const firstKey = vectorCache.keys().next().value;
+    if (firstKey !== undefined) vectorCache.delete(firstKey);
+  }
+  vectorCache.set(text, vec);
+  return vec;
 }
 
 /**
  * Computes exact mathematical cosine similarity between two term-frequency vector maps:
  * Cosine(u, v) = (u . v) / (||u|| * ||v||)
  */
-function computeCosineSimilarity(tf1: Map<string, number>, tf2: Map<string, number>): number {
-  let dotProduct = 0;
-  let mag1Sq = 0;
-  let mag2Sq = 0;
-
-  for (const val of tf1.values()) {
-    mag1Sq += val * val;
-  }
-  for (const val of tf2.values()) {
-    mag2Sq += val * val;
-  }
-
+function computeCosineSimilarityWithMags(
+  tf1: Map<string, number>,
+  mag1Sq: number,
+  tf2: Map<string, number>,
+  mag2Sq: number
+): number {
   if (mag1Sq === 0 || mag2Sq === 0) {
     return 0.0;
   }
 
-  for (const [term, count1] of tf1.entries()) {
-    const count2 = tf2.get(term);
+  let dotProduct = 0;
+  const [smaller, larger] = tf1.size <= tf2.size ? [tf1, tf2] : [tf2, tf1];
+  for (const [term, count1] of smaller.entries()) {
+    const count2 = larger.get(term);
     if (count2) {
       dotProduct += count1 * count2;
     }
@@ -88,8 +132,9 @@ function computeJaccardOverlap(set1: Set<string>, set2: Set<string>): number {
   if (set1.size === 0 || set2.size === 0) return 0.0;
 
   let intersection = 0;
-  for (const item of set1) {
-    if (set2.has(item)) intersection++;
+  const [smaller, larger] = set1.size <= set2.size ? [set1, set2] : [set2, set1];
+  for (const item of smaller) {
+    if (larger.has(item)) intersection++;
   }
   const union = set1.size + set2.size - intersection;
   return union === 0 ? 0.0 : intersection / union;
@@ -113,22 +158,22 @@ export function evaluateSemanticSimilarity(
     };
   }
 
-  // Word-level vectors
-  const words1 = tokenizeWords(actual);
-  const words2 = tokenizeWords(expected);
-  const tfWords1 = buildTermFrequency(words1);
-  const tfWords2 = buildTermFrequency(words2);
-  const wordCosine = computeCosineSimilarity(tfWords1, tfWords2);
+  const vec1 = getPrecomputedVector(actual);
+  const vec2 = getPrecomputedVector(expected);
 
-  // Subword/character n-gram vectors (robust against phrasing and inflection variations)
-  const ngrams1 = generateCharNgrams(actual, 3);
-  const ngrams2 = generateCharNgrams(expected, 3);
-  const tfNgrams1 = buildTermFrequency(ngrams1);
-  const tfNgrams2 = buildTermFrequency(ngrams2);
-  const ngramCosine = computeCosineSimilarity(tfNgrams1, tfNgrams2);
-
-  // Jaccard word set overlap
-  const jaccard = computeJaccardOverlap(new Set(words1), new Set(words2));
+  const wordCosine = computeCosineSimilarityWithMags(
+    vec1.tfWords,
+    vec1.magWordsSq,
+    vec2.tfWords,
+    vec2.magWordsSq
+  );
+  const ngramCosine = computeCosineSimilarityWithMags(
+    vec1.tfNgrams,
+    vec1.magNgramsSq,
+    vec2.tfNgrams,
+    vec2.magNgramsSq
+  );
+  const jaccard = computeJaccardOverlap(vec1.wordSet, vec2.wordSet);
 
   // Weighted composite mathematical similarity score [0.0 - 1.0]
   // 50% n-gram cosine + 30% word cosine + 20% Jaccard token overlap

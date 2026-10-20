@@ -178,6 +178,7 @@ export class ServerGeminiProvider implements ModelProvider {
               quotaId,
               quotaMetric,
               isDailyExhausted,
+              modelId: model,
             });
           }
 
@@ -304,7 +305,7 @@ export class ServerGeminiProvider implements ModelProvider {
         isDemoMode: false,
       };
     }
-    });
+    }, model);
   }
 }
 
@@ -391,9 +392,6 @@ export class ServerGroqProvider implements ModelProvider {
     }
     messages.push({ role: 'user', content: request.input });
 
-    console.log(`[GROQ] Request started`);
-    console.log(`[GROQ] Model: ${model}`);
-
     try {
       const isGptOss = model === 'openai/gpt-oss-20b' || model === 'openai/gpt-oss-120b';
       const reasoningEffort = isGptOss ? (request.reasoningEffort || 'medium') : undefined;
@@ -414,7 +412,7 @@ export class ServerGroqProvider implements ModelProvider {
         groqPayload.response_format = { type: 'json_object' };
       }
 
-      const { response, retries, latencyMs } = await fetchWithRetry({
+      let { response, retries, latencyMs } = await fetchWithRetry({
         url: 'https://api.groq.com/openai/v1/chat/completions',
         init: {
           method: 'POST',
@@ -425,23 +423,63 @@ export class ServerGroqProvider implements ModelProvider {
           body: JSON.stringify(groqPayload),
         },
         maxRetries: 3,
-        baseDelayMs: 1000,
+        baseDelayMs: 600,
         timeoutMs: 30000,
       });
 
-      const rateLimit: RateLimitInfo = {
-        limitRequests: response.headers.get('x-ratelimit-limit-requests') || undefined,
-        remainingRequests: response.headers.get('x-ratelimit-remaining-requests') || undefined,
-        resetRequests: response.headers.get('x-ratelimit-reset-requests') || undefined,
-        limitTokens: response.headers.get('x-ratelimit-limit-tokens') || undefined,
-        remainingTokens: response.headers.get('x-ratelimit-remaining-tokens') || undefined,
-        resetTokens: response.headers.get('x-ratelimit-reset-tokens') || undefined,
-        retryAfter: response.headers.get('retry-after') || undefined,
-      };
+      const extractRateLimit = (res: Response): RateLimitInfo => ({
+        limitRequests: res.headers.get('x-ratelimit-limit-requests') || undefined,
+        remainingRequests: res.headers.get('x-ratelimit-remaining-requests') || undefined,
+        resetRequests: res.headers.get('x-ratelimit-reset-requests') || undefined,
+        limitTokens: res.headers.get('x-ratelimit-limit-tokens') || undefined,
+        remainingTokens: res.headers.get('x-ratelimit-remaining-tokens') || undefined,
+        resetTokens: res.headers.get('x-ratelimit-reset-tokens') || undefined,
+        retryAfter: res.headers.get('retry-after') || undefined,
+      });
 
-      const data = await response.json().catch(() => ({
+      let rateLimit: RateLimitInfo = extractRateLimit(response);
+      providerScheduler.updateRateLimitInfo('groq', model, rateLimit);
+
+      let data = await response.json().catch(() => ({
         error: { message: `Non-JSON HTTP ${response.status} response from Groq API` },
       }));
+
+      // If GPT-OSS exhausted max_tokens during reasoning and returned empty content, retry once with low reasoning effort
+      if (
+        response.ok &&
+        isGptOss &&
+        (!data.choices?.[0]?.message?.content || String(data.choices[0].message.content).trim() === '') &&
+        (!data.choices?.[0]?.message?.tool_calls || data.choices[0].message.tool_calls.length === 0) &&
+        data.choices?.[0]?.finish_reason === 'length'
+      ) {
+        const retryPayload = {
+          ...groqPayload,
+          reasoning_effort: 'low',
+          max_tokens: Math.max(2048, groqPayload.max_tokens || 2048),
+        };
+        const retryResult = await fetchWithRetry({
+          url: 'https://api.groq.com/openai/v1/chat/completions',
+          init: {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(retryPayload),
+          },
+          maxRetries: 2,
+          baseDelayMs: 500,
+          timeoutMs: 30000,
+        });
+        response = retryResult.response;
+        retries += retryResult.retries + 1;
+        latencyMs += retryResult.latencyMs;
+        rateLimit = extractRateLimit(response);
+        providerScheduler.updateRateLimitInfo('groq', model, rateLimit);
+        data = await response.json().catch(() => ({
+          error: { message: `Non-JSON HTTP ${response.status} response from Groq API` },
+        }));
+      }
 
       // 3. Handle upstream HTTP errors
       if (!response.ok) {
@@ -451,7 +489,6 @@ export class ServerGroqProvider implements ModelProvider {
             typeof data.error.failed_generation === 'string'
               ? data.error.failed_generation
               : JSON.stringify(data.error.failed_generation);
-          console.log(`[RELIQ Server Provider] <- GROQ RECOVERED tool_use_failed generation: ${recoveredOutput.slice(0, 80)}...`);
           const recInputTokens = data.usage?.prompt_tokens ?? 0;
           const recOutputTokens = data.usage?.completion_tokens ?? 0;
           const recReasoningTokens = data.usage?.completion_tokens_details?.reasoning_tokens;
@@ -487,14 +524,10 @@ export class ServerGroqProvider implements ModelProvider {
         const errMsg = data.error?.message || data.error || `Groq API returned HTTP ${response.status}`;
         const isQuota = response.status === 429;
         const isAuth = response.status === 401 || response.status === 403;
-        console.log(`[GROQ] Request failed`);
-        console.log(`[GROQ] Status: ${response.status}`);
-        const errType = isAuth ? 'AUTHENTICATION_ERROR' : isQuota ? 'RATE_LIMIT_EXCEEDED' : 'PROVIDER_ERROR';
-        console.log(`[GROQ] Error: ${errType}`);
 
         if (isQuota) {
-          const retrySec = rateLimit.retryAfter ? parseInt(rateLimit.retryAfter, 10) : 30;
-          providerScheduler.recordRateLimit('groq', retrySec || 30, errMsg);
+          const retrySec = rateLimit.retryAfter ? parseInt(rateLimit.retryAfter, 10) : 2;
+          providerScheduler.recordRateLimit('groq', retrySec || 2, errMsg, { modelId: model });
         }
 
         return {
@@ -547,7 +580,6 @@ export class ServerGroqProvider implements ModelProvider {
             ...primaryCall.arguments,
           });
         } else {
-          console.log(`[RELIQ Server Provider] <- GROQ 200 MALFORMED/EMPTY`);
           return {
             output: '',
             usage: {
@@ -589,9 +621,6 @@ export class ServerGroqProvider implements ModelProvider {
         cachedTokens,
       });
 
-      console.log(`[GROQ] Response: 200`);
-      console.log(`[GROQ] Latency: ${latencyMs} ms`);
-      console.log(`[GROQ] Tokens: ${totalTokens}`);
       providerScheduler.recordSuccess('groq');
 
       return {
@@ -620,10 +649,6 @@ export class ServerGroqProvider implements ModelProvider {
         err.message?.toLowerCase().includes('timeout') ||
         err.message?.toLowerCase().includes('aborted');
 
-      console.log(`[GROQ] Request failed`);
-      console.log(`[GROQ] Status: ${isTimeout ? 504 : 500}`);
-      console.log(`[GROQ] Error: ${isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR'}`);
-
       return {
         output: '',
         usage: {
@@ -646,7 +671,7 @@ export class ServerGroqProvider implements ModelProvider {
         isDemoMode: false,
       };
     }
-    });
+    }, model);
   }
 }
 

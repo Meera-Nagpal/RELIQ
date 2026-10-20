@@ -50,13 +50,12 @@ export async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Safely retrieve an API key from process.env or .env.local without exposing it to client.
- */
-export function getApiKey(name: string): string | undefined {
-  if (process.env[name] !== undefined) {
-    return process.env[name].trim() || undefined;
-  }
+let envCacheLoaded = false;
+const envFileCache = new Map<string, string>();
+
+function ensureEnvCacheLoaded(): void {
+  if (envCacheLoaded) return;
+  envCacheLoaded = true;
 
   const candidatePaths = [
     path.resolve(process.cwd(), '.env.local'),
@@ -79,17 +78,56 @@ export function getApiKey(name: string): string | undefined {
             if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
               v = v.slice(1, -1);
             }
-            if (k === name && v) {
-              process.env[name] = v;
-              return v;
+            if (k && v && !envFileCache.has(k)) {
+              envFileCache.set(k, v);
             }
           }
         }
       }
     } catch {}
   }
+}
+
+/**
+ * Safely retrieve an API key from process.env or cached .env.local without exposing it to client.
+ */
+export function getApiKey(name: string): string | undefined {
+  if (process.env[name] !== undefined) {
+    return process.env[name]!.trim() || undefined;
+  }
+
+  ensureEnvCacheLoaded();
+  const cached = envFileCache.get(name);
+  if (cached) {
+    process.env[name] = cached;
+    return cached;
+  }
 
   return undefined;
+}
+
+/**
+ * Parses duration strings like "787ms", "1.82s", "1m2.4s" into milliseconds.
+ */
+export function parseDurationHeaderMs(val?: string | null): number {
+  if (!val) return 0;
+  const str = String(val).trim();
+  if (!str) return 0;
+
+  // Pure numeric seconds
+  if (/^\d+(\.\d+)?$/.test(str)) {
+    return Math.ceil(parseFloat(str) * 1000);
+  }
+
+  let totalMs = 0;
+  const minMatch = str.match(/(\d+(?:\.\d+)?)m(?!s)/i);
+  if (minMatch) totalMs += parseFloat(minMatch[1]) * 60000;
+  const secMatch = str.match(/(\d+(?:\.\d+)?)s/i);
+  if (secMatch) totalMs += parseFloat(secMatch[1]) * 1000;
+  const msMatch = str.match(/(\d+(?:\.\d+)?)ms/i);
+  if (msMatch) totalMs += parseFloat(msMatch[1]);
+
+  return Math.ceil(totalMs);
 }
 
 export const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504, 529]);
@@ -110,22 +148,29 @@ export interface FetchWithRetryResult {
 }
 
 /**
- * Executes outbound HTTP requests with bounded retries and exponential backoff.
+ * Executes outbound HTTP requests with persistent keep-alive connections,
+ * bounded retries, and adaptive rate-limit backoff.
  * - Transient errors (429, 500, 502, 503, 504, 529, timeouts): retried with backoff + jitter.
- * - Permanent errors (400, 401, 403, 404): never retried, returned immediately.
+ * - Permanent errors (400, 401, 402, 403, 404): never retried, returned immediately.
  */
 export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<FetchWithRetryResult> {
   const {
     url,
     init,
     maxRetries = 3,
-    baseDelayMs = 1000,
+    baseDelayMs = 600,
     timeoutMs = 30000,
   } = options;
 
   const startTime = Date.now();
   let retries = 0;
   let lastError: any = null;
+
+  // Reuse persistent HTTP connections via keep-alive headers
+  const mergedHeaders: Record<string, string> = {
+    Connection: 'keep-alive',
+    ...(init.headers as Record<string, string> || {}),
+  };
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -134,6 +179,8 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
 
       const response = await fetch(url, {
         ...init,
+        headers: mergedHeaders,
+        keepalive: true,
         signal: controller.signal,
       });
 
@@ -152,21 +199,48 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
       if (TRANSIENT_STATUS_CODES.has(response.status) && attempt < maxRetries) {
         retries++;
         let waitMs = 0;
+
+        // 1. Check sub-second token reset header (e.g., Groq x-ratelimit-reset-tokens: "787ms" or "1.4s")
+        const resetTokensHeader =
+          response.headers.get('x-ratelimit-reset-tokens') ||
+          response.headers.get('x-ratelimit-reset-tokens-minute');
+        if (resetTokensHeader) {
+          const parsedResetMs = parseDurationHeaderMs(resetTokensHeader);
+          if (parsedResetMs > 0 && parsedResetMs <= 15000) {
+            waitMs = Math.max(waitMs, Math.max(150, parsedResetMs + 100));
+          }
+        }
+
+        // 2. Check standard retry-after header (always take Math.max so both RPM and TPM limits are respected)
         const retryAfterHeader = response.headers.get('retry-after');
         if (retryAfterHeader) {
           const parsedSeconds = parseFloat(retryAfterHeader);
           if (!isNaN(parsedSeconds) && parsedSeconds > 0) {
-            waitMs = Math.min(65000, Math.ceil(parsedSeconds * 1000) + 1000);
+            waitMs = Math.max(waitMs, Math.min(65000, Math.ceil(parsedSeconds * 1000) + 250));
           }
         }
+
         if (!waitMs) {
           try {
             const bodyCloned = await response.clone().text();
-            const match = bodyCloned.match(/retry in ([\d\.]+)s/i) || bodyCloned.match(/retry after ([\d\.]+)s/i);
+            const match =
+              bodyCloned.match(/try again in ([\d\.]+)ms/i);
             if (match) {
-              const seconds = parseFloat(match[1]);
-              if (!isNaN(seconds) && seconds > 0) {
-                waitMs = Math.min(65000, Math.ceil(seconds * 1000) + 1000);
+              const ms = parseFloat(match[1]);
+              if (!isNaN(ms) && ms > 0) {
+                waitMs = Math.min(65000, Math.ceil(ms) + 100);
+              }
+            }
+            if (!waitMs) {
+              const secMatch =
+                bodyCloned.match(/try again in ([\d\.]+)s/i) ||
+                bodyCloned.match(/retry in ([\d\.]+)s/i) ||
+                bodyCloned.match(/retry after ([\d\.]+)s/i);
+              if (secMatch) {
+                const seconds = parseFloat(secMatch[1]);
+                if (!isNaN(seconds) && seconds > 0) {
+                  waitMs = Math.min(65000, Math.ceil(seconds * 1000) + 150);
+                }
               }
             }
             if (!waitMs) {
@@ -178,7 +252,7 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
                 if (retryInfo?.retryDelay) {
                   const sec = parseFloat(String(retryInfo.retryDelay).replace('s', ''));
                   if (!isNaN(sec) && sec > 0) {
-                    waitMs = Math.min(65000, Math.ceil(sec * 1000) + 1000);
+                    waitMs = Math.min(65000, Math.ceil(sec * 1000) + 250);
                   }
                 }
               } catch {}
@@ -189,8 +263,11 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
         // Fallback to exponential backoff with jitter if no explicit retry-after
         if (!waitMs) {
           const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
-          const jitter = Math.floor(Math.random() * 250);
-          waitMs = Math.min(30000, exponentialDelay + jitter);
+          const jitter = Math.floor(Math.random() * 150);
+          waitMs = Math.min(15000, exponentialDelay + jitter);
+        } else if (response.status === 429) {
+          // Add staggered jitter on explicit 429 waits so concurrent workers never collide on retry
+          waitMs += (retries - 1) * 500 + Math.floor(Math.random() * 350);
         }
 
         console.log(`[RELIQ Transport] Rate limit or transient error (${response.status}) — backoff wait ${waitMs}ms before retry ${attempt + 1}/${maxRetries}...`);
@@ -208,8 +285,8 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
       if (attempt < maxRetries) {
         retries++;
         const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
-        const jitter = Math.floor(Math.random() * 250);
-        const waitMs = Math.min(30000, exponentialDelay + jitter);
+        const jitter = Math.floor(Math.random() * 150);
+        const waitMs = Math.min(15000, exponentialDelay + jitter);
         console.log(`[RELIQ Transport] Network error (${err.message}) — backoff wait ${waitMs}ms before retry ${attempt + 1}/${maxRetries}...`);
         await sleep(waitMs);
         continue;

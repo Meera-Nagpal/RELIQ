@@ -166,6 +166,10 @@ export const KeywordCriteriaEvaluator: Evaluator = {
  * preserving strings and valid JSON tokens.
  */
 export function stripJsonCommentsAndTrailingCommas(raw: string): string {
+  if (!raw.includes('//') && !raw.includes('/*')) {
+    return raw.replace(/,\s*([\}\]])/g, '$1');
+  }
+
   let result = '';
   let inString = false;
   let stringChar = '';
@@ -227,14 +231,14 @@ export function stripJsonCommentsAndTrailingCommas(raw: string): string {
 /**
  * Scans a JSON string and detects duplicate property keys within the same object scope.
  */
-export function findDuplicateJsonKeys(raw: string): string[] {
+export function findDuplicateJsonKeys(raw: string, alreadyCleaned = false): string[] {
   const duplicates: string[] = [];
   const stack: Set<string>[] = [];
   let inString = false;
   let isEscaped = false;
   let currentString = '';
 
-  const cleaned = stripJsonCommentsAndTrailingCommas(raw);
+  const cleaned = alreadyCleaned ? raw : stripJsonCommentsAndTrailingCommas(raw);
 
   for (let i = 0; i < cleaned.length; i++) {
     const char = cleaned[i];
@@ -305,8 +309,10 @@ export const JsonValidityEvaluator: Evaluator = {
         jsonStr = codeBlockMatch[1].trim();
       }
 
+      const cleaned = stripJsonCommentsAndTrailingCommas(jsonStr);
+
       // Check for duplicate JSON keys (e.g. duplicated currencyCode property)
-      const duplicateKeys = findDuplicateJsonKeys(jsonStr);
+      const duplicateKeys = findDuplicateJsonKeys(cleaned, true);
       if (duplicateKeys.length > 0) {
         return {
           evaluatorType: 'json_validity',
@@ -316,7 +322,6 @@ export const JsonValidityEvaluator: Evaluator = {
         };
       }
 
-      const cleaned = stripJsonCommentsAndTrailingCommas(jsonStr);
       const parsed = JSON.parse(cleaned);
       if (typeof parsed !== 'object' || parsed === null) {
         return {

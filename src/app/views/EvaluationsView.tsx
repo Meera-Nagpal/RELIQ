@@ -147,13 +147,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   const [customBaselineModel, setCustomBaselineModel] = useState<string>('openai/gpt-oss-20b');
   const [customBaselinePrompt, setCustomBaselinePrompt] = useState<string>(CHECKOUT_RELIABILITY_SYSTEM_PROMPT);
   const [customBaselineTemp, setCustomBaselineTemp] = useState<number>(0.2);
-  const [customBaselineReasoningEffort, setCustomBaselineReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
+  const [customBaselineReasoningEffort, setCustomBaselineReasoningEffort] = useState<'low' | 'medium' | 'high'>('low');
 
   const [customCandidateProvider, setCustomCandidateProvider] = useState<ProviderType>('groq');
   const [customCandidateModel, setCustomCandidateModel] = useState<string>('openai/gpt-oss-120b');
   const [customCandidatePrompt, setCustomCandidatePrompt] = useState<string>(CHECKOUT_RELIABILITY_SYSTEM_PROMPT);
   const [customCandidateTemp, setCustomCandidateTemp] = useState<number>(0.2);
-  const [customCandidateReasoningEffort, setCustomCandidateReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
+  const [customCandidateReasoningEffort, setCustomCandidateReasoningEffort] = useState<'low' | 'medium' | 'high'>('low');
 
   // Execution states
   const [isRunning, setIsRunning] = useState(false);
@@ -280,7 +280,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         promptVersion: 'custom-baseline-prompt',
         systemPrompt: customBaselinePrompt,
         temperature: customBaselineTemp,
-        maxTokens: 4096,
+        maxTokens: 1024,
         reasoningEffort: (customBaselineModel === 'openai/gpt-oss-20b' || customBaselineModel === 'openai/gpt-oss-120b') ? customBaselineReasoningEffort : undefined,
         isBaseline: true,
         createdAt: new Date().toISOString(),
@@ -294,7 +294,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         promptVersion: 'custom-candidate-prompt',
         systemPrompt: customCandidatePrompt,
         temperature: customCandidateTemp,
-        maxTokens: 4096,
+        maxTokens: 1024,
         reasoningEffort: (customCandidateModel === 'openai/gpt-oss-20b' || customCandidateModel === 'openai/gpt-oss-120b') ? customCandidateReasoningEffort : undefined,
         isBaseline: false,
         createdAt: new Date().toISOString(),
@@ -358,7 +358,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           provider: 'groq' as const,
           modelIdentifier: selectedJudgeModel,
           temperature: 0.1,
-          maxTokens: 1024,
+          maxTokens: 256,
         } : undefined,
         regressionSettings: {
           ...project.regressionSettings,
@@ -368,7 +368,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               : (datasetToEvaluate?.cases?.length || 27),
         },
         maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
-        concurrency: 1,
+        concurrency: 8,
         async: true,
       };
 
@@ -403,7 +403,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           return;
         }
 
-        await new Promise((res) => setTimeout(res, 400));
+        await new Promise((res) => setTimeout(res, 250));
 
         if (isCancelledRef.current) {
           setIsRunning(false);
@@ -450,7 +450,6 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       }
 
       if (run) {
-        await onSaveRun(run);
         onSelectActiveRun(run);
         setIsRunning(false);
         setIsProgressModalOpen(false);
@@ -459,6 +458,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             setActiveReport(run.comparisonReport || null);
           });
         }
+        await onSaveRun(run);
       }
       setIsRunning(false);
     } catch (err: any) {

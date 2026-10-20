@@ -150,6 +150,7 @@ export class ServerCerebrasProvider implements ModelProvider {
           resetTokens: response.headers.get('x-ratelimit-reset-tokens-minute') || undefined,
           retryAfter: response.headers.get('retry-after') || undefined,
         };
+        providerScheduler.updateRateLimitInfo('cerebras', model, rateLimit);
 
         const data = await response.json().catch(() => ({
           error: { message: `Non-JSON HTTP ${response.status} response from Cerebras API` },
@@ -166,8 +167,8 @@ export class ServerCerebrasProvider implements ModelProvider {
           console.log(`[CEREBRAS] Error: ${errType}`);
 
           if (isQuota) {
-            const retrySec = rateLimit.retryAfter ? parseInt(rateLimit.retryAfter, 10) : 30;
-            providerScheduler.recordRateLimit('cerebras', retrySec || 30, errMsg);
+            const retrySec = rateLimit.retryAfter ? parseInt(rateLimit.retryAfter, 10) : 5;
+            providerScheduler.recordRateLimit('cerebras', retrySec || 5, errMsg, { modelId: model });
           }
 
           return {
@@ -262,9 +263,6 @@ export class ServerCerebrasProvider implements ModelProvider {
           cachedTokens,
         });
 
-        console.log(`[CEREBRAS] Response: 200`);
-        console.log(`[CEREBRAS] Latency: ${latencyMs} ms`);
-        console.log(`[CEREBRAS] Tokens: ${totalTokens}`);
         providerScheduler.recordSuccess('cerebras');
 
         return {
@@ -293,10 +291,6 @@ export class ServerCerebrasProvider implements ModelProvider {
           err.message?.toLowerCase().includes('timeout') ||
           err.message?.toLowerCase().includes('aborted');
 
-        console.log(`[CEREBRAS] Request failed`);
-        console.log(`[CEREBRAS] Status: ${isTimeout ? 504 : 500}`);
-        console.log(`[CEREBRAS] Error: ${isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR'}`);
-
         return {
           output: '',
           usage: {
@@ -319,6 +313,6 @@ export class ServerCerebrasProvider implements ModelProvider {
           isDemoMode: false,
         };
       }
-    });
+    }, model);
   }
 }
