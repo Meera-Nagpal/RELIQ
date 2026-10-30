@@ -35,6 +35,8 @@ import { handleDatasetRoutes } from './routes/datasetRoutes';
 import { handleVersionRoutes } from './routes/versionRoutes';
 import { handleSettingsRoutes } from './routes/settingsRoutes';
 import { handleEvaluationDbRoutes } from './routes/evaluationDbRoutes';
+import { handleAuthRoutes } from './routes/authRoutes';
+import { isSupabaseConfigured, testSupabaseConnection } from './db/supabaseClient';
 import { evaluationDbService } from './services/evaluationDbService';
 import { datasetService } from './services/datasetService';
 import { sendError } from './routes/httpUtils';
@@ -68,6 +70,12 @@ export function createReliqProxyMiddleware() {
       res.statusCode = 204;
       res.end();
       return;
+    }
+
+    // ── Authentication REST Endpoints ───────────────────────────
+    if (parsedUrl.startsWith('/api/auth')) {
+      const handled = await handleAuthRoutes(req, res, parsedUrl);
+      if (handled) return;
     }
 
     // ── Database REST Endpoints: Projects & Settings ────────────
@@ -134,23 +142,47 @@ export function createReliqProxyMiddleware() {
     // ── Platform Health Endpoint: GET /api/health ───────────────
     if (req.method === 'GET' && parsedUrl === '/api/health') {
       let databaseStatus = 'disconnected';
-      try {
-        const db = getDatabase();
-        const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
-        if (row && row.alive === 1) {
-          databaseStatus = 'connected';
+      let databaseType = 'none';
+      let latencyMs = 0;
+
+      if (isSupabaseConfigured() && process.env.RELIQ_DB_DRIVER !== 'sqlite') {
+        const check = await testSupabaseConnection();
+        databaseType = 'supabase_postgresql';
+        databaseStatus = check.connected ? 'connected' : `error: ${check.error}`;
+        latencyMs = check.latencyMs;
+      } else {
+        try {
+          const start = Date.now();
+          const db = getDatabase();
+          const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
+          if (row && row.alive === 1) {
+            databaseStatus = 'connected';
+            databaseType = 'sqlite';
+            latencyMs = Date.now() - start;
+          }
+        } catch (dbErr: any) {
+          databaseStatus = `error: ${dbErr.message}`;
+          databaseType = 'sqlite';
         }
-      } catch (dbErr: any) {
-        databaseStatus = `error: ${dbErr.message}`;
       }
 
       const isHealthy = databaseStatus === 'connected';
       sendJson(res, isHealthy ? 200 : 503, {
         status: isHealthy ? 'healthy' : 'unhealthy',
         database: databaseStatus,
+        databaseType,
+        latencyMs,
         service: 'RELIQ Evaluation Platform',
-        version: '2.7.5',
+        version: '2.8.0',
         backendExecution: 'enabled',
+        auth: {
+          enabled: isSupabaseConfigured(),
+          provider: isSupabaseConfigured() ? 'supabase' : 'none',
+        },
+        caching: {
+          enabled: true,
+          type: databaseType,
+        },
         providers: {
           gemini: getApiKey('GEMINI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
           groq: getApiKey('GROQ_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
