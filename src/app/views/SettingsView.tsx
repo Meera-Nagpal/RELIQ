@@ -67,7 +67,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '880px' }}>
       {/* Header */}
       <div>
-        <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
           CONFIGURATION // RELIABILITY POLICIES
         </div>
         <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
@@ -81,7 +81,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* ── 1. Regression Thresholds Form ── */}
       <div
         style={{
-          background: '#161B22',
+          background: '#14181F',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '12px',
           padding: '2rem',
@@ -107,7 +107,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.8rem',
-                  background: '#0D1117',
+                  background: '#101419',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: '6px',
                   color: '#FFFFFF',
@@ -134,7 +134,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.8rem',
-                  background: '#0D1117',
+                  background: '#101419',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: '6px',
                   color: '#FFFFFF',
@@ -163,7 +163,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.8rem',
-                  background: '#0D1117',
+                  background: '#101419',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: '6px',
                   color: '#FFFFFF',
@@ -190,7 +190,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.8rem',
-                  background: '#0D1117',
+                  background: '#101419',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: '6px',
                   color: '#FFFFFF',
@@ -219,7 +219,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.8rem',
-                  background: '#0D1117',
+                  background: '#101419',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: '6px',
                   color: '#FFFFFF',
@@ -240,7 +240,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.8rem' }}>
             {savedSuccess ? (
-              <span style={{ color: '#2ECC71', fontSize: '0.85rem', fontWeight: 600 }}>
+              <span style={{ color: '#4E9B6F', fontSize: '0.85rem', fontWeight: 600 }}>
                 ✓ Threshold policies updated successfully!
               </span>
             ) : <span />}
@@ -248,8 +248,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="submit"
               style={{
-                background: 'var(--accent, #FF6B35)',
-                color: '#000000',
+                background: 'var(--accent, #C86D51)',
+                color: '#FFFFFF',
                 border: 'none',
                 padding: '0.7rem 1.8rem',
                 borderRadius: '6px',
@@ -267,7 +267,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* ── 2. Provider Harness Layer ── */}
       <div
         style={{
-          background: '#161B22',
+          background: '#14181F',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '12px',
           padding: '2rem',
@@ -281,24 +281,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: '1.15rem' }}>
               Normalized AI Provider Architecture
             </h3>
-            <span style={{ fontSize: '0.72rem', color: '#4DA6FF', background: 'rgba(77, 166, 255, 0.12)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+            <span style={{ fontSize: '0.72rem', color: '#5B82A6', background: 'rgba(91, 130, 166, 0.12)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
               {providerRegistry.listProviders().length} Registered Adapters
             </span>
           </div>
           <p style={{ color: '#8899AA', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-            RELIQ executes evaluations via normalized <code style={{ color: '#4DA6FF' }}>ModelProvider</code> adapters. All model telemetries (input tokens, output tokens, reasoning tokens, cached tokens, latency, cost) conform to the <code style={{ color: '#2ECC71' }}>UsageRecord</code> specification.
+            RELIQ executes evaluations via normalized <code style={{ color: '#5B82A6' }}>ModelProvider</code> adapters. All model telemetries (input tokens, output tokens, reasoning tokens, cached tokens, latency, cost) conform to the <code style={{ color: '#4E9B6F' }}>UsageRecord</code> specification.
           </p>
         </div>
 
         {/* Security Alert */}
         <div
           style={{
-            background: 'rgba(77, 166, 255, 0.08)',
-            border: '1px solid rgba(77, 166, 255, 0.25)',
+            background: 'rgba(91, 130, 166, 0.08)',
+            border: '1px solid rgba(91, 130, 166, 0.25)',
             borderRadius: '8px',
             padding: '0.9rem 1.2rem',
             fontSize: '0.82rem',
-            color: '#B0D5FF',
+            color: '#B8CDE0',
             lineHeight: 1.45,
           }}
         >
@@ -311,7 +311,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div
               key={prov.id}
               style={{
-                background: '#0D1117',
+                background: '#101419',
                 padding: '1.1rem 1.3rem',
                 borderRadius: '8px',
                 border: '1px solid rgba(255, 255, 255, 0.07)',
@@ -331,8 +331,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     fontSize: '0.7rem',
                     padding: '0.2rem 0.55rem',
                     borderRadius: '4px',
-                    background: prov.providerType === 'demo' ? 'rgba(46, 204, 113, 0.15)' : 'rgba(77, 166, 255, 0.15)',
-                    color: prov.providerType === 'demo' ? '#2ECC71' : '#4DA6FF',
+                    background: prov.providerType === 'demo' ? 'rgba(78, 155, 111, 0.12)' : 'rgba(91, 130, 166, 0.12)',
+                    color: prov.providerType === 'demo' ? '#4E9B6F' : '#5B82A6',
                     fontWeight: 700,
                   }}
                 >
@@ -364,17 +364,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               {/* Capabilities */}
               <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
                 {prov.supportsReasoningTokens && (
-                  <span style={{ color: '#C084FC', background: 'rgba(192, 132, 252, 0.1)', padding: '0.15rem 0.45rem', borderRadius: '3px' }}>
+                  <span style={{ color: '#8B7EC8', background: 'rgba(139, 126, 200, 0.12)', padding: '0.15rem 0.45rem', borderRadius: '3px' }}>
                     🧠 Thinking Tokens Telemetry
                   </span>
                 )}
                 {prov.supportsPromptCaching && (
-                  <span style={{ color: '#2ECC71', background: 'rgba(46, 204, 113, 0.1)', padding: '0.15rem 0.45rem', borderRadius: '3px' }}>
+                  <span style={{ color: '#4E9B6F', background: 'rgba(78, 155, 111, 0.12)', padding: '0.15rem 0.45rem', borderRadius: '3px' }}>
                     ⚡ Prompt Caching Discounts
                   </span>
                 )}
                 {prov.supportsTools && (
-                  <span style={{ color: '#FFAA44', background: 'rgba(255, 170, 68, 0.1)', padding: '0.15rem 0.45rem', borderRadius: '3px' }}>
+                  <span style={{ color: '#C68B45', background: 'rgba(198, 139, 69, 0.12)', padding: '0.15rem 0.45rem', borderRadius: '3px' }}>
                     🛠 Tool Calling Schema Validation
                   </span>
                 )}
@@ -392,7 +392,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* ── 2.5 Data Privacy & Raw Output Retention ── */}
       <div
         style={{
-          background: '#161B22',
+          background: '#14181F',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '12px',
           padding: '2rem',
@@ -408,7 +408,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </p>
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', background: '#0D1117', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', background: '#101419', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <input
               type="checkbox"
               checked={storeRawOutputs}
@@ -417,9 +417,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 setStoreRawOutputs(nextVal);
                 apiRepository.setStoreRawOutputs(nextVal);
               }}
-              style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--accent, #FF6B35)' }}
+              style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--accent, #C86D51)' }}
             />
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: storeRawOutputs ? '#2ECC71' : '#FFAA44' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: storeRawOutputs ? '#4E9B6F' : '#C68B45' }}>
               {storeRawOutputs ? 'Store Raw Outputs (Enabled)' : 'Redact Raw Outputs (Strict Privacy)'}
             </span>
           </label>
@@ -429,8 +429,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* ── 3. Data Management & Reset ── */}
       <div
         style={{
-          background: '#161B22',
-          border: '1px solid rgba(255, 34, 0, 0.2)',
+          background: '#14181F',
+          border: '1px solid rgba(192, 92, 84, 0.25)',
           borderRadius: '12px',
           padding: '2rem',
           display: 'flex',
@@ -456,8 +456,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }}
           style={{
             background: 'transparent',
-            border: '1px solid rgba(255, 34, 0, 0.4)',
-            color: '#FF4422',
+            border: '1px solid rgba(192, 92, 84, 0.35)',
+            color: '#C05C54',
             padding: '0.65rem 1.2rem',
             borderRadius: '6px',
             fontSize: '0.82rem',

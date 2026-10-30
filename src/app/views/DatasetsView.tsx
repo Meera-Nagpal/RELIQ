@@ -453,7 +453,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
       {/* ── Top Bar: Title & Dataset Actions ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
             TEST SUITES // BENCHMARK REGISTRY & USER DATASETS
           </div>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
@@ -468,9 +468,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           <button
             onClick={handleOpenImportWizard}
             style={{
-              background: '#191B1C',
-              border: '1px solid #343638',
-              color: '#E8E4D9',
+              background: '#14181F',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#ECEFF2',
               padding: '0.6rem 1.15rem',
               borderRadius: '6px',
               fontSize: '0.82rem',
@@ -483,15 +483,14 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           <button
             onClick={handleOpenAddCase}
             style={{
-              background: 'var(--accent, #FF6B35)',
-              color: '#000000',
+              background: 'var(--accent, #C86D51)',
+              color: '#FFFFFF',
               border: 'none',
               padding: '0.6rem 1.3rem',
               borderRadius: '6px',
               fontSize: '0.82rem',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(255, 107, 53, 0.3)',
             }}
           >
             + Add Test Case
@@ -521,7 +520,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: '0.8rem',
-          background: '#161B22',
+          background: '#14181F',
           padding: '0.8rem 1.2rem',
           borderRadius: '8px',
           border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -539,9 +538,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 key={d.id}
                 onClick={() => onSelectDataset(d.id)}
                 style={{
-                  background: isSelected ? 'rgba(255, 107, 53, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                  background: isSelected ? 'rgba(200, 109, 81, 0.12)' : 'rgba(255, 255, 255, 0.03)',
                   border: isSelected
-                    ? '1px solid var(--accent, #FF6B35)'
+                    ? '1px solid var(--accent, #C86D51)'
                     : '1px solid rgba(255, 255, 255, 0.08)',
                   color: isSelected ? '#FFFFFF' : '#99AABB',
                   padding: '0.45rem 0.85rem',
@@ -561,8 +560,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     padding: '0.1rem 0.38rem',
                     borderRadius: '4px',
                     fontWeight: 700,
-                    background: isBuiltin ? 'rgba(46, 204, 113, 0.16)' : 'rgba(77, 166, 255, 0.18)',
-                    color: isBuiltin ? '#2ECC71' : '#4DA6FF',
+                    background: isBuiltin ? 'rgba(78, 155, 111, 0.12)' : 'rgba(91, 130, 166, 0.12)',
+                    color: isBuiltin ? '#4E9B6F' : '#5B82A6',
                   }}
                 >
                   {isBuiltin ? 'BUILT-IN' : 'UPLOAD'}
@@ -598,10 +597,10 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             }}
             style={{
               background: 'transparent',
-              border: '1px solid rgba(255, 68, 34, 0.3)',
+              border: '1px solid rgba(192, 92, 84, 0.3)',
               borderRadius: '5px',
               padding: '0.35rem 0.75rem',
-              color: '#FF4422',
+              color: '#C05C54',
               fontSize: '0.76rem',
               fontWeight: 600,
               cursor: 'pointer',
@@ -616,10 +615,10 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
       {activeDataset && (
         <div
           style={{
-            background: '#12171E',
+            background: '#14181F',
             border: isActiveBuiltin
-              ? '1px solid rgba(46, 204, 113, 0.25)'
-              : '1px solid rgba(77, 166, 255, 0.25)',
+              ? '1px solid rgba(78, 155, 111, 0.28)'
+              : '1px solid rgba(91, 130, 166, 0.28)',
             borderRadius: '8px',
             padding: '0.9rem 1.2rem',
             display: 'flex',
@@ -638,11 +637,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   letterSpacing: '0.08em',
                   padding: '0.2rem 0.55rem',
                   borderRadius: '4px',
-                  background: isActiveBuiltin ? 'rgba(46, 204, 113, 0.16)' : 'rgba(77, 166, 255, 0.18)',
-                  color: isActiveBuiltin ? '#2ECC71' : '#4DA6FF',
+                  background: isActiveBuiltin ? 'rgba(78, 155, 111, 0.12)' : 'rgba(91, 130, 166, 0.12)',
+                  color: isActiveBuiltin ? '#4E9B6F' : '#5B82A6',
                   border: isActiveBuiltin
-                    ? '1px solid rgba(46, 204, 113, 0.35)'
-                    : '1px solid rgba(77, 166, 255, 0.35)',
+                    ? '1px solid rgba(78, 155, 111, 0.28)'
+                    : '1px solid rgba(91, 130, 166, 0.28)',
                 }}
               >
                 {isActiveBuiltin ? 'BUILT-IN BENCHMARK (IMMUTABLE)' : 'USER-UPLOADED DATASET'}
@@ -663,7 +662,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 style={{
                   fontSize: '0.72rem',
                   textTransform: 'uppercase',
-                  color: '#3FB950',
+                  color: '#4E9B6F',
                   fontWeight: 700,
                 }}
               >
@@ -691,7 +690,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
               <span style={{ color: '#778899', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>
                 Reference-Based Eligible
               </span>
-              <strong style={{ color: '#2ECC71', fontSize: '0.95rem' }}>
+              <strong style={{ color: '#4E9B6F', fontSize: '0.95rem' }}>
                 {activeDatasetStats.withExpected}/{activeDatasetStats.total}
               </strong>
             </div>
@@ -699,7 +698,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
               <span style={{ color: '#778899', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>
                 Reference-Free Eligible
               </span>
-              <strong style={{ color: '#4DA6FF', fontSize: '0.95rem' }}>
+              <strong style={{ color: '#5B82A6', fontSize: '0.95rem' }}>
                 {activeDatasetStats.total}/{activeDatasetStats.total}
               </strong>
             </div>
@@ -707,7 +706,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
               <span style={{ color: '#778899', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>
                 Groundedness Context
               </span>
-              <strong style={{ color: '#FFAA44', fontSize: '0.95rem' }}>
+              <strong style={{ color: '#C68B45', fontSize: '0.95rem' }}>
                 {activeDatasetStats.withContext + activeDatasetStats.withExpected > 0
                   ? `${Math.max(activeDatasetStats.withContext, activeDatasetStats.withExpected)} cases`
                   : 'N/A'}
@@ -728,7 +727,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             style={{
               width: '100%',
               padding: '0.65rem 1rem',
-              background: '#161B22',
+              background: '#14181F',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '6px',
               color: '#FFFFFF',
@@ -743,7 +742,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           onChange={(e) => setSelectedCategory(e.target.value)}
           style={{
             padding: '0.65rem 0.9rem',
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '6px',
             color: '#FFFFFF',
@@ -763,7 +762,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           onChange={(e) => setSelectedSeverity(e.target.value)}
           style={{
             padding: '0.65rem 0.9rem',
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '6px',
             color: '#FFFFFF',
@@ -781,7 +780,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
       {/* ── Test Cases Table ── */}
       <div
         style={{
-          background: '#161B22',
+          background: '#14181F',
           borderRadius: '10px',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           overflowX: 'auto',
@@ -793,7 +792,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
               display: 'grid',
               gridTemplateColumns: '95px 1.5fr 120px 1.6fr 125px 120px',
               padding: '0.8rem 1.2rem',
-              background: '#0D1117',
+              background: '#101419',
               borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
               fontSize: '0.75rem',
               letterSpacing: '0.1em',
@@ -823,8 +822,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   <button
                     onClick={handleOpenImportWizard}
                     style={{
-                      background: 'var(--accent, #FF6B35)',
-                      color: '#000000',
+                      background: 'var(--accent, #C86D51)',
+                      color: '#FFFFFF',
                       border: 'none',
                       padding: '0.6rem 1.4rem',
                       borderRadius: '6px',
@@ -850,9 +849,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     <button
                       onClick={handleOpenImportWizard}
                       style={{
-                        background: 'rgba(77, 166, 255, 0.16)',
-                        color: '#4DA6FF',
-                        border: '1px solid rgba(77, 166, 255, 0.4)',
+                        background: 'rgba(91, 130, 166, 0.12)',
+                        color: '#5B82A6',
+                        border: '1px solid rgba(91, 130, 166, 0.28)',
                         padding: '0.55rem 1.2rem',
                         borderRadius: '6px',
                         fontWeight: 700,
@@ -865,8 +864,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     <button
                       onClick={handleOpenAddCase}
                       style={{
-                        background: 'var(--accent, #FF6B35)',
-                        color: '#000000',
+                        background: 'var(--accent, #C86D51)',
+                        color: '#FFFFFF',
                         border: 'none',
                         padding: '0.55rem 1.2rem',
                         borderRadius: '6px',
@@ -903,7 +902,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   <div
                     style={{
                       fontFamily: 'monospace',
-                      color: '#4DA6FF',
+                      color: '#5B82A6',
                       fontWeight: 600,
                       fontSize: '0.86rem',
                       overflow: 'hidden',
@@ -918,12 +917,12 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: '0.95rem' }}>{tc.name}</div>
                     <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.15rem' }}>
                       {isCrit && (
-                        <span style={{ fontSize: '0.68rem', color: '#FF4422', fontWeight: 700, letterSpacing: '0.05em' }}>
+                        <span style={{ fontSize: '0.68rem', color: '#C05C54', fontWeight: 700, letterSpacing: '0.05em' }}>
                           CRITICAL GATE
                         </span>
                       )}
                       {!hasExpected && (
-                        <span style={{ fontSize: '0.66rem', color: '#4DA6FF', fontWeight: 600 }}>
+                        <span style={{ fontSize: '0.66rem', color: '#5B82A6', fontWeight: 600 }}>
                           REFERENCE-FREE
                         </span>
                       )}
@@ -956,7 +955,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     {tc.input}
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--accent, #FF6B35)', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--accent, #C86D51)', fontFamily: 'monospace' }}>
                       {tc.evaluatorType}
                     </span>
                   </div>
@@ -995,8 +994,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                       title="Delete test case"
                       style={{
                         background: 'transparent',
-                        border: '1px solid rgba(255, 34, 0, 0.2)',
-                        color: '#FF4422',
+                        border: '1px solid rgba(192, 92, 84, 0.25)',
+                        color: '#C05C54',
                         padding: '0.35rem 0.6rem',
                         borderRadius: '4px',
                         fontSize: '0.72rem',
@@ -1030,15 +1029,15 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
         >
           <div
             style={{
-              background: '#161B22',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#14181F',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '12px',
               padding: '2rem',
               width: '100%',
               maxWidth: '620px',
               maxHeight: '90vh',
               overflowY: 'auto',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
             }}
           >
             <h3 style={{ margin: '0 0 1.2rem 0', color: '#FFFFFF' }}>
@@ -1059,7 +1058,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.6rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -1079,7 +1078,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     style={{
                       width: '100%',
                       padding: '0.6rem',
-                      background: '#0D1117',
+                      background: '#101419',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: '6px',
                       color: '#FFFFFF',
@@ -1104,7 +1103,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     style={{
                       width: '100%',
                       padding: '0.6rem',
-                      background: '#0D1117',
+                      background: '#101419',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: '6px',
                       color: '#FFFFFF',
@@ -1137,7 +1136,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.6rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -1162,7 +1161,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.6rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -1186,7 +1185,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.6rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -1209,7 +1208,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     style={{
                       width: '100%',
                       padding: '0.6rem',
-                      background: '#0D1117',
+                      background: '#101419',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: '6px',
                       color: '#FFFFFF',
@@ -1235,7 +1234,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     style={{
                       width: '100%',
                       padding: '0.6rem',
-                      background: '#0D1117',
+                      background: '#101419',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: '6px',
                       color: '#FFFFFF',
@@ -1264,8 +1263,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--accent, #FF6B35)',
-                    color: '#000000',
+                    background: 'var(--accent, #C86D51)',
+                    color: '#FFFFFF',
                     border: 'none',
                     padding: '0.6rem 1.4rem',
                     borderRadius: '6px',
@@ -1299,15 +1298,15 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
         >
           <div
             style={{
-              background: '#161B22',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#14181F',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '12px',
               padding: '1.8rem 2rem',
               width: '100%',
               maxWidth: '880px',
               maxHeight: '92vh',
               overflowY: 'auto',
-              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.85)',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.75)',
               display: 'flex',
               flexDirection: 'column',
               gap: '1.2rem',
@@ -1315,7 +1314,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontSize: '0.7rem', color: '#4DA6FF', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '0.7rem', color: '#5B82A6', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                   DATASET INGESTION & VALIDATION PIPELINE
                 </div>
                 <h3 style={{ margin: '0.2rem 0 0.3rem 0', color: '#FFFFFF', fontSize: '1.3rem' }}>
@@ -1342,7 +1341,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             {/* Downloadable Templates Bar */}
             <div
               style={{
-                background: '#0D1117',
+                background: '#101419',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '8px',
                 padding: '0.75rem 1rem',
@@ -1380,9 +1379,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                       onClick={() => handleDownloadTemplate(fmt)}
                       title={`Download .${fmt} template file`}
                       style={{
-                        background: 'rgba(77, 166, 255, 0.12)',
-                        border: '1px solid rgba(77, 166, 255, 0.3)',
-                        color: '#4DA6FF',
+                        background: 'rgba(91, 130, 166, 0.12)',
+                        border: '1px solid rgba(91, 130, 166, 0.28)',
+                        color: '#5B82A6',
                         padding: '0.3rem 0.5rem',
                         borderRadius: '4px',
                         fontSize: '0.74rem',
@@ -1400,11 +1399,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             {importError && (
               <div
                 style={{
-                  background: 'rgba(239, 68, 68, 0.14)',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  background: 'rgba(192, 92, 84, 0.12)',
+                  border: '1px solid rgba(192, 92, 84, 0.3)',
                   borderRadius: '6px',
                   padding: '0.75rem 1rem',
-                  color: '#FF6B6B',
+                  color: '#E0A8A0',
                   fontSize: '0.84rem',
                   fontWeight: 600,
                 }}
@@ -1856,7 +1855,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                                 >
                                   {rec.expectedOutput || '(Reference-free — none)'}
                                 </td>
-                                <td style={{ padding: '0.35rem 0.5rem', fontFamily: 'monospace', color: 'var(--accent, #FF6B35)' }}>
+                                <td style={{ padding: '0.35rem 0.5rem', fontFamily: 'monospace', color: 'var(--accent, #C86D51)' }}>
                                   {rec.evaluatorType}
                                 </td>
                               </tr>
@@ -1892,11 +1891,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     background:
                       isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid)
                         ? '#333A42'
-                        : 'var(--accent, #FF6B35)',
+                        : 'var(--accent, #C86D51)',
                     color:
                       isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid)
                         ? '#778899'
-                        : '#000000',
+                        : '#FFFFFF',
                     border: 'none',
                     padding: '0.6rem 1.5rem',
                     borderRadius: '6px',
@@ -1935,13 +1934,13 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
         >
           <div
             style={{
-              background: '#161B22',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#14181F',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '12px',
               padding: '2rem',
               width: '100%',
               maxWidth: '460px',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
             }}
           >
             <h3 style={{ margin: '0 0 1rem 0', color: '#FFFFFF' }}>Create New Empty Dataset</h3>
@@ -1959,7 +1958,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.6rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -1980,7 +1979,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.6rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -2009,8 +2008,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--accent, #FF6B35)',
-                    color: '#000000',
+                    background: 'var(--accent, #C86D51)',
+                    color: '#FFFFFF',
                     border: 'none',
                     padding: '0.6rem 1.4rem',
                     borderRadius: '6px',

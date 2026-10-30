@@ -83,7 +83,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
             WORKSPACE // REPOSITORIES
           </div>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
@@ -97,8 +97,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         <button
           onClick={handleOpenCreate}
           style={{
-            background: 'var(--accent, #FF6B35)',
-            color: '#000000',
+            background: 'var(--accent, #C86D51)',
+            color: '#FFFFFF',
             border: 'none',
             padding: '0.65rem 1.4rem',
             borderRadius: '6px',
@@ -117,7 +117,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           style={{
             padding: '4rem 2rem',
             textAlign: 'center',
-            background: '#161B22',
+            background: '#14181F',
             borderRadius: '10px',
             border: '1px dashed rgba(255, 255, 255, 0.15)',
             display: 'flex',
@@ -134,8 +134,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           <button
             onClick={handleOpenCreate}
             style={{
-              background: 'var(--accent, #FF6B35)',
-              color: '#000000',
+              background: 'var(--accent, #C86D51)',
+              color: '#FFFFFF',
               border: 'none',
               padding: '0.65rem 1.4rem',
               borderRadius: '6px',
@@ -156,22 +156,21 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               <div
                 key={proj.id}
                 style={{
-                  background: '#161B22',
+                  background: '#14181F',
                   border: isActive
-                    ? '1px solid var(--accent, #FF6B35)'
+                    ? '1px solid var(--accent, #C86D51)'
                     : '1px solid rgba(255, 255, 255, 0.08)',
                   borderRadius: '10px',
                   padding: '1.8rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  boxShadow: isActive ? '0 0 20px rgba(255, 107, 53, 0.15)' : 'none',
                 }}
               >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ color: isActive ? 'var(--accent, #FF6B35)' : '#667788', fontSize: '1.1rem' }}>◈</span>
+                      <span style={{ color: isActive ? 'var(--accent, #C86D51)' : '#667788', fontSize: '1.1rem' }}>◈</span>
                       <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#FFFFFF', fontWeight: 700 }}>
                         {proj.name}
                       </h3>
@@ -181,10 +180,10 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         fontSize: '0.68rem',
                         padding: '0.2rem 0.6rem',
                         borderRadius: '999px',
-                        background: isActive ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                        color: isActive ? '#2ECC71' : '#8899AA',
+                        background: isActive ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                        color: isActive ? '#4E9B6F' : '#8899AA',
                         fontWeight: 700,
-                        border: isActive ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+                        border: isActive ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.1)',
                       }}
                     >
                       {isActive ? 'ACTIVE' : 'INACTIVE'}
@@ -215,7 +214,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#888888' }}>Comparison Models:</span>
-                      <span style={{ color: '#4DA6FF', fontFamily: 'monospace', fontWeight: 600 }}>
+                      <span style={{ color: '#5B82A6', fontFamily: 'monospace', fontWeight: 600 }}>
                         {proj.baselineVersionId === 'ver-v1-4' ? 'openai/gpt-oss-20b' : proj.baselineVersionId || 'openai/gpt-oss-20b'} vs {proj.candidateVersionId === 'ver-v1-5' ? 'openai/gpt-oss-120b' : proj.candidateVersionId || 'openai/gpt-oss-120b'}
                       </span>
                     </div>
@@ -252,8 +251,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         navigate('#/app/dashboard');
                       }}
                       style={{
-                        background: 'var(--accent, #FF6B35)',
-                        color: '#000000',
+                        background: 'var(--accent, #C86D51)',
+                        color: '#FFFFFF',
                         border: 'none',
                         padding: '0.45rem 1rem',
                         borderRadius: '6px',
@@ -306,8 +305,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         }}
                         style={{
                           background: 'transparent',
-                          border: '1px solid rgba(255, 34, 0, 0.2)',
-                          color: '#FF4422',
+                          border: '1px solid rgba(192, 92, 84, 0.25)',
+                          color: '#C05C54',
                           padding: '0.45rem 0.8rem',
                           borderRadius: '6px',
                           fontSize: '0.78rem',
@@ -341,13 +340,13 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         >
           <div
             style={{
-              background: '#161B22',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#14181F',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '12px',
               padding: '2rem',
               width: '100%',
               maxWidth: '480px',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
             }}
           >
             <h3 style={{ margin: '0 0 1.2rem 0', color: '#FFFFFF' }}>
@@ -367,7 +366,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.65rem 0.8rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -389,7 +388,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.65rem 0.8rem',
-                    background: '#0D1117',
+                    background: '#101419',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '6px',
                     color: '#FFFFFF',
@@ -419,8 +418,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--accent, #FF6B35)',
-                    color: '#000000',
+                    background: 'var(--accent, #C86D51)',
+                    color: '#FFFFFF',
                     border: 'none',
                     padding: '0.6rem 1.4rem',
                     borderRadius: '6px',
