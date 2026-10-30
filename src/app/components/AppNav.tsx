@@ -54,8 +54,8 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
       style={{
         width: '240px',
         flexShrink: 0,
-        background: '#0D1117',
-        borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'var(--bg-elevated, #14181F)',
+        borderRight: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.07))',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -80,11 +80,10 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
         >
           <div
             style={{
-              width: '12px',
-              height: '12px',
+              width: '10px',
+              height: '10px',
               borderRadius: '2px',
-              background: 'var(--accent, #FF6B35)',
-              boxShadow: '0 0 10px #FF6B35',
+              background: 'var(--accent, #C86D51)',
             }}
           />
           <span
@@ -102,9 +101,10 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
             style={{
               fontSize: '0.62rem',
               padding: '0.15rem 0.45rem',
-              borderRadius: '999px',
-              background: 'rgba(255, 107, 53, 0.15)',
-              color: 'var(--accent, #FF6B35)',
+              borderRadius: '4px',
+              background: 'var(--accent-subtle, rgba(200, 109, 81, 0.12))',
+              color: 'var(--accent, #C86D51)',
+              border: '1px solid var(--accent-dim, rgba(200, 109, 81, 0.28))',
               fontWeight: 700,
               letterSpacing: '0.08em',
               marginLeft: 'auto',
@@ -124,7 +124,7 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                   fontWeight: 700,
                   letterSpacing: '0.15em',
                   textTransform: 'uppercase',
-                  color: '#667788',
+                  color: '#7D8895',
                   padding: '0.2rem 0.6rem',
                 }}
               >
@@ -142,9 +142,9 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                       gap: '0.75rem',
                       padding: '0.55rem 0.75rem',
                       borderRadius: '6px',
-                      background: isActive ? 'rgba(255, 107, 53, 0.12)' : 'transparent',
+                      background: isActive ? 'var(--accent-subtle, rgba(200, 109, 81, 0.12))' : 'transparent',
                       border: isActive
-                        ? '1px solid rgba(255, 107, 53, 0.3)'
+                        ? '1px solid var(--accent-dim, rgba(200, 109, 81, 0.28))'
                         : '1px solid transparent',
                       color: isActive ? '#FFFFFF' : '#8899A6',
                       fontSize: '0.84rem',
@@ -155,7 +155,7 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                       width: '100%',
                     }}
                   >
-                    <span style={{ fontSize: '0.88rem', color: isActive ? 'var(--accent, #FF6B35)' : '#667788', width: '16px', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.88rem', color: isActive ? 'var(--accent, #C86D51)' : '#667788', width: '16px', textAlign: 'center' }}>
                       {item.icon}
                     </span>
                     <span style={{ flex: 1 }}>{item.label}</span>
@@ -167,8 +167,9 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                           letterSpacing: '0.08em',
                           padding: '0.12rem 0.4rem',
                           borderRadius: '3px',
-                          background: isActive ? 'rgba(255, 107, 53, 0.25)' : 'rgba(255, 255, 255, 0.06)',
-                          color: isActive ? 'var(--accent, #FF6B35)' : '#8899AA',
+                          background: isActive ? 'rgba(200, 109, 81, 0.22)' : 'rgba(255, 255, 255, 0.05)',
+                          color: isActive ? 'var(--accent, #C86D51)' : '#8899AA',
+                          border: `1px solid ${isActive ? 'rgba(200, 109, 81, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
                         }}
                       >
                         {item.actionLabel}
@@ -181,8 +182,9 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                           fontSize: '0.65rem',
                           padding: '0.1rem 0.4rem',
                           borderRadius: '4px',
-                          background: 'rgba(255, 34, 0, 0.2)',
-                          color: '#FF4422',
+                          background: 'rgba(192, 92, 84, 0.16)',
+                          color: 'var(--regression, #C05C54)',
+                          border: '1px solid rgba(192, 92, 84, 0.3)',
                           fontWeight: 700,
                         }}
                         title={`${regressionCount} quality regression(s) detected`}

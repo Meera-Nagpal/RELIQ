@@ -30,8 +30,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     <header
       style={{
         height: '60px',
-        background: '#0D1117',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'var(--bg-elevated, #14181F)',
+        borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.07))',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -51,8 +51,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '0.6rem',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             padding: '0.4rem 0.85rem',
             borderRadius: '6px',
             color: '#FFFFFF',
@@ -61,7 +61,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             cursor: 'pointer',
           }}
         >
-          <span style={{ color: 'var(--accent, #FF6B35)' }}>●</span>
+          <span style={{ color: 'var(--accent, #C86D51)' }}>●</span>
           <span>{activeProject?.name || 'Select Project'}</span>
           <span style={{ fontSize: '0.7rem', color: '#888888', marginLeft: '0.4rem' }}>▼</span>
         </button>
@@ -73,8 +73,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               top: '110%',
               left: '60px',
               width: '240px',
-              background: '#161B22',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#181D25',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '8px',
               boxShadow: '0 12px 28px rgba(0, 0, 0, 0.7)',
               zIndex: 100,
@@ -93,8 +93,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '0.82rem',
-                  color: p.id === activeProject?.id ? 'var(--accent, #FF6B35)' : '#ECECEC',
-                  background: p.id === activeProject?.id ? 'rgba(255, 107, 53, 0.1)' : 'transparent',
+                  color: p.id === activeProject?.id ? 'var(--accent, #C86D51)' : '#ECECEC',
+                  background: p.id === activeProject?.id ? 'rgba(200, 109, 81, 0.12)' : 'transparent',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -114,7 +114,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 marginTop: '0.3rem',
                 padding: '0.5rem 0.8rem',
                 fontSize: '0.8rem',
-                color: '#4DA6FF',
+                color: 'var(--recovered, #5B82A6)',
                 cursor: 'pointer',
                 fontWeight: 600,
               }}
@@ -160,25 +160,25 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           const isConditions =
             status === 'SHIP_WITH_CONDITIONS' || (status as any) === 'SHIP WITH CONDITIONS';
 
-          let bg = 'rgba(46, 204, 113, 0.12)';
-          let color = '#2ECC71';
-          let border = 'rgba(46, 204, 113, 0.3)';
+          let bg = 'rgba(78, 155, 111, 0.12)';
+          let color = 'var(--healthy, #4E9B6F)';
+          let border = 'rgba(78, 155, 111, 0.28)';
           let text = '✓ RELEASE GATE: PASSED';
 
           if (isBlocked) {
-            bg = 'rgba(255, 34, 0, 0.12)';
-            color = '#FF3311';
-            border = 'rgba(255, 34, 0, 0.3)';
+            bg = 'rgba(192, 92, 84, 0.12)';
+            color = 'var(--regression, #C05C54)';
+            border = 'rgba(192, 92, 84, 0.28)';
             text = '● RELEASE GATE: BLOCKED';
           } else if (isInsufficient) {
-            bg = 'rgba(192, 132, 252, 0.15)';
-            color = '#C084FC';
-            border = 'rgba(192, 132, 252, 0.35)';
+            bg = 'rgba(91, 130, 166, 0.12)';
+            color = 'var(--recovered, #5B82A6)';
+            border = 'rgba(91, 130, 166, 0.28)';
             text = '⚠ RELEASE GATE: INSUFFICIENT EVIDENCE';
           } else if (isConditions) {
-            bg = 'rgba(243, 156, 18, 0.15)';
-            color = '#F39C12';
-            border = 'rgba(243, 156, 18, 0.35)';
+            bg = 'rgba(198, 139, 69, 0.12)';
+            color = 'var(--warning, #C68B45)';
+            border = 'rgba(198, 139, 69, 0.28)';
             text = '⚡ RELEASE GATE: CONDITIONS';
           }
 
@@ -206,16 +206,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: 'var(--accent, #FF6B35)',
-            color: '#000000',
-            border: 'none',
+            background: 'var(--accent, #C86D51)',
+            color: '#FFFFFF',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             padding: '0.45rem 1.1rem',
             borderRadius: '6px',
             fontSize: '0.8rem',
             fontWeight: 700,
             cursor: 'pointer',
             letterSpacing: '0.04em',
-            boxShadow: '0 2px 10px rgba(255, 107, 53, 0.3)',
+            boxShadow: 'none',
           }}
         >
           + Run Evaluation
