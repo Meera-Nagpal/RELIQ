@@ -27,6 +27,7 @@ async function runTests() {
   const testRunnerDbDir = path.resolve(process.cwd(), 'data', 'test_runner_db');
   const testRunnerDbPath = path.join(testRunnerDbDir, 'test_runner.db');
   process.env.RELIQ_DB_PATH = testRunnerDbPath;
+  process.env.RELIQ_DB_DRIVER = 'sqlite';
 
   // Spin up lightweight Vite server for seamless TS module resolution
   const server = await createServer({
@@ -6870,6 +6871,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runDatasetDrivenUpgradeTests } = await import('./datasetDrivenUpgrade.test.mjs');
     await runDatasetDrivenUpgradeTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Cloud Migration & Evaluation Engine Upgrade Tests
+    // -------------------------------------------------------------
+    const { runCloudMigrationTests } = await import('./cloudMigration.test.mjs');
+    await runCloudMigrationTests({ test, asyncTest }, server);
   } finally {
     try {
       const { closeDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');
