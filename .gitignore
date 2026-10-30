@@ -11,6 +11,7 @@ node_modules/
 
 # Build outputs
 dist/
+dist-server/
 build/
 dist-ssr/
 *.local
@@ -35,6 +36,9 @@ pnpm-debug.log*
 /data/runs/
 /data/test_eval_fix_db/
 /data/test_dataset_upgrade_db/
+/data/test_runner_db/
+/data/test_db/
+*.db
 *.db-shm
 *.db-wal
 
