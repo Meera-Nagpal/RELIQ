@@ -5,20 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "start": "node src/server/server.ts",
+    "start": "node dist-server/server.js",
     "dev:server": "node src/server/server.ts",
-    "server": "node src/server/server.ts",
-    "build": "vite build && npm run build:api",
+    "server": "node dist-server/server.js",
+    "build": "vite build && npm run build:backend",
     "build:api": "esbuild src/server/vercelEntry.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=api/index.js",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "node tests/runTests.mjs",
     "test:web": "node tests/runTests.mjs",
-    "build:web": "tsc && vite build"
+    "build:web": "tsc && vite build",
+    "build:backend": "npm run build:api && esbuild src/server/server.ts --bundle --platform=node --format=esm --external:better-sqlite3 --external:vite --outfile=dist-server/server.js",
+    "migrate:supabase": "node scripts/migrate-to-supabase.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.88.0",
     "@react-three/fiber": "^8.15.0",
+    "@supabase/supabase-js": "^2.118.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.4.1",
     "@types/react": "^18.2.45",
@@ -36,6 +39,5 @@
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
     "zustand": "^4.5.0"
-  },
-  "devDependencies": {}
+  }
 }
