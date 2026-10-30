@@ -160,56 +160,50 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     switch (verdict) {
       case 'SHIP':
         return {
-          bg: 'linear-gradient(90deg, rgba(16, 50, 25, 0.95) 0%, rgba(10, 35, 18, 0.95) 100%)',
-          border: '#2ECC71',
-          color: '#2ECC71',
-          glow: 'rgba(46, 204, 113, 0.25)',
+          bg: 'rgba(78, 155, 111, 0.12)',
+          border: 'rgba(78, 155, 111, 0.4)',
+          color: '#4E9B6F',
           label: '✓ RECOMMENDATION: SHIP TO PRODUCTION',
         };
       case 'SHIP WITH CONDITIONS':
       case 'SHIP_WITH_CONDITIONS':
         return {
-          bg: 'linear-gradient(90deg, rgba(60, 45, 10, 0.95) 0%, rgba(40, 30, 8, 0.95) 100%)',
-          border: '#F39C12',
-          color: '#F39C12',
-          glow: 'rgba(243, 156, 18, 0.25)',
+          bg: 'rgba(198, 139, 69, 0.12)',
+          border: 'rgba(198, 139, 69, 0.4)',
+          color: '#C68B45',
           label: '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
         };
       case 'NO REGRESSION':
       case 'NO_REGRESSION':
         return {
-          bg: 'linear-gradient(90deg, rgba(15, 35, 55, 0.95) 0%, rgba(10, 25, 40, 0.95) 100%)',
-          border: '#4DA6FF',
-          color: '#4DA6FF',
-          glow: 'rgba(77, 166, 255, 0.25)',
+          bg: 'rgba(91, 130, 166, 0.12)',
+          border: 'rgba(91, 130, 166, 0.4)',
+          color: '#5B82A6',
           label: '✓ RECOMMENDATION: NO REGRESSION (PARITY MAINTAINED)',
         };
       case 'REGRESSION DETECTED':
       case 'REGRESSION_DETECTED':
         return {
-          bg: 'linear-gradient(90deg, rgba(55, 25, 15, 0.95) 0%, rgba(40, 18, 10, 0.95) 100%)',
-          border: '#E67E22',
-          color: '#E67E22',
-          glow: 'rgba(230, 126, 34, 0.25)',
+          bg: 'rgba(192, 92, 84, 0.12)',
+          border: 'rgba(192, 92, 84, 0.4)',
+          color: '#C05C54',
           label: '⚠ RECOMMENDATION: REGRESSION DETECTED',
         };
       case 'BLOCK RELEASE':
       case 'BLOCK':
         return {
-          bg: 'linear-gradient(90deg, rgba(60, 12, 10, 0.95) 0%, rgba(35, 8, 6, 0.95) 100%)',
-          border: '#FF3311',
-          color: '#FF3311',
-          glow: 'rgba(255, 51, 17, 0.3)',
+          bg: 'rgba(192, 92, 84, 0.16)',
+          border: 'rgba(192, 92, 84, 0.45)',
+          color: '#C05C54',
           label: '⛔ RECOMMENDATION: BLOCK RELEASE (CRITICAL VIOLATION)',
         };
       case 'INSUFFICIENT EVIDENCE':
       case 'INSUFFICIENT_EVIDENCE':
       default:
         return {
-          bg: 'linear-gradient(90deg, rgba(35, 25, 50, 0.95) 0%, rgba(25, 18, 35, 0.95) 100%)',
-          border: '#9B59B6',
-          color: '#C084FC',
-          glow: 'rgba(155, 89, 182, 0.25)',
+          bg: 'rgba(141, 152, 165, 0.12)',
+          border: 'rgba(141, 152, 165, 0.35)',
+          color: '#8D98A5',
           label: '❓ RECOMMENDATION: INSUFFICIENT EVIDENCE',
         };
     }
@@ -237,26 +231,26 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
       case 'LIVE':
         return {
           label: 'LIVE EVALUATION',
-          color: '#10B981',
-          bg: 'rgba(16, 185, 129, 0.12)',
-          border: 'rgba(16, 185, 129, 0.4)',
+          color: '#4E9B6F',
+          bg: 'rgba(78, 155, 111, 0.12)',
+          border: 'rgba(78, 155, 111, 0.3)',
           dot: true,
         };
       case 'REFERENCE':
         return {
           label: 'REFERENCE DATA',
-          color: '#A78BFA',
-          bg: 'rgba(167, 139, 250, 0.12)',
-          border: 'rgba(167, 139, 250, 0.4)',
+          color: '#8D98A5',
+          bg: 'rgba(141, 152, 165, 0.12)',
+          border: 'rgba(141, 152, 165, 0.3)',
           dot: false,
         };
       case 'SAVED':
       default:
         return {
           label: 'SAVED EVALUATION',
-          color: '#38BDF8',
-          bg: 'rgba(56, 189, 248, 0.12)',
-          border: 'rgba(56, 189, 248, 0.4)',
+          color: '#5B82A6',
+          bg: 'rgba(91, 130, 166, 0.12)',
+          border: 'rgba(91, 130, 166, 0.3)',
           dot: false,
         };
     }
@@ -285,28 +279,28 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   // Relative outcome strictly based on quality delta & existing comparison
   let relativeResult: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY' = 'PARITY';
   let relativeTitle = 'Statistical Parity';
-  let relativeBadgeColor = '#8899AA';
-  let relativeBadgeBg = 'rgba(255, 255, 255, 0.08)';
-  let relativeBorderColor = 'rgba(255, 255, 255, 0.15)';
+  let relativeBadgeColor = '#8D98A5';
+  let relativeBadgeBg = 'rgba(141, 152, 165, 0.12)';
+  let relativeBorderColor = 'rgba(141, 152, 165, 0.3)';
 
   if (qualityDelta !== null && qualityDelta > 0) {
     relativeResult = 'IMPROVEMENT';
     relativeTitle = 'Candidate Outperformed Baseline';
-    relativeBadgeColor = '#2ECC71';
-    relativeBadgeBg = 'rgba(46, 204, 113, 0.15)';
-    relativeBorderColor = 'rgba(46, 204, 113, 0.35)';
+    relativeBadgeColor = '#4E9B6F';
+    relativeBadgeBg = 'rgba(78, 155, 111, 0.12)';
+    relativeBorderColor = 'rgba(78, 155, 111, 0.3)';
   } else if (qualityDelta !== null && qualityDelta < 0) {
     relativeResult = 'REGRESSION';
     relativeTitle = 'Candidate Quality Regression';
-    relativeBadgeColor = '#EF4444';
-    relativeBadgeBg = 'rgba(239, 68, 68, 0.15)';
-    relativeBorderColor = 'rgba(239, 68, 68, 0.35)';
+    relativeBadgeColor = '#C05C54';
+    relativeBadgeBg = 'rgba(192, 92, 84, 0.12)';
+    relativeBorderColor = 'rgba(192, 92, 84, 0.3)';
   } else {
     relativeResult = 'PARITY';
     relativeTitle = 'Statistical Parity';
-    relativeBadgeColor = '#8899AA';
-    relativeBadgeBg = 'rgba(255, 255, 255, 0.08)';
-    relativeBorderColor = 'rgba(255, 255, 255, 0.15)';
+    relativeBadgeColor = '#8D98A5';
+    relativeBadgeBg = 'rgba(141, 152, 165, 0.12)';
+    relativeBorderColor = 'rgba(141, 152, 165, 0.3)';
   }
 
   // Concise 1-2 line comment generated from real metrics
@@ -373,18 +367,18 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     >
       <div
         style={{
-          background: '#0D1117',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-          borderRadius: '14px',
+          background: '#14181F',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '12px',
           width: '100%',
           maxWidth: '1000px',
           maxHeight: '92vh',
           overflowY: 'auto',
-          padding: '2.2rem',
+          padding: '2rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.6rem',
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.8)',
+          gap: '1.5rem',
+          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.6)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -392,7 +386,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 700, textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 700, textTransform: 'uppercase' }}>
                 RELIQ // CROSS-MODEL COMPARISON REPORT (ENGINE V2)
               </div>
               <span
@@ -416,8 +410,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       width: '6px',
                       height: '6px',
                       borderRadius: '50%',
-                      background: '#10B981',
-                      boxShadow: '0 0 6px #10B981',
+                      background: '#4E9B6F',
                       display: 'inline-block',
                     }}
                   />
@@ -426,7 +419,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.2rem 0' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ECEFF2', margin: '0.3rem 0 0.2rem 0' }}>
                 {effectiveTotalCases < 27
                   ? `${effectiveTotalCases}-SCENARIO EVALUATION REPORT`
                   : report.title}
@@ -438,9 +431,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   letterSpacing: '0.08em',
                   padding: '0.2rem 0.6rem',
                   borderRadius: '4px',
-                  background: 'rgba(56, 189, 248, 0.15)',
-                  color: '#38BDF8',
-                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  background: 'rgba(91, 130, 166, 0.12)',
+                  color: '#5B82A6',
+                  border: '1px solid rgba(91, 130, 166, 0.28)',
                   textTransform: 'uppercase',
                 }}
               >
@@ -450,14 +443,14 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       `EVALUATION COMPLETE (${effectiveTotalCases} OF ${targetRequiredCases} TEST CASES EVALUATED)`)}
               </span>
             </div>
-            <div style={{ fontSize: '0.82rem', color: '#8899AA' }}>
+            <div style={{ fontSize: '0.82rem', color: '#8D98A5' }}>
               Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({effectiveTotalCases} / {report.benchmarkCompletion?.isComplete ? effectiveTotalCases : targetRequiredCases} evaluated) • Generated: {new Date(report.timestamp).toLocaleString()}
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             {copiedNotification && (
-              <span style={{ fontSize: '0.75rem', color: '#2ECC71', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.75rem', color: '#4E9B6F', fontWeight: 600 }}>
                 ✓ Summary Copied!
               </span>
             )}
@@ -465,9 +458,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleCopySummary}
               title="Copy markdown summary to clipboard"
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#ECECEC',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ECEFF2',
                 padding: '0.45rem 0.8rem',
                 borderRadius: '6px',
                 fontSize: '0.75rem',
@@ -481,9 +474,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportJson}
               title="Download comparison report JSON"
               style={{
-                background: 'var(--accent, #FF6B35)',
+                background: 'var(--accent, #C86D51)',
                 border: 'none',
-                color: '#000000',
+                color: '#FFFFFF',
                 padding: '0.45rem 0.9rem',
                 borderRadius: '6px',
                 fontSize: '0.75rem',
@@ -497,9 +490,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportPdf}
               title="Download cross-model comparison report as real vector PDF"
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                color: '#FFFFFF',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ECEFF2',
                 padding: '0.45rem 0.9rem',
                 borderRadius: '6px',
                 fontSize: '0.75rem',
@@ -516,9 +509,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={onClose}
               aria-label="Close comparison report modal"
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#FFFFFF',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ECEFF2',
                 width: '34px',
                 height: '34px',
                 borderRadius: '50%',
@@ -537,24 +530,19 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {/* ── TOP PROMINENT WINNER / COMPARISON RESULT SECTION ── */}
         <div
           style={{
-            background: 'linear-gradient(180deg, rgba(22, 27, 36, 0.95) 0%, rgba(13, 17, 23, 0.98) 100%)',
-            border: `1px solid ${hasGateFailures ? 'rgba(239, 68, 68, 0.4)' : relativeBorderColor}`,
-            boxShadow: hasGateFailures
-              ? '0 0 25px rgba(239, 68, 68, 0.15)'
-              : relativeResult === 'IMPROVEMENT'
-              ? '0 0 25px rgba(46, 204, 113, 0.15)'
-              : '0 0 20px rgba(0, 0, 0, 0.5)',
-            borderRadius: '12px',
-            padding: '1.5rem 1.8rem',
+            background: '#181D25',
+            border: `1px solid ${hasGateFailures ? 'rgba(192, 92, 84, 0.35)' : relativeBorderColor}`,
+            borderRadius: '10px',
+            padding: '1.4rem 1.6rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1.2rem',
+            gap: '1.1rem',
           }}
         >
           {/* Top Tier: RELATIVE COMPARISON */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.6rem' }}>
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8899AA' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8D98A5' }}>
                 RELATIVE COMPARISON
               </div>
               <span
@@ -574,7 +562,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap', margin: '0.2rem 0' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: relativeBadgeColor, margin: 0 }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: relativeBadgeColor, margin: 0 }}>
                 {relativeResult === 'IMPROVEMENT'
                   ? `🏆 ${report.candidate.model || 'RELEASE CANDIDATE'}`
                   : relativeResult === 'REGRESSION'
@@ -582,10 +570,10 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   : relativeTitle}
               </h2>
               {baselineQuality !== null && candidateQuality !== null && (
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#E0E0E0', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#E0E0E0', fontFamily: 'monospace' }}>
                   Quality: <span style={{ color: '#AAAAAA' }}>{baselineQuality}%</span> → <span style={{ color: relativeBadgeColor }}>{candidateQuality}%</span>
                   {qualityDelta !== null && (
-                    <span style={{ fontSize: '0.9rem', color: qualityDelta >= 0 ? '#2ECC71' : '#EF4444', marginLeft: '0.4rem' }}>
+                    <span style={{ fontSize: '0.85rem', color: qualityDelta >= 0 ? '#4E9B6F' : '#C05C54', marginLeft: '0.4rem' }}>
                       ({qualityDelta >= 0 ? `+${qualityDelta.toFixed(1)}` : qualityDelta.toFixed(1)} pts)
                     </span>
                   )}
@@ -593,7 +581,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               )}
             </div>
 
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.88rem', color: '#B0C0D0', lineHeight: 1.5 }}>
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.86rem', color: '#B0C0D0', lineHeight: 1.5 }}>
               {conciseInterpretation}
             </p>
           </div>
@@ -602,14 +590,14 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           <div
             style={{
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              paddingTop: '1rem',
+              paddingTop: '0.9rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.4rem',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8899AA' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8D98A5' }}>
                 PRODUCTION RELEASE STATUS
               </div>
               <span
@@ -618,9 +606,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   fontWeight: 800,
                   padding: '0.2rem 0.65rem',
                   borderRadius: '4px',
-                  background: hasGateFailures ? 'rgba(239, 68, 68, 0.18)' : recStyle.bg,
-                  color: hasGateFailures ? '#FF4422' : recStyle.color,
-                  border: `1px solid ${hasGateFailures ? 'rgba(239, 68, 68, 0.4)' : recStyle.border}`,
+                  background: hasGateFailures ? 'rgba(192, 92, 84, 0.15)' : recStyle.bg,
+                  color: hasGateFailures ? '#C05C54' : recStyle.color,
+                  border: `1px solid ${hasGateFailures ? 'rgba(192, 92, 84, 0.35)' : recStyle.border}`,
                 }}
               >
                 {hasGateFailures
@@ -629,11 +617,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               </span>
             </div>
 
-            <div style={{ fontSize: '0.82rem', color: hasGateFailures ? '#FFAA88' : '#CCCCCC', lineHeight: 1.45 }}>
+            <div style={{ fontSize: '0.82rem', color: hasGateFailures ? '#E59892' : '#CCCCCC', lineHeight: 1.45 }}>
               {hasGateFailures ? (
                 <div>
                   <strong>Attention Required:</strong> {failedGates.map((g) => g.gate).join(', ')} failed validation.
-                  <span style={{ color: '#8899AA', display: 'block', fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                  <span style={{ color: '#8D98A5', display: 'block', fontSize: '0.75rem', marginTop: '0.2rem' }}>
                     Note: Although the candidate demonstrates relative quality improvement, production deployment remains gated until all release criteria pass.
                   </span>
                 </div>
@@ -651,9 +639,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           style={{
             background: recStyle.bg,
             border: `1px solid ${recStyle.border}`,
-            boxShadow: `0 0 25px ${recStyle.glow}`,
             borderRadius: '10px',
-            padding: '1.4rem 1.6rem',
+            padding: '1.2rem 1.5rem',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -844,9 +831,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {/* ── 1.2 Evaluation Configuration Disclosures (Honest Semantics) ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.8rem' }}>
           {/* Factuality & Groundedness */}
-          <div style={{ background: '#0D1117', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
+          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8899AA' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8D98A5' }}>
                 FACTUALITY / GROUNDEDNESS
               </span>
               <span
@@ -857,31 +844,31 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   fontWeight: 700,
                   background:
                     report.factualityGroundednessStatus === 'EXECUTED'
-                      ? 'rgba(46, 204, 113, 0.15)'
+                      ? 'rgba(78, 155, 111, 0.12)'
                       : report.factualityGroundednessStatus === 'CONFIGURED'
-                      ? 'rgba(77, 166, 255, 0.15)'
+                      ? 'rgba(91, 130, 166, 0.12)'
                       : report.factualityGroundednessStatus === 'NOT_APPLICABLE'
                       ? 'rgba(255, 255, 255, 0.08)'
                       : report.factualityGroundednessStatus === 'FAILED'
-                      ? 'rgba(255, 51, 17, 0.15)'
+                      ? 'rgba(192, 92, 84, 0.12)'
                       : 'rgba(255, 255, 255, 0.06)',
                   color:
                     report.factualityGroundednessStatus === 'EXECUTED'
-                      ? '#2ECC71'
+                      ? '#4E9B6F'
                       : report.factualityGroundednessStatus === 'CONFIGURED'
-                      ? '#4DA6FF'
+                      ? '#5B82A6'
                       : report.factualityGroundednessStatus === 'NOT_APPLICABLE'
-                      ? '#A0AEC0'
+                      ? '#8D98A5'
                       : report.factualityGroundednessStatus === 'FAILED'
-                      ? '#FF4422'
+                      ? '#C05C54'
                       : '#CCCCCC',
                   border: `1px solid ${
                     report.factualityGroundednessStatus === 'EXECUTED'
-                      ? 'rgba(46, 204, 113, 0.3)'
+                      ? 'rgba(78, 155, 111, 0.3)'
                       : report.factualityGroundednessStatus === 'CONFIGURED'
-                      ? 'rgba(77, 166, 255, 0.3)'
+                      ? 'rgba(91, 130, 166, 0.3)'
                       : report.factualityGroundednessStatus === 'FAILED'
-                      ? 'rgba(255, 51, 17, 0.3)'
+                      ? 'rgba(192, 92, 84, 0.3)'
                       : 'rgba(255, 255, 255, 0.12)'
                   }`,
                 }}
@@ -897,11 +884,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               {report.factualityGroundednessStatus === 'EXECUTED' ? (
                 <div>
                   <div>Active. Verifies responses against explicit benchmark evidence (numbers, currencies, order IDs, discount codes, dates, and checkout policies). Non-applicable cases are explicitly marked N/A.</div>
-                  <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.8rem', fontSize: '0.72rem', color: '#38BDF8', flexWrap: 'wrap' }}>
+                  <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.8rem', fontSize: '0.72rem', color: '#5B82A6', flexWrap: 'wrap' }}>
                     <span>Applicable: <strong style={{ color: '#FFFFFF' }}>{report.groundednessApplicableCases || 0}</strong></span>
                     <span>Evaluated: <strong style={{ color: '#FFFFFF' }}>{report.groundednessEvaluatedCases || 0}</strong></span>
                     <span>Not Applicable: <strong style={{ color: '#FFFFFF' }}>{Math.max(0, (report.totalCases || 0) - (report.groundednessApplicableCases || 0))}</strong></span>
-                    <span>Inconsistencies: <strong style={{ color: (report.groundednessFailedCases || 0) > 0 ? '#EF4444' : '#10B981' }}>{report.groundednessFailedCases || 0}</strong></span>
+                    <span>Inconsistencies: <strong style={{ color: (report.groundednessFailedCases || 0) > 0 ? '#C05C54' : '#4E9B6F' }}>{report.groundednessFailedCases || 0}</strong></span>
                     {report.groundednessAvgScore !== null && report.groundednessAvgScore !== undefined && (
                       <span>Avg Score: <strong style={{ color: '#FFFFFF' }}>{(report.groundednessAvgScore * 100).toFixed(1)}%</strong></span>
                     )}
@@ -918,9 +905,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Semantic Evaluation (Local Lexical / Semantic Similarity) */}
-          <div style={{ background: '#0D1117', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
+          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8899AA' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8D98A5' }}>
                 LOCAL LEXICAL / SEMANTIC SIMILARITY
               </span>
               <span
@@ -931,27 +918,27 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   fontWeight: 700,
                   background:
                     report.semanticEvaluationStatus === 'EXECUTED'
-                      ? 'rgba(46, 204, 113, 0.15)'
+                      ? 'rgba(78, 155, 111, 0.12)'
                       : report.semanticEvaluationStatus === 'CONFIGURED'
-                      ? 'rgba(77, 166, 255, 0.15)'
+                      ? 'rgba(91, 130, 166, 0.12)'
                       : report.semanticEvaluationStatus === 'FAILED'
-                      ? 'rgba(255, 51, 17, 0.15)'
+                      ? 'rgba(192, 92, 84, 0.12)'
                       : 'rgba(255, 255, 255, 0.06)',
                   color:
                     report.semanticEvaluationStatus === 'EXECUTED'
-                      ? '#2ECC71'
+                      ? '#4E9B6F'
                       : report.semanticEvaluationStatus === 'CONFIGURED'
-                      ? '#4DA6FF'
+                      ? '#5B82A6'
                       : report.semanticEvaluationStatus === 'FAILED'
-                      ? '#FF4422'
+                      ? '#C05C54'
                       : '#CCCCCC',
                   border: `1px solid ${
                     report.semanticEvaluationStatus === 'EXECUTED'
-                      ? 'rgba(46, 204, 113, 0.3)'
+                      ? 'rgba(78, 155, 111, 0.3)'
                       : report.semanticEvaluationStatus === 'CONFIGURED'
-                      ? 'rgba(77, 166, 255, 0.3)'
+                      ? 'rgba(91, 130, 166, 0.3)'
                       : report.semanticEvaluationStatus === 'FAILED'
-                      ? 'rgba(255, 51, 17, 0.3)'
+                      ? 'rgba(192, 92, 84, 0.3)'
                       : 'rgba(255, 255, 255, 0.12)'
                   }`,
                 }}
@@ -971,9 +958,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* LLM-as-a-Judge */}
-          <div style={{ background: '#0D1117', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
+          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8899AA' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8D98A5' }}>
                 LLM-AS-A-JUDGE
               </span>
               <span
@@ -984,27 +971,27 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   fontWeight: 700,
                   background:
                     report.llmJudgeStatus === 'EXECUTED'
-                      ? 'rgba(46, 204, 113, 0.15)'
+                      ? 'rgba(78, 155, 111, 0.12)'
                       : report.llmJudgeStatus === 'CONFIGURED'
-                      ? 'rgba(77, 166, 255, 0.15)'
+                      ? 'rgba(91, 130, 166, 0.12)'
                       : report.llmJudgeStatus === 'FAILED'
-                      ? 'rgba(255, 51, 17, 0.15)'
+                      ? 'rgba(192, 92, 84, 0.12)'
                       : 'rgba(255, 255, 255, 0.06)',
                   color:
                     report.llmJudgeStatus === 'EXECUTED'
-                      ? '#2ECC71'
+                      ? '#4E9B6F'
                       : report.llmJudgeStatus === 'CONFIGURED'
-                      ? '#4DA6FF'
+                      ? '#5B82A6'
                       : report.llmJudgeStatus === 'FAILED'
-                      ? '#FF4422'
+                      ? '#C05C54'
                       : '#CCCCCC',
                   border: `1px solid ${
                     report.llmJudgeStatus === 'EXECUTED'
-                      ? 'rgba(46, 204, 113, 0.3)'
+                      ? 'rgba(78, 155, 111, 0.3)'
                       : report.llmJudgeStatus === 'CONFIGURED'
-                      ? 'rgba(77, 166, 255, 0.3)'
+                      ? 'rgba(91, 130, 166, 0.3)'
                       : report.llmJudgeStatus === 'FAILED'
-                      ? 'rgba(255, 51, 17, 0.3)'
+                      ? 'rgba(192, 92, 84, 0.3)'
                       : 'rgba(255, 255, 255, 0.12)'
                   }`,
                 }}
@@ -1016,7 +1003,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               {report.llmJudgeStatus === 'EXECUTED' ? (
                 <div>
                   <div>Active ({report.judgeModel || 'Independent Groq Model'}). Qualitative evaluation executed across correctness, adherence, relevance, completeness, and safety.</div>
-                  <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.8rem', fontSize: '0.72rem', color: '#4DA6FF' }}>
+                  <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.8rem', fontSize: '0.72rem', color: '#5B82A6' }}>
                     <span>Cases Evaluated: <strong style={{ color: '#FFFFFF' }}>{report.judgeEvaluatedCases || 0}</strong></span>
                     {report.judgeCostUsd !== null && report.judgeCostUsd !== undefined && (
                       <span>Judge Cost: <strong style={{ color: '#FFFFFF' }}>${report.judgeCostUsd.toFixed(4)}</strong></span>
@@ -1178,18 +1165,17 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               {modeBadge.dot && (
                 <span
                   style={{
-                    width: '7px',
-                    height: '7px',
+                    width: '6px',
+                    height: '6px',
                     borderRadius: '50%',
-                    background: '#10B981',
-                    boxShadow: '0 0 6px #10B981',
+                    background: '#4E9B6F',
                     display: 'inline-block',
                   }}
                 />
               )}
               {modeBadge.label}: {report.baseline.provider.toUpperCase()} ({report.baseline.model}) vs {report.candidate.provider.toUpperCase()} ({report.candidate.model})
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#8899AA' }}>
+            <div style={{ fontSize: '0.75rem', color: '#8D98A5' }}>
               Recommendation: <strong style={{ color: recStyle.color }}>{normalizedRecommendation}</strong>
             </div>
           </div>
@@ -1218,12 +1204,12 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Evaluation Coverage</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.baselineValue ?? 100) < 80 ? '#FF4422' : '#2ECC71', fontFamily: 'monospace', fontWeight: 600 }}>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.baselineValue ?? 100) < 80 ? '#C05C54' : '#4E9B6F', fontFamily: 'monospace', fontWeight: 600 }}>
                   {report.metrics.evaluationCoverage?.baselineValue !== null && report.metrics.evaluationCoverage?.baselineValue !== undefined
                     ? `${report.metrics.evaluationCoverage.baselineValue.toFixed(1)}%`
                     : '—'}
                 </td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.candidateValue ?? 100) < 80 ? '#FF4422' : '#2ECC71', fontFamily: 'monospace', fontWeight: 600 }}>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.evaluationCoverage?.candidateValue ?? 100) < 80 ? '#C05C54' : '#4E9B6F', fontFamily: 'monospace', fontWeight: 600 }}>
                   {report.metrics.evaluationCoverage?.candidateValue !== null && report.metrics.evaluationCoverage?.candidateValue !== undefined
                     ? `${report.metrics.evaluationCoverage.candidateValue.toFixed(1)}%`
                     : '—'}
@@ -1253,13 +1239,13 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Rate Limits (HTTP 429)</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.rateLimitCount?.baselineValue ?? 0) > 0 ? '#FFAA44' : '#2ECC71', fontFamily: 'monospace' }}>{report.metrics.rateLimitCount?.baselineValue ?? 0}</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.rateLimitCount?.candidateValue ?? 0) > 0 ? '#FFAA44' : '#2ECC71', fontFamily: 'monospace' }}>{report.metrics.rateLimitCount?.candidateValue ?? 0}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.rateLimitCount?.baselineValue ?? 0) > 0 ? '#C68B45' : '#4E9B6F', fontFamily: 'monospace' }}>{report.metrics.rateLimitCount?.baselineValue ?? 0}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.rateLimitCount?.candidateValue ?? 0) > 0 ? '#C68B45' : '#4E9B6F', fontFamily: 'monospace' }}>{report.metrics.rateLimitCount?.candidateValue ?? 0}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Provider Errors</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.providerErrorCount?.baselineValue || 0) > 0 ? '#FF4422' : '#2ECC71', fontFamily: 'monospace' }}>{report.metrics.providerErrorCount?.baselineValue || 0}</td>
-                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.providerErrorCount?.candidateValue || 0) > 0 ? '#FF4422' : '#2ECC71', fontFamily: 'monospace' }}>{report.metrics.providerErrorCount?.candidateValue || 0}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.providerErrorCount?.baselineValue || 0) > 0 ? '#C05C54' : '#4E9B6F', fontFamily: 'monospace' }}>{report.metrics.providerErrorCount?.baselineValue || 0}</td>
+                <td style={{ padding: '0.55rem 1.2rem', color: (report.metrics.providerErrorCount?.candidateValue || 0) > 0 ? '#C05C54' : '#4E9B6F', fontFamily: 'monospace' }}>{report.metrics.providerErrorCount?.candidateValue || 0}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '0.55rem 1.2rem', color: '#CCCCCC' }}>Observed API Round-Trip Latency (Mean)</td>
@@ -1290,20 +1276,20 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {/* ── 2. Winner Determination & Overall Deltas ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr', gap: '1rem' }}>
           {/* Winner Card */}
-          <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
+          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5', letterSpacing: '0.1em' }}>
               Comparison Winner
             </div>
             <div
               style={{
-                fontSize: '1.25rem',
+                fontSize: '1.2rem',
                 fontWeight: 800,
                 color:
                   report.winner === 'candidate' || (qualityDelta !== null && qualityDelta > 0)
-                    ? '#4DA6FF'
+                    ? '#5B82A6'
                     : report.winner === 'baseline' || (qualityDelta !== null && qualityDelta < 0)
-                    ? '#2ECC71'
-                    : '#FFAA44',
+                    ? '#4E9B6F'
+                    : '#8D98A5',
                 margin: '0.3rem 0',
               }}
             >
@@ -1313,17 +1299,17 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 ? 'Production Baseline'
                 : 'Statistical Parity'}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#8899AA', lineHeight: 1.35 }}>
+            <div style={{ fontSize: '0.72rem', color: '#8D98A5', lineHeight: 1.35 }}>
               {normalizedWinnerReason}
             </div>
           </div>
 
           {/* Quality Delta */}
-          <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888' }}>
+          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Quality Delta
             </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: report.qualityDelta === null ? '#888888' : report.qualityDelta >= 0 ? '#2ECC71' : '#FF4422', margin: '0.3rem 0' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: report.qualityDelta === null ? '#8D98A5' : report.qualityDelta >= 0 ? '#4E9B6F' : '#C05C54', margin: '0.3rem 0' }}>
               {report.qualityDelta !== null ? (report.qualityDelta >= 0 ? `+${report.qualityDelta}%` : `${report.qualityDelta}%`) : '—'}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#778899' }}>
@@ -1332,11 +1318,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Latency Delta */}
-          <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888' }}>
+          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Observed API Latency
             </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: report.latencyDelta === null ? '#888888' : report.latencyDelta <= 0 ? '#2ECC71' : '#FFAA44', margin: '0.3rem 0' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: report.latencyDelta === null ? '#8D98A5' : report.latencyDelta <= 0 ? '#4E9B6F' : '#C68B45', margin: '0.3rem 0' }}>
               {report.latencyDelta !== null ? (report.latencyDelta > 0 ? `+${report.latencyDelta}ms` : `${report.latencyDelta}ms`) : '—'}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#778899' }}>
@@ -1345,11 +1331,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Token Delta */}
-          <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888' }}>
+          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Token Delta
             </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: report.tokenDelta === null ? '#888888' : report.tokenDelta <= 0 ? '#2ECC71' : '#CCCCCC', margin: '0.3rem 0' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: report.tokenDelta === null ? '#8D98A5' : report.tokenDelta <= 0 ? '#4E9B6F' : '#CCCCCC', margin: '0.3rem 0' }}>
               {report.tokenDelta !== null ? (report.tokenDelta > 0 ? `+${report.tokenDelta.toLocaleString()}` : report.tokenDelta.toLocaleString()) : '—'}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#778899' }}>
@@ -1358,11 +1344,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Cost Delta */}
-          <div style={{ background: '#0D1117', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#888888' }}>
+          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Cost Delta
             </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: report.costDelta === null ? '#888888' : report.costDelta <= 0 ? '#2ECC71' : '#FFAA44', margin: '0.3rem 0' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: report.costDelta === null ? '#8D98A5' : report.costDelta <= 0 ? '#4E9B6F' : '#C68B45', margin: '0.3rem 0' }}>
               {report.costDelta !== null ? (report.costDelta >= 0 ? `+$${report.costDelta.toFixed(Math.abs(report.costDelta) < 0.01 ? 5 : 4)}` : `-$${Math.abs(report.costDelta).toFixed(Math.abs(report.costDelta) < 0.01 ? 5 : 4)}`) : '—'}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#778899' }}>
@@ -1375,7 +1361,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {report.dimensions && (
           <div
             style={{
-              background: '#0D1117',
+              background: '#181D25',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: '8px',
               padding: '1rem 1.2rem',
@@ -1409,7 +1395,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   padding: '0.75rem 0.9rem',
                 }}
               >
-                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Quality Dimension</div>
+                <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase' }}>Quality Dimension</div>
                 <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span
                     style={{
@@ -1419,22 +1405,22 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       borderRadius: '4px',
                       background:
                         report.dimensions.quality === 'IMPROVEMENT'
-                          ? 'rgba(46, 204, 113, 0.15)'
+                          ? 'rgba(78, 155, 111, 0.12)'
                           : report.dimensions.quality === 'REGRESSION'
-                          ? 'rgba(255, 51, 17, 0.15)'
-                          : 'rgba(255, 255, 255, 0.08)',
+                          ? 'rgba(192, 92, 84, 0.12)'
+                          : 'rgba(141, 152, 165, 0.12)',
                       color:
                         report.dimensions.quality === 'IMPROVEMENT'
-                          ? '#2ECC71'
+                          ? '#4E9B6F'
                           : report.dimensions.quality === 'REGRESSION'
-                          ? '#FF4422'
-                          : '#8899AA',
+                          ? '#C05C54'
+                          : '#8D98A5',
                     }}
                   >
                     {report.dimensions.quality}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
                   Net criteria accuracy & benchmark answer quality
                 </div>
               </div>
@@ -1448,7 +1434,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   padding: '0.75rem 0.9rem',
                 }}
               >
-                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Latency Dimension</div>
+                <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase' }}>Latency Dimension</div>
                 <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span
                     style={{
@@ -1458,22 +1444,22 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       borderRadius: '4px',
                       background:
                         report.dimensions.latency === 'IMPROVEMENT'
-                          ? 'rgba(46, 204, 113, 0.15)'
+                          ? 'rgba(78, 155, 111, 0.12)'
                           : report.dimensions.latency === 'REGRESSION'
-                          ? 'rgba(243, 156, 18, 0.15)'
-                          : 'rgba(255, 255, 255, 0.08)',
+                          ? 'rgba(198, 139, 69, 0.12)'
+                          : 'rgba(141, 152, 165, 0.12)',
                       color:
                         report.dimensions.latency === 'IMPROVEMENT'
-                          ? '#2ECC71'
+                          ? '#4E9B6F'
                           : report.dimensions.latency === 'REGRESSION'
-                          ? '#F39C12'
-                          : '#8899AA',
+                          ? '#C68B45'
+                          : '#8D98A5',
                     }}
                   >
                     {report.dimensions.latency}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
                   Round-trip API response times (successful calls only)
                 </div>
               </div>
@@ -1487,7 +1473,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   padding: '0.75rem 0.9rem',
                 }}
               >
-                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Cost Dimension</div>
+                <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase' }}>Cost Dimension</div>
                 <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span
                     style={{
@@ -1497,22 +1483,22 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       borderRadius: '4px',
                       background:
                         report.dimensions.cost === 'IMPROVEMENT'
-                          ? 'rgba(46, 204, 113, 0.15)'
+                          ? 'rgba(78, 155, 111, 0.12)'
                           : report.dimensions.cost === 'REGRESSION'
-                          ? 'rgba(243, 156, 18, 0.15)'
-                          : 'rgba(255, 255, 255, 0.08)',
+                          ? 'rgba(198, 139, 69, 0.12)'
+                          : 'rgba(141, 152, 165, 0.12)',
                       color:
                         report.dimensions.cost === 'IMPROVEMENT'
-                          ? '#2ECC71'
+                          ? '#4E9B6F'
                           : report.dimensions.cost === 'REGRESSION'
-                          ? '#F39C12'
-                          : '#8899AA',
+                          ? '#C68B45'
+                          : '#8D98A5',
                     }}
                   >
                     {report.dimensions.cost}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
                   Model token usage & normalized inference pricing
                 </div>
               </div>
@@ -1526,7 +1512,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   padding: '0.75rem 0.9rem',
                 }}
               >
-                <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase' }}>Reliability Dimension</div>
+                <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase' }}>Reliability Dimension</div>
                 <div style={{ margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span
                     style={{
@@ -1536,22 +1522,22 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       borderRadius: '4px',
                       background:
                         report.dimensions.reliability === 'IMPROVEMENT'
-                          ? 'rgba(46, 204, 113, 0.15)'
+                          ? 'rgba(78, 155, 111, 0.12)'
                           : report.dimensions.reliability === 'REGRESSION'
-                          ? 'rgba(255, 51, 17, 0.15)'
-                          : 'rgba(255, 255, 255, 0.08)',
+                          ? 'rgba(192, 92, 84, 0.12)'
+                          : 'rgba(141, 152, 165, 0.12)',
                       color:
                         report.dimensions.reliability === 'IMPROVEMENT'
-                          ? '#2ECC71'
+                          ? '#4E9B6F'
                           : report.dimensions.reliability === 'REGRESSION'
-                          ? '#FF4422'
-                          : '#8899AA',
+                          ? '#C05C54'
+                          : '#8D98A5',
                     }}
                   >
                     {report.dimensions.reliability}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#667788' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
                   Transport success, timeouts, rate limits, and network errors
                 </div>
               </div>
@@ -1563,7 +1549,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {sanitizedReleaseGates && sanitizedReleaseGates.length > 0 && (
           <div
             style={{
-              background: '#0D1117',
+              background: '#181D25',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: '8px',
               padding: '1.1rem 1.3rem',
@@ -1585,7 +1571,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   fontWeight: 800,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: '#8899AA',
+                  color: '#8D98A5',
                 }}
               >
                 PRODUCTION RELEASE GATES AUDIT ({sanitizedReleaseGates.filter((g) => g.status === 'PASS').length}/{sanitizedReleaseGates.length} PASSING)
@@ -1598,22 +1584,22 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   borderRadius: '4px',
                   background:
                     hasGateFailures
-                      ? 'rgba(255, 51, 17, 0.2)'
+                      ? 'rgba(192, 92, 84, 0.15)'
                       : warningGates.length > 0
-                      ? 'rgba(245, 158, 11, 0.2)'
-                      : 'rgba(46, 204, 113, 0.2)',
+                      ? 'rgba(198, 139, 69, 0.15)'
+                      : 'rgba(78, 155, 111, 0.15)',
                   color:
                     hasGateFailures
-                      ? '#FF4422'
+                      ? '#C05C54'
                       : warningGates.length > 0
-                      ? '#F59E0B'
-                      : '#2ECC71',
+                      ? '#C68B45'
+                      : '#4E9B6F',
                   border: `1px solid ${
                     hasGateFailures
-                      ? 'rgba(255, 51, 17, 0.4)'
+                      ? 'rgba(192, 92, 84, 0.35)'
                       : warningGates.length > 0
-                      ? 'rgba(245, 158, 11, 0.4)'
-                      : 'rgba(46, 204, 113, 0.4)'
+                      ? 'rgba(198, 139, 69, 0.35)'
+                      : 'rgba(78, 155, 111, 0.35)'
                   }`,
                 }}
               >
@@ -1626,14 +1612,14 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 const isPass = gate.status === 'PASS';
                 const isFail = gate.status === 'FAIL';
                 const isWarn = gate.status === 'WARNING';
-                const statusColor = isPass ? '#2ECC71' : isFail ? '#FF4422' : isWarn ? '#F39C12' : '#C084FC';
+                const statusColor = isPass ? '#4E9B6F' : isFail ? '#C05C54' : isWarn ? '#C68B45' : '#8D98A5';
                 const statusBg = isPass
-                  ? 'rgba(46, 204, 113, 0.12)'
+                  ? 'rgba(78, 155, 111, 0.12)'
                   : isFail
-                  ? 'rgba(255, 51, 17, 0.12)'
+                  ? 'rgba(192, 92, 84, 0.12)'
                   : isWarn
-                  ? 'rgba(243, 156, 18, 0.12)'
-                  : 'rgba(192, 132, 252, 0.12)';
+                  ? 'rgba(198, 139, 69, 0.12)'
+                  : 'rgba(141, 152, 165, 0.12)';
 
                 return (
                   <div
@@ -1652,7 +1638,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <span style={{ fontSize: '0.62rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS:</span>
+                        <span style={{ fontSize: '0.62rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS:</span>
                         <span
                           style={{
                             fontSize: '0.65rem',
@@ -1671,15 +1657,15 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.62rem' }}>
-                        <span style={{ color: '#778899', textTransform: 'uppercase' }}>ON FAILURE:</span>
+                        <span style={{ color: '#8D98A5', textTransform: 'uppercase' }}>ON FAILURE:</span>
                         <span
                           style={{
                             fontWeight: 700,
-                            color: gate.isBlocking ? '#FF6B6B' : '#F59E0B',
-                            background: gate.isBlocking ? 'rgba(255, 107, 107, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                            color: gate.isBlocking ? '#C05C54' : '#C68B45',
+                            background: gate.isBlocking ? 'rgba(192, 92, 84, 0.12)' : 'rgba(198, 139, 69, 0.12)',
                             padding: '0.08rem 0.35rem',
                             borderRadius: '2px',
-                            border: `1px solid ${gate.isBlocking ? 'rgba(255, 107, 107, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                            border: `1px solid ${gate.isBlocking ? 'rgba(192, 92, 84, 0.3)' : 'rgba(198, 139, 69, 0.3)'}`,
                           }}
                         >
                           {gate.isBlocking ? 'BLOCK' : 'WARN'}
@@ -1689,13 +1675,13 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
                     <div>
                       <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{gate.gate}</span>
-                      <span style={{ display: 'block', fontSize: '0.66rem', color: '#778899' }}>{gate.category}</span>
+                      <span style={{ display: 'block', fontSize: '0.66rem', color: '#8D98A5' }}>{gate.category}</span>
                     </div>
 
                     <div style={{ fontFamily: 'monospace', fontSize: '0.74rem' }}>
                       <span style={{ color: '#E0E0E0' }}>{gate.observed}</span>
                       {gate.threshold && (
-                        <span style={{ color: '#8899AA', display: 'block', fontSize: '0.68rem' }}>
+                        <span style={{ color: '#8D98A5', display: 'block', fontSize: '0.68rem' }}>
                           Target: {gate.threshold}
                         </span>
                       )}
@@ -1736,13 +1722,13 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               <span style={{ color: '#888888', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase' }}>
                 Judge Cost ({report.judgeModel || 'Groq Judge'})
               </span>
-              <span style={{ color: '#4E95FF', fontWeight: 700 }}>
+              <span style={{ color: '#5B82A6', fontWeight: 700 }}>
                 ${report.judgeCostUsd.toFixed(4)}
               </span>
             </div>
             <div>
               <span style={{ color: '#888888', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase' }}>Total Evaluation Infrastructure Cost</span>
-              <span style={{ color: '#2ECC71', fontWeight: 700 }}>
+              <span style={{ color: '#4E9B6F', fontWeight: 700 }}>
                 {report.totalInfrastructureCostUsd !== null && report.totalInfrastructureCostUsd !== undefined ? `$${report.totalInfrastructureCostUsd.toFixed(4)}` : '—'}
               </span>
             </div>
@@ -1755,7 +1741,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             Metric-by-Metric Detailed Comparison
           </h3>
 
-          <div style={{ background: '#0D1117', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
+          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
             <div
               style={{
                 display: 'grid',
@@ -1803,7 +1789,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   {m.candidateValue !== null ? (m.unit === '$' ? `$${m.candidateValue.toFixed(m.candidateValue < 0.01 ? 5 : 4)}` : `${m.candidateValue.toLocaleString()} ${m.unit}`) : '—'}
                 </div>
 
-                <div style={{ color: (m.assessment === 'IMPROVEMENT' || (m.isImprovement === true && m.absoluteDelta !== 0)) ? '#2ECC71' : (m.assessment === 'REGRESSION' || (m.isImprovement === false && m.absoluteDelta !== 0)) ? '#FF4422' : '#888888', fontFamily: 'monospace', fontWeight: 700 }}>
+                <div style={{ color: (m.assessment === 'IMPROVEMENT' || (m.isImprovement === true && m.absoluteDelta !== 0)) ? '#4E9B6F' : (m.assessment === 'REGRESSION' || (m.isImprovement === false && m.absoluteDelta !== 0)) ? '#C05C54' : '#8D98A5', fontFamily: 'monospace', fontWeight: 700 }}>
                   {m.absoluteDelta !== null ? (
                     m.unit === '$'
                       ? (m.absoluteDelta >= 0 ? `+$${m.absoluteDelta.toFixed(Math.abs(m.absoluteDelta) < 0.01 ? 5 : 4)}` : `-$${Math.abs(m.absoluteDelta).toFixed(Math.abs(m.absoluteDelta) < 0.01 ? 5 : 4)}`)
@@ -1811,7 +1797,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   ) : '—'}
                 </div>
 
-                <div style={{ color: (m.assessment === 'IMPROVEMENT' || (m.isImprovement === true && m.absoluteDelta !== 0)) ? '#2ECC71' : (m.assessment === 'REGRESSION' || (m.isImprovement === false && m.absoluteDelta !== 0)) ? '#FF4422' : '#888888', fontFamily: 'monospace', fontWeight: 700 }}>
+                <div style={{ color: (m.assessment === 'IMPROVEMENT' || (m.isImprovement === true && m.absoluteDelta !== 0)) ? '#4E9B6F' : (m.assessment === 'REGRESSION' || (m.isImprovement === false && m.absoluteDelta !== 0)) ? '#C05C54' : '#8D98A5', fontFamily: 'monospace', fontWeight: 700 }}>
                   {m.percentageDelta !== null ? (m.percentageDelta > 0 ? `+${m.percentageDelta}%` : `${m.percentageDelta}%`) : '—'}
                 </div>
 
@@ -1823,8 +1809,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                         padding: '0.15rem 0.5rem',
                         borderRadius: '3px',
                         fontWeight: 700,
-                        background: 'rgba(46, 204, 113, 0.15)',
-                        color: '#2ECC71',
+                        background: 'rgba(78, 155, 111, 0.12)',
+                        color: '#4E9B6F',
                       }}
                     >
                       IMPROVEMENT
@@ -1836,8 +1822,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                         padding: '0.15rem 0.5rem',
                         borderRadius: '3px',
                         fontWeight: 700,
-                        background: 'rgba(255, 51, 17, 0.15)',
-                        color: '#FF4422',
+                        background: 'rgba(192, 92, 84, 0.12)',
+                        color: '#C05C54',
                       }}
                     >
                       REGRESSION
@@ -1849,8 +1835,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                         padding: '0.15rem 0.5rem',
                         borderRadius: '3px',
                         fontWeight: 700,
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        color: '#8899AA',
+                        background: 'rgba(141, 152, 165, 0.12)',
+                        color: '#8D98A5',
                       }}
                     >
                       PARITY
@@ -1877,10 +1863,10 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
               {/* Overall Pass / Fail Pills */}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: '#2ECC71', background: 'rgba(46, 204, 113, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(46, 204, 113, 0.3)' }}>
+                <span style={{ fontSize: '0.8rem', color: '#4E9B6F', background: 'rgba(78, 155, 111, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(78, 155, 111, 0.28)' }}>
                   {passedCasesCount} PASS
                 </span>
-                <span style={{ fontSize: '0.8rem', color: '#FF4422', background: 'rgba(255, 68, 34, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(255, 68, 34, 0.3)' }}>
+                <span style={{ fontSize: '0.8rem', color: '#C05C54', background: 'rgba(192, 92, 84, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(192, 92, 84, 0.28)' }}>
                   {validCaseResults.length - passedCasesCount} FAIL
                 </span>
               </div>
@@ -1897,8 +1883,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     fontSize: '0.76rem',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    background: selectedSection === 'ALL' ? 'var(--accent, #FF6B35)' : 'transparent',
-                    color: selectedSection === 'ALL' ? '#000000' : '#CCCCCC',
+                    background: selectedSection === 'ALL' ? 'var(--accent, #C86D51)' : 'transparent',
+                    color: selectedSection === 'ALL' ? '#FFFFFF' : '#CCCCCC',
                     border: selectedSection === 'ALL' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
                   }}
                 >
@@ -1914,9 +1900,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       fontSize: '0.76rem',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      background: selectedSection === sec.name ? 'rgba(77, 166, 255, 0.2)' : 'transparent',
-                      color: selectedSection === sec.name ? '#4DA6FF' : '#CCCCCC',
-                      border: selectedSection === sec.name ? '1px solid #4DA6FF' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: selectedSection === sec.name ? 'rgba(91, 130, 166, 0.2)' : 'transparent',
+                      color: selectedSection === sec.name ? '#5B82A6' : '#CCCCCC',
+                      border: selectedSection === sec.name ? '1px solid #5B82A6' : '1px solid rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.4rem',
@@ -1928,8 +1914,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                         fontSize: '0.66rem',
                         padding: '0.1rem 0.35rem',
                         borderRadius: '3px',
-                        background: sec.passRate >= 80 ? 'rgba(46, 204, 113, 0.2)' : 'rgba(255, 68, 34, 0.2)',
-                        color: sec.passRate >= 80 ? '#2ECC71' : '#FF4422',
+                        background: sec.passRate >= 80 ? 'rgba(78, 155, 111, 0.2)' : 'rgba(192, 92, 84, 0.2)',
+                        color: sec.passRate >= 80 ? '#4E9B6F' : '#C05C54',
                       }}
                     >
                       {sec.passRate}%
@@ -1944,20 +1930,20 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               .filter((sec) => selectedSection === 'ALL' || selectedSection === sec.name)
               .map((sec) => {
                 const secStatusBg = sec.status === 'PASS'
-                  ? 'rgba(46, 204, 113, 0.15)'
+                  ? 'rgba(78, 155, 111, 0.12)'
                   : sec.status === 'WARN'
-                  ? 'rgba(243, 156, 18, 0.15)'
-                  : 'rgba(255, 68, 34, 0.15)';
+                  ? 'rgba(198, 139, 69, 0.12)'
+                  : 'rgba(192, 92, 84, 0.12)';
                 const secStatusColor = sec.status === 'PASS'
-                  ? '#2ECC71'
+                  ? '#4E9B6F'
                   : sec.status === 'WARN'
-                  ? '#F39C12'
-                  : '#FF4422';
+                  ? '#C68B45'
+                  : '#C05C54';
                 const secStatusBorder = sec.status === 'PASS'
-                  ? 'rgba(46, 204, 113, 0.35)'
+                  ? 'rgba(78, 155, 111, 0.28)'
                   : sec.status === 'WARN'
-                  ? 'rgba(243, 156, 18, 0.35)'
-                  : 'rgba(255, 68, 34, 0.35)';
+                  ? 'rgba(198, 139, 69, 0.28)'
+                  : 'rgba(192, 92, 84, 0.28)';
                 const secStatusLabel = sec.status === 'PASS'
                   ? '✓ SECTION VERIFIED: 100% PASS'
                   : sec.status === 'WARN'
@@ -1968,8 +1954,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   <div
                     key={sec.name}
                     style={{
-                      background: '#161B22',
-                      border: `1px solid ${sec.status === 'PASS' ? 'rgba(46, 204, 113, 0.25)' : 'rgba(255, 255, 255, 0.1)'}`,
+                      background: '#181D25',
+                      border: `1px solid ${sec.status === 'PASS' ? 'rgba(78, 155, 111, 0.25)' : 'rgba(255, 255, 255, 0.08)'}`,
                       borderRadius: '10px',
                       overflow: 'hidden',
                       display: 'flex',
@@ -1981,8 +1967,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     <div
                       style={{
                         padding: '1rem 1.4rem',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
@@ -1991,7 +1977,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: '0.68rem', letterSpacing: '0.12em', color: 'var(--accent, #FF6B35)', fontWeight: 800, textTransform: 'uppercase' }}>
+                        <div style={{ fontSize: '0.68rem', letterSpacing: '0.12em', color: 'var(--accent, #C86D51)', fontWeight: 800, textTransform: 'uppercase' }}>
                           SECTION REPORT
                         </div>
                         <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
@@ -2021,20 +2007,20 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                         gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                         gap: '0.6rem',
                         padding: '0.8rem 1.4rem',
-                        background: 'rgba(0, 0, 0, 0.25)',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                        background: 'rgba(0, 0, 0, 0.2)',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
                         fontSize: '0.76rem',
                       }}
                     >
                       <div>
                         <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Required Evaluations</div>
                         <div style={{ color: '#FFFFFF', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.9rem' }}>
-                          {sec.total} / {sec.total} <span style={{ color: '#2ECC71', fontSize: '0.72rem' }}>(100%)</span>
+                          {sec.total} / {sec.total} <span style={{ color: '#4E9B6F', fontSize: '0.72rem' }}>(100%)</span>
                         </div>
                       </div>
                       <div>
                         <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Section Pass Rate</div>
-                        <div style={{ color: sec.passRate >= 80 ? '#2ECC71' : '#FF4422', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                        <div style={{ color: sec.passRate >= 80 ? '#4E9B6F' : '#C05C54', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.9rem' }}>
                           {sec.passRate}% ({sec.passed}P / {sec.failed}F)
                         </div>
                       </div>
@@ -2071,9 +2057,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                         const caseCode = rawId.startsWith('tc-') ? `CASE-${rawId.slice(3).padStart(3, '0')}` : rawId.toUpperCase();
                         const isPass = c.passed === true;
                         const isFail = c.passed === false;
-                        const statusBadgeBg = isPass ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 68, 34, 0.15)';
-                        const statusBadgeColor = isPass ? '#2ECC71' : '#FF4422';
-                        const statusBadgeBorder = isPass ? 'rgba(46, 204, 113, 0.35)' : 'rgba(255, 68, 34, 0.35)';
+                        const statusBadgeBg = isPass ? 'rgba(78, 155, 111, 0.12)' : 'rgba(192, 92, 84, 0.12)';
+                        const statusBadgeColor = isPass ? '#4E9B6F' : '#C05C54';
+                        const statusBadgeBorder = isPass ? 'rgba(78, 155, 111, 0.28)' : 'rgba(192, 92, 84, 0.28)';
 
                         const statusLabel = isPass
                           ? 'PASS'
@@ -2092,8 +2078,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                           <div
                             key={c.testCaseId || i}
                             style={{
-                              background: '#0D1117',
-                              border: isPass ? '1px solid rgba(46, 204, 113, 0.22)' : '1px solid rgba(255, 68, 34, 0.3)',
+                              background: '#14181F',
+                              border: isPass ? '1px solid rgba(78, 155, 111, 0.2)' : '1px solid rgba(192, 92, 84, 0.25)',
                               borderRadius: '8px',
                               padding: '1.1rem 1.25rem',
                               display: 'flex',
@@ -2104,18 +2090,18 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                             {/* Header: CASE ID, ORDER, TITLE, STATUS */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                                <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent, #FF6B35)', background: 'rgba(255, 107, 53, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent, #C86D51)', background: 'rgba(200, 109, 81, 0.12)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
                                   {caseCode} (#{caseOrder})
                                 </span>
-                                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#FFFFFF' }}>
+                                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ECEFF2' }}>
                                   {c.title || c.testCaseName || `Scenario ${caseOrder}`}
                                 </span>
                               </div>
                               <span
                                 style={{
-                                  fontSize: '0.8rem',
+                                  fontSize: '0.78rem',
                                   fontWeight: 800,
-                                  padding: '0.25rem 0.75rem',
+                                  padding: '0.22rem 0.7rem',
                                   borderRadius: '4px',
                                   background: statusBadgeBg,
                                   color: statusBadgeColor,
@@ -2127,16 +2113,16 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                             </div>
 
                             {/* Input / Prompt */}
-                            <div style={{ fontSize: '0.86rem', color: '#CCCCCC', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                              <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                            <div style={{ fontSize: '0.85rem', color: '#CCCCCC', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                              <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
                                 Input / Prompt:
                               </span>
                               {c.prompt || c.input || '—'}
                             </div>
 
                             {/* Expected Behavior */}
-                            <div style={{ fontSize: '0.86rem', color: '#B0C0D0', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                              <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                            <div style={{ fontSize: '0.85rem', color: '#B0C0D0', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                              <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
                                 Expected Behavior:
                               </span>
                               {c.expected_behavior || c.expectedOutput || '—'}
@@ -2144,8 +2130,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
                             {/* Candidate Output & Baseline Output Comparison */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.65rem' }}>
-                              <div style={{ fontSize: '0.84rem', color: '#ECECEC', background: 'rgba(77, 166, 255, 0.03)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(77, 166, 255, 0.15)' }}>
-                                <span style={{ color: '#4DA6FF', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                              <div style={{ fontSize: '0.84rem', color: '#ECECEC', background: 'rgba(91, 130, 166, 0.04)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(91, 130, 166, 0.18)' }}>
+                                <span style={{ color: '#5B82A6', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
                                   Candidate Output:
                                 </span>
                                 <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
@@ -2153,8 +2139,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                                 </div>
                               </div>
 
-                              <div style={{ fontSize: '0.84rem', color: '#AAAAAA', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                                <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                              <div style={{ fontSize: '0.84rem', color: '#AAAAAA', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
                                   Baseline Output:
                                 </span>
                                 <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
@@ -2166,12 +2152,12 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                             {/* Telemetry Footer Row: Score, Latency, Tokens, Failure Reason / Criteria */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '0.5rem', fontSize: '0.8rem', color: '#8899AA' }}>
                               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                <span>Score: <strong style={{ color: isPass ? '#2ECC71' : '#FF4422' }}>{c.candidateScore !== null && c.candidateScore !== undefined ? `${c.candidateScore.toFixed(2)} / 1.00` : '—'}</strong></span>
+                                <span>Score: <strong style={{ color: isPass ? '#4E9B6F' : '#C05C54' }}>{c.candidateScore !== null && c.candidateScore !== undefined ? `${c.candidateScore.toFixed(2)} / 1.00` : '—'}</strong></span>
                                 <span>Latency: <strong style={{ color: '#ECECEC' }}>{c.candidateLatencyMs !== null && c.candidateLatencyMs !== undefined ? `${c.candidateLatencyMs}ms` : '—'}</strong></span>
                                 <span>Tokens: <strong style={{ color: '#ECECEC' }}>{(inTok > 0 || outTok > 0) ? `In: ${inTok} | Out: ${outTok}` : '—'}</strong></span>
                               </div>
                               {c.failureReason && (
-                                <div style={{ color: '#FF7766', fontSize: '0.8rem' }}>
+                                <div style={{ color: '#C05C54', fontSize: '0.8rem' }}>
                                   Reason: {c.failureReason}
                                 </div>
                               )}
@@ -2188,8 +2174,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
         {/* ── 5. Evidence & Diagnostics ── */}
         {filteredEvidence.length > 0 && (
-          <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <h4 style={{ margin: '0 0 0.6rem 0', fontSize: '0.85rem', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div style={{ background: '#181D25', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <h4 style={{ margin: '0 0 0.6rem 0', fontSize: '0.85rem', color: '#ECEFF2', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Diagnostic Evidence & Decision Rationale
             </h4>
             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.82rem', color: '#B0C0D0', lineHeight: 1.6 }}>
