@@ -12,15 +12,19 @@ function reliqServerPlugin(env: Record<string, string>): Plugin {
   if (env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
   if (env.GROQ_API_KEY) process.env.GROQ_API_KEY = env.GROQ_API_KEY;
   if (env.CEREBRAS_API_KEY) process.env.CEREBRAS_API_KEY = env.CEREBRAS_API_KEY;
+  if (env.SUPABASE_URL) process.env.SUPABASE_URL = env.SUPABASE_URL;
+  if (env.SUPABASE_SERVICE_ROLE_KEY) process.env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (env.SUPABASE_ANON_KEY) process.env.SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY;
+  if (env.RELIQ_DB_DRIVER) process.env.RELIQ_DB_DRIVER = env.RELIQ_DB_DRIVER;
 
   const middleware = createReliqProxyMiddleware();
 
   return {
     name: 'reliq-server-proxy',
-    // In dev mode, Vite proxy forwards /api to the standalone backend on port 3001.
-    // Preserved for preview server so production previews function standalone.
+    configureServer(server) {
+      server.middlewares.use(middleware);
+    },
     configurePreviewServer(server) {
-      const middleware = createReliqProxyMiddleware();
       server.middlewares.use(middleware);
     },
   };
@@ -30,7 +34,7 @@ export default defineConfig(({ mode }) => {
   // Load environment variables strictly on the server side
   // Do NOT pass VITE_ prefix so secrets are never embedded in client bundles
   const env = loadEnv(mode, projectRoot, '');
-  const backendPort = process.env.RELIQ_SERVER_PORT || process.env.PORT || '3001';
+  const backendUrl = process.env.RELIQ_BACKEND_URL;
 
   return {
     root: projectRoot,
@@ -38,18 +42,18 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: false,
-      host: '127.0.0.1',
-      proxy: {
+      host: true,
+      proxy: backendUrl ? {
         '/api': {
-          target: `http://127.0.0.1:${backendPort}`,
+          target: backendUrl,
           changeOrigin: true,
         },
-      },
+      } : undefined,
     },
     preview: {
       port: 5173,
       strictPort: false,
-      host: '127.0.0.1',
+      host: true,
     },
     build: {
       target: 'es2020',
@@ -68,4 +72,3 @@ export default defineConfig(({ mode }) => {
     },
   };
 });
-
