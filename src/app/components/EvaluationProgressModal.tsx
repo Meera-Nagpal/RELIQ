@@ -95,14 +95,14 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
           position: 'relative',
           overflow: 'hidden',
           isolation: 'isolate',
-          background: '#0D1117',
-          border: isFailed ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(255, 107, 53, 0.35)',
+          background: '#14181F',
+          border: isFailed ? '1px solid rgba(192, 92, 84, 0.4)' : '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: '16px',
           width: '100%',
           maxWidth: '560px',
           boxShadow: isFailed
-            ? '0 20px 60px rgba(239, 68, 68, 0.2)'
-            : '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 107, 53, 0.15)',
+            ? '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 20px rgba(192, 92, 84, 0.15)'
+            : '0 20px 60px rgba(0, 0, 0, 0.8)',
           padding: '2rem',
           display: 'flex',
           flexDirection: 'column',
@@ -150,12 +150,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             justifyContent: 'center',
             alignItems: 'center',
             background: isFailed
-              ? 'radial-gradient(circle, rgba(239, 68, 68, 0.14) 0%, rgba(13, 17, 23, 0.96) 75%)'
-              : 'radial-gradient(circle, rgba(255, 107, 53, 0.09) 0%, rgba(13, 17, 23, 0.96) 75%)',
-            border: isFailed ? '1.5px solid rgba(239, 68, 68, 0.5)' : '1.5px solid rgba(255, 107, 53, 0.38)',
-            boxShadow: isFailed
-              ? '0 0 24px rgba(239, 68, 68, 0.22), inset 0 0 16px rgba(239, 68, 68, 0.12)'
-              : '0 0 24px rgba(255, 107, 53, 0.18), inset 0 0 16px rgba(255, 107, 53, 0.10)',
+              ? 'rgba(192, 92, 84, 0.08)'
+              : 'rgba(200, 109, 81, 0.06)',
+            border: isFailed ? '1.5px solid rgba(192, 92, 84, 0.35)' : '1.5px solid rgba(200, 109, 81, 0.28)',
           }}
         >
           {isFailed ? (
@@ -164,14 +161,13 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                 width: '74px',
                 height: '74px',
                 borderRadius: '50%',
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '2px solid #EF4444',
+                background: 'rgba(192, 92, 84, 0.12)',
+                border: '2px solid #C05C54',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '2.2rem',
-                color: '#EF4444',
-                boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
+                color: '#C05C54',
               }}
             >
               ⚠
@@ -189,7 +185,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               fontWeight: 800,
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
-              color: isFailed ? '#EF4444' : 'var(--reliq-accent, #FF6B35)',
+              color: isFailed ? '#C05C54' : 'var(--reliq-accent, #C86D51)',
               marginBottom: '0.3rem',
             }}
           >
@@ -222,7 +218,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
             <span
               style={{
-                color: progressPercent >= 100 ? '#2ECC71' : 'var(--reliq-accent, #FF6B35)',
+                color: progressPercent >= 100 ? '#4E9B6F' : 'var(--reliq-accent, #C86D51)',
                 fontWeight: 700,
                 letterSpacing: '0.02em',
               }}
@@ -265,14 +261,14 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <div style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
               Candidate Model
             </div>
-            <div style={{ color: '#4DA6FF', fontWeight: 600, fontFamily: 'monospace', wordBreak: 'break-all' }}>
+            <div style={{ color: '#5B82A6', fontWeight: 600, fontFamily: 'monospace', wordBreak: 'break-all' }}>
               {candidateModel}
             </div>
           </div>
           <div style={{ gridColumn: 'span 2', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <span style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Judge: </span>
-              <span style={{ color: judgeEnabled ? '#2ECC71' : '#888888', fontWeight: 600, fontSize: '0.75rem' }}>
+              <span style={{ color: judgeEnabled ? '#4E9B6F' : '#888888', fontWeight: 600, fontSize: '0.75rem' }}>
                 {judgeEnabled ? (judgeModel || 'Qwen 3.8 27B') : 'Disabled (Deterministic)'}
               </span>
             </div>
@@ -293,7 +289,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   ? `Evaluating scenario ${currentCaseNumber} of ${targetTotal}`
                   : 'EVALUATION IN PROGRESS'}
               </span>
-              <span style={{ color: 'var(--reliq-accent, #FF6B35)', fontWeight: 800 }}>
+              <span style={{ color: 'var(--reliq-accent, #C86D51)', fontWeight: 800 }}>
                 {progressPercent > 0 ? `${progressPercent}% Complete` : ''}
               </span>
             </div>
@@ -314,7 +310,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   style={{
                     width: `${Math.max(4, Math.min(100, progressPercent))}%`,
                     height: '100%',
-                    background: 'linear-gradient(90deg, #FF6B35 0%, #FF8C5A 100%)',
+                    background: '#C86D51',
                     borderRadius: '4px',
                     transition: 'width 0.3s ease-out',
                   }}
@@ -325,7 +321,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   style={{
                     width: '35%',
                     height: '100%',
-                    background: 'linear-gradient(90deg, transparent 0%, #FF6B35 50%, transparent 100%)',
+                    background: 'linear-gradient(90deg, transparent 0%, #C86D51 50%, transparent 100%)',
                     borderRadius: '4px',
                     animation: 'reliqIndeterminate 1.4s ease-in-out infinite',
                   }}
@@ -367,13 +363,13 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   fontFamily: 'monospace',
                 }}
               >
-                <div style={{ color: '#2ECC71' }}>
+                <div style={{ color: '#4E9B6F' }}>
                   COMPLETED: <strong>{currentCaseNumber}</strong>
                 </div>
                 <div style={{ color: '#8899AA' }}>
                   REMAINING: <strong style={{ color: '#FFFFFF' }}>{Math.max(0, targetTotal - currentCaseNumber)}</strong>
                 </div>
-                <div style={{ color: 'var(--reliq-accent, #FF6B35)' }}>
+                <div style={{ color: 'var(--reliq-accent, #C86D51)' }}>
                   TIME: <strong>{formattedTime}</strong>
                 </div>
               </div>
@@ -387,9 +383,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   fontWeight: 700,
                   padding: '0.2rem 0.6rem',
                   borderRadius: '4px',
-                  background: 'rgba(46, 204, 113, 0.15)',
-                  color: '#2ECC71',
-                  border: '1px solid rgba(46, 204, 113, 0.3)',
+                  background: 'rgba(78, 155, 111, 0.12)',
+                  color: '#4E9B6F',
+                  border: '1px solid rgba(78, 155, 111, 0.28)',
                 }}
               >
                 Semantic Evaluation: {semanticStatus}
@@ -400,9 +396,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   fontWeight: 700,
                   padding: '0.2rem 0.6rem',
                   borderRadius: '4px',
-                  background: judgeEnabled ? 'rgba(77, 166, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-                  color: judgeEnabled ? '#4DA6FF' : '#888888',
-                  border: judgeEnabled ? '1px solid rgba(77, 166, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.12)',
+                  background: judgeEnabled ? 'rgba(91, 130, 166, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                  color: judgeEnabled ? '#5B82A6' : '#888888',
+                  border: judgeEnabled ? '1px solid rgba(91, 130, 166, 0.28)' : '1px solid rgba(255, 255, 255, 0.1)',
                 }}
               >
                 LLM Judge: {judgeEnabled ? 'ACTIVE' : 'OFF'}
@@ -414,9 +410,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                     fontWeight: 700,
                     padding: '0.2rem 0.6rem',
                     borderRadius: '4px',
-                    background: 'rgba(255, 107, 53, 0.15)',
-                    color: 'var(--reliq-accent, #FF6B35)',
-                    border: '1px solid rgba(255, 107, 53, 0.3)',
+                    background: 'rgba(200, 109, 81, 0.12)',
+                    color: 'var(--reliq-accent, #C86D51)',
+                    border: '1px solid rgba(200, 109, 81, 0.28)',
                   }}
                 >
                   Phase: {phase}
@@ -429,16 +425,16 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
           <div
             style={{
               width: '100%',
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(192, 92, 84, 0.1)',
+              border: '1px solid rgba(192, 92, 84, 0.35)',
               borderRadius: '8px',
               padding: '1rem',
               fontSize: '0.8rem',
-              color: '#FCA5A5',
+              color: '#E0A8A0',
               lineHeight: 1.4,
             }}
           >
-            <div style={{ fontWeight: 700, color: '#EF4444', marginBottom: '0.3rem' }}>
+            <div style={{ fontWeight: 700, color: '#C05C54', marginBottom: '0.3rem' }}>
               Failure Summary:
             </div>
             <div>{error}</div>
@@ -456,8 +452,8 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <button
               onClick={onRetry}
               style={{
-                background: 'var(--reliq-accent, #FF6B35)',
-                color: '#000000',
+                background: 'var(--reliq-accent, #C86D51)',
+                color: '#FFFFFF',
                 border: 'none',
                 padding: '0.55rem 1.2rem',
                 borderRadius: '6px',

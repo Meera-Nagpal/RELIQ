@@ -77,12 +77,12 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
         zIndex: 9990,
         width: 'calc(100% - 3rem)',
         maxWidth: '960px',
-        background: 'rgba(13, 17, 23, 0.95)',
+        background: 'rgba(20, 24, 31, 0.96)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 107, 53, 0.45)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
         borderRadius: '12px',
-        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(255, 107, 53, 0.2)',
+        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.7)',
         padding: '0.85rem 1.25rem',
         display: 'flex',
         flexDirection: 'column',
@@ -109,8 +109,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: 'var(--reliq-accent, #FF6B35)',
-              boxShadow: '0 0 10px #FF6B35',
+              background: 'var(--reliq-accent, #C86D51)',
               animation: 'reliqHudPulse 1.8s infinite',
               flexShrink: 0,
             }}
@@ -122,9 +121,9 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               fontWeight: 800,
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
-              color: 'var(--reliq-accent, #FF6B35)',
-              background: 'rgba(255, 107, 53, 0.12)',
-              border: '1px solid rgba(255, 107, 53, 0.25)',
+              color: 'var(--reliq-accent, #C86D51)',
+              background: 'rgba(200, 109, 81, 0.12)',
+              border: '1px solid rgba(200, 109, 81, 0.28)',
               padding: '0.15rem 0.5rem',
               borderRadius: '4px',
               whiteSpace: 'nowrap',
@@ -151,8 +150,8 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
           <span style={{ fontSize: '0.75rem', color: '#8899AA', fontFamily: 'monospace' }}>
-            <span style={{ color: '#2ECC71', fontWeight: 700 }}>{currentCount}</span> completed •{' '}
-            <span style={{ color: '#FFAA44', fontWeight: 700 }}>{remaining}</span> remaining
+            <span style={{ color: '#4E9B6F', fontWeight: 700 }}>{currentCount}</span> completed •{' '}
+            <span style={{ color: '#C68B45', fontWeight: 700 }}>{remaining}</span> remaining
           </span>
 
           <span
@@ -174,9 +173,9 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               <button
                 onClick={onOpenModal}
                 style={{
-                  background: 'var(--reliq-accent, #FF6B35)',
+                  background: 'var(--reliq-accent, #C86D51)',
                   border: 'none',
-                  color: '#000000',
+                  color: '#FFFFFF',
                   padding: '0.3rem 0.65rem',
                   borderRadius: '5px',
                   fontSize: '0.72rem',
@@ -190,9 +189,9 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
             <button
               onClick={onCancel}
               style={{
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.35)',
-                color: '#FF6B6B',
+                background: 'rgba(192, 92, 84, 0.12)',
+                border: '1px solid rgba(192, 92, 84, 0.3)',
+                color: '#E0A8A0',
                 padding: '0.3rem 0.6rem',
                 borderRadius: '5px',
                 fontSize: '0.72rem',
@@ -222,10 +221,9 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
             style={{
               height: '100%',
               width: `${Math.max(3, Math.min(100, progressPercent))}%`,
-              background: 'linear-gradient(90deg, #FF6B35 0%, #FFAA44 100%)',
+              background: '#C86D51',
               borderRadius: '3px',
               transition: 'width 0.25s ease-out',
-              boxShadow: '0 0 10px rgba(255, 107, 53, 0.6)',
             }}
           />
         </div>
@@ -235,7 +233,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
             fontSize: '0.72rem',
             fontFamily: 'monospace',
             fontWeight: 800,
-            color: '#FF8C5A',
+            color: '#C86D51',
             minWidth: '42px',
             textAlign: 'right',
           }}
@@ -253,7 +251,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
             textOverflow: 'ellipsis',
           }}
         >
-          {baselineModel} <span style={{ color: '#4DA6FF' }}>vs</span> {candidateModel}
+          {baselineModel} <span style={{ color: '#5B82A6' }}>vs</span> {candidateModel}
         </span>
       </div>
     </div>

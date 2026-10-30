@@ -1,4 +1,4 @@
-﻿import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -73,9 +73,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
               style={{
-                background: 'rgba(255, 107, 53, 0.2)',
-                border: '1px solid #FF6B35',
-                color: '#FF6B35',
+                background: 'rgba(200, 109, 81, 0.15)',
+                border: '1px solid rgba(200, 109, 81, 0.4)',
+                color: '#C86D51',
                 padding: '0.5rem 1.2rem',
                 borderRadius: '6px',
                 fontSize: '0.82rem',

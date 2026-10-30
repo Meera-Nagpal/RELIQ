@@ -26,8 +26,8 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
   size = 100,
   mode = 'continuous',
   duration: customDuration,
-  color = 'var(--reliq-accent, #FF6B35)',
-  secondaryColor = 'var(--reliq-accent-secondary, #FF8C5A)',
+  color = 'var(--reliq-accent, #C86D51)',
+  secondaryColor = 'var(--reliq-accent-secondary, #D47E64)',
   className = '',
 }) => {
   const duration = customDuration ?? (mode === 'pulse' ? '2.5s' : '6.4s');
@@ -54,7 +54,7 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
         @keyframes reliqPulseAnimation2 {
           0% { transform: scale(0.14); opacity: 0; border-color: ${secondaryColor}; }
           15% { opacity: 0.82; border-color: ${color}; }
-          55% { border-color: #FFAA44; }
+          55% { border-color: #C68B45; }
           100% { transform: scale(2.70); opacity: 0; border-color: ${color}; }
         }
         @keyframes reliqPulseAnimation3 {
