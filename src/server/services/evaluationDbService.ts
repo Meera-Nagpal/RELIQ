@@ -9,6 +9,8 @@
 
 import { getDatabase } from '../db/database';
 import { getRunFromDisk, getRunsFromDisk, saveRunToDisk } from '../evaluationService';
+import { isSupabaseConfigured } from '../db/supabaseClient';
+import { supabaseRepository } from '../db/supabaseRepository';
 
 export const ALLOWED_RELEASE_DECISIONS = new Set([
   'PASS',
@@ -395,6 +397,36 @@ export class EvaluationDbService {
       serializedRun,
       runId
     );
+
+    if (isSupabaseConfigured() && process.env.RELIQ_DB_DRIVER !== 'sqlite') {
+      try {
+        const runRecord = {
+          id: runId,
+          project_id: finalRun.projectId || 'proj-checkout-agent',
+          dataset_id: finalRun.datasetId || 'ds-checkout-golden',
+          dataset_version: datasetVersion,
+          dataset_source_type: datasetSourceType,
+          status: 'COMPLETED',
+          total_cases: totalCases,
+          selected_case_count: selectedCaseCount,
+          evaluated_cases: evaluatedCases,
+          passed_cases: passedCases,
+          failed_cases: failedCases,
+          skipped_cases: skippedCases,
+          cancelled_cases: cancelledCases,
+          pass_rate: passRate,
+          quality_score: qualityScore,
+          started_at: finalRun.timestamp || new Date().toISOString(),
+          completed_at: now,
+          release_decision: releaseDecision,
+          release_reason: releaseReason,
+          run_json: finalRun,
+        };
+        supabaseRepository.saveEvaluationRun(runRecord).catch((err) => {
+          console.warn('[RELIQ Supabase Sync] Async run sync notice:', err.message);
+        });
+      } catch {}
+    }
   }
 
   /**
@@ -819,6 +851,12 @@ export class EvaluationDbService {
         reason: reasonText,
       };
       saveRunToDisk(diskRun);
+    }
+
+    if (isSupabaseConfigured() && process.env.RELIQ_DB_DRIVER !== 'sqlite') {
+      supabaseRepository.updateReleaseDecision(runId, decision, reasonText, previousDecision).catch((err) => {
+        console.warn('[RELIQ Supabase Sync] Async release decision sync notice:', err.message);
+      });
     }
 
     return {
