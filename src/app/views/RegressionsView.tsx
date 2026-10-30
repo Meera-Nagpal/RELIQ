@@ -26,9 +26,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.isRegression) {
     return {
       text: 'REGRESSION',
-      bg: 'rgba(255, 51, 17, 0.15)',
-      color: '#FF4422',
-      border: 'rgba(255, 51, 17, 0.3)',
+      bg: 'rgba(192, 92, 84, 0.12)',
+      color: '#C05C54',
+      border: 'rgba(192, 92, 84, 0.28)',
     };
   }
 
@@ -47,9 +47,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'PROVIDER AUTHENTICATION',
-      bg: 'rgba(239, 68, 68, 0.15)',
-      color: '#EF4444',
-      border: 'rgba(239, 68, 68, 0.3)',
+      bg: 'rgba(192, 92, 84, 0.12)',
+      color: '#C05C54',
+      border: 'rgba(192, 92, 84, 0.28)',
     };
   }
 
@@ -64,9 +64,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'PROVIDER QUOTA',
-      bg: 'rgba(192, 132, 252, 0.15)',
-      color: '#C084FC',
-      border: 'rgba(192, 132, 252, 0.3)',
+      bg: 'rgba(139, 126, 200, 0.12)',
+      color: '#8B7EC8',
+      border: 'rgba(139, 126, 200, 0.28)',
     };
   }
 
@@ -80,9 +80,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'PROVIDER ERROR',
-      bg: 'rgba(245, 158, 11, 0.15)',
-      color: '#F59E0B',
-      border: 'rgba(245, 158, 11, 0.3)',
+      bg: 'rgba(198, 139, 69, 0.12)',
+      color: '#C68B45',
+      border: 'rgba(198, 139, 69, 0.28)',
     };
   }
 
@@ -90,9 +90,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.failureCategory === 'MALFORMED_RESPONSE') {
     return {
       text: 'MALFORMED RESPONSE',
-      bg: 'rgba(245, 158, 11, 0.15)',
-      color: '#F59E0B',
-      border: 'rgba(245, 158, 11, 0.3)',
+      bg: 'rgba(198, 139, 69, 0.12)',
+      color: '#C68B45',
+      border: 'rgba(198, 139, 69, 0.28)',
     };
   }
 
@@ -107,9 +107,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'SAFETY FAILURE',
-      bg: 'rgba(239, 68, 68, 0.2)',
-      color: '#EF4444',
-      border: 'rgba(239, 68, 68, 0.4)',
+      bg: 'rgba(192, 92, 84, 0.16)',
+      color: '#C05C54',
+      border: 'rgba(192, 92, 84, 0.32)',
     };
   }
 
@@ -117,9 +117,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.failureCategory === 'REFUSAL_CRITERIA_MISMATCH' || c.safetyClassification === 'REFUSAL_CRITERIA_MISMATCH') {
     return {
       text: 'REFUSAL MISMATCH',
-      bg: 'rgba(245, 158, 11, 0.15)',
-      color: '#F59E0B',
-      border: 'rgba(245, 158, 11, 0.3)',
+      bg: 'rgba(198, 139, 69, 0.12)',
+      color: '#C68B45',
+      border: 'rgba(198, 139, 69, 0.28)',
     };
   }
 
@@ -127,9 +127,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.passed === true) {
     return {
       text: 'PASSED',
-      bg: 'rgba(46, 204, 113, 0.15)',
-      color: '#2ECC71',
-      border: 'rgba(46, 204, 113, 0.3)',
+      bg: 'rgba(78, 155, 111, 0.12)',
+      color: '#4E9B6F',
+      border: 'rgba(78, 155, 111, 0.28)',
     };
   }
 
@@ -137,18 +137,18 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.passed === false && (c.candidateQualityEvaluated || c.failureCategory === 'QUALITY_FAILURE')) {
     return {
       text: 'QUALITY FAIL',
-      bg: 'rgba(255, 170, 68, 0.15)',
-      color: '#FFAA44',
-      border: 'rgba(255, 170, 68, 0.3)',
+      bg: 'rgba(198, 139, 69, 0.12)',
+      color: '#C68B45',
+      border: 'rgba(198, 139, 69, 0.28)',
     };
   }
 
   // 10. Default fallback if not evaluated
   return {
     text: 'NOT EVALUATED',
-    bg: 'rgba(156, 163, 175, 0.15)',
-    color: '#9CA3AF',
-    border: 'rgba(156, 163, 175, 0.3)',
+    bg: 'rgba(141, 152, 165, 0.12)',
+    color: '#8D98A5',
+    border: 'rgba(141, 152, 165, 0.28)',
   };
 };
 
@@ -241,16 +241,16 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
               DIAGNOSTICS // FAILURE EXPLORER
             </div>
             {(() => {
               const mode = run.executionMode || run.comparisonReport?.executionMode || 'SAVED';
               const isLive = mode === 'LIVE';
               const isRef = mode === 'REFERENCE';
-              const color = isLive ? '#10B981' : isRef ? '#A78BFA' : '#38BDF8';
-              const bg = isLive ? 'rgba(16, 185, 129, 0.15)' : isRef ? 'rgba(167, 139, 250, 0.15)' : 'rgba(56, 189, 248, 0.15)';
-              const border = isLive ? 'rgba(16, 185, 129, 0.4)' : isRef ? 'rgba(167, 139, 250, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+              const color = isLive ? '#4E9B6F' : isRef ? '#8B7EC8' : '#5B82A6';
+              const bg = isLive ? 'rgba(78, 155, 111, 0.12)' : isRef ? 'rgba(139, 126, 200, 0.12)' : 'rgba(91, 130, 166, 0.12)';
+              const border = isLive ? 'rgba(78, 155, 111, 0.28)' : isRef ? 'rgba(139, 126, 200, 0.28)' : 'rgba(91, 130, 166, 0.28)';
               const label = isLive ? 'LIVE EVALUATION' : isRef ? 'REFERENCE DATA' : 'SAVED EVALUATION';
               return (
                 <span
@@ -274,8 +274,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         width: '5px',
                         height: '5px',
                         borderRadius: '50%',
-                        background: '#10B981',
-                        boxShadow: '0 0 5px #10B981',
+                        background: '#4E9B6F',
                       }}
                     />
                   )}
@@ -295,9 +294,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(255, 107, 53, 0.05))',
-              border: '1px solid #FF6B35',
-              color: '#FF6B35',
+              background: 'rgba(200, 109, 81, 0.12)',
+              border: '1px solid rgba(200, 109, 81, 0.35)',
+              color: '#C86D51',
               padding: '0.65rem 1.25rem',
               borderRadius: '8px',
               fontSize: '0.85rem',
@@ -306,7 +305,6 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              boxShadow: '0 0 15px rgba(255, 107, 53, 0.15)',
             }}
           >
             📊 View Full Comparison Report
@@ -322,20 +320,19 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         const isBlocked = isReg || releaseDecision.status === 'BLOCK' || regressionDecision.verdict === 'REGRESSION_DETECTED' || (regressionDecision.verdict as string) === 'BLOCK';
         const isInsufficient = releaseDecision.status === 'INSUFFICIENT_EVIDENCE' || regressionDecision.verdict === 'INSUFFICIENT_EVIDENCE';
         const isConditional = releaseDecision.status === 'SHIP_WITH_CONDITIONS' || (regressionDecision.verdict as string) === 'SHIP_WITH_CONDITIONS';
-        const statusColor = isBlocked ? '#FF3311' : isInsufficient ? '#F59E0B' : isConditional ? '#EAB308' : '#2ECC71';
-        const statusBg = isBlocked ? 'rgba(255, 34, 0, 0.12)' : isInsufficient ? 'rgba(245, 158, 11, 0.12)' : isConditional ? 'rgba(234, 179, 8, 0.12)' : 'rgba(46, 204, 113, 0.12)';
+        const statusColor = isBlocked ? '#C05C54' : isInsufficient ? '#8D98A5' : isConditional ? '#C68B45' : '#4E9B6F';
+        const statusBg = isBlocked ? 'rgba(192, 92, 84, 0.12)' : isInsufficient ? 'rgba(141, 152, 165, 0.12)' : isConditional ? 'rgba(198, 139, 69, 0.12)' : 'rgba(78, 155, 111, 0.12)';
 
         return (
           <div
             style={{
-              background: '#161B22',
+              background: '#14181F',
               border: `1px solid ${statusColor}`,
               borderRadius: '12px',
               padding: '1.8rem',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              boxShadow: `0 0 20px ${statusBg}`,
             }}
           >
             <div style={{ maxWidth: '680px' }}>
@@ -363,9 +360,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                       fontSize: '0.7rem',
                       fontWeight: 700,
                       letterSpacing: '0.04em',
-                      background: evidenceStrength === 'STRONG' ? 'rgba(16, 185, 129, 0.15)' : evidenceStrength === 'GOOD' ? 'rgba(56, 189, 248, 0.15)' : evidenceStrength === 'MODERATE' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: evidenceStrength === 'STRONG' ? '#10B981' : evidenceStrength === 'GOOD' ? '#38BDF8' : evidenceStrength === 'MODERATE' ? '#F59E0B' : '#EF4444',
-                      border: `1px solid ${evidenceStrength === 'STRONG' ? '#10B981' : evidenceStrength === 'GOOD' ? '#38BDF8' : evidenceStrength === 'MODERATE' ? '#F59E0B' : '#EF4444'}`,
+                      background: evidenceStrength === 'STRONG' ? 'rgba(78, 155, 111, 0.12)' : evidenceStrength === 'GOOD' ? 'rgba(91, 130, 166, 0.12)' : evidenceStrength === 'MODERATE' ? 'rgba(198, 139, 69, 0.12)' : 'rgba(192, 92, 84, 0.12)',
+                      color: evidenceStrength === 'STRONG' ? '#4E9B6F' : evidenceStrength === 'GOOD' ? '#5B82A6' : evidenceStrength === 'MODERATE' ? '#C68B45' : '#C05C54',
+                      border: `1px solid ${evidenceStrength === 'STRONG' ? 'rgba(78, 155, 111, 0.28)' : evidenceStrength === 'GOOD' ? 'rgba(91, 130, 166, 0.28)' : evidenceStrength === 'MODERATE' ? 'rgba(198, 139, 69, 0.28)' : 'rgba(192, 92, 84, 0.28)'}`,
                     }}
                   >
                     EVIDENCE: {evidenceStrength} (N = {sampleSize})
@@ -396,9 +393,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         fontWeight: 700,
                         padding: '0.15rem 0.5rem',
                         borderRadius: '4px',
-                        background: 'rgba(255, 68, 34, 0.15)',
-                        color: '#FF6B6B',
-                        border: '1px solid rgba(255, 68, 34, 0.35)',
+                        background: 'rgba(192, 92, 84, 0.12)',
+                        color: '#C05C54',
+                        border: '1px solid rgba(192, 92, 84, 0.28)',
                         fontFamily: 'monospace',
                         letterSpacing: '0.04em',
                       }}
@@ -411,7 +408,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
 
               {/* Violated rules */}
               {regressionDecision.violatedRules.length > 0 && (
-                <ul style={{ margin: '0.6rem 0 0 1.2rem', padding: 0, fontSize: '0.8rem', color: '#FFAA99' }}>
+                <ul style={{ margin: '0.6rem 0 0 1.2rem', padding: 0, fontSize: '0.8rem', color: '#C05C54' }}>
                   {regressionDecision.violatedRules.map((rule, idx) => (
                     <li key={idx} style={{ marginBottom: '0.2rem' }}>
                       {rule}
@@ -426,8 +423,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
           <button
             onClick={() => handleDecision('BLOCK', 'Blocked due to automated regression thresholds.')}
             style={{
-              background: releaseDecision.status === 'BLOCK' ? '#FF2200' : 'rgba(255, 34, 0, 0.15)',
-              border: '1px solid #FF3311',
+              background: releaseDecision.status === 'BLOCK' ? '#C05C54' : 'rgba(192, 92, 84, 0.12)',
+              border: '1px solid rgba(192, 92, 84, 0.35)',
               color: '#FFFFFF',
               padding: '0.7rem 1.2rem',
               borderRadius: '6px',
@@ -443,7 +440,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
           <button
             onClick={() => setIsOverrideModalOpen(true)}
             style={{
-              background: releaseDecision.status === 'PASS' ? '#2ECC71' : 'rgba(255, 255, 255, 0.05)',
+              background: releaseDecision.status === 'PASS' ? '#4E9B6F' : 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.15)',
               color: '#FFFFFF',
               padding: '0.65rem 1.2rem',
@@ -480,7 +477,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
             <div
               key={rc.id}
               style={{
-                background: '#161B22',
+                background: '#14181F',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '10px',
                 padding: '1.5rem',
@@ -496,7 +493,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                       fontSize: '0.7rem',
                       fontWeight: 700,
                       textTransform: 'uppercase',
-                      color: 'var(--accent, #FF6B35)',
+                      color: 'var(--accent, #C86D51)',
                       letterSpacing: '0.1em',
                     }}
                   >
@@ -514,16 +511,16 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         borderRadius: '4px',
                         background:
                           rc.classification === 'OBSERVED'
-                            ? 'rgba(16, 185, 129, 0.15)'
+                            ? 'rgba(78, 155, 111, 0.12)'
                             : rc.classification === 'CONFIRMED_DETERMINISTIC'
-                            ? 'rgba(56, 189, 248, 0.15)'
-                            : 'rgba(167, 139, 250, 0.15)',
+                            ? 'rgba(91, 130, 166, 0.12)'
+                            : 'rgba(139, 126, 200, 0.12)',
                         color:
                           rc.classification === 'OBSERVED'
-                            ? '#10B981'
+                            ? '#4E9B6F'
                             : rc.classification === 'CONFIRMED_DETERMINISTIC'
-                            ? '#38BDF8'
-                            : '#C084FC',
+                            ? '#5B82A6'
+                            : '#8B7EC8',
                         fontSize: '0.68rem',
                         fontWeight: 800,
                         letterSpacing: '0.06em',
@@ -536,8 +533,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                     style={{
                       padding: '0.2rem 0.55rem',
                       borderRadius: '4px',
-                      background: 'rgba(77, 166, 255, 0.15)',
-                      color: '#4DA6FF',
+                      background: 'rgba(91, 130, 166, 0.12)',
+                      color: '#5B82A6',
                       fontSize: '0.72rem',
                       fontWeight: 700,
                     }}
@@ -569,8 +566,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               {/* Recommendation */}
               <div
                 style={{
-                  background: 'rgba(255, 107, 53, 0.08)',
-                  border: '1px solid rgba(255, 107, 53, 0.25)',
+                  background: 'rgba(200, 109, 81, 0.08)',
+                  border: '1px solid rgba(200, 109, 81, 0.22)',
                   borderRadius: '6px',
                   padding: '0.9rem',
                   fontSize: '0.82rem',
@@ -578,7 +575,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                   lineHeight: 1.45,
                 }}
               >
-                <strong style={{ color: 'var(--accent, #FF6B35)' }}>Recommendation:</strong> {rc.recommendation}
+                <strong style={{ color: 'var(--accent, #C86D51)' }}>Recommendation:</strong> {rc.recommendation}
               </div>
             </div>
           ))}
@@ -594,13 +591,13 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
 
           {/* Filter Bar */}
           <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: '#161B22', borderRadius: '6px', padding: '0.2rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ display: 'flex', background: '#14181F', borderRadius: '6px', padding: '0.2rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
               <button
                 onClick={() => setStatusFilter('regressions')}
                 style={{
-                  background: statusFilter === 'regressions' ? 'rgba(255, 34, 0, 0.2)' : 'transparent',
+                  background: statusFilter === 'regressions' ? 'rgba(192, 92, 84, 0.15)' : 'transparent',
                   border: 'none',
-                  color: statusFilter === 'regressions' ? '#FF4422' : '#888888',
+                  color: statusFilter === 'regressions' ? '#C05C54' : '#888888',
                   padding: '0.35rem 0.75rem',
                   borderRadius: '4px',
                   fontSize: '0.75rem',
@@ -613,7 +610,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               <button
                 onClick={() => setStatusFilter('failed')}
                 style={{
-                  background: statusFilter === 'failed' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  background: statusFilter === 'failed' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
                   border: 'none',
                   color: statusFilter === 'failed' ? '#FFFFFF' : '#888888',
                   padding: '0.35rem 0.75rem',
@@ -636,9 +633,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 <button
                   onClick={() => setStatusFilter('rate-limited')}
                   style={{
-                    background: statusFilter === 'rate-limited' ? 'rgba(192, 132, 252, 0.2)' : 'transparent',
+                    background: statusFilter === 'rate-limited' ? 'rgba(139, 126, 200, 0.15)' : 'transparent',
                     border: 'none',
-                    color: statusFilter === 'rate-limited' ? '#C084FC' : '#A855F7',
+                    color: statusFilter === 'rate-limited' ? '#8B7EC8' : '#888888',
                     padding: '0.35rem 0.75rem',
                     borderRadius: '4px',
                     fontSize: '0.75rem',
@@ -671,7 +668,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         {/* Explorer Table */}
         <div
           style={{
-            background: '#161B22',
+            background: '#14181F',
             borderRadius: '10px',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             overflowX: 'auto',
@@ -683,7 +680,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 display: 'grid',
                 gridTemplateColumns: '80px 1.4fr 120px 140px 1.5fr 100px',
               padding: '0.8rem 1.2rem',
-              background: '#0D1117',
+              background: '#101419',
               borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
               fontSize: '0.75rem',
               letterSpacing: '0.1em',
@@ -702,7 +699,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
 
           {filteredCases.length === 0 ? (
             <div style={{ padding: '3.5rem 2rem', textAlign: 'center', color: '#888888', fontSize: '0.9rem' }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: '0.4rem' }}>✓</div>
+              <div style={{ fontSize: '1.8rem', marginBottom: '0.4rem', color: '#4E9B6F' }}>✓</div>
               <div style={{ color: '#FFFFFF', fontWeight: 600, marginBottom: '0.3rem' }}>
                 No Scenarios Match Filter
               </div>
@@ -749,10 +746,10 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                     fontSize: '0.94rem',
                     alignItems: 'center',
                     cursor: 'pointer',
-                    background: isRegression ? 'rgba(255, 34, 0, 0.03)' : isRateLimit ? 'rgba(192, 132, 252, 0.03)' : 'transparent',
+                    background: isRegression ? 'rgba(192, 92, 84, 0.04)' : isRateLimit ? 'rgba(139, 126, 200, 0.04)' : 'transparent',
                   }}
                 >
-                  <div style={{ fontFamily: 'monospace', color: '#4DA6FF', fontWeight: 600, fontSize: '0.92rem' }}>
+                  <div style={{ fontFamily: 'monospace', color: '#5B82A6', fontWeight: 600, fontSize: '0.92rem' }}>
                     {c.testCaseId}
                   </div>
                   <div>
@@ -795,7 +792,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                   </div>
                   <div
                     style={{
-                      color: isRegression ? '#FFAA99' : '#AAAAAA',
+                      color: isRegression ? '#D48B85' : '#AAAAAA',
                       fontSize: '0.88rem',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -808,8 +805,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                   <div style={{ textAlign: 'right' }}>
                     <button
                       style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         color: '#FFFFFF',
                         padding: '0.4rem 0.8rem',
                         borderRadius: '4px',
@@ -846,15 +843,15 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         >
           <div
             style={{
-              background: '#161B22',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#14181F',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '12px',
               padding: '2rem',
               width: '100%',
               maxWidth: '960px',
               maxHeight: '90vh',
               overflowY: 'auto',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9)',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
               display: 'flex',
               flexDirection: 'column',
               gap: '1.5rem',
@@ -864,11 +861,11 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <span style={{ fontFamily: 'monospace', color: '#4DA6FF', fontWeight: 700 }}>
+                  <span style={{ fontFamily: 'monospace', color: '#5B82A6', fontWeight: 700 }}>
                     {selectedCase.testCaseId}
                   </span>
                   <span style={{ color: '#888888' }}>/</span>
-                  <span style={{ color: 'var(--accent, #FF6B35)', fontWeight: 600, fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--accent, #C86D51)', fontWeight: 600, fontSize: '0.8rem' }}>
                     {selectedCase.category}
                   </span>
                 </div>
@@ -896,7 +893,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
 
             {/* Input & Expected Output */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
-              <div style={{ background: '#0D1117', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ background: '#101419', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#888888', marginBottom: '0.4rem', fontWeight: 600 }}>
                   Input Scenario / Prompt
                 </div>
@@ -905,11 +902,11 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 </div>
               </div>
 
-              <div style={{ background: '#0D1117', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ background: '#101419', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#888888', marginBottom: '0.4rem', fontWeight: 600 }}>
                   Expected Reference Output
                 </div>
-                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#2ECC71', lineHeight: 1.45 }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#4E9B6F', lineHeight: 1.45 }}>
                   {selectedCase.expectedOutput}
                 </div>
               </div>
@@ -923,8 +920,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               selectedCase.candidateExecutionStatus === 'PROVIDER_RATE_LIMIT') && (
               <div
                 style={{
-                  background: 'rgba(192, 132, 252, 0.08)',
-                  border: '1px solid rgba(192, 132, 252, 0.3)',
+                  background: 'rgba(139, 126, 200, 0.08)',
+                  border: '1px solid rgba(139, 126, 200, 0.25)',
                   borderRadius: '8px',
                   padding: '1rem 1.2rem',
                   display: 'flex',
@@ -935,7 +932,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     <span style={{ fontSize: '1rem' }}>⚡</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#C084FC' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8B7EC8' }}>
                       Upstream Provider Operational Telemetry
                     </span>
                   </div>
@@ -943,11 +940,11 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                     style={{
                       fontSize: '0.7rem',
                       fontWeight: 700,
-                      background: 'rgba(192, 132, 252, 0.2)',
-                      color: '#E9D5FF',
+                      background: 'rgba(139, 126, 200, 0.15)',
+                      color: '#C6BEE8',
                       padding: '0.2rem 0.6rem',
                       borderRadius: '4px',
-                      border: '1px solid rgba(192, 132, 252, 0.3)',
+                      border: '1px solid rgba(139, 126, 200, 0.28)',
                     }}
                   >
                     Isolated from Quality Pass Rate
@@ -955,12 +952,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 </div>
 
                 {selectedCase.baselineErrorDetail && (
-                  <div style={{ fontSize: '0.8rem', color: '#E9D5FF', lineHeight: 1.4 }}>
-                    <strong style={{ color: '#C084FC' }}>Baseline [{selectedCase.baselineErrorDetail.provider}]:</strong>{' '}
+                  <div style={{ fontSize: '0.8rem', color: '#C6BEE8', lineHeight: 1.4 }}>
+                    <strong style={{ color: '#8B7EC8' }}>Baseline [{selectedCase.baselineErrorDetail.provider}]:</strong>{' '}
                     HTTP {selectedCase.baselineErrorDetail.httpStatus} ({selectedCase.baselineErrorDetail.category}) —{' '}
                     <span style={{ fontFamily: 'monospace', color: '#FFFFFF' }}>{selectedCase.baselineErrorDetail.message}</span>
                     {selectedCase.baselineErrorDetail.retryAfterSeconds && (
-                      <span style={{ color: '#FFAA44', marginLeft: '0.5rem' }}>
+                      <span style={{ color: '#C68B45', marginLeft: '0.5rem' }}>
                         (Quota reset / retry-after: {selectedCase.baselineErrorDetail.retryAfterSeconds}s)
                       </span>
                     )}
@@ -968,12 +965,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 )}
 
                 {selectedCase.candidateErrorDetail && (
-                  <div style={{ fontSize: '0.8rem', color: '#E9D5FF', lineHeight: 1.4 }}>
-                    <strong style={{ color: '#C084FC' }}>Candidate [{selectedCase.candidateErrorDetail.provider}]:</strong>{' '}
+                  <div style={{ fontSize: '0.8rem', color: '#C6BEE8', lineHeight: 1.4 }}>
+                    <strong style={{ color: '#8B7EC8' }}>Candidate [{selectedCase.candidateErrorDetail.provider}]:</strong>{' '}
                     HTTP {selectedCase.candidateErrorDetail.httpStatus} ({selectedCase.candidateErrorDetail.category}) —{' '}
                     <span style={{ fontFamily: 'monospace', color: '#FFFFFF' }}>{selectedCase.candidateErrorDetail.message}</span>
                     {selectedCase.candidateErrorDetail.retryAfterSeconds && (
-                      <span style={{ color: '#FFAA44', marginLeft: '0.5rem' }}>
+                      <span style={{ color: '#C68B45', marginLeft: '0.5rem' }}>
                         (Quota reset / retry-after: {selectedCase.candidateErrorDetail.retryAfterSeconds}s)
                       </span>
                     )}
@@ -981,13 +978,13 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 )}
 
                 {(!selectedCase.baselineErrorDetail && selectedCase.baselineExecutionStatus === 'PROVIDER_RATE_LIMIT') && (
-                  <div style={{ fontSize: '0.8rem', color: '#E9D5FF' }}>
-                    <strong style={{ color: '#C084FC' }}>Baseline:</strong> Request was throttled by upstream provider rate limits (HTTP 429).
+                  <div style={{ fontSize: '0.8rem', color: '#C6BEE8' }}>
+                    <strong style={{ color: '#8B7EC8' }}>Baseline:</strong> Request was throttled by upstream provider rate limits (HTTP 429).
                   </div>
                 )}
                 {(!selectedCase.candidateErrorDetail && selectedCase.candidateExecutionStatus === 'PROVIDER_RATE_LIMIT') && (
-                  <div style={{ fontSize: '0.8rem', color: '#E9D5FF' }}>
-                    <strong style={{ color: '#C084FC' }}>Candidate:</strong> Request was throttled by upstream provider rate limits (HTTP 429).
+                  <div style={{ fontSize: '0.8rem', color: '#C6BEE8' }}>
+                    <strong style={{ color: '#8B7EC8' }}>Candidate:</strong> Request was throttled by upstream provider rate limits (HTTP 429).
                   </div>
                 )}
               </div>
@@ -998,10 +995,10 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               {/* Baseline Output */}
               <div
                 style={{
-                  background: '#0D1117',
+                  background: '#101419',
                   padding: '1.2rem',
                   borderRadius: '8px',
-                  border: '1px solid rgba(46, 204, 113, 0.3)',
+                  border: '1px solid rgba(78, 155, 111, 0.28)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.8rem',
@@ -1014,15 +1011,15 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         fontSize: '0.65rem',
                         padding: '0.15rem 0.45rem',
                         borderRadius: '3px',
-                        background: 'rgba(46, 204, 113, 0.15)',
-                        color: '#2ECC71',
+                        background: 'rgba(78, 155, 111, 0.12)',
+                        color: '#4E9B6F',
                         fontWeight: 700,
                         textTransform: 'uppercase',
                       }}
                     >
                       {selectedCase.baselineUsage?.provider || run.baselineVersion?.provider || 'baseline'}
                     </span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#2ECC71' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#4E9B6F' }}>
                       {run.baselineVersion?.name || 'Baseline'}
                     </span>
                   </div>
@@ -1052,12 +1049,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                       Out: <strong style={{ color: '#FFFFFF' }}>{selectedCase.baselineUsage.outputTokens}</strong>
                     </span>
                     {(selectedCase.baselineUsage.reasoningTokens ?? 0) > 0 && (
-                      <span style={{ color: '#C084FC', background: 'rgba(192, 132, 252, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
+                      <span style={{ color: '#8B7EC8', background: 'rgba(139, 126, 200, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
                         🧠 {selectedCase.baselineUsage.reasoningTokens} reasoning
                       </span>
                     )}
                     {(selectedCase.baselineUsage.cachedTokens ?? 0) > 0 && (
-                      <span style={{ color: '#2ECC71', background: 'rgba(46, 204, 113, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
+                      <span style={{ color: '#4E9B6F', background: 'rgba(78, 155, 111, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
                         ⚡ {selectedCase.baselineUsage.cachedTokens} cached
                       </span>
                     )}
@@ -1093,10 +1090,10 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               {/* Candidate Output */}
               <div
                 style={{
-                  background: '#0D1117',
+                  background: '#101419',
                   padding: '1.2rem',
                   borderRadius: '8px',
-                  border: `1px solid ${selectedCase.isRegression ? '#FF3311' : 'rgba(77, 166, 255, 0.3)'}`,
+                  border: `1px solid ${selectedCase.isRegression ? '#C05C54' : 'rgba(91, 130, 166, 0.28)'}`,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.8rem',
@@ -1109,19 +1106,19 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         fontSize: '0.65rem',
                         padding: '0.15rem 0.45rem',
                         borderRadius: '3px',
-                        background: selectedCase.isRegression ? 'rgba(255, 34, 0, 0.15)' : 'rgba(77, 166, 255, 0.15)',
-                        color: selectedCase.isRegression ? '#FF4422' : '#4DA6FF',
+                        background: selectedCase.isRegression ? 'rgba(192, 92, 84, 0.12)' : 'rgba(91, 130, 166, 0.12)',
+                        color: selectedCase.isRegression ? '#C05C54' : '#5B82A6',
                         fontWeight: 700,
                         textTransform: 'uppercase',
                       }}
                     >
                       {selectedCase.candidateUsage?.provider || run.candidateVersion?.provider || 'candidate'}
                     </span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: selectedCase.isRegression ? '#FF4422' : '#4DA6FF' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: selectedCase.isRegression ? '#C05C54' : '#5B82A6' }}>
                       {run.candidateVersion?.name || 'Candidate'}
                     </span>
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: selectedCase.isRegression ? '#FF4422' : '#2ECC71', fontWeight: 700 }}>
+                  <span style={{ fontSize: '0.72rem', color: selectedCase.isRegression ? '#C05C54' : '#4E9B6F', fontWeight: 700 }}>
                     Score: {selectedCase.candidateScore !== null && selectedCase.candidateScore !== undefined ? selectedCase.candidateScore.toFixed(1) : '—'} ({selectedCase.isRegression ? 'REGRESSED' : selectedCase.passed === true ? 'PASSED' : selectedCase.passed === false ? 'QUALITY FAIL' : 'NOT EVALUATED'})
                   </span>
                 </div>
@@ -1130,10 +1127,10 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 {selectedCase.candidateUsage && (
                   <div
                     style={{
-                      background: selectedCase.isRegression ? 'rgba(45, 12, 10, 0.4)' : 'rgba(0, 0, 0, 0.3)',
+                      background: selectedCase.isRegression ? 'rgba(192, 92, 84, 0.08)' : 'rgba(0, 0, 0, 0.3)',
                       padding: '0.6rem 0.8rem',
                       borderRadius: '6px',
-                      border: `1px solid ${selectedCase.isRegression ? 'rgba(255, 51, 17, 0.2)' : 'rgba(255, 255, 255, 0.06)'}`,
+                      border: `1px solid ${selectedCase.isRegression ? 'rgba(192, 92, 84, 0.25)' : 'rgba(255, 255, 255, 0.06)'}`,
                       display: 'flex',
                       flexWrap: 'wrap',
                       gap: '0.6rem',
@@ -1147,16 +1144,16 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                       Out: <strong style={{ color: '#FFFFFF' }}>{selectedCase.candidateUsage.outputTokens}</strong>
                     </span>
                     {(selectedCase.candidateUsage.reasoningTokens ?? 0) > 0 && (
-                      <span style={{ color: '#C084FC', background: 'rgba(192, 132, 252, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
+                      <span style={{ color: '#8B7EC8', background: 'rgba(139, 126, 200, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
                         🧠 {selectedCase.candidateUsage.reasoningTokens} reasoning
                       </span>
                     )}
                     {(selectedCase.candidateUsage.cachedTokens ?? 0) > 0 && (
-                      <span style={{ color: '#2ECC71', background: 'rgba(46, 204, 113, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
+                      <span style={{ color: '#4E9B6F', background: 'rgba(78, 155, 111, 0.12)', padding: '0 0.35rem', borderRadius: '3px' }}>
                         ⚡ {selectedCase.candidateUsage.cachedTokens} cached
                       </span>
                     )}
-                    <span style={{ color: selectedCase.isRegression ? '#FF9988' : '#8899AA', marginLeft: 'auto' }}>
+                    <span style={{ color: selectedCase.isRegression ? '#D48B85' : '#8899AA', marginLeft: 'auto' }}>
                       {selectedCase.candidateLatencyMs !== null && selectedCase.candidateLatencyMs !== undefined ? `${selectedCase.candidateLatencyMs}ms` : '—'} | ${selectedCase.candidateUsage.estimatedCostUsd.toFixed(5)}
                     </span>
                   </div>
@@ -1167,17 +1164,17 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                     margin: 0,
                     fontFamily: 'monospace',
                     fontSize: '0.82rem',
-                    color: selectedCase.isRegression ? '#FFBBAA' : '#CCCCCC',
+                    color: selectedCase.isRegression ? '#E0A8A0' : '#CCCCCC',
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-all',
-                    background: selectedCase.isRegression ? 'rgba(45, 12, 10, 0.5)' : 'rgba(0, 0, 0, 0.4)',
+                    background: selectedCase.isRegression ? 'rgba(192, 92, 84, 0.08)' : 'rgba(0, 0, 0, 0.4)',
                     padding: '0.8rem',
                     borderRadius: '6px',
                     minHeight: '80px',
                   }}
                 >
                   {selectedCase.candidateOutput || (
-                    <span style={{ color: '#FFAA44', fontStyle: 'italic' }}>
+                    <span style={{ color: '#C68B45', fontStyle: 'italic' }}>
                       NOT AVAILABLE
                       {selectedCase.failureReason ? ` — Reason: ${selectedCase.failureReason}` : ' — Provider call failed'}
                     </span>
@@ -1190,12 +1187,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
             {selectedCase.failureReason && (
               <div
                 style={{
-                  background: 'rgba(255, 34, 0, 0.1)',
-                  border: '1px solid #FF3311',
+                  background: 'rgba(192, 92, 84, 0.1)',
+                  border: '1px solid rgba(192, 92, 84, 0.35)',
                   borderRadius: '8px',
                   padding: '1rem 1.2rem',
                   fontSize: '0.85rem',
-                  color: '#FFAA99',
+                  color: '#E0A8A0',
                 }}
               >
                 <strong>Evaluation Failure Rationale:</strong> {selectedCase.failureReason}
@@ -1220,8 +1217,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         >
           <div
             style={{
-              background: '#161B22',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#14181F',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '12px',
               padding: '2rem',
               width: '100%',
@@ -1241,7 +1238,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               style={{
                 width: '100%',
                 padding: '0.7rem',
-                background: '#0D1117',
+                background: '#101419',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 borderRadius: '6px',
                 color: '#FFFFFF',
@@ -1268,8 +1265,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               <button
                 onClick={() => handleDecision('PASS', overrideReason || 'Manual supervisor override.')}
                 style={{
-                  background: '#2ECC71',
-                  color: '#000000',
+                  background: '#4E9B6F',
+                  color: '#FFFFFF',
                   border: 'none',
                   padding: '0.6rem 1.4rem',
                   borderRadius: '6px',

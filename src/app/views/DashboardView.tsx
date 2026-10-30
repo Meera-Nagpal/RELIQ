@@ -28,37 +28,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1000px', margin: '0 auto', padding: '2rem 1rem' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
             GETTING STARTED // QUICKSTART GUIDE
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.5rem 0' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#ECEFF2', margin: '0.3rem 0 0.5rem 0' }}>
             Welcome to {project.name}
           </h1>
-          <p style={{ color: '#8899AA', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+          <p style={{ color: '#8D98A5', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
             No evaluation runs have been recorded yet for this project workspace. Follow the 3-step workflow below to curate test scenarios and evaluate model versions.
           </p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
           {/* Step 1 */}
-          <div style={{ background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ background: '#14181F', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ color: 'var(--accent, #FF6B35)', fontWeight: 800, fontSize: '0.8rem', marginBottom: '0.6rem' }}>
+              <div style={{ color: 'var(--accent, #C86D51)', fontWeight: 800, fontSize: '0.8rem', marginBottom: '0.6rem' }}>
                 STEP 01
               </div>
               <h3 style={{ margin: '0 0 0.5rem 0', color: '#FFFFFF', fontSize: '1.1rem' }}>
                 Curate Test Suites
               </h3>
-              <p style={{ color: '#8899AA', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.2rem 0' }}>
+              <p style={{ color: '#8D98A5', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.2rem 0' }}>
                 Create evaluation datasets, define test prompts, and select deterministic evaluators (keyword criteria, JSON validity, exact match, behavioral safety).
               </p>
             </div>
             <button
               onClick={() => navigate('#/app/datasets')}
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#FFFFFF',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ECEFF2',
                 padding: '0.6rem 1rem',
                 borderRadius: '6px',
                 fontWeight: 600,
@@ -71,24 +71,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Step 2 */}
-          <div style={{ background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ background: '#14181F', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ color: '#4DA6FF', fontWeight: 800, fontSize: '0.8rem', marginBottom: '0.6rem' }}>
+              <div style={{ color: '#5B82A6', fontWeight: 800, fontSize: '0.8rem', marginBottom: '0.6rem' }}>
                 STEP 02
               </div>
               <h3 style={{ margin: '0 0 0.5rem 0', color: '#FFFFFF', fontSize: '1.1rem' }}>
                 Configure Policies
               </h3>
-              <p style={{ color: '#8899AA', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.2rem 0' }}>
+              <p style={{ color: '#8D98A5', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.2rem 0' }}>
                 Review and customize pass/block regression boundaries (minimum accuracy gate, maximum allowed degradation, latency tolerance, and coverage threshold).
               </p>
             </div>
             <button
               onClick={() => navigate('#/app/settings')}
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#FFFFFF',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ECEFF2',
                 padding: '0.6rem 1rem',
                 borderRadius: '6px',
                 fontWeight: 600,
@@ -101,24 +101,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Step 3 */}
-          <div style={{ background: '#161B22', border: '1px solid var(--accent, #FF6B35)', borderRadius: '10px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 0 20px rgba(255, 107, 53, 0.12)' }}>
+          <div style={{ background: '#14181F', border: '1px solid rgba(200, 109, 81, 0.4)', borderRadius: '10px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ color: 'var(--accent, #FF6B35)', fontWeight: 800, fontSize: '0.8rem', marginBottom: '0.6rem' }}>
+              <div style={{ color: 'var(--accent, #C86D51)', fontWeight: 800, fontSize: '0.8rem', marginBottom: '0.6rem' }}>
                 STEP 03
               </div>
               <h3 style={{ margin: '0 0 0.5rem 0', color: '#FFFFFF', fontSize: '1.1rem' }}>
                 Run Benchmark
               </h3>
-              <p style={{ color: '#8899AA', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.2rem 0' }}>
+              <p style={{ color: '#8D98A5', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.2rem 0' }}>
                 Execute a comparative run between your reference baseline and candidate model to compute metrics, regression signals, and deployment verdicts.
               </p>
             </div>
             <button
               onClick={() => navigate('#/app/evaluations')}
               style={{
-                background: 'var(--accent, #FF6B35)',
+                background: 'var(--accent, #C86D51)',
                 border: 'none',
-                color: '#000000',
+                color: '#FFFFFF',
                 padding: '0.65rem 1.2rem',
                 borderRadius: '6px',
                 fontWeight: 700,
@@ -160,24 +160,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const getVerdictStyle = (status: string) => {
     switch (status) {
       case 'SHIP':
-        return { bg: 'linear-gradient(90deg, rgba(10, 35, 20, 0.9) 0%, rgba(8, 22, 14, 0.95) 100%)', border: '#2ECC71', color: '#2ECC71', icon: '✓', label: 'SHIP TO PRODUCTION', sublabel: 'Verified Safe for Production' };
+        return { bg: 'rgba(78, 155, 111, 0.12)', border: 'rgba(78, 155, 111, 0.4)', color: '#4E9B6F', icon: '✓', label: 'SHIP TO PRODUCTION', sublabel: 'Verified Safe for Production' };
       case 'SHIP_WITH_CONDITIONS':
       case 'SHIP WITH CONDITIONS':
-        return { bg: 'linear-gradient(90deg, rgba(50, 38, 10, 0.9) 0%, rgba(30, 22, 6, 0.95) 100%)', border: '#F39C12', color: '#F39C12', icon: '⚡', label: 'SHIP WITH CONDITIONS', sublabel: 'Preliminary Sample Passed (Staging/Smoke Test)' };
+        return { bg: 'rgba(198, 139, 69, 0.12)', border: 'rgba(198, 139, 69, 0.4)', color: '#C68B45', icon: '⚡', label: 'SHIP WITH CONDITIONS', sublabel: 'Preliminary Sample Passed (Staging/Smoke Test)' };
       case 'NO_REGRESSION':
       case 'NO REGRESSION':
       case 'PASS':
-        return { bg: 'linear-gradient(90deg, rgba(10, 30, 45, 0.9) 0%, rgba(8, 18, 30, 0.95) 100%)', border: '#4DA6FF', color: '#4DA6FF', icon: '✓', label: 'NO REGRESSION', sublabel: 'Parity Maintained with Production' };
+        return { bg: 'rgba(91, 130, 166, 0.12)', border: 'rgba(91, 130, 166, 0.4)', color: '#5B82A6', icon: '✓', label: 'NO REGRESSION', sublabel: 'Parity Maintained with Production' };
       case 'REGRESSION_DETECTED':
       case 'REGRESSION DETECTED':
-        return { bg: 'linear-gradient(90deg, rgba(45, 12, 10, 0.9) 0%, rgba(25, 8, 6, 0.95) 100%)', border: '#FF3311', color: '#FF3311', icon: '⚠', label: 'REGRESSION DETECTED', sublabel: 'Candidate Release Blocked' };
+        return { bg: 'rgba(192, 92, 84, 0.12)', border: 'rgba(192, 92, 84, 0.4)', color: '#C05C54', icon: '⚠', label: 'REGRESSION DETECTED', sublabel: 'Candidate Release Blocked' };
       case 'BLOCK':
       case 'BLOCK RELEASE':
-        return { bg: 'linear-gradient(90deg, rgba(45, 12, 10, 0.9) 0%, rgba(25, 8, 6, 0.95) 100%)', border: '#FF3311', color: '#FF3311', icon: '⛔', label: 'RELEASE BLOCKED', sublabel: 'Critical Safety or Reliability Defect' };
+        return { bg: 'rgba(192, 92, 84, 0.16)', border: 'rgba(192, 92, 84, 0.45)', color: '#C05C54', icon: '⛔', label: 'RELEASE BLOCKED', sublabel: 'Critical Safety or Reliability Defect' };
       case 'INSUFFICIENT_EVIDENCE':
       case 'INSUFFICIENT EVIDENCE':
       default:
-        return { bg: 'linear-gradient(90deg, rgba(30, 20, 45, 0.9) 0%, rgba(20, 12, 30, 0.95) 100%)', border: '#9B59B6', color: '#C084FC', icon: '❓', label: 'INSUFFICIENT EVIDENCE', sublabel: 'Coverage Below Threshold (Rate Limits / Errors)' };
+        return { bg: 'rgba(141, 152, 165, 0.12)', border: 'rgba(141, 152, 165, 0.35)', color: '#8D98A5', icon: '❓', label: 'INSUFFICIENT EVIDENCE', sublabel: 'Coverage Below Threshold (Rate Limits / Errors)' };
     }
   };
 
@@ -188,14 +188,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* ── Page Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
             OVERVIEW // RELIABILITY METRICS
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#ECEFF2', margin: '0.3rem 0 0.4rem 0', letterSpacing: '-0.02em' }}>
             {project.name} Dashboard
           </h1>
-          <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0 }}>
-            Comparing baseline <code style={{ color: '#FFFFFF' }}>{baselineVersion.name}</code> against candidate <code style={{ color: '#4DA6FF' }}>{candidateVersion.name}</code>.
+          <p style={{ color: '#8D98A5', fontSize: '0.9rem', margin: 0 }}>
+            Comparing baseline <code style={{ color: '#FFFFFF' }}>{baselineVersion.name}</code> against candidate <code style={{ color: '#5B82A6' }}>{candidateVersion.name}</code>.
           </p>
         </div>
 
@@ -203,9 +203,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             onClick={() => navigate('#/app/evaluations')}
             style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: '#ECECEC',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#ECEFF2',
               padding: '0.6rem 1.2rem',
               borderRadius: '6px',
               fontSize: '0.82rem',
@@ -218,9 +218,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             onClick={() => navigate('#/app/regressions')}
             style={{
-              background: isRegression ? 'rgba(255, 34, 0, 0.15)' : 'rgba(46, 204, 113, 0.15)',
-              border: `1px solid ${isRegression ? '#FF3311' : '#2ECC71'}`,
-              color: isRegression ? '#FF5533' : '#2ECC71',
+              background: isRegression ? 'rgba(192, 92, 84, 0.12)' : 'rgba(78, 155, 111, 0.12)',
+              border: `1px solid ${isRegression ? '#C05C54' : '#4E9B6F'}`,
+              color: isRegression ? '#C05C54' : '#4E9B6F',
               padding: '0.6rem 1.2rem',
               borderRadius: '6px',
               fontSize: '0.82rem',
@@ -243,7 +243,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: `0 0 20px ${verdictCfg.border}33`,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
@@ -321,14 +320,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           style={{
             padding: '1.4rem 1.8rem',
             borderRadius: '10px',
-            background: 'linear-gradient(90deg, rgba(22, 27, 34, 0.95) 0%, rgba(13, 17, 23, 0.95) 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            background: '#14181F',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: '1.2rem',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flex: 1, minWidth: '300px' }}>
@@ -337,8 +335,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 width: '42px',
                 height: '42px',
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(0, 200, 255, 0.2))',
-                border: '1px solid rgba(255, 107, 53, 0.4)',
+                background: 'rgba(200, 109, 81, 0.12)',
+                border: '1px solid rgba(200, 109, 81, 0.28)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -350,17 +348,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#8899AA' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#8D98A5' }}>
                   CROSS-MODEL COMPARISON // RECOMMENDATION
                 </span>
                 {(() => {
                   const mode = latestRun.executionMode || latestRun.comparisonReport?.executionMode || 'SAVED';
                   const cfg =
                     mode === 'LIVE'
-                      ? { label: 'LIVE EVALUATION', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', dot: true }
+                      ? { label: 'LIVE EVALUATION', color: '#4E9B6F', bg: 'rgba(78, 155, 111, 0.12)', border: 'rgba(78, 155, 111, 0.3)', dot: true }
                       : mode === 'REFERENCE'
-                      ? { label: 'REFERENCE DATA', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.15)', border: 'rgba(167, 139, 250, 0.4)', dot: false }
-                      : { label: 'SAVED EVALUATION', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.15)', border: 'rgba(56, 189, 248, 0.4)', dot: false };
+                      ? { label: 'REFERENCE DATA', color: '#8D98A5', bg: 'rgba(141, 152, 165, 0.12)', border: 'rgba(141, 152, 165, 0.3)', dot: false }
+                      : { label: 'SAVED EVALUATION', color: '#5B82A6', bg: 'rgba(91, 130, 166, 0.12)', border: 'rgba(91, 130, 166, 0.3)', dot: false };
                   return (
                     <span
                       style={{
@@ -383,8 +381,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             width: '6px',
                             height: '6px',
                             borderRadius: '50%',
-                            background: '#10B981',
-                            boxShadow: '0 0 6px #10B981',
+                            background: '#4E9B6F',
                           }}
                         />
                       )}
@@ -401,22 +398,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     letterSpacing: '0.05em',
                     background:
                       latestRun.comparisonReport.recommendation === 'SHIP' || latestRun.comparisonReport.recommendation === 'NO REGRESSION'
-                        ? 'rgba(46, 204, 113, 0.2)'
+                        ? 'rgba(78, 155, 111, 0.15)'
                         : latestRun.comparisonReport.recommendation === 'SHIP WITH CONDITIONS'
-                        ? 'rgba(241, 196, 15, 0.2)'
-                        : 'rgba(255, 51, 17, 0.2)',
+                        ? 'rgba(198, 139, 69, 0.15)'
+                        : 'rgba(192, 92, 84, 0.15)',
                     color:
                       latestRun.comparisonReport.recommendation === 'SHIP' || latestRun.comparisonReport.recommendation === 'NO REGRESSION'
-                        ? '#2ECC71'
+                        ? '#4E9B6F'
                         : latestRun.comparisonReport.recommendation === 'SHIP WITH CONDITIONS'
-                        ? '#F1C40F'
-                        : '#FF4422',
+                        ? '#C68B45'
+                        : '#C05C54',
                     border: `1px solid ${
                       latestRun.comparisonReport.recommendation === 'SHIP' || latestRun.comparisonReport.recommendation === 'NO REGRESSION'
-                        ? '#2ECC71'
+                        ? 'rgba(78, 155, 111, 0.35)'
                         : latestRun.comparisonReport.recommendation === 'SHIP WITH CONDITIONS'
-                        ? '#F1C40F'
-                        : '#FF3311'
+                        ? 'rgba(198, 139, 69, 0.35)'
+                        : 'rgba(192, 92, 84, 0.35)'
                     }`,
                   }}
                 >
@@ -425,7 +422,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
               <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#FFFFFF', marginTop: '0.3rem' }}>
                 Overall Winner:{' '}
-                <span style={{ color: '#FF6B35' }}>
+                <span style={{ color: 'var(--accent, #C86D51)' }}>
                   {latestRun.comparisonReport.winner === 'candidate'
                     ? latestRun.candidateVersion.name
                     : latestRun.comparisonReport.winner === 'baseline'
@@ -448,9 +445,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(255, 107, 53, 0.06))',
-              border: '1px solid #FF6B35',
-              color: '#FF6B35',
+              background: 'rgba(200, 109, 81, 0.12)',
+              border: '1px solid rgba(200, 109, 81, 0.3)',
+              color: 'var(--accent, #C86D51)',
               padding: '0.65rem 1.3rem',
               borderRadius: '6px',
               fontSize: '0.82rem',
@@ -459,7 +456,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              boxShadow: '0 0 15px rgba(255, 107, 53, 0.15)',
             }}
           >
             📊 View Full Comparison Report →
@@ -478,18 +474,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Metric 1: Candidate Composite Score & Coverage */}
         <div
           style={{
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '10px',
             padding: '1.5rem',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
+            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#8D98A5', letterSpacing: '0.1em' }}>
               Composite Evaluation Score
             </div>
             {metrics.isInsufficientCoverage && (
-              <span style={{ fontSize: '0.65rem', background: 'rgba(192, 132, 252, 0.2)', color: '#C084FC', padding: '0.1rem 0.4rem', borderRadius: '3px', fontWeight: 700 }}>
+              <span style={{ fontSize: '0.65rem', background: 'rgba(141, 152, 165, 0.15)', color: '#8D98A5', padding: '0.1rem 0.4rem', borderRadius: '3px', fontWeight: 700 }}>
                 {metrics.authenticationFailures && metrics.authenticationFailures > 0
                   ? 'AUTH FAILURE'
                   : (metrics.candidateEvaluatedCases === 0 || metrics.evaluatedCases === 0)
@@ -501,10 +497,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.4rem 0' }}>
             {(metrics.candidateEvaluatedCases === 0 || metrics.evaluatedCases === 0) ? (
               <>
-                <span style={{ fontSize: '2.2rem', fontWeight: 800, color: '#C084FC', letterSpacing: '-0.02em' }}>
+                <span style={{ fontSize: '2.2rem', fontWeight: 800, color: '#8D98A5', letterSpacing: '-0.02em' }}>
                   —
                 </span>
-                <span style={{ fontSize: '0.78rem', color: '#8899AA', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.78rem', color: '#8D98A5', fontWeight: 600 }}>
                   {metrics.authenticationFailures && metrics.authenticationFailures > 0
                     ? '(Provider Authentication Failure)'
                     : metrics.quotaFailures && metrics.quotaFailures > 0
@@ -514,7 +510,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </>
             ) : (
               <>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: isRegression ? '#FF4422' : '#2ECC71', letterSpacing: '-0.03em' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: isRegression ? '#C05C54' : '#4E9B6F', letterSpacing: '-0.03em' }}>
                   {metrics.candidateQualityScore !== undefined && metrics.candidateQualityScore !== null
                     ? `${metrics.candidateQualityScore}%`
                     : metrics.candidateAccuracy !== null
@@ -526,7 +522,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     style={{
                       fontSize: '0.85rem',
                       fontWeight: 700,
-                      color: (metrics.qualityScoreDelta ?? metrics.accuracyDelta)! < 0 ? '#FF4422' : '#2ECC71',
+                      color: (metrics.qualityScoreDelta ?? metrics.accuracyDelta)! < 0 ? '#C05C54' : '#4E9B6F',
                     }}
                   >
                     {(metrics.qualityScoreDelta ?? metrics.accuracyDelta)! > 0
@@ -549,7 +545,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </strong>
             </div>
             {metrics.candidateEvaluationCoverage !== undefined && (
-              <div style={{ color: metrics.candidateEvaluationCoverage < 80 ? '#C084FC' : '#8899AA', fontSize: '0.72rem' }}>
+              <div style={{ color: metrics.candidateEvaluationCoverage < 80 ? '#8D98A5' : '#8D98A5', fontSize: '0.72rem' }}>
                 Coverage: <strong>{metrics.candidateEvaluationCoverage}%</strong> ({metrics.candidateEvaluatedCases}/{metrics.totalCases} cases)
               </div>
             )}
@@ -559,17 +555,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Metric 2: Regressed Cases */}
         <div
           style={{
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '10px',
             padding: '1.5rem',
           }}
         >
-          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#8D98A5', letterSpacing: '0.1em' }}>
             Regressed Test Cases
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.4rem 0' }}>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: metrics.regressedCasesCount > 0 ? '#FF3311' : '#2ECC71' }}>
+            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: metrics.regressedCasesCount > 0 ? '#C05C54' : '#4E9B6F' }}>
               {metrics.regressedCasesCount}
             </span>
             <span style={{ fontSize: '0.85rem', color: '#888888' }}>/ {metrics.totalCases} cases</span>
@@ -588,13 +584,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Metric 3: Latency Delta */}
         <div
           style={{
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '10px',
             padding: '1.5rem',
           }}
         >
-          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#8D98A5', letterSpacing: '0.1em' }}>
             Observed API Latency (Mean)
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.4rem 0' }}>
@@ -608,7 +604,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 style={{
                   fontSize: '0.85rem',
                   fontWeight: 700,
-                  color: metrics.latencyDeltaPercent > 15 ? '#FFAA44' : '#888888',
+                  color: metrics.latencyDeltaPercent > 15 ? '#C68B45' : '#8D98A5',
                 }}
               >
                 {metrics.latencyDeltaPercent > 0 ? `+${metrics.latencyDeltaPercent}%` : `${metrics.latencyDeltaPercent}%`}
@@ -634,17 +630,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Metric 4: Estimated Run Cost */}
         <div
           style={{
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '10px',
             padding: '1.5rem',
           }}
         >
-          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#888888', letterSpacing: '0.1em' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#8D98A5', letterSpacing: '0.1em' }}>
             Estimated Suite Cost
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.4rem 0' }}>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#4DA6FF' }}>
+            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#5B82A6' }}>
               {metrics.candidateEstimatedCost !== null && metrics.candidateEstimatedCost !== undefined
                 ? `$${metrics.candidateEstimatedCost.toFixed(4)}`
                 : '—'}
@@ -662,7 +658,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* ── Token Usage & Model Telemetry ── */}
       <div
         style={{
-          background: '#161B22',
+          background: '#14181F',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '10px',
           padding: '1.4rem 1.8rem',
@@ -676,9 +672,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span
               style={{
                 fontSize: '0.68rem',
-                background: 'rgba(77, 166, 255, 0.15)',
-                color: '#4DA6FF',
-                border: '1px solid rgba(77, 166, 255, 0.3)',
+                background: 'rgba(91, 130, 166, 0.12)',
+                color: '#5B82A6',
+                border: '1px solid rgba(91, 130, 166, 0.28)',
                 padding: '0.15rem 0.5rem',
                 borderRadius: '4px',
                 fontWeight: 600,
@@ -688,13 +684,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#888888' }}>
-            Providers: <strong style={{ color: '#CCCCCC' }}>{baselineVersion.provider.toUpperCase()}</strong> (Baseline) vs <strong style={{ color: '#4DA6FF' }}>{candidateVersion.provider.toUpperCase()}</strong> (Candidate)
+            Providers: <strong style={{ color: '#CCCCCC' }}>{baselineVersion.provider.toUpperCase()}</strong> (Baseline) vs <strong style={{ color: '#5B82A6' }}>{candidateVersion.provider.toUpperCase()}</strong> (Candidate)
           </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.2rem' }}>
           {/* Total Tokens */}
-          <div style={{ background: '#0D1117', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <div style={{ background: '#181D25', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
             <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#888888', marginBottom: '0.3rem' }}>
               Total Tokens Consumed
             </div>
@@ -707,47 +703,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Reasoning / Thinking Tokens */}
-          <div style={{ background: '#0D1117', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(180, 100, 255, 0.2)' }}>
+          <div style={{ background: '#181D25', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#C084FC' }}>
+              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#8D98A5' }}>
                 🧠 Thinking / Reasoning
               </span>
-              <span style={{ fontSize: '0.65rem', background: 'rgba(192, 132, 252, 0.15)', color: '#C084FC', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
+              <span style={{ fontSize: '0.65rem', background: 'rgba(141, 152, 165, 0.15)', color: '#8D98A5', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
                 Multi-step
               </span>
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#E9D5FF' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ECEFF2' }}>
               {metrics.candidateReasoningTokens !== null && metrics.candidateReasoningTokens !== undefined ? metrics.candidateReasoningTokens.toLocaleString() : '—'}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#A855F7', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.72rem', color: '#8D98A5', marginTop: '0.2rem' }}>
               Baseline reasoning: {metrics.baselineReasoningTokens !== null && metrics.baselineReasoningTokens !== undefined ? `${metrics.baselineReasoningTokens.toLocaleString()} tokens` : '—'}
             </div>
           </div>
 
           {/* Prompt Caching Tokens */}
-          <div style={{ background: '#0D1117', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(46, 204, 113, 0.2)' }}>
+          <div style={{ background: '#181D25', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(78, 155, 111, 0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#2ECC71' }}>
+              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#4E9B6F' }}>
                 ⚡ Cached Prompt Tokens
               </span>
-              <span style={{ fontSize: '0.65rem', background: 'rgba(46, 204, 113, 0.15)', color: '#2ECC71', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
+              <span style={{ fontSize: '0.65rem', background: 'rgba(78, 155, 111, 0.12)', color: '#4E9B6F', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
                 Discounted
               </span>
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#86EFAC' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#A3D9B5' }}>
               {metrics.candidateCachedTokens !== null && metrics.candidateCachedTokens !== undefined ? metrics.candidateCachedTokens.toLocaleString() : '—'}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#22C55E', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.72rem', color: '#4E9B6F', marginTop: '0.2rem' }}>
               Prompt cache hit rate: 100% on system prompts
             </div>
           </div>
 
           {/* Cost Delta */}
-          <div style={{ background: '#0D1117', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <div style={{ background: '#181D25', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
             <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#888888', marginBottom: '0.3rem' }}>
               Suite Run Cost Delta
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: (metrics.candidateEstimatedCost ?? 0) <= (metrics.baselineEstimatedCost ?? 0) ? '#2ECC71' : '#FFAA44' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: (metrics.candidateEstimatedCost ?? 0) <= (metrics.baselineEstimatedCost ?? 0) ? '#4E9B6F' : '#C68B45' }}>
               {metrics.candidateEstimatedCost !== null && metrics.baselineEstimatedCost !== null ? (
                 <>
                   {metrics.candidateEstimatedCost >= metrics.baselineEstimatedCost ? '+' : ''}
@@ -769,7 +765,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Category Pass Rates */}
         <div
           style={{
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '10px',
             padding: '1.6rem',
@@ -788,7 +784,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div key={cat}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.4rem' }}>
                     <span style={{ color: '#DDDDDD', fontWeight: 500 }}>{cat}</span>
-                    <span style={{ color: isLow ? '#FF4422' : '#2ECC71', fontWeight: 700 }}>
+                    <span style={{ color: isLow ? '#C05C54' : '#4E9B6F', fontWeight: 700 }}>
                       {pct}% ({stats.passed}/{stats.total})
                     </span>
                   </div>
@@ -797,7 +793,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       style={{
                         height: '100%',
                         width: `${pct}%`,
-                        background: isLow ? '#FF4422' : '#2ECC71',
+                        background: isLow ? '#C05C54' : '#4E9B6F',
                         transition: 'width 0.5s ease',
                       }}
                     />
@@ -811,7 +807,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Root Cause Quick Summary */}
         <div
           style={{
-            background: '#161B22',
+            background: '#14181F',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '10px',
             padding: '1.6rem',
@@ -835,15 +831,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         style={{
                           padding: '0.9rem',
                           borderRadius: '8px',
-                          background: 'rgba(255, 255, 255, 0.04)',
+                          background: 'rgba(255, 255, 255, 0.02)',
                           border: '1px solid rgba(255, 255, 255, 0.06)',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--accent, #FF6B35)', fontWeight: 700, textTransform: 'uppercase' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--accent, #C86D51)', fontWeight: 700, textTransform: 'uppercase' }}>
                             {rc.category}
                           </span>
-                          <span style={{ fontSize: '0.7rem', color: '#4DA6FF', fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.7rem', color: '#5B82A6', fontWeight: 600 }}>
                             {rc.diagnosticConfidence ? `Confidence: ${rc.diagnosticConfidence}` : `${rc.confidenceScore}% (Heuristic)`}
                           </span>
                         </div>
@@ -867,9 +863,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onClick={() => navigate('#/app/regressions')}
             style={{
               marginTop: '1.5rem',
-              background: 'rgba(255, 107, 53, 0.12)',
-              border: '1px solid var(--accent, #FF6B35)',
-              color: 'var(--accent, #FF6B35)',
+              background: 'rgba(200, 109, 81, 0.12)',
+              border: '1px solid rgba(200, 109, 81, 0.3)',
+              color: 'var(--accent, #C86D51)',
               padding: '0.65rem',
               borderRadius: '6px',
               fontSize: '0.8rem',

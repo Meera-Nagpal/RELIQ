@@ -479,13 +479,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1240px' }}>
       {/* ── Page Header ── */}
       <div>
-        <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #FF6B35)', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
           HARNESS // MULTI-PROVIDER BENCHMARK
         </div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#ECEFF2', margin: '0.3rem 0 0.4rem 0' }}>
           Cross-Provider Evaluation Harness
         </h1>
-        <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0 }}>
+        <p style={{ color: '#8D98A5', fontSize: '0.9rem', margin: 0 }}>
           Benchmark real AI providers (Google Gemini, OpenAI, Anthropic Claude, Demo) against identical datasets to detect regressions and enforce deployment decisions.
         </p>
       </div>
@@ -493,7 +493,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       {/* ── Provider Readiness Bar ── */}
       <div
         style={{
-          background: '#161B22',
+          background: '#14181F',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '10px',
           padding: '0.9rem 1.4rem',
@@ -505,18 +505,18 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#FFFFFF' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ECEFF2' }}>
             Provider Status:
           </span>
-          <span style={{ fontSize: '0.72rem', color: '#888888' }}>
+          <span style={{ fontSize: '0.72rem', color: '#8D98A5' }}>
             (Enterprise Gateway & Sandboxed Evaluation Proxies)
           </span>
         </div>
 
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           {/* Demo */}
-          <span style={{ fontSize: '0.7rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'rgba(46, 204, 113, 0.15)', color: '#2ECC71', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2ECC71' }} />
+          <span style={{ fontSize: '0.7rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'rgba(78, 155, 111, 0.12)', color: '#4E9B6F', border: '1px solid rgba(78, 155, 111, 0.28)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4E9B6F' }} />
             DEMO: AVAILABLE
           </span>
 
@@ -526,16 +526,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               fontSize: '0.7rem',
               padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.gemini ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-              color: serverStatus.gemini ? '#2ECC71' : '#8899A6',
-              border: serverStatus.gemini ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
+              background: serverStatus.gemini ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+              color: serverStatus.gemini ? '#4E9B6F' : '#8D98A5',
+              border: serverStatus.gemini ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.gemini ? '#2ECC71' : '#556677' }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.gemini ? '#4E9B6F' : '#556677' }} />
             GEMINI: {serverStatus.gemini ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
@@ -545,16 +545,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               fontSize: '0.7rem',
               padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.openai ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-              color: serverStatus.openai ? '#2ECC71' : '#8899A6',
-              border: serverStatus.openai ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
+              background: serverStatus.openai ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+              color: serverStatus.openai ? '#4E9B6F' : '#8D98A5',
+              border: serverStatus.openai ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.openai ? '#2ECC71' : '#556677' }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.openai ? '#4E9B6F' : '#556677' }} />
             OPENAI: {serverStatus.openai ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
@@ -564,16 +564,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               fontSize: '0.7rem',
               padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.anthropic ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-              color: serverStatus.anthropic ? '#2ECC71' : '#8899A6',
-              border: serverStatus.anthropic ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
+              background: serverStatus.anthropic ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+              color: serverStatus.anthropic ? '#4E9B6F' : '#8D98A5',
+              border: serverStatus.anthropic ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.anthropic ? '#2ECC71' : '#556677' }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.anthropic ? '#4E9B6F' : '#556677' }} />
             CLAUDE: {serverStatus.anthropic ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
@@ -583,16 +583,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               fontSize: '0.7rem',
               padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.groq ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-              color: serverStatus.groq ? '#2ECC71' : '#8899A6',
-              border: serverStatus.groq ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
+              background: serverStatus.groq ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+              color: serverStatus.groq ? '#4E9B6F' : '#8D98A5',
+              border: serverStatus.groq ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.groq ? '#2ECC71' : '#556677' }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.groq ? '#4E9B6F' : '#556677' }} />
             GROQ: {serverStatus.groq ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
 
@@ -602,16 +602,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               fontSize: '0.7rem',
               padding: '0.25rem 0.6rem',
               borderRadius: '4px',
-              background: serverStatus.cerebras ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-              color: serverStatus.cerebras ? '#2ECC71' : '#8899A6',
-              border: serverStatus.cerebras ? '1px solid rgba(46, 204, 113, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
+              background: serverStatus.cerebras ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+              color: serverStatus.cerebras ? '#4E9B6F' : '#8D98A5',
+              border: serverStatus.cerebras ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.cerebras ? '#2ECC71' : '#556677' }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.cerebras ? '#4E9B6F' : '#556677' }} />
             CEREBRAS: {serverStatus.cerebras ? 'AVAILABLE' : 'NOT CONFIGURED'}
           </span>
         </div>
@@ -620,9 +620,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       {/* ── Evaluation Launch Configuration Card ── */}
       <div
         style={{
-          background: '#161B22',
+          background: '#14181F',
           borderRadius: '12px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
           padding: '2rem',
           display: 'flex',
           flexDirection: 'column',
@@ -640,11 +640,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           </div>
 
           {/* Mode Switcher */}
-          <div style={{ display: 'flex', background: '#0D1117', padding: '0.25rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div style={{ display: 'flex', background: '#0F1216', padding: '0.25rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <button
               onClick={() => setConfigMode('saved_versions')}
               style={{
-                background: configMode === 'saved_versions' ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+                background: configMode === 'saved_versions' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                 border: 'none',
                 color: configMode === 'saved_versions' ? '#FFFFFF' : '#888888',
                 padding: '0.4rem 0.8rem',
@@ -659,9 +659,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => setConfigMode('custom_benchmark')}
               style={{
-                background: configMode === 'custom_benchmark' ? 'var(--accent, #FF6B35)' : 'transparent',
+                background: configMode === 'custom_benchmark' ? 'var(--accent, #C86D51)' : 'transparent',
                 border: 'none',
-                color: configMode === 'custom_benchmark' ? '#000000' : '#888888',
+                color: configMode === 'custom_benchmark' ? '#FFFFFF' : '#888888',
                 padding: '0.4rem 0.9rem',
                 borderRadius: '4px',
                 fontSize: '0.78rem',
@@ -745,8 +745,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {/* ── Active Benchmark Overview Bar ── */}
         <div
           style={{
-            background: 'rgba(255, 107, 53, 0.05)',
-            border: '1px solid rgba(255, 107, 53, 0.22)',
+            background: 'rgba(200, 109, 81, 0.06)',
+            border: '1px solid rgba(200, 109, 81, 0.22)',
             borderRadius: '8px',
             padding: '0.85rem 1.2rem',
             display: 'grid',
@@ -756,7 +756,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           }}
         >
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <span>Active Benchmark Suite</span>
               <span
                 style={{
@@ -766,45 +766,45 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   fontWeight: 700,
                   background:
                     selectedDataset?.sourceType === 'upload'
-                      ? 'rgba(77, 166, 255, 0.18)'
-                      : 'rgba(46, 204, 113, 0.16)',
-                  color: selectedDataset?.sourceType === 'upload' ? '#4DA6FF' : '#2ECC71',
+                      ? 'rgba(91, 130, 166, 0.15)'
+                      : 'rgba(78, 155, 111, 0.15)',
+                  color: selectedDataset?.sourceType === 'upload' ? '#5B82A6' : '#4E9B6F',
                 }}
               >
                 {selectedDataset?.sourceType === 'upload' ? 'USER UPLOAD' : 'BUILT-IN'}
               </span>
-              <span style={{ fontFamily: 'monospace', color: '#8899AA' }}>
+              <span style={{ fontFamily: 'monospace', color: '#8D98A5' }}>
                 v{selectedDataset?.version || '1.0.0'}
               </span>
             </div>
             <div style={{ fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 700, marginTop: '0.2rem' }}>
               {selectedDataset?.name || 'Checkout Reliability Suite'}
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--accent, #FF6B35)', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--accent, #C86D51)', fontWeight: 600 }}>
               {selectedDataset?.cases?.length || 100} scenarios ({selectedDataset?.cases?.filter((c) => Boolean(c.expectedOutput && c.expectedOutput.trim())).length ?? (selectedDataset?.cases?.length || 0)} with expected reference)
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Baseline Model ({configMode === 'custom_benchmark' ? customBaselineProvider.toUpperCase() : (baselineVersion?.provider?.toUpperCase() || 'DEMO')})
             </div>
             <div style={{ fontSize: '0.85rem', color: '#ECECEC', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
               {effectiveBaselineModel}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#2ECC71', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.72rem', color: '#4E9B6F', fontWeight: 600 }}>
               Reference Anchor
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Candidate Model ({configMode === 'custom_benchmark' ? customCandidateProvider.toUpperCase() : (candidateVersion?.provider?.toUpperCase() || 'DEMO')})
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#4DA6FF', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.85rem', color: '#5B82A6', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
               {effectiveCandidateModel}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#4DA6FF', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.72rem', color: '#5B82A6', fontWeight: 600 }}>
               Evaluation Candidate
             </div>
           </div>
@@ -814,8 +814,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {isRunning && (
           <div
             style={{
-              background: 'rgba(255, 107, 53, 0.04)',
-              border: '1px solid rgba(255, 107, 53, 0.35)',
+              background: 'rgba(200, 109, 81, 0.05)',
+              border: '1px solid rgba(200, 109, 81, 0.3)',
               borderRadius: '8px',
               padding: '1.2rem 1.4rem',
               display: 'flex',
@@ -832,15 +832,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    background: 'var(--accent, #FF6B35)',
-                    boxShadow: '0 0 8px var(--accent, #FF6B35)',
+                    background: 'var(--accent, #C86D51)',
                   }}
                 />
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.12em', color: '#FFFFFF', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.12em', color: '#ECEFF2', textTransform: 'uppercase' }}>
                   EVALUATION PROGRESS
                 </span>
               </div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent, #FF6B35)', fontFamily: 'monospace' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent, #C86D51)', fontFamily: 'monospace' }}>
                 {progressPercent}% COMPLETE
               </span>
             </div>
@@ -849,9 +848,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <div
               style={{
                 width: '100%',
-                height: '8px',
+                height: '6px',
                 background: 'rgba(255, 255, 255, 0.08)',
-                borderRadius: '4px',
+                borderRadius: '3px',
                 overflow: 'hidden',
               }}
             >
@@ -859,8 +858,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 style={{
                   height: '100%',
                   width: `${Math.max(4, Math.min(100, progressPercent))}%`,
-                  background: 'linear-gradient(90deg, #FF6B35 0%, #FF9955 100%)',
-                  borderRadius: '4px',
+                  background: 'var(--accent, #C86D51)',
+                  borderRadius: '3px',
                   transition: 'width 0.4s ease-out',
                 }}
               />
@@ -1276,8 +1275,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   <span
                     style={{
                       fontSize: '0.72rem',
-                      background: 'rgba(255, 107, 53, 0.2)',
-                      color: 'var(--accent, #FF6B35)',
+                      background: 'rgba(200, 109, 81, 0.15)',
+                      color: 'var(--accent, #C86D51)',
                       padding: '0.15rem 0.5rem',
                       borderRadius: '4px',
                       fontFamily: 'monospace',
@@ -1287,7 +1286,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   </span>
                 )}
               </div>
-              <span style={{ color: 'var(--accent, #FF6B35)', fontWeight: 800 }}>{progressPercent}%</span>
+              <span style={{ color: 'var(--accent, #C86D51)', fontWeight: 800 }}>{progressPercent}%</span>
             </div>
             {progressCounts && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#8899AA' }}>
@@ -1300,9 +1299,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 style={{
                   height: '100%',
                   width: `${progressPercent}%`,
-                  background: 'var(--accent, #FF6B35)',
+                  background: 'var(--accent, #C86D51)',
                   transition: 'width 0.15s ease',
-                  boxShadow: '0 0 12px rgba(255, 107, 53, 0.6)',
                 }}
               />
             </div>
@@ -1312,8 +1310,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {/* ── Evaluation Models & LLM Judge Configuration ── */}
         <div
           style={{
-            background: '#0D1117',
-            border: isJudgeConflicting ? '1px solid #FF4444' : '1px solid rgba(255, 255, 255, 0.1)',
+            background: '#101419',
+            border: isJudgeConflicting ? '1px solid #C05C54' : '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '8px',
             padding: '1.25rem',
             marginBottom: '1.25rem',
@@ -1324,7 +1322,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span>⚖️ Evaluation Models & LLM Judge</span>
               </h3>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.76rem', color: isJudgeConflicting ? '#FF6B6B' : '#8899AA' }}>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.76rem', color: isJudgeConflicting ? '#D48B85' : '#8899AA' }}>
                 {isJudgeConflicting
                   ? '⚠️ Configuration Error: Judge model must be different from both benchmark models.'
                   : 'Judge model must be different from both benchmark models. Reuses existing GROQ_API_KEY.'}
@@ -1338,7 +1336,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   checked={judgeEnabled}
                   onChange={(e) => setJudgeEnabled(e.target.checked)}
                   disabled={isRunning}
-                  style={{ accentColor: 'var(--accent, #FF6B35)' }}
+                  style={{ accentColor: 'var(--accent, #C86D51)' }}
                 />
                 <span>Enable LLM Judge</span>
               </label>
@@ -1347,7 +1345,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
             {/* Benchmark Models Summary */}
-            <div style={{ background: '#161B22', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ background: '#14181F', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
               <div style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', fontWeight: 600 }}>
                 Active Benchmark Models
               </div>
@@ -1372,9 +1370,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </div>
 
             {/* LLM Judge Selector & Status */}
-            <div style={{ background: '#161B22', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ background: '#181D25', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.72rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
                   Independent LLM Judge
                 </span>
                 <span
@@ -1385,20 +1383,20 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     borderRadius: '4px',
                     background:
                       judgeStatus === 'AVAILABLE'
-                        ? 'rgba(46, 160, 67, 0.2)'
+                        ? 'rgba(78, 155, 111, 0.15)'
                         : judgeStatus === 'CHECKING'
-                        ? 'rgba(78, 149, 255, 0.2)'
+                        ? 'rgba(91, 130, 166, 0.15)'
                         : judgeStatus === 'API KEY MISSING'
-                        ? 'rgba(255, 68, 68, 0.2)'
-                        : 'rgba(210, 153, 34, 0.2)',
+                        ? 'rgba(192, 92, 84, 0.15)'
+                        : 'rgba(198, 139, 69, 0.15)',
                     color:
                       judgeStatus === 'AVAILABLE'
-                        ? '#3FB950'
+                        ? '#4E9B6F'
                         : judgeStatus === 'CHECKING'
-                        ? '#4E95FF'
+                        ? '#5B82A6'
                         : judgeStatus === 'API KEY MISSING'
-                        ? '#FF6B6B'
-                        : '#E3B341',
+                        ? '#C05C54'
+                        : '#C68B45',
                   }}
                 >
                   {judgeStatus}
@@ -1415,10 +1413,10 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       style={{
                         width: '100%',
                         padding: '0.5rem 0.75rem',
-                        background: '#0D1117',
-                        border: isJudgeConflicting ? '1px solid #FF4444' : '1px solid rgba(255, 255, 255, 0.15)',
+                        background: '#0F1216',
+                        border: isJudgeConflicting ? '1px solid #C05C54' : '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '6px',
-                        color: '#FFFFFF',
+                        color: '#ECEFF2',
                         fontSize: '0.82rem',
                       }}
                     >
@@ -1431,12 +1429,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   </div>
 
                   <div style={{ marginTop: '0.45rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.72rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8899AA' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8D98A5' }}>
                       <span>Judge: <strong style={{ color: '#FFFFFF' }}>{eligibleJudgeModels.find((m) => m.id === selectedJudgeModel)?.displayName || selectedJudgeModel}</strong></span>
-                      <span>Status: <strong style={{ color: judgeStatus === 'AVAILABLE' ? '#3FB950' : judgeStatus === 'CHECKING' ? '#4E95FF' : '#FF6B6B' }}>{judgeStatus === 'CHECKING' ? 'TESTING…' : judgeStatus}</strong></span>
+                      <span>Status: <strong style={{ color: judgeStatus === 'AVAILABLE' ? '#4E9B6F' : judgeStatus === 'CHECKING' ? '#5B82A6' : '#C05C54' }}>{judgeStatus === 'CHECKING' ? 'TESTING…' : judgeStatus}</strong></span>
                     </div>
                     {judgeStatusDetails && (
-                      <div style={{ color: judgeStatus === 'AVAILABLE' ? '#3FB950' : '#FF7777', fontSize: '0.72rem' }}>
+                      <div style={{ color: judgeStatus === 'AVAILABLE' ? '#4E9B6F' : '#E59892', fontSize: '0.72rem' }}>
                         {judgeStatusDetails}
                       </div>
                     )}
@@ -1450,9 +1448,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </div>
 
             {/* Semantic Evaluation Status */}
-            <div style={{ background: '#161B22', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ background: '#181D25', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.72rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
                   Semantic Evaluation
                 </span>
                 <span
@@ -1461,8 +1459,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     fontWeight: 700,
                     padding: '0.15rem 0.45rem',
                     borderRadius: '4px',
-                    background: 'rgba(46, 160, 67, 0.2)',
-                    color: '#3FB950',
+                    background: 'rgba(78, 155, 111, 0.15)',
+                    color: '#4E9B6F',
                   }}
                 >
                   Local (Configured)
@@ -1478,7 +1476,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {/* Action Controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#8899AA', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.8rem', color: '#8D98A5', fontWeight: 600 }}>
               Test Scale:
             </span>
             <select
@@ -1487,10 +1485,10 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               disabled={isRunning}
               style={{
                 padding: '0.45rem 0.8rem',
-                background: '#0D1117',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
+                background: '#0F1216',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 borderRadius: '6px',
-                color: '#FFFFFF',
+                color: '#ECEFF2',
                 fontSize: '0.82rem',
               }}
             >
@@ -1506,15 +1504,15 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#888888' }}>
+            <span style={{ fontSize: '0.8rem', color: '#8D98A5' }}>
               Will benchmark {maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 0)} scenarios
             </span>
           <button
             onClick={handleStartEvaluation}
             disabled={isRunning || !selectedDataset || isJudgeConflicting}
             style={{
-              background: isRunning || isJudgeConflicting ? '#444444' : 'var(--accent, #FF6B35)',
-              color: isRunning || isJudgeConflicting ? '#AAAAAA' : '#000000',
+              background: isRunning || isJudgeConflicting ? '#2C3440' : 'var(--accent, #C86D51)',
+              color: isRunning || isJudgeConflicting ? '#8D98A5' : '#FFFFFF',
               border: 'none',
               padding: '0.75rem 2rem',
               borderRadius: '6px',
@@ -1522,7 +1520,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               fontWeight: 700,
               letterSpacing: '0.04em',
               cursor: isRunning || isJudgeConflicting ? 'not-allowed' : 'pointer',
-              boxShadow: isRunning || isJudgeConflicting ? 'none' : '0 4px 15px rgba(255, 107, 53, 0.35)',
+              boxShadow: 'none',
+              transition: 'background 0.15s ease',
             }}
           >
             {isRunning ? 'Running Evaluation...' : 'Run Evaluation →'}
@@ -1619,9 +1618,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     const mode = run.executionMode || run.comparisonReport?.executionMode || 'SAVED';
                     const isLive = mode === 'LIVE';
                     const isRef = mode === 'REFERENCE';
-                    const color = isLive ? '#10B981' : isRef ? '#A78BFA' : '#38BDF8';
-                    const bg = isLive ? 'rgba(16, 185, 129, 0.15)' : isRef ? 'rgba(167, 139, 250, 0.15)' : 'rgba(56, 189, 248, 0.15)';
-                    const border = isLive ? 'rgba(16, 185, 129, 0.4)' : isRef ? 'rgba(167, 139, 250, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+                    const color = isLive ? '#4E9B6F' : isRef ? '#8D98A5' : '#5B82A6';
+                    const bg = isLive ? 'rgba(78, 155, 111, 0.12)' : isRef ? 'rgba(141, 152, 165, 0.12)' : 'rgba(91, 130, 166, 0.12)';
+                    const border = isLive ? 'rgba(78, 155, 111, 0.3)' : isRef ? 'rgba(141, 152, 165, 0.3)' : 'rgba(91, 130, 166, 0.3)';
                     const label = isLive ? 'LIVE' : isRef ? 'REFERENCE' : 'SAVED';
 
                     return (
@@ -1646,8 +1645,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                               width: '5px',
                               height: '5px',
                               borderRadius: '50%',
-                              background: '#10B981',
-                              boxShadow: '0 0 5px #10B981',
+                              background: '#4E9B6F',
                             }}
                           />
                         )}
@@ -1659,13 +1657,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
                 <div>
                   <div style={{ color: '#CCCCCC', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(46, 204, 113, 0.15)', color: '#2ECC71', fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(78, 155, 111, 0.12)', color: '#4E9B6F', fontWeight: 700 }}>
                       {(run.baselineVersion?.provider || 'BASELINE').toUpperCase()}
                     </span>
                     <span>{run.baselineVersion?.name || 'Baseline'}</span>
                   </div>
-                  <div style={{ color: '#4DA6FF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
-                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(77, 166, 255, 0.15)', color: '#4DA6FF', fontWeight: 700 }}>
+                  <div style={{ color: '#5B82A6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(91, 130, 166, 0.12)', color: '#5B82A6', fontWeight: 700 }}>
                       {(run.candidateVersion?.provider || 'CANDIDATE').toUpperCase()}
                     </span>
                     <span>{run.candidateVersion?.name || 'Candidate'}</span>
@@ -1683,9 +1681,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                         fontWeight: 700,
                         background:
                           run.datasetSourceType === 'upload'
-                            ? 'rgba(77, 166, 255, 0.16)'
-                            : 'rgba(46, 204, 113, 0.14)',
-                        color: run.datasetSourceType === 'upload' ? '#4DA6FF' : '#2ECC71',
+                            ? 'rgba(91, 130, 166, 0.15)'
+                            : 'rgba(78, 155, 111, 0.15)',
+                        color: run.datasetSourceType === 'upload' ? '#5B82A6' : '#4E9B6F',
                       }}
                     >
                       {run.datasetSourceType === 'upload' ? 'UPLOAD' : 'BUILT-IN'}
@@ -1697,11 +1695,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 </div>
 
                 <div>
-                  <div style={{ color: isReg ? '#FF4422' : run.metrics?.candidateAccuracy !== null && run.metrics?.candidateAccuracy !== undefined ? '#2ECC71' : '#888888', fontWeight: 700, fontSize: '0.9rem' }}>
+                  <div style={{ color: isReg ? '#C05C54' : run.metrics?.candidateAccuracy !== null && run.metrics?.candidateAccuracy !== undefined ? '#4E9B6F' : '#8D98A5', fontWeight: 700, fontSize: '0.9rem' }}>
                     {run.metrics?.candidateAccuracy !== null && run.metrics?.candidateAccuracy !== undefined ? `${run.metrics.candidateAccuracy}%` : '—'}
                   </div>
                   {run.metrics?.accuracyDelta !== null && run.metrics?.accuracyDelta !== undefined ? (
-                    <div style={{ fontSize: '0.7rem', color: run.metrics.accuracyDelta < 0 ? '#FF4422' : '#2ECC71' }}>
+                    <div style={{ fontSize: '0.7rem', color: run.metrics.accuracyDelta < 0 ? '#C05C54' : '#4E9B6F' }}>
                       {run.metrics.accuracyDelta > 0 ? `+${run.metrics.accuracyDelta}%` : `${run.metrics.accuracyDelta}%`}
                     </div>
                   ) : (
@@ -1720,32 +1718,32 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     const isCond = rec === 'SHIP WITH CONDITIONS';
                     const isInsuff = rec === 'INSUFFICIENT EVIDENCE' || rec === 'INSUFFICIENT_EVIDENCE';
                     const badgeBg = isShip
-                      ? 'rgba(46, 204, 113, 0.15)'
+                      ? 'rgba(78, 155, 111, 0.12)'
                       : isBlock
-                      ? 'rgba(255, 51, 17, 0.15)'
+                      ? 'rgba(192, 92, 84, 0.12)'
                       : isCond
-                      ? 'rgba(243, 156, 18, 0.15)'
+                      ? 'rgba(198, 139, 69, 0.12)'
                       : isInsuff
-                      ? 'rgba(245, 158, 11, 0.15)'
-                      : 'rgba(77, 166, 255, 0.15)';
+                      ? 'rgba(141, 152, 165, 0.12)'
+                      : 'rgba(91, 130, 166, 0.12)';
                     const badgeColor = isShip
-                      ? '#2ECC71'
+                      ? '#4E9B6F'
                       : isBlock
-                      ? '#FF4422'
+                      ? '#C05C54'
                       : isCond
-                      ? '#F39C12'
+                      ? '#C68B45'
                       : isInsuff
-                      ? '#F59E0B'
-                      : '#4DA6FF';
+                      ? '#8D98A5'
+                      : '#5B82A6';
                     const badgeBorder = isShip
-                      ? '#2ECC71'
+                      ? 'rgba(78, 155, 111, 0.3)'
                       : isBlock
-                      ? '#FF3311'
+                      ? 'rgba(192, 92, 84, 0.3)'
                       : isCond
-                      ? '#F39C12'
+                      ? 'rgba(198, 139, 69, 0.3)'
                       : isInsuff
-                      ? '#F59E0B'
-                      : '#4DA6FF';
+                      ? 'rgba(141, 152, 165, 0.3)'
+                      : 'rgba(91, 130, 166, 0.3)';
                     const evidence = report?.evidenceStrength || run.metrics?.evidenceStrength;
 
                     return (
@@ -1769,7 +1767,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                             style={{
                               fontSize: '0.62rem',
                               fontWeight: 700,
-                              color: evidence === 'STRONG' ? '#10B981' : evidence === 'GOOD' ? '#38BDF8' : evidence === 'MODERATE' ? '#F59E0B' : '#EF4444',
+                              color: evidence === 'STRONG' ? '#4E9B6F' : evidence === 'GOOD' ? '#5B82A6' : evidence === 'MODERATE' ? '#C68B45' : '#C05C54',
                               letterSpacing: '0.04em',
                             }}
                           >
@@ -1786,9 +1784,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     <button
                       onClick={() => handleOpenReport(run)}
                       style={{
-                        background: 'rgba(77, 166, 255, 0.12)',
-                        border: '1px solid #4DA6FF',
-                        color: '#4DA6FF',
+                        background: 'rgba(91, 130, 166, 0.12)',
+                        border: '1px solid rgba(91, 130, 166, 0.3)',
+                        color: '#5B82A6',
                         padding: '0.3rem 0.6rem',
                         borderRadius: '4px',
                         fontSize: '0.72rem',
@@ -1805,9 +1803,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       navigate('#/app/regressions');
                     }}
                     style={{
-                      background: 'rgba(255, 107, 53, 0.12)',
-                      border: '1px solid var(--accent, #FF6B35)',
-                      color: 'var(--accent, #FF6B35)',
+                      background: 'rgba(200, 109, 81, 0.1)',
+                      border: '1px solid rgba(200, 109, 81, 0.3)',
+                      color: 'var(--accent, #C86D51)',
                       padding: '0.3rem 0.6rem',
                       borderRadius: '4px',
                       fontSize: '0.72rem',
