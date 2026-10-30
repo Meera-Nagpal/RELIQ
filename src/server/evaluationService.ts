@@ -35,6 +35,8 @@ export interface ServerEvaluationOptions {
   maxCases?: number;
   concurrency?: number;
   runId?: string;
+  useCache?: boolean;
+  bypassCache?: boolean;
 }
 
 export interface EvaluationJob {
@@ -501,6 +503,8 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       maxCases: options.maxCases,
       concurrency: resolvedConcurrency,
       runId,
+      useCache: options.useCache,
+      bypassCache: options.bypassCache,
       onProgress: (current, total, latestCaseName) => {
         const currentJob = jobs.get(runId);
         if (currentJob?.status === 'FAILED') {

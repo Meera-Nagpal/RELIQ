@@ -44,6 +44,7 @@ import { validateJudgeConfiguration } from './judgeRegistry';
 import { evaluateSemanticSimilarity } from './semanticEvaluator';
 import { LLMJudgeEvaluator } from './llmJudgeEvaluator';
 import { evaluateGroundedness } from './groundednessEvaluator';
+import { evaluationCache } from './evaluationCache';
 
 export { normalizeProviderError };
 
@@ -73,6 +74,8 @@ export interface EvaluationOptions {
   maxCases?: number;
   concurrency?: number;
   runId?: string;
+  useCache?: boolean;
+  bypassCache?: boolean;
   onProgress?: (current: number, total: number, latestCaseName?: string) => void;
   onCaseCompleted?: (result: TestCaseResult, current: number, total: number) => void | Promise<void>;
 }
@@ -532,7 +535,16 @@ export class EvaluationRunner {
       // Run Baseline pipeline and Candidate+Judge pipeline completely in parallel
       // so LLM Judge starts immediately when Candidate finishes without waiting on Baseline.
       const runBaselineBranch = async () => {
-        const baselineResp = await baselineProvider.generate(baselineRequest);
+        let baselineResp: ModelResponse | null = null;
+        if (options.useCache === true) {
+          baselineResp = await evaluationCache.get(baselineRequest, options.bypassCache);
+        }
+        if (!baselineResp) {
+          baselineResp = await baselineProvider.generate(baselineRequest);
+          if (options.useCache === true && !baselineResp.usage.error) {
+            await evaluationCache.set(baselineRequest, baselineResp);
+          }
+        }
         let baselineEval: ReturnType<typeof runEvaluator> | undefined;
         let baselineScore: number | null = null;
         if (!baselineResp.usage.error && baselineResp.output?.trim()) {
@@ -551,7 +563,16 @@ export class EvaluationRunner {
       };
 
       const runCandidateBranch = async () => {
-        const candidateResp = await candidateProvider.generate(candidateRequest);
+        let candidateResp: ModelResponse | null = null;
+        if (options.useCache === true) {
+          candidateResp = await evaluationCache.get(candidateRequest, options.bypassCache);
+        }
+        if (!candidateResp) {
+          candidateResp = await candidateProvider.generate(candidateRequest);
+          if (options.useCache === true && !candidateResp.usage.error) {
+            await evaluationCache.set(candidateRequest, candidateResp);
+          }
+        }
         let candidateEval: ReturnType<typeof runEvaluator> | undefined;
         let candidateScore: number | null = null;
         let candidateEvalScores: EvaluatorScore[] = [];
