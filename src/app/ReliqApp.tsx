@@ -192,13 +192,13 @@ export const ReliqApp: React.FC = () => {
         style={{
           width: '100vw',
           height: '100vh',
-          background: '#0D1117',
+          background: 'var(--bg, #0F1216)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#FF6B35',
-          fontFamily: 'sans-serif',
+          color: 'var(--accent, #C86D51)',
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           gap: '1rem',
           padding: '2rem',
           textAlign: 'center',
@@ -215,8 +215,8 @@ export const ReliqApp: React.FC = () => {
             loadData();
           }}
           style={{
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
             color: '#FFFFFF',
             padding: '0.6rem 1.4rem',
             borderRadius: '6px',
@@ -238,8 +238,8 @@ export const ReliqApp: React.FC = () => {
         display: 'flex',
         width: '100vw',
         height: '100vh',
-        background: '#0D1117',
-        color: '#FFFFFF',
+        background: 'var(--bg, #0F1216)',
+        color: 'var(--text, #ECEFF2)',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: 'hidden',
       }}
@@ -364,8 +364,8 @@ export const ReliqApp: React.FC = () => {
               <button
                 onClick={() => navigate('#/app/projects')}
                 style={{
-                  background: 'var(--accent, #FF6B35)',
-                  color: '#000000',
+                  background: 'var(--accent, #C86D51)',
+                  color: '#FFFFFF',
                   border: 'none',
                   padding: '0.7rem 1.6rem',
                   borderRadius: '6px',

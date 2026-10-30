@@ -3,30 +3,49 @@
    ============================================================ */
 
 :root {
-  /* Colors */
-  --bg: #0A0A0A;
-  --bg-elevated: #141414;
-  --bg-surface: #1A1A1A;
-  --text: #F5F5F5;
-  --text-muted: #A0B0C0;
-  --text-dim: #708090;
+  /* Colors — Classic Matte Palette */
+  --bg: #0F1216;
+  --bg-elevated: #14181F;
+  --bg-surface: #181D25;
+  --bg-card: #1C222D;
+  --bg-inset: #12151B;
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --text: #ECEFF2;
+  --text-muted: #9EABB8;
+  --text-dim: #6A7684;
 
-  /* Accent */
-  --accent: #FF6B35;
-  --accent-glow: #FF8C5A;
-  --accent-dim: rgba(255, 107, 53, 0.3);
-  --accent-subtle: rgba(255, 107, 53, 0.08);
+  /* Accent — Matte Terracotta & Classic Sienna */
+  --accent: #C86D51;
+  --accent-glow: #D47E64;
+  --accent-dim: rgba(200, 109, 81, 0.28);
+  --accent-subtle: rgba(200, 109, 81, 0.1);
 
   /* RELIQ Brand CSS Variables */
-  --reliq-accent: #FF6B35;
-  --reliq-accent-secondary: #FF8C5A;
-  --reliq-background: #0A0A0A;
+  --reliq-accent: #C86D51;
+  --reliq-accent-secondary: #D47E64;
+  --reliq-background: #0F1216;
 
-  /* Health States */
-  --healthy: #4ADE80;
-  --warning: #FBBF24;
-  --regression: #EF4444;
-  --recovered: #38BDF8;
+  /* Health & Evaluation Status States (Matte Finished) */
+  --healthy: #4E9B6F;
+  --healthy-subtle: rgba(78, 155, 111, 0.12);
+  --healthy-border: rgba(78, 155, 111, 0.28);
+
+  --warning: #C68B45;
+  --warning-subtle: rgba(198, 139, 69, 0.12);
+  --warning-border: rgba(198, 139, 69, 0.28);
+
+  --regression: #C05C54;
+  --regression-subtle: rgba(192, 92, 84, 0.12);
+  --regression-border: rgba(192, 92, 84, 0.28);
+
+  --recovered: #5B82A6;
+  --recovered-subtle: rgba(91, 130, 166, 0.12);
+  --recovered-border: rgba(91, 130, 166, 0.28);
+
+  --matte-neutral: #8D98A5;
+  --matte-neutral-subtle: rgba(255, 255, 255, 0.05);
+  --matte-neutral-border: rgba(255, 255, 255, 0.1);
 
   /* Typography Scale */
   --font-display: clamp(3rem, 10vw, 12rem);

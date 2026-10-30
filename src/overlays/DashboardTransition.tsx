@@ -212,8 +212,7 @@ export function DashboardTransition() {
                   width: '10px',
                   height: '10px',
                   borderRadius: '2px',
-                  background: 'var(--accent, #FF6B35)',
-                  boxShadow: '0 0 10px #FF6B35',
+                  background: 'var(--accent, #C86D51)',
                 }}
               />
               <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '1.1rem' }}>
@@ -238,7 +237,7 @@ export function DashboardTransition() {
                   borderRadius: '4px',
                   background: 'rgba(255, 255, 255, 0.06)',
                   fontFamily: 'monospace',
-                  color: '#4DA6FF',
+                  color: '#5B82A6',
                 }}
               >
                 checkout-agent-v2
@@ -250,8 +249,8 @@ export function DashboardTransition() {
             <button
               onClick={() => navigate('#/app/dashboard')}
               style={{
-                background: 'var(--accent, #FF6B35)',
-                color: '#000000',
+                background: 'var(--accent, #C86D51)',
+                color: '#FFFFFF',
                 border: 'none',
                 padding: '0.5rem 1.2rem',
                 borderRadius: '6px',
@@ -406,8 +405,8 @@ export function DashboardTransition() {
                 <button
                   onClick={() => navigate('#/app/dashboard')}
                   style={{
-                    background: 'var(--accent, #FF6B35)',
-                    color: '#000000',
+                    background: 'var(--accent, #C86D51)',
+                    color: '#FFFFFF',
                     border: 'none',
                     padding: '0.85rem 1.8rem',
                     borderRadius: '6px',
@@ -415,7 +414,6 @@ export function DashboardTransition() {
                     fontWeight: 700,
                     letterSpacing: '0.05em',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 15px rgba(255, 107, 53, 0.3)',
                     transition: 'all 0.25s ease',
                   }}
                 >
@@ -437,7 +435,7 @@ export function DashboardTransition() {
               padding: '0.9rem 1.8rem',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #FF6B35)' : 'none',
+              borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #C86D51)' : 'none',
               color: activeTab === 'overview' ? '#FFFFFF' : '#888888',
               fontSize: '0.85rem',
               fontWeight: 600,
@@ -452,7 +450,7 @@ export function DashboardTransition() {
               padding: '0.9rem 1.8rem',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #FF6B35)' : 'none',
+              borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #C86D51)' : 'none',
               color: activeTab === 'cases' ? '#FFFFFF' : '#888888',
               fontSize: '0.85rem',
               fontWeight: 600,
