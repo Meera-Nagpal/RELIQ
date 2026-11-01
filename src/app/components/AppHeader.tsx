@@ -227,40 +227,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         )}
       </div>
 
-      {/* Right: System Status Telemetry, Operator Badge & Primary Action */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {/* Render Backend & Supabase Live Status Pill */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            padding: '0.25rem 0.65rem',
-            borderRadius: '2px',
-            fontSize: '0.68rem',
-            fontFamily: 'monospace',
-            letterSpacing: '0.04em',
-            background: '#1B1B1B',
-            color: '#858585',
-            border: '1px solid #292929',
-          }}
-          title="Backend: Render (Node.js) • Database: Supabase (PostgreSQL)"
-        >
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: '#22C55E',
-              boxShadow: '0 0 6px rgba(34, 197, 94, 0.6)',
-              display: 'inline-block',
-            }}
-          />
-          <span style={{ color: '#22C55E', fontWeight: 600 }}>RENDER LIVE</span>
-          <span style={{ color: '#3A3A3A' }}>|</span>
-          <span style={{ color: '#858585' }}>SUPABASE</span>
-        </div>
-
+      {/* Right: Release Gate Indicator & Primary Action */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         {/* Release Gate Indicator Pill (if active run exists) */}
         {activeRun && (() => {
           const status = activeRun.releaseDecision?.status;
@@ -296,26 +264,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </div>
           );
         })()}
-
-        {/* Operator User Badge */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.25rem 0.55rem',
-            borderRadius: '2px',
-            background: '#1B1B1B',
-            border: '1px solid #292929',
-            fontSize: '0.68rem',
-            fontFamily: 'monospace',
-            color: '#858585',
-          }}
-          title="Laboratory Identity"
-        >
-          <span style={{ color: '#60A5FA' }}>⌘</span>
-          <span>OPERATOR // LAB-01</span>
-        </div>
 
         {/* Primary Action Button: Royal Navy */}
         <button

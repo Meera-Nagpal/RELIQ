@@ -3,9 +3,10 @@
    Provider Telemetry • Context Lengths • Pricing & Latency Tiers
    ============================================================ */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from '../../router/useRouter';
 import { MODEL_PRICING_TABLE } from '../../providers/pricing';
+import { providerRegistry, ServerProviderStatus } from '../../providers/registry';
 
 interface ModelEntry {
   id: string;
@@ -158,6 +159,34 @@ export const ModelsView: React.FC = () => {
   const { navigate } = useRouter();
   const [selectedProvider, setSelectedProvider] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [serverStatus, setServerStatus] = useState<ServerProviderStatus>({
+    gemini: false,
+    openai: false,
+    anthropic: false,
+    groq: false,
+    cerebras: false,
+  });
+
+  useEffect(() => {
+    providerRegistry.checkServerStatus().then(setServerStatus);
+  }, []);
+
+  const isModelLive = (provider: string): boolean => {
+    switch (provider) {
+      case 'groq':
+        return Boolean(serverStatus.groq);
+      case 'cerebras':
+        return Boolean(serverStatus.cerebras);
+      case 'google':
+        return Boolean(serverStatus.gemini);
+      case 'openai':
+        return Boolean(serverStatus.openai);
+      case 'anthropic':
+        return Boolean(serverStatus.anthropic);
+      default:
+        return false;
+    }
+  };
 
   const filteredModels = MODELS_CATALOG.filter((m) => {
     const matchesProvider = selectedProvider === 'ALL' || m.provider === selectedProvider;
@@ -167,6 +196,15 @@ export const ModelsView: React.FC = () => {
       m.providerLabel.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesProvider && matchesSearch;
   });
+
+  const PROVIDER_OPTIONS: { id: string; label: string; key?: keyof ServerProviderStatus }[] = [
+    { id: 'ALL', label: 'ALL PROVIDERS' },
+    { id: 'groq', label: 'GROQ', key: 'groq' },
+    { id: 'cerebras', label: 'CEREBRAS', key: 'cerebras' },
+    { id: 'google', label: 'GOOGLE AI', key: 'gemini' },
+    { id: 'openai', label: 'OPENAI', key: 'openai' },
+    { id: 'anthropic', label: 'ANTHROPIC', key: 'anthropic' },
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1440px', margin: '0 auto' }}>
@@ -180,7 +218,7 @@ export const ModelsView: React.FC = () => {
             Model Library & Providers
           </h1>
           <p style={{ color: '#858585', fontSize: '0.82rem', margin: 0, maxWidth: '640px', lineHeight: 1.5 }}>
-            Calibrated foundation models and high-throughput inference endpoints available for baseline and candidate evaluation runs.
+            Calibrated foundation models and inference endpoints. Availability strictly reflects live Render backend gateway credentials.
           </p>
         </div>
 
@@ -225,15 +263,16 @@ export const ModelsView: React.FC = () => {
           padding: '0.6rem 0.8rem',
         }}
       >
-        {/* Filter Pills */}
+        {/* Filter Pills with Live Readiness Dots */}
         <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-          {['ALL', 'groq', 'cerebras', 'google', 'openai', 'anthropic'].map((prov) => {
-            const isSelected = selectedProvider === prov;
-            const label = prov === 'ALL' ? 'ALL PROVIDERS' : prov.toUpperCase();
+          {PROVIDER_OPTIONS.map((prov) => {
+            const isSelected = selectedProvider === prov.id;
+            const isLive = prov.key ? Boolean(serverStatus[prov.key]) : null;
+
             return (
               <button
-                key={prov}
-                onClick={() => setSelectedProvider(prov)}
+                key={prov.id}
+                onClick={() => setSelectedProvider(prov.id)}
                 style={{
                   background: isSelected ? '#0A1A35' : 'transparent',
                   color: isSelected ? '#F2F2F2' : '#858585',
@@ -244,9 +283,23 @@ export const ModelsView: React.FC = () => {
                   fontFamily: 'monospace',
                   fontWeight: 600,
                   cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
                 }}
               >
-                {label}
+                {isLive !== null && (
+                  <span
+                    style={{
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: isLive ? '#22C55E' : '#555555',
+                      boxShadow: isLive ? '0 0 4px rgba(34, 197, 94, 0.5)' : 'none',
+                    }}
+                  />
+                )}
+                {prov.label}
               </button>
             );
           })}
@@ -282,103 +335,134 @@ export const ModelsView: React.FC = () => {
           gap: '1rem',
         }}
       >
-        {filteredModels.map((model) => (
-          <div
-            key={model.id}
-            style={{
-              background: '#151515',
-              border: '1px solid #292929',
-              borderRadius: '2px',
-              padding: '1.1rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '1rem',
-              transition: 'border-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#3A3A3A')}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
-          >
-            <div>
-              {/* Header: Provider & Role Tag */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    color: '#858585',
-                    background: '#1B1B1B',
-                    padding: '0.15rem 0.45rem',
-                    borderRadius: '2px',
-                    border: '1px solid #292929',
-                  }}
-                >
-                  {model.providerLabel.toUpperCase()}
-                </span>
+        {filteredModels.map((model) => {
+          const isLive = isModelLive(model.provider);
+          const statusText = isLive ? 'ACTIVE' : 'OFFLINE';
+          const statusColor = isLive ? '#22C55E' : '#666666';
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span
-                    style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      background: '#22C55E',
-                      display: 'inline-block',
-                    }}
-                  />
-                  <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: '#22C55E' }}>
-                    {model.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Model Name & ID */}
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#F2F2F2', margin: '0 0 0.2rem 0' }}>
-                {model.name}
-              </h3>
-              <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#858585', marginBottom: '0.65rem' }}>
-                {model.id}
-              </div>
-
-              {/* Description */}
-              <p style={{ fontSize: '0.78rem', color: '#858585', margin: 0, lineHeight: 1.45 }}>
-                {model.description}
-              </p>
-            </div>
-
-            {/* Spec Strip: Context, Latency, Cost */}
+          return (
             <div
+              key={model.id}
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '0.5rem',
-                background: '#1B1B1B',
-                border: '1px solid #292929',
+                background: '#151515',
+                border: `1px solid ${isLive ? '#292929' : '#222222'}`,
                 borderRadius: '2px',
-                padding: '0.6rem 0.75rem',
-                fontSize: '0.72rem',
-                fontFamily: 'monospace',
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '1rem',
+                opacity: isLive ? 1 : 0.65,
+                transition: 'border-color 0.15s ease, opacity 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (isLive) e.currentTarget.style.borderColor = '#3A3A3A';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = isLive ? '#292929' : '#222222';
               }}
             >
               <div>
-                <div style={{ color: '#555555', fontSize: '0.62rem' }}>CONTEXT</div>
-                <div style={{ color: '#F2F2F2', fontWeight: 600 }}>{model.contextWindow}</div>
+                {/* Header: Provider & Live Gateway Status Tag */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      letterSpacing: '0.06em',
+                      color: isLive ? '#858585' : '#555555',
+                      background: '#1B1B1B',
+                      padding: '0.15rem 0.45rem',
+                      borderRadius: '2px',
+                      border: '1px solid #292929',
+                    }}
+                  >
+                    {model.providerLabel.toUpperCase()}
+                  </span>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: statusColor,
+                        boxShadow: isLive ? '0 0 5px rgba(34, 197, 94, 0.45)' : 'none',
+                        display: 'inline-block',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', fontWeight: 600, color: statusColor }}>
+                      {statusText}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Model Name & ID */}
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: isLive ? '#F2F2F2' : '#AAAAAA', margin: '0 0 0.2rem 0' }}>
+                  {model.name}
+                </h3>
+                <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: isLive ? '#858585' : '#555555', marginBottom: '0.65rem' }}>
+                  {model.id}
+                </div>
+
+                {/* Description */}
+                <p style={{ fontSize: '0.78rem', color: isLive ? '#858585' : '#666666', margin: 0, lineHeight: 1.45 }}>
+                  {model.description}
+                </p>
+
+                {!isLive && (
+                  <div
+                    style={{
+                      marginTop: '0.6rem',
+                      fontSize: '0.68rem',
+                      fontFamily: 'monospace',
+                      color: '#777777',
+                      background: '#181818',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '2px',
+                      border: '1px solid #252525',
+                    }}
+                  >
+                    Provider unconfigured on gateway proxy
+                  </div>
+                )}
               </div>
 
-              <div>
-                <div style={{ color: '#555555', fontSize: '0.62rem' }}>LATENCY</div>
-                <div style={{ color: '#F2F2F2', fontWeight: 600 }}>{model.latencyTier}</div>
-              </div>
+              {/* Spec Strip: Context, Latency, Cost */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '0.5rem',
+                  background: '#1B1B1B',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  padding: '0.6rem 0.75rem',
+                  fontSize: '0.72rem',
+                  fontFamily: 'monospace',
+                }}
+              >
+                <div>
+                  <div style={{ color: '#555555', fontSize: '0.62rem' }}>CONTEXT</div>
+                  <div style={{ color: isLive ? '#F2F2F2' : '#888888', fontWeight: 600 }}>{model.contextWindow}</div>
+                </div>
 
-              <div>
-                <div style={{ color: '#555555', fontSize: '0.62rem' }}>PRICING</div>
-                <div style={{ color: '#22C55E', fontWeight: 600 }}>${model.inputPricePer1M}/M</div>
+                <div>
+                  <div style={{ color: '#555555', fontSize: '0.62rem' }}>LATENCY</div>
+                  <div style={{ color: isLive ? '#F2F2F2' : '#888888', fontWeight: 600 }}>{model.latencyTier}</div>
+                </div>
+
+                <div>
+                  <div style={{ color: '#555555', fontSize: '0.62rem' }}>PRICING</div>
+                  <div style={{ color: isLive ? '#22C55E' : '#777777', fontWeight: 600 }}>
+                    ${model.inputPricePer1M}/M
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

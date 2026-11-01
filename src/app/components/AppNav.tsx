@@ -180,21 +180,6 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
               >
                 RELIQ
               </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono, 'Geist Mono', monospace)",
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  color: '#858585',
-                  letterSpacing: '0.05em',
-                  background: '#1B1B1B',
-                  padding: '0.1rem 0.35rem',
-                  borderRadius: '2px',
-                  border: '1px solid #292929',
-                }}
-              >
-                LABS
-              </span>
             </div>
           )}
         </div>
