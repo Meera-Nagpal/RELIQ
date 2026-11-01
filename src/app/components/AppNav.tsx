@@ -155,13 +155,13 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
           }}
           title="RELIQ AI Evaluation Laboratory"
         >
-          {/* Brand Mark: Precision Royal Navy Mark */}
+          {/* Brand Mark: Precision Accent Mark */}
           <div
             style={{
               width: '10px',
               height: '10px',
-              background: '#1E3A8A',
-              border: '1px solid #2563EB',
+              background: '#BAE6FD',
+              border: '1px solid #BAE6FD',
               borderRadius: '2px',
               flexShrink: 0,
             }}
@@ -231,12 +231,12 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                   padding: isCollapsed ? '0.65rem 0' : '0.55rem 0.75rem',
                   justifyContent: isCollapsed ? 'center' : 'flex-start',
                   borderRadius: '2px',
-                  background: isActive ? '#0A1A35' : 'transparent',
+                  background: isActive ? '#BAE6FD' : 'transparent',
                   border: 'none',
                   borderLeft: isActive ? '2px solid #BAE6FD' : '2px solid transparent',
-                  color: isActive ? '#F2F2F2' : '#858585',
+                  color: isActive ? '#0A1A35' : '#858585',
                   fontSize: '0.82rem',
-                  fontWeight: isActive ? 600 : 500,
+                  fontWeight: isActive ? 700 : 500,
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'background 0.12s ease, color 0.12s ease',
@@ -266,7 +266,7 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                     flexShrink: 0,
                   }}
                 >
-                  {item.icon(isActive ? '#60A5FA' : '#858585')}
+                  {item.icon(isActive ? '#0A1A35' : '#858585')}
                 </div>
 
                 {!isCollapsed && (

@@ -2004,9 +2004,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     fontSize: '0.76rem',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    background: selectedSection === 'ALL' ? 'var(--navy-royal, #1E3A8A)' : 'transparent',
-                    color: selectedSection === 'ALL' ? '#FFFFFF' : '#CCCCCC',
-                    border: selectedSection === 'ALL' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                    background: selectedSection === 'ALL' ? '#BAE6FD' : 'transparent',
+                    color: selectedSection === 'ALL' ? '#0A1A35' : '#CCCCCC',
+                    border: selectedSection === 'ALL' ? '1px solid #BAE6FD' : '1px solid rgba(255, 255, 255, 0.08)',
                   }}
                 >
                   All Active Sections ({activeSections.length})
@@ -2021,9 +2021,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       fontSize: '0.76rem',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      background: selectedSection === sec.name ? 'rgba(30, 58, 138, 0.4)' : 'transparent',
-                      color: selectedSection === sec.name ? '#60A5FA' : '#CCCCCC',
-                      border: selectedSection === sec.name ? '1px solid #2563EB' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: selectedSection === sec.name ? '#BAE6FD' : 'transparent',
+                      color: selectedSection === sec.name ? '#0A1A35' : '#CCCCCC',
+                      border: selectedSection === sec.name ? '1px solid #BAE6FD' : '1px solid rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.4rem',
@@ -2318,9 +2318,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               position: 'sticky',
               bottom: '1rem',
               alignSelf: 'flex-end',
-              background: 'var(--navy-royal, #1E3A8A)',
-              color: '#F2F2F2',
-              border: '1px solid #2563EB',
+              background: '#BAE6FD',
+              color: '#0A1A35',
+              border: '1px solid #BAE6FD',
               borderRadius: '2px',
               padding: '0.45rem 0.9rem',
               fontSize: '0.75rem',
@@ -2334,8 +2334,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               zIndex: 100,
               transition: 'background 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#2563EB')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#1E3A8A')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#7DD3FC')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#BAE6FD')}
           >
             ↑ SCROLL TO TOP
           </button>

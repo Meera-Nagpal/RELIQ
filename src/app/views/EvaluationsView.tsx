@@ -716,15 +716,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => setConfigMode('saved_versions')}
               style={{
-                background: configMode === 'saved_versions' ? '#0A1A35' : 'transparent',
-                border: configMode === 'saved_versions' ? '1px solid #2563EB' : '1px solid transparent',
-                color: configMode === 'saved_versions' ? '#F2F2F2' : '#858585',
+                background: configMode === 'saved_versions' ? '#BAE6FD' : 'transparent',
+                border: configMode === 'saved_versions' ? '1px solid #BAE6FD' : '1px solid transparent',
+                color: configMode === 'saved_versions' ? '#0A1A35' : '#858585',
                 padding: '0.35rem 0.75rem',
                 borderRadius: '2px',
                 fontSize: '0.75rem',
                 fontFamily: 'monospace',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
+                transition: 'background 0.15s ease, color 0.15s ease',
               }}
             >
               Saved Versions
@@ -732,15 +733,16 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => setConfigMode('custom_benchmark')}
               style={{
-                background: configMode === 'custom_benchmark' ? '#1E3A8A' : 'transparent',
-                border: configMode === 'custom_benchmark' ? '1px solid #2563EB' : '1px solid transparent',
-                color: configMode === 'custom_benchmark' ? '#F2F2F2' : '#858585',
+                background: configMode === 'custom_benchmark' ? '#BAE6FD' : 'transparent',
+                border: configMode === 'custom_benchmark' ? '1px solid #BAE6FD' : '1px solid transparent',
+                color: configMode === 'custom_benchmark' ? '#0A1A35' : '#858585',
                 padding: '0.35rem 0.85rem',
                 borderRadius: '2px',
                 fontSize: '0.75rem',
                 fontFamily: 'monospace',
                 fontWeight: 700,
                 cursor: 'pointer',
+                transition: 'background 0.15s ease, color 0.15s ease',
               }}
             >
               Cross-Provider Comparator
@@ -1073,12 +1075,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 disabled={isRunning}
                 style={{
                   width: '100%',
-                  padding: '0.65rem',
-                  background: '#0D1117',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  fontSize: '0.85rem',
+                  padding: '0.55rem 0.75rem',
+                  background: '#151515',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  color: '#F2F2F2',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
                 }}
               >
                 {versions.map((v) => (
@@ -1088,7 +1091,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 ))}
               </select>
               <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#888888', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ textTransform: 'uppercase', color: '#2ECC71', fontWeight: 600 }}>{baselineVersion?.provider}</span>
+                <span style={{ textTransform: 'uppercase', color: '#858585', fontWeight: 600 }}>{baselineVersion?.provider}</span>
                 <span>•</span>
                 <span style={{ fontFamily: 'monospace' }}>{baselineVersion?.modelIdentifier}</span>
               </div>
@@ -1105,12 +1108,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 disabled={isRunning}
                 style={{
                   width: '100%',
-                  padding: '0.65rem',
-                  background: '#0D1117',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  fontSize: '0.85rem',
+                  padding: '0.55rem 0.75rem',
+                  background: '#151515',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  color: '#F2F2F2',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
                 }}
               >
                 {versions.map((v) => (
@@ -1120,7 +1124,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 ))}
               </select>
               <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#888888', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ textTransform: 'uppercase', color: '#4DA6FF', fontWeight: 600 }}>{candidateVersion?.provider}</span>
+                <span style={{ textTransform: 'uppercase', color: '#858585', fontWeight: 600 }}>{candidateVersion?.provider}</span>
                 <span>•</span>
                 <span style={{ fontFamily: 'monospace' }}>{candidateVersion?.modelIdentifier}</span>
               </div>
@@ -1130,8 +1134,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           /* ── Mode 2: Cross-Provider Benchmark / Custom Comparator ── */
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             {/* Baseline Configuration Panel */}
-            <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(46, 204, 113, 0.3)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2ECC71', textTransform: 'uppercase' }}>
+            <div style={{ background: '#0F0F0F', padding: '1.25rem', borderRadius: '2px', border: '1px solid #292929', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F2F2F2', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Baseline Model Configuration
               </div>
 
@@ -1147,7 +1151,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     setCustomBaselineProvider(p);
                     setCustomBaselineModel(PROVIDER_MODELS[p][0].id);
                   }}
-                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', background: '#151515', border: '1px solid #292929', borderRadius: '2px', color: '#F2F2F2', fontSize: '0.82rem', fontFamily: 'monospace' }}
                 >
                   <option value="demo">Deterministic Demo (Zero Cost)</option>
                   <option value="groq">Groq (LPU Inference)</option>
@@ -1166,7 +1170,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 <select
                   value={customBaselineModel}
                   onChange={(e) => setCustomBaselineModel(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', background: '#151515', border: '1px solid #292929', borderRadius: '2px', color: '#F2F2F2', fontSize: '0.82rem', fontFamily: 'monospace' }}
                 >
                   {PROVIDER_MODELS[customBaselineProvider].map((m) => (
                     <option key={m.id} value={m.id}>
@@ -1185,7 +1189,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   <select
                     value={customBaselineReasoningEffort}
                     onChange={(e) => setCustomBaselineReasoningEffort(e.target.value as 'low' | 'medium' | 'high')}
-                    style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', background: '#151515', border: '1px solid #292929', borderRadius: '2px', color: '#F2F2F2', fontSize: '0.82rem', fontFamily: 'monospace' }}
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium (Default / Fair Comparison)</option>
@@ -1242,8 +1246,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </div>
 
             {/* Candidate Configuration Panel */}
-            <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid #292929', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#60A5FA', textTransform: 'uppercase' }}>
+            <div style={{ background: '#0F0F0F', padding: '1.25rem', borderRadius: '2px', border: '1px solid #292929', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F2F2F2', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Candidate Model Configuration
               </div>
 
@@ -1259,7 +1263,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     setCustomCandidateProvider(p);
                     setCustomCandidateModel(PROVIDER_MODELS[p][0].id);
                   }}
-                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', background: '#151515', border: '1px solid #292929', borderRadius: '2px', color: '#F2F2F2', fontSize: '0.82rem', fontFamily: 'monospace' }}
                 >
                   <option value="demo">Deterministic Demo (Zero Cost)</option>
                   <option value="groq">Groq (LPU Inference)</option>
@@ -1278,7 +1282,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 <select
                   value={customCandidateModel}
                   onChange={(e) => setCustomCandidateModel(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', background: '#151515', border: '1px solid #292929', borderRadius: '2px', color: '#F2F2F2', fontSize: '0.82rem', fontFamily: 'monospace' }}
                 >
                   {PROVIDER_MODELS[customCandidateProvider].map((m) => (
                     <option key={m.id} value={m.id}>
@@ -1297,7 +1301,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   <select
                     value={customCandidateReasoningEffort}
                     onChange={(e) => setCustomCandidateReasoningEffort(e.target.value as 'low' | 'medium' | 'high')}
-                    style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', background: '#151515', border: '1px solid #292929', borderRadius: '2px', color: '#F2F2F2', fontSize: '0.82rem', fontFamily: 'monospace' }}
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium (Default / Fair Comparison)</option>

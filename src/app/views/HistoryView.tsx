@@ -105,14 +105,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                 key={filter}
                 onClick={() => setStatusFilter(filter)}
                 style={{
-                  background: isSelected ? '#0A1A35' : 'transparent',
-                  color: isSelected ? '#F2F2F2' : '#858585',
-                  border: isSelected ? '1px solid #2563EB' : '1px solid transparent',
+                  background: isSelected ? '#BAE6FD' : 'transparent',
+                  color: isSelected ? '#0A1A35' : '#858585',
+                  border: isSelected ? '1px solid #BAE6FD' : '1px solid transparent',
                   borderRadius: '2px',
                   padding: '0.3rem 0.65rem',
                   fontSize: '0.72rem',
                   fontFamily: 'monospace',
-                  fontWeight: 600,
+                  fontWeight: isSelected ? 700 : 500,
                   cursor: 'pointer',
                 }}
               >

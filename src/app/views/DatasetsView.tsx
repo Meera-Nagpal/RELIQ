@@ -558,9 +558,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 key={d.id}
                 onClick={() => onSelectDataset(d.id)}
                 style={{
-                  background: isSelected ? '#0A1A35' : 'transparent',
-                  border: isSelected ? '1px solid #2563EB' : '1px solid transparent',
-                  color: isSelected ? '#F2F2F2' : '#858585',
+                  background: isSelected ? '#BAE6FD' : 'transparent',
+                  border: isSelected ? '1px solid #BAE6FD' : '1px solid transparent',
+                  color: isSelected ? '#0A1A35' : '#858585',
                   padding: '0.35rem 0.75rem',
                   borderRadius: '2px',
                   fontSize: '0.78rem',

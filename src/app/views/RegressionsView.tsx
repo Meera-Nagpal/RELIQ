@@ -772,14 +772,14 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               <button
                 onClick={() => setStatusFilter('all')}
                 style={{
-                  background: statusFilter === 'all' ? '#1E3A8A' : 'transparent',
+                  background: statusFilter === 'all' ? '#BAE6FD' : 'transparent',
                   border: 'none',
-                  color: statusFilter === 'all' ? '#F2F2F2' : '#858585',
+                  color: statusFilter === 'all' ? '#0A1A35' : '#858585',
                   padding: '0.35rem 0.75rem',
                   borderRadius: '2px',
                   fontSize: '0.75rem',
                   fontFamily: 'monospace',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: 'pointer',
                 }}
               >

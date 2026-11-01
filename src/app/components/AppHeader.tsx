@@ -109,7 +109,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#3A3A3A')}
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
         >
-          <span style={{ color: '#60A5FA', fontSize: '0.75rem' }}>◆</span>
+          <span style={{ color: '#BAE6FD', fontSize: '0.75rem' }}>◆</span>
           <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {activeProject?.name || 'Select Workspace'}
           </span>
