@@ -1,20 +1,24 @@
 /* ============================================================
    RELIQ — Standalone AI Evaluation Backend Server
    
-   Dedicated Node.js server process running on port 3001
-   (configurable via RELIQ_SERVER_PORT).
+   Dedicated native Node.js HTTP server running on port 3001
+   (configurable via process.env.PORT or process.env.RELIQ_SERVER_PORT).
    
-   Reuses existing:
-   - createReliqProxyMiddleware() from proxyMiddleware.ts
-   - evaluationService.ts
-   - providerScheduler.ts
-   - serverProviders.ts
+   Optimized for Render production (512 MB RAM limit):
+   - Pure compiled ESM (zero Vite SSR runtime or Vite module graph overhead in production)
+   - Supabase PostgreSQL primary persistence (SQLite completely bypassed in production)
+   - Connection-pooled and timeout-guarded database probes
+   - Active memory monitoring and proactive cache/job eviction
+   - Bounded concurrency for evaluation runs and provider calls
    ============================================================ */
 
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createServer as createViteServer } from 'vite';
+import { createReliqProxyMiddleware } from './proxyMiddleware';
+import { isSupabaseDriverActive, testSupabaseConnection, getSupabaseUrl } from './db/supabaseClient';
+import { evaluationCache } from '../evaluation/evaluationCache';
+import { pruneOldJobs } from './evaluationService';
 
 // Safely populate process.env from .env.local for local development only without logging values
 function loadLocalEnv() {
@@ -107,28 +111,21 @@ async function startServer() {
   const HOST = process.env.HOST || '0.0.0.0';
   const ENV_NAME = process.env.NODE_ENV || 'development';
 
-  // Use programmatic Vite SSR server for seamless TypeScript module resolution
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'custom',
-  });
-
   // Initialize Database (Supabase PostgreSQL in production, SQLite for local/test only)
   let closeDb: (() => void) | null = null;
   try {
-    const supabaseClientModule = await vite.ssrLoadModule('/src/server/db/supabaseClient.ts');
-    if (supabaseClientModule.isSupabaseDriverActive()) {
+    if (isSupabaseDriverActive()) {
       console.log(`[RELIQ DB] Supabase PostgreSQL mode active (RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER || 'supabase_postgresql'})`);
-      const conn = await supabaseClientModule.testSupabaseConnection();
+      const conn = await testSupabaseConnection();
       if (conn.connected) {
-        console.log(`[RELIQ DB] Connected to Supabase PostgreSQL (${supabaseClientModule.getSupabaseUrl()}) in ${conn.latencyMs}ms`);
+        console.log(`[RELIQ DB] Connected to Supabase PostgreSQL (${getSupabaseUrl()}) in ${conn.latencyMs}ms`);
       } else {
         console.warn(`[RELIQ DB] Supabase probe notice: ${conn.error}`);
       }
       // SQLite initialization is completely skipped in production Supabase mode
     } else {
       console.log(`[RELIQ DB] Local/Test mode: Initializing SQLite database...`);
-      const dbModule = await vite.ssrLoadModule('/src/server/db/database.ts');
+      const dbModule = await import('./db/database');
       dbModule.initializeDatabase();
       closeDb = dbModule.closeDatabase;
     }
@@ -137,8 +134,32 @@ async function startServer() {
     process.exit(1);
   }
 
-  const { createReliqProxyMiddleware } = await vite.ssrLoadModule('/src/server/proxyMiddleware.ts');
+  // Create RELIQ Proxy & Evaluation HTTP Middleware
   const reliqMiddleware = createReliqProxyMiddleware();
+
+  // Active Memory Monitor (Guard Render 512 MB RAM ceiling)
+  const MEMORY_THRESHOLD_MB = 380; // 75% of 512MB
+  const memoryMonitorInterval = setInterval(() => {
+    const mem = process.memoryUsage();
+    const rssMb = Math.round(mem.rss / (1024 * 1024));
+    const heapUsedMb = Math.round(mem.heapUsed / (1024 * 1024));
+
+    if (rssMb > MEMORY_THRESHOLD_MB) {
+      console.warn(
+        `[RELIQ MEMORY MONITOR] WARNING: High RSS memory (${rssMb}MB > ${MEMORY_THRESHOLD_MB}MB limit, Heap: ${heapUsedMb}MB). Triggering proactive cache eviction...`
+      );
+      try {
+        evaluationCache.clearMemory();
+        pruneOldJobs();
+        if (typeof (globalThis as any).gc === 'function') {
+          (globalThis as any).gc();
+        }
+      } catch (cleanErr: any) {
+        console.error('[RELIQ MEMORY MONITOR] Cache eviction error:', cleanErr?.message || cleanErr);
+      }
+    }
+  }, 30000);
+  memoryMonitorInterval.unref();
 
   const server = http.createServer((req, res) => {
     const method = req.method || 'GET';
@@ -193,12 +214,15 @@ async function startServer() {
   });
 
   server.listen(PORT, HOST, () => {
+    const mem = process.memoryUsage();
+    const rssMb = Math.round(mem.rss / (1024 * 1024));
     console.log('==================================================');
     console.log('RELIQ BACKEND SERVER');
     console.log('==================================================');
     console.log(`Environment: ${ENV_NAME}`);
     console.log(`Host: ${HOST}`);
     console.log(`Port: ${PORT}`);
+    console.log(`Initial RSS Memory: ${rssMb}MB (512MB RAM Container Safe)`);
     console.log('Status: READY');
     console.log('==================================================\n');
     console.log('API endpoints:');
@@ -217,13 +241,11 @@ async function startServer() {
     if (isShuttingDown) return;
     isShuttingDown = true;
     console.log('\n[BACKEND] Shutdown requested');
+    clearInterval(memoryMonitorInterval);
     try {
       closeDb?.();
     } catch {}
-    server.close(async () => {
-      try {
-        await vite.close();
-      } catch {}
+    server.close(() => {
       console.log('[BACKEND] Server stopped');
       process.exit(0);
     });

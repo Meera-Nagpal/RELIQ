@@ -14,7 +14,7 @@
     "test": "node tests/runTests.mjs",
     "test:web": "node tests/runTests.mjs",
     "build:web": "tsc && vite build",
-    "build:backend": "esbuild src/server/server.ts --bundle --platform=node --format=esm --external:better-sqlite3 --external:vite --outfile=dist-server/server.js",
+    "build:backend": "esbuild src/server/server.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=dist-server/server.js",
     "migrate:supabase": "node scripts/migrate-to-supabase.mjs"
   },
   "dependencies": {

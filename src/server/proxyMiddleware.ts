@@ -173,6 +173,7 @@ export function createReliqProxyMiddleware() {
       }
 
       const isHealthy = databaseStatus === 'connected';
+      const mem = process.memoryUsage();
       sendJson(res, isHealthy ? 200 : 503, {
         status: isHealthy ? 'healthy' : 'unhealthy',
         database: databaseStatus,
@@ -181,6 +182,11 @@ export function createReliqProxyMiddleware() {
         service: 'RELIQ Evaluation Platform',
         version: '2.8.0',
         backendExecution: 'enabled',
+        memory: {
+          rssMb: Math.round(mem.rss / (1024 * 1024)),
+          heapUsedMb: Math.round(mem.heapUsed / (1024 * 1024)),
+          heapTotalMb: Math.round(mem.heapTotal / (1024 * 1024)),
+        },
         auth: {
           enabled: isSupabaseConfigured(),
           provider: isSupabaseConfigured() ? 'supabase' : 'none',
@@ -289,7 +295,7 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: GET /api/evaluations/status/:runId ─────
     if (req.method === 'GET' && parsedUrl.startsWith('/api/evaluations/status/')) {
       const runId = parsedUrl.replace('/api/evaluations/status/', '').trim();
-      const job = getJobStatus(runId);
+      const job = await getJobStatus(runId);
 
       if (!job) {
         sendJson(res, 404, {

@@ -15,6 +15,7 @@ import type DatabaseType from 'better-sqlite3';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isSupabaseDriverActive } from './supabaseClient';
 import { initSchema } from './schema';
 import { seedDatabase, SeedResult } from './seed';
 
@@ -59,9 +60,9 @@ export interface InitializeDatabaseOptions {
  * Returns the currently active Database instance, opening it if not yet open.
  */
 export function getDatabase(customPath?: string): DatabaseType.Database {
-  if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+  if (isSupabaseDriverActive()) {
     throw new Error(
-      `[RELIQ DB] SQLite is disabled in production (RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER}). All operations must use Supabase PostgreSQL.`
+      `[RELIQ DB] SQLite is disabled in production (RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER || 'supabase_postgresql'}). All operations must use Supabase PostgreSQL.`
     );
   }
   if (dbInstance && (!customPath || currentDbPath === path.resolve(customPath))) {
@@ -80,9 +81,9 @@ export function getDatabase(customPath?: string): DatabaseType.Database {
  * Safe to call multiple times; idempotent.
  */
 export function initializeDatabase(options: InitializeDatabaseOptions = {}): DatabaseType.Database {
-  if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+  if (isSupabaseDriverActive()) {
     throw new Error(
-      `[RELIQ DB] SQLite initialization blocked: RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER}. Production must use Supabase PostgreSQL only.`
+      `[RELIQ DB] SQLite initialization blocked: RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER || 'supabase_postgresql'}. Production must use Supabase PostgreSQL only.`
     );
   }
 

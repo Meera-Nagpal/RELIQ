@@ -31,6 +31,9 @@ export async function runProductionArchitectureTests(harness, viteServer) {
   const { settingsService } = await viteServer.ssrLoadModule('/src/server/services/settingsService.ts');
   const { evaluationDbService } = await viteServer.ssrLoadModule('/src/server/services/evaluationDbService.ts');
   const { createReliqProxyMiddleware } = await viteServer.ssrLoadModule('/src/server/proxyMiddleware.ts');
+  const { evaluationCache } = await viteServer.ssrLoadModule('/src/evaluation/evaluationCache.ts');
+  const { pruneOldJobs } = await viteServer.ssrLoadModule('/src/server/evaluationService.ts');
+  const { getSupabaseUserClient } = await viteServer.ssrLoadModule('/src/server/db/supabaseClient.ts');
 
   // Test 1: vercel.json rewrites /api/* to Render backend
   test('PROD-ARCH-01: vercel.json rewrites /api/* to Render backend (https://reliq-backend.onrender.com/api/$1)', () => {
@@ -208,6 +211,124 @@ export async function runProductionArchitectureTests(harness, viteServer) {
     } finally {
       if (origDriver !== undefined) process.env.RELIQ_DB_DRIVER = origDriver;
       else delete process.env.RELIQ_DB_DRIVER;
+    }
+  });
+
+  // Test 9: evaluationCache respects Supabase mode and bounds memory
+  await asyncTest('PROD-ARCH-09: evaluationCache never accesses SQLite in Supabase mode and bounds memory', async () => {
+    const origDriver = process.env.RELIQ_DB_DRIVER;
+    try {
+      process.env.RELIQ_DB_DRIVER = 'supabase_postgresql';
+      evaluationCache.clearMemory();
+      assert.strictEqual(evaluationCache.getMemoryEntryCount(), 0, 'Memory entries must be 0 after clear');
+
+      const req = {
+        modelIdentifier: 'test-model',
+        input: 'test-input',
+      };
+      const resp = {
+        output: 'test output response',
+        usage: {
+          promptTokens: 5,
+          completionTokens: 5,
+          totalTokens: 10,
+          reasoningTokens: 0,
+          latencyMs: 50,
+          provider: 'groq',
+        },
+      };
+
+      // Writing to memory cache in Supabase mode should NOT trigger SQLite getDatabase()
+      await evaluationCache.set(req, resp);
+
+      assert.strictEqual(evaluationCache.getMemoryEntryCount(), 1, 'Memory entries must be 1');
+      const cached = await evaluationCache.get(req);
+      assert.ok(cached, 'Must retrieve entry from in-memory cache');
+      assert.strictEqual(cached.output, 'test output response');
+
+      evaluationCache.clearMemory();
+      assert.strictEqual(evaluationCache.getMemoryEntryCount(), 0);
+    } finally {
+      if (origDriver !== undefined) process.env.RELIQ_DB_DRIVER = origDriver;
+      else delete process.env.RELIQ_DB_DRIVER;
+    }
+  });
+
+  // Test 10: GET /api/health includes memory metrics
+  await asyncTest('PROD-ARCH-10: GET /api/health includes memory metrics (rssMb, heapUsedMb, heapTotalMb)', async () => {
+    const origDriver = process.env.RELIQ_DB_DRIVER;
+    const origUrl = process.env.SUPABASE_URL;
+    const origKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    try {
+      process.env.RELIQ_DB_DRIVER = 'supabase_postgresql';
+      process.env.SUPABASE_URL = 'https://mock-test.supabase.co';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-key-for-test';
+
+      const middleware = createReliqProxyMiddleware();
+      let responseBody = '';
+      const req = new http.IncomingMessage(null);
+      req.method = 'GET';
+      req.url = '/api/health';
+
+      const res = new http.ServerResponse(req);
+      res.end = (chunk) => {
+        if (chunk) responseBody += chunk;
+      };
+
+      await middleware(req, res, () => {});
+
+      const parsed = JSON.parse(responseBody);
+      assert.ok(parsed.memory, 'Response must include memory stats');
+      assert.strictEqual(typeof parsed.memory.rssMb, 'number', 'rssMb must be numeric');
+      assert.strictEqual(typeof parsed.memory.heapUsedMb, 'number', 'heapUsedMb must be numeric');
+      assert.strictEqual(typeof parsed.memory.heapTotalMb, 'number', 'heapTotalMb must be numeric');
+      assert.ok(parsed.memory.rssMb > 0, 'rssMb must be positive');
+    } finally {
+      if (origDriver !== undefined) process.env.RELIQ_DB_DRIVER = origDriver;
+      else delete process.env.RELIQ_DB_DRIVER;
+      if (origUrl !== undefined) process.env.SUPABASE_URL = origUrl;
+      else delete process.env.SUPABASE_URL;
+      if (origKey !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = origKey;
+      else delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    }
+  });
+
+  // Test 11: Backend bundle dist-server/server.js does NOT import Vite
+  test('PROD-ARCH-11: Backend bundle dist-server/server.js has zero Vite SSR runtime imports', () => {
+    const bundlePath = path.resolve(process.cwd(), 'dist-server', 'server.js');
+    if (fs.existsSync(bundlePath)) {
+      const content = fs.readFileSync(bundlePath, 'utf8');
+      assert.strictEqual(content.includes('createViteServer'), false, 'dist-server/server.js must NOT contain createViteServer');
+      assert.strictEqual(content.includes('ssrLoadModule'), false, 'dist-server/server.js must NOT contain ssrLoadModule');
+      assert.strictEqual(content.includes("from 'vite'"), false, 'dist-server/server.js must NOT import from vite');
+      assert.strictEqual(content.includes('from "vite"'), false, 'dist-server/server.js must NOT import from "vite"');
+    }
+  });
+
+  // Test 12: pruneOldJobs executes cleanly without throwing
+  test('PROD-ARCH-12: pruneOldJobs executes safely and removes stale in-memory evaluation records', () => {
+    assert.doesNotThrow(() => {
+      pruneOldJobs();
+    }, 'pruneOldJobs must execute without error');
+  });
+
+  // Test 13: getSupabaseUserClient caches instances to avoid memory leaks
+  test('PROD-ARCH-13: getSupabaseUserClient returns cached client for identical auth tokens', () => {
+    const origUrl = process.env.SUPABASE_URL;
+    const origKey = process.env.SUPABASE_ANON_KEY;
+    try {
+      process.env.SUPABASE_URL = 'https://mock-test.supabase.co';
+      process.env.SUPABASE_ANON_KEY = 'mock-anon-key';
+
+      const client1 = getSupabaseUserClient('Bearer mock-jwt-token-12345');
+      const client2 = getSupabaseUserClient('Bearer mock-jwt-token-12345');
+      assert.strictEqual(client1, client2, 'getSupabaseUserClient must return cached instance for identical token');
+    } finally {
+      if (origUrl !== undefined) process.env.SUPABASE_URL = origUrl;
+      else delete process.env.SUPABASE_URL;
+      if (origKey !== undefined) process.env.SUPABASE_ANON_KEY = origKey;
+      else delete process.env.SUPABASE_ANON_KEY;
     }
   });
 

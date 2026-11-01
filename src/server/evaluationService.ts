@@ -24,6 +24,7 @@ import { resolveServerProvider } from './serverProviders';
 import { providerScheduler } from './providerScheduler';
 import { evaluationDbService } from './services/evaluationDbService';
 import { validateJudgeConfiguration } from '../evaluation/judgeRegistry';
+import { isSupabaseDriverActive } from './db/supabaseClient';
 
 export interface ServerEvaluationOptions {
   project: Project;
@@ -63,6 +64,29 @@ export function generateCanonicalRunId(): string {
 }
 
 const jobs = new Map<string, EvaluationJob>();
+let activeEvaluationCount = 0;
+const MAX_ACTIVE_RUNS = process.env.NODE_ENV === 'production' ? 2 : 4;
+const MAX_STORED_JOBS = 30;
+
+/**
+ * Prunes old completed or failed jobs from memory to prevent heap exhaustion.
+ */
+export function pruneOldJobs(): void {
+  const now = Date.now();
+  for (const [id, job] of jobs.entries()) {
+    if (job.status !== 'RUNNING' && job.endTime && now - job.endTime > 15 * 60 * 1000) {
+      jobs.delete(id);
+    }
+  }
+  while (jobs.size > MAX_STORED_JOBS) {
+    const oldestKey = jobs.keys().next().value;
+    if (oldestKey) {
+      jobs.delete(oldestKey);
+    } else {
+      break;
+    }
+  }
+}
 
 /**
  * Returns the directory path used to persist evaluation run artifacts on the server.
@@ -225,11 +249,34 @@ export function deleteRunFromDisk(id: string): boolean {
 /**
  * Retrieves current execution status and progress for an active or completed evaluation job.
  */
-export function getJobStatus(runId: string): EvaluationJob | undefined {
+export async function getJobStatus(runId: string): Promise<EvaluationJob | undefined> {
   const inMemory = jobs.get(runId);
   if (inMemory) return inMemory;
 
-  // If not in active memory, check if already persisted on disk
+  // Supabase PostgreSQL mode
+  if (isSupabaseDriverActive()) {
+    try {
+      const dbRun = await evaluationDbService.getEvaluationRunById(runId);
+      if (dbRun) {
+        return {
+          runId,
+          status: dbRun.status === 'COMPLETED' ? 'COMPLETED' : dbRun.status === 'FAILED' ? 'FAILED' : 'RUNNING',
+          progress: {
+            current: dbRun.metrics?.totalCases ?? dbRun.metrics?.evaluatedCases ?? 0,
+            total: dbRun.metrics?.totalCases ?? 0,
+            percent: dbRun.status === 'COMPLETED' ? 100 : 0,
+          },
+          startTime: new Date(dbRun.timestamp || dbRun.started_at || Date.now()).getTime(),
+          endTime: dbRun.completed_at ? new Date(dbRun.completed_at).getTime() : undefined,
+          run: dbRun,
+          error: dbRun.status === 'FAILED' ? (dbRun.release_reason || dbRun.releaseDecision?.reason || 'Evaluation run failed') : undefined,
+        };
+      }
+    } catch {}
+    return undefined;
+  }
+
+  // If not in active memory, check if already persisted on disk (local/test mode)
   const diskRun = getRunFromDisk(runId);
   if (diskRun) {
     return {
@@ -246,10 +293,10 @@ export function getJobStatus(runId: string): EvaluationJob | undefined {
     };
   }
 
-  // Check authoritative SQLite store
+  // Check authoritative SQLite store (local/test mode)
   try {
-    const dbRun = evaluationDbService.getEvaluationRunById(runId);
-    if (dbRun) {
+    const dbRun = evaluationDbService.getEvaluationRunById(runId) as any;
+    if (dbRun && typeof dbRun.then !== 'function') {
       return {
         runId,
         status: dbRun.status === 'COMPLETED' ? 'COMPLETED' : dbRun.status === 'FAILED' ? 'FAILED' : 'RUNNING',
@@ -328,6 +375,7 @@ export function validateEvaluationOptions(options: ServerEvaluationOptions): voi
  */
 export async function runServerEvaluation(options: ServerEvaluationOptions): Promise<EvaluationRun> {
   validateEvaluationOptions(options);
+  activeEvaluationCount++;
 
   const runId = options.runId || generateCanonicalRunId();
 
@@ -394,20 +442,23 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     startedAt: new Date(job.startTime).toISOString(),
   });
 
-  // Determine safe concurrency: option -> EVALUATION_CONCURRENCY env -> default 8
+  // Determine safe concurrency: clamp to max 4 in production to prevent 512MB RAM exhaustion
+  const maxSafeConcurrency = process.env.NODE_ENV === 'production' ? 4 : 8;
   const envConcurrency = process.env.EVALUATION_CONCURRENCY
     ? parseInt(process.env.EVALUATION_CONCURRENCY, 10)
     : undefined;
   const effectiveOptionConcurrency =
     Number(options.concurrency) === 1 && totalCases > 3 && envConcurrency === undefined
-      ? 8
+      ? maxSafeConcurrency
       : options.concurrency;
-  const resolvedConcurrency =
+  const resolvedConcurrency = Math.min(
+    maxSafeConcurrency,
     !isNaN(Number(effectiveOptionConcurrency)) && Number(effectiveOptionConcurrency) > 0
       ? Number(effectiveOptionConcurrency)
       : !isNaN(Number(envConcurrency)) && Number(envConcurrency) > 0
       ? Number(envConcurrency)
-      : 8;
+      : maxSafeConcurrency
+  );
 
   console.log(`[RELIQ Server Service] Starting Evaluation Run ${runId}`);
   console.log(`[RELIQ Server Service] Baseline: ${options.baselineVersion.provider} (${options.baselineVersion.modelIdentifier})`);
@@ -555,11 +606,13 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     job.endTime = Date.now();
     job.run = finalRun;
 
-    // Authoritative finalization into SQLite evaluation_runs table
+    // Authoritative finalization into evaluation_runs table
     evaluationDbService.finalizeEvaluationRun(finalRun);
 
-    // Persist completed evaluation to disk for legacy JSON compatibility
-    saveRunToDisk(finalRun);
+    // Persist completed evaluation to disk for legacy JSON compatibility (local dev only)
+    if (!isSupabaseDriverActive()) {
+      saveRunToDisk(finalRun);
+    }
 
     console.log(`[RELIQ Server Service] Evaluation Run ${runId} COMPLETED successfully in ${Date.now() - job.startTime}ms`);
     return finalRun;
@@ -575,6 +628,8 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     throw err;
   } finally {
     releaseLock();
+    activeEvaluationCount = Math.max(0, activeEvaluationCount - 1);
+    pruneOldJobs();
   }
 }
 
@@ -585,6 +640,13 @@ export function startEvaluationJob(options: ServerEvaluationOptions): {
   runId: string;
   jobPromise: Promise<EvaluationRun>;
 } {
+  pruneOldJobs();
+  if (activeEvaluationCount >= MAX_ACTIVE_RUNS) {
+    throw new Error(
+      `Evaluation capacity reached (${activeEvaluationCount}/${MAX_ACTIVE_RUNS} runs currently active). Please wait for active runs to complete.`
+    );
+  }
+
   const runId = options.runId || generateCanonicalRunId();
 
   const jobPromise = runServerEvaluation({ ...options, runId });

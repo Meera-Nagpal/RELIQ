@@ -11,6 +11,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 let supabaseAdmin: SupabaseClient | null = null;
+const userClientCache = new Map<string, { client: SupabaseClient; lastUsed: number }>();
+const MAX_USER_CLIENTS = 25;
 
 export function getSupabaseUrl(): string | null {
   return process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || null;
@@ -88,7 +90,8 @@ export function getSupabaseAdmin(): SupabaseClient {
 }
 
 /**
- * Creates an authenticated Supabase client scoped to an incoming user's JWT Bearer token.
+ * Creates or reuses a pooled authenticated Supabase client scoped to an incoming user's JWT Bearer token.
+ * Bounded pool prevents socket and memory exhaustion.
  */
 export function getSupabaseUserClient(bearerToken?: string): SupabaseClient {
   const url = getSupabaseUrl();
@@ -98,23 +101,41 @@ export function getSupabaseUserClient(bearerToken?: string): SupabaseClient {
     return getSupabaseAdmin();
   }
 
-  return createClient(url, anonKey, {
+  const cleanToken = bearerToken?.trim();
+  if (!cleanToken) {
+    return getSupabaseAdmin();
+  }
+
+  const cached = userClientCache.get(cleanToken);
+  if (cached) {
+    cached.lastUsed = Date.now();
+    return cached.client;
+  }
+
+  // Evict oldest if capacity exceeded
+  if (userClientCache.size >= MAX_USER_CLIENTS) {
+    const oldestKey = userClientCache.keys().next().value;
+    if (oldestKey) userClientCache.delete(oldestKey);
+  }
+
+  const client = createClient(url, anonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
     },
-    global: bearerToken
-      ? {
-          headers: {
-            Authorization: bearerToken.startsWith('Bearer ') ? bearerToken : `Bearer ${bearerToken}`,
-          },
-        }
-      : undefined,
+    global: {
+      headers: {
+        Authorization: cleanToken.startsWith('Bearer ') ? cleanToken : `Bearer ${cleanToken}`,
+      },
+    },
   });
+
+  userClientCache.set(cleanToken, { client, lastUsed: Date.now() });
+  return client;
 }
 
 /**
- * Validates connectivity to the Supabase PostgreSQL database.
+ * Validates connectivity to the Supabase PostgreSQL database with a strict 5s timeout.
  */
 export async function testSupabaseConnection(): Promise<{
   connected: boolean;
@@ -132,8 +153,13 @@ export async function testSupabaseConnection(): Promise<{
   const start = Date.now();
   try {
     const client = getSupabaseAdmin();
-    // Test query against projects table
-    const { error } = await client.from('projects').select('id', { count: 'exact', head: true });
+    // Test query against projects table with a strict 5s timeout to prevent hanging health checks
+    const probePromise = client.from('projects').select('id', { count: 'exact', head: true });
+    const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase connection probe timed out after 5000ms')), 5000)
+    );
+
+    const { error } = (await Promise.race([probePromise, timeoutPromise])) as any;
 
     if (error) {
       // If table doesn't exist yet, but REST API responded, check rest root

@@ -264,7 +264,10 @@ export class SupabaseRepository {
   // ── 6. Evaluation Runs ────────────────────────────────────
   async getAllEvaluationRuns(projectId?: string): Promise<any[]> {
     const supabase = getSupabaseAdmin();
-    let query = supabase.from('evaluation_runs').select('*').order('started_at', { ascending: false });
+    // Select summary columns only to prevent buffer bloat and heap exhaustion in Render's 512MB RAM
+    const summaryColumns =
+      'id, project_id, dataset_id, dataset_version, dataset_source_type, status, total_cases, selected_case_count, evaluated_cases, passed_cases, failed_cases, skipped_cases, cancelled_cases, pass_rate, quality_score, release_decision, release_reason, started_at, completed_at';
+    let query = supabase.from('evaluation_runs').select(summaryColumns).order('started_at', { ascending: false });
     if (projectId) {
       query = query.eq('project_id', projectId);
     }
