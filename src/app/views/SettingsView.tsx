@@ -67,7 +67,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1040px', margin: '0 auto' }}>
       {/* Header */}
       <div>
-        <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+        <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
           CONFIGURATION // POLICIES & STORAGE
         </div>
         <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
@@ -253,15 +253,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="submit"
               style={{
-                background: '#0000FF',
-                color: '#FFFFFF',
-                border: 'none',
+                background: '#1E3A8A',
+                color: '#F2F2F2',
+                border: '1px solid #1E3A8A',
                 padding: '0.55rem 1.4rem',
                 borderRadius: '2px',
                 fontSize: '0.78rem',
                 fontFamily: 'monospace',
                 fontWeight: 700,
                 cursor: 'pointer',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#2563EB';
+                e.currentTarget.style.borderColor = '#2563EB';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#1E3A8A';
+                e.currentTarget.style.borderColor = '#1E3A8A';
               }}
             >
               SAVE POLICIES
@@ -423,7 +432,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 setStoreRawOutputs(nextVal);
                 apiRepository.setStoreRawOutputs(nextVal);
               }}
-              style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--accent, #C86D51)' }}
+              style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#2563EB' }}
             />
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: storeRawOutputs ? '#4E9B6F' : '#C68B45' }}>
               {storeRawOutputs ? 'Store Raw Outputs (Enabled)' : 'Redact Raw Outputs (Strict Privacy)'}

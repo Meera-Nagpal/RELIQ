@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
             border: '1px solid rgba(255, 51, 17, 0.3)',
             borderRadius: '10px',
             color: '#ECECEC',
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "var(--font-sans, 'Geist Sans', sans-serif)",
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
@@ -73,9 +73,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
               style={{
-                background: 'rgba(200, 109, 81, 0.15)',
-                border: '1px solid rgba(200, 109, 81, 0.4)',
-                color: '#C86D51',
+                background: '#0A1A35',
+                border: '1px solid #1E3A8A',
+                color: '#60A5FA',
                 padding: '0.5rem 1.2rem',
                 borderRadius: '6px',
                 fontSize: '0.82rem',

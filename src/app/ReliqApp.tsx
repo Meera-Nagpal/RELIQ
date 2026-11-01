@@ -195,13 +195,13 @@ export const ReliqApp: React.FC = () => {
         style={{
           width: '100vw',
           height: '100vh',
-          background: 'var(--bg, #0F1216)',
+          background: 'var(--bg, #0F0F0F)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'var(--accent, #C86D51)',
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          color: 'var(--blue-light, #60A5FA)',
+          fontFamily: "var(--font-sans, 'Geist Sans', sans-serif)",
           gap: '1rem',
           padding: '2rem',
           textAlign: 'center',
@@ -385,15 +385,24 @@ export const ReliqApp: React.FC = () => {
               <button
                 onClick={() => navigate('#/app/projects')}
                 style={{
-                  background: 'var(--accent, #C86D51)',
-                  color: '#FFFFFF',
-                  border: 'none',
+                  background: 'var(--navy-royal, #1E3A8A)',
+                  color: '#F2F2F2',
+                  border: '1px solid #1E3A8A',
                   padding: '0.7rem 1.6rem',
-                  borderRadius: '6px',
+                  borderRadius: '2px',
                   fontWeight: 700,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                   marginTop: '0.5rem',
+                  transition: 'background 0.15s ease, border-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#2563EB';
+                  e.currentTarget.style.borderColor = '#2563EB';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#1E3A8A';
+                  e.currentTarget.style.borderColor = '#1E3A8A';
                 }}
               >
                 Go to Projects Workspace →

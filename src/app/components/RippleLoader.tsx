@@ -26,8 +26,8 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
   size = 100,
   mode = 'continuous',
   duration: customDuration,
-  color = 'var(--reliq-accent, #C86D51)',
-  secondaryColor = 'var(--reliq-accent-secondary, #D47E64)',
+  color = 'var(--reliq-accent, #1E3A8A)',
+  secondaryColor = 'var(--reliq-accent-secondary, #2563EB)',
   className = '',
 }) => {
   const duration = customDuration ?? (mode === 'pulse' ? '2.5s' : '6.4s');

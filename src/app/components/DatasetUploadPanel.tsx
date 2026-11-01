@@ -124,8 +124,8 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       style={{
-        background: isDragging ? 'rgba(0, 0, 255, 0.08)' : '#151515',
-        border: isDragging ? '1px dashed #0000FF' : '1px dashed #292929',
+        background: isDragging ? '#0A1A35' : '#151515',
+        border: isDragging ? '1px dashed #2563EB' : '1px dashed #292929',
         borderRadius: '2px',
         padding: '1.4rem 1.25rem',
         textAlign: 'center',
@@ -148,7 +148,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: isDragging ? '#0000FF' : '#858585',
+          color: isDragging ? '#60A5FA' : '#858585',
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -165,7 +165,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
             fontWeight: 700,
             color: '#F2F2F2',
             letterSpacing: '-0.01em',
-            fontFamily: 'monospace',
+            fontFamily: "var(--font-mono, 'Geist Mono', monospace)",
           }}
         >
           {isDragging ? 'RELEASE TO PARSE DATASET' : 'DROP TEST SUITE FILE'}
@@ -187,16 +187,29 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           disabled={disabled}
           onClick={onChooseFileClick}
           style={{
-            background: '#0000FF',
-            color: '#FFFFFF',
-            border: 'none',
+            background: '#1E3A8A',
+            color: '#F2F2F2',
+            border: '1px solid #1E3A8A',
             borderRadius: '2px',
             padding: '0.4rem 0.95rem',
             fontSize: '0.75rem',
-            fontFamily: 'monospace',
+            fontFamily: "var(--font-mono, 'Geist Mono', monospace)",
             fontWeight: 700,
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.6 : 1,
+            transition: 'background 0.15s ease, border-color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!disabled) {
+              e.currentTarget.style.background = '#2563EB';
+              e.currentTarget.style.borderColor = '#2563EB';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!disabled) {
+              e.currentTarget.style.background = '#1E3A8A';
+              e.currentTarget.style.borderColor = '#1E3A8A';
+            }
           }}
         >
           CHOOSE DATASET FILE

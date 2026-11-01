@@ -173,7 +173,7 @@ export const ModelsView: React.FC = () => {
       {/* View Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             REGISTRY // EVALUATION TARGETS
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
@@ -187,15 +187,24 @@ export const ModelsView: React.FC = () => {
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: '#0000FF',
-            color: '#FFFFFF',
-            border: 'none',
+            background: '#1E3A8A',
+            color: '#F2F2F2',
+            border: '1px solid #1E3A8A',
             padding: '0.5rem 1rem',
             borderRadius: '2px',
             fontSize: '0.78rem',
             fontFamily: 'monospace',
             fontWeight: 700,
             cursor: 'pointer',
+            transition: 'background 0.15s ease, border-color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#2563EB';
+            e.currentTarget.style.borderColor = '#2563EB';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#1E3A8A';
+            e.currentTarget.style.borderColor = '#1E3A8A';
           }}
         >
           + RUN EVALUATION
@@ -226,9 +235,9 @@ export const ModelsView: React.FC = () => {
                 key={prov}
                 onClick={() => setSelectedProvider(prov)}
                 style={{
-                  background: isSelected ? '#1B1B1B' : 'transparent',
+                  background: isSelected ? '#0A1A35' : 'transparent',
                   color: isSelected ? '#F2F2F2' : '#858585',
-                  border: isSelected ? '1px solid #0000FF' : '1px solid transparent',
+                  border: isSelected ? '1px solid #2563EB' : '1px solid transparent',
                   borderRadius: '2px',
                   padding: '0.3rem 0.65rem',
                   fontSize: '0.72rem',

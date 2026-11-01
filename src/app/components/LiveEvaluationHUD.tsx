@@ -111,7 +111,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: 'var(--reliq-accent, #C86D51)',
+              background: '#60A5FA',
               animation: 'reliqHudPulse 1.8s infinite',
               flexShrink: 0,
             }}
@@ -123,9 +123,9 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               fontWeight: 800,
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
-              color: 'var(--reliq-accent, #C86D51)',
-              background: 'rgba(200, 109, 81, 0.12)',
-              border: '1px solid rgba(200, 109, 81, 0.28)',
+              color: '#60A5FA',
+              background: '#0A1A35',
+              border: '1px solid rgba(37, 99, 235, 0.3)',
               padding: '0.15rem 0.5rem',
               borderRadius: '4px',
               whiteSpace: 'nowrap',
@@ -180,11 +180,11 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               <button
                 onClick={onOpenModal}
                 style={{
-                  background: 'var(--reliq-accent, #C86D51)',
-                  border: 'none',
-                  color: '#FFFFFF',
+                  background: 'var(--navy-royal, #1E3A8A)',
+                  border: '1px solid #1E3A8A',
+                  color: '#F2F2F2',
                   padding: '0.3rem 0.65rem',
-                  borderRadius: '5px',
+                  borderRadius: '2px',
                   fontSize: '0.72rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -200,7 +200,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
                 border: '1px solid rgba(192, 92, 84, 0.3)',
                 color: '#E0A8A0',
                 padding: '0.3rem 0.6rem',
-                borderRadius: '5px',
+                borderRadius: '2px',
                 fontSize: '0.72rem',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -228,7 +228,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
             style={{
               height: '100%',
               width: `${Math.max(3, Math.min(100, progressPercent))}%`,
-              background: '#C86D51',
+              background: '#1E3A8A',
               borderRadius: '3px',
               transition: 'width 0.25s ease-out',
             }}
@@ -240,7 +240,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
             fontSize: '0.72rem',
             fontFamily: 'monospace',
             fontWeight: 800,
-            color: '#C86D51',
+            color: '#60A5FA',
             minWidth: '42px',
             textAlign: 'right',
           }}

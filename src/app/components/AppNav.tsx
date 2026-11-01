@@ -155,15 +155,15 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
           }}
           title="RELIQ AI Evaluation Laboratory"
         >
-          {/* Brand Mark: Precision Electric Blue Square */}
+          {/* Brand Mark: Precision Royal Navy Mark */}
           <div
             style={{
               width: '10px',
               height: '10px',
-              background: '#0000FF',
+              background: '#1E3A8A',
+              border: '1px solid #2563EB',
               borderRadius: '2px',
               flexShrink: 0,
-              boxShadow: '0 0 8px rgba(0, 0, 255, 0.5)',
             }}
           />
 
@@ -171,7 +171,7 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', overflow: 'hidden' }}>
               <span
                 style={{
-                  fontFamily: "'Inter', -apple-system, sans-serif",
+                  fontFamily: "var(--font-sans, 'Geist Sans', sans-serif)",
                   fontSize: '0.92rem',
                   fontWeight: 800,
                   letterSpacing: '0.08em',
@@ -182,7 +182,7 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
               </span>
               <span
                 style={{
-                  fontFamily: 'monospace',
+                  fontFamily: "var(--font-mono, 'Geist Mono', monospace)",
                   fontSize: '0.65rem',
                   fontWeight: 700,
                   color: '#858585',
@@ -246,9 +246,9 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                   padding: isCollapsed ? '0.65rem 0' : '0.55rem 0.75rem',
                   justifyContent: isCollapsed ? 'center' : 'flex-start',
                   borderRadius: '2px',
-                  background: isActive ? '#1B1B1B' : 'transparent',
+                  background: isActive ? '#0A1A35' : 'transparent',
                   border: 'none',
-                  borderLeft: isActive ? '2px solid #0000FF' : '2px solid transparent',
+                  borderLeft: isActive ? '2px solid #2563EB' : '2px solid transparent',
                   color: isActive ? '#F2F2F2' : '#858585',
                   fontSize: '0.82rem',
                   fontWeight: isActive ? 600 : 500,
@@ -281,7 +281,7 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                     flexShrink: 0,
                   }}
                 >
-                  {item.icon(isActive ? '#0000FF' : '#858585')}
+                  {item.icon(isActive ? '#60A5FA' : '#858585')}
                 </div>
 
                 {!isCollapsed && (

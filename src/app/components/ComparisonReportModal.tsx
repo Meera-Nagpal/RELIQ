@@ -386,7 +386,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 700, textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: 'var(--blue-light, #60A5FA)', fontWeight: 700, textTransform: 'uppercase' }}>
                 RELIQ // CROSS-MODEL COMPARISON REPORT (ENGINE V2)
               </div>
               <span
@@ -474,11 +474,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportJson}
               title="Download comparison report JSON"
               style={{
-                background: 'var(--accent, #C86D51)',
-                border: 'none',
-                color: '#FFFFFF',
+                background: 'var(--navy-royal, #1E3A8A)',
+                border: '1px solid #1E3A8A',
+                color: '#F2F2F2',
                 padding: '0.45rem 0.9rem',
-                borderRadius: '6px',
+                borderRadius: '2px',
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -1883,7 +1883,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     fontSize: '0.76rem',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    background: selectedSection === 'ALL' ? 'var(--accent, #C86D51)' : 'transparent',
+                    background: selectedSection === 'ALL' ? 'var(--navy-royal, #1E3A8A)' : 'transparent',
                     color: selectedSection === 'ALL' ? '#FFFFFF' : '#CCCCCC',
                     border: selectedSection === 'ALL' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
                   }}
@@ -1900,9 +1900,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       fontSize: '0.76rem',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      background: selectedSection === sec.name ? 'rgba(91, 130, 166, 0.2)' : 'transparent',
-                      color: selectedSection === sec.name ? '#5B82A6' : '#CCCCCC',
-                      border: selectedSection === sec.name ? '1px solid #5B82A6' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: selectedSection === sec.name ? 'rgba(30, 58, 138, 0.4)' : 'transparent',
+                      color: selectedSection === sec.name ? '#60A5FA' : '#CCCCCC',
+                      border: selectedSection === sec.name ? '1px solid #2563EB' : '1px solid rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.4rem',
@@ -1977,7 +1977,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: '0.68rem', letterSpacing: '0.12em', color: 'var(--accent, #C86D51)', fontWeight: 800, textTransform: 'uppercase' }}>
+                        <div style={{ fontSize: '0.68rem', letterSpacing: '0.12em', color: 'var(--blue-light, #60A5FA)', fontWeight: 800, textTransform: 'uppercase' }}>
                           SECTION REPORT
                         </div>
                         <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
@@ -2090,7 +2090,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                             {/* Header: CASE ID, ORDER, TITLE, STATUS */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                                <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent, #C86D51)', background: 'rgba(200, 109, 81, 0.12)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.82rem', color: '#60A5FA', background: '#0A1A35', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(37, 99, 235, 0.3)' }}>
                                   {caseCode} (#{caseOrder})
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ECEFF2' }}>

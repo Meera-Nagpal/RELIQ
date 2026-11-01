@@ -128,7 +128,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
               width: '4px',
               height: '4px',
               borderRadius: '50%',
-              border: '1px solid rgba(200, 109, 81, 0.6)',
+              border: '1px solid rgba(37, 99, 235, 0.6)',
               background: 'transparent',
             }}
           />
@@ -137,7 +137,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
               width: '5px',
               height: '5px',
               borderRadius: '50%',
-              background: 'var(--reliq-accent, #C86D51)',
+              background: 'var(--blue-light, #60A5FA)',
             }}
           />
           <div
@@ -145,7 +145,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
               width: '4px',
               height: '4px',
               borderRadius: '50%',
-              border: '1px solid rgba(200, 109, 81, 0.6)',
+              border: '1px solid rgba(37, 99, 235, 0.6)',
               background: 'transparent',
             }}
           />

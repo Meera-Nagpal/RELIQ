@@ -453,7 +453,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
       {/* ── Top Bar: Title & Dataset Actions ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             TEST SUITES // REGISTRY & UPLOADS
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
@@ -477,8 +477,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
               fontFamily: 'monospace',
               fontWeight: 600,
               cursor: 'pointer',
+              transition: 'border-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#0000FF')}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#2563EB')}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
           >
             ↑ IMPORT DATASET
@@ -486,15 +487,24 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           <button
             onClick={handleOpenAddCase}
             style={{
-              background: '#0000FF',
-              color: '#FFFFFF',
-              border: 'none',
+              background: '#1E3A8A',
+              color: '#F2F2F2',
+              border: '1px solid #1E3A8A',
               padding: '0.45rem 1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
               fontFamily: 'monospace',
               fontWeight: 700,
               cursor: 'pointer',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2563EB';
+              e.currentTarget.style.borderColor = '#2563EB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#1E3A8A';
+              e.currentTarget.style.borderColor = '#1E3A8A';
             }}
           >
             + ADD TEST CASE
@@ -542,8 +552,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 key={d.id}
                 onClick={() => onSelectDataset(d.id)}
                 style={{
-                  background: isSelected ? '#1B1B1B' : 'transparent',
-                  border: isSelected ? '1px solid #0000FF' : '1px solid transparent',
+                  background: isSelected ? '#0A1A35' : 'transparent',
+                  border: isSelected ? '1px solid #2563EB' : '1px solid transparent',
                   color: isSelected ? '#F2F2F2' : '#858585',
                   padding: '0.35rem 0.75rem',
                   borderRadius: '2px',
@@ -830,11 +840,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   <button
                     onClick={handleOpenImportWizard}
                     style={{
-                      background: 'var(--accent, #C86D51)',
-                      color: '#FFFFFF',
-                      border: 'none',
+                      background: 'var(--navy-royal, #1E3A8A)',
+                      color: '#F2F2F2',
+                      border: '1px solid #1E3A8A',
                       padding: '0.6rem 1.4rem',
-                      borderRadius: '6px',
+                      borderRadius: '2px',
                       fontWeight: 700,
                       fontSize: '0.85rem',
                       cursor: 'pointer',
@@ -872,11 +882,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     <button
                       onClick={handleOpenAddCase}
                       style={{
-                        background: 'var(--accent, #C86D51)',
-                        color: '#FFFFFF',
-                        border: 'none',
+                        background: 'var(--navy-royal, #1E3A8A)',
+                        color: '#F2F2F2',
+                        border: '1px solid #1E3A8A',
                         padding: '0.55rem 1.2rem',
-                        borderRadius: '6px',
+                        borderRadius: '2px',
                         fontWeight: 700,
                         fontSize: '0.82rem',
                         cursor: 'pointer',
@@ -963,7 +973,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     {tc.input}
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--accent, #C86D51)', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#60A5FA', fontFamily: 'monospace' }}>
                       {tc.evaluatorType}
                     </span>
                   </div>
@@ -1271,11 +1281,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--accent, #C86D51)',
-                    color: '#FFFFFF',
-                    border: 'none',
+                    background: 'var(--navy-royal, #1E3A8A)',
+                    color: '#F2F2F2',
+                    border: '1px solid #1E3A8A',
                     padding: '0.6rem 1.4rem',
-                    borderRadius: '6px',
+                    borderRadius: '2px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -1863,7 +1873,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                                 >
                                   {rec.expectedOutput || '(Reference-free — none)'}
                                 </td>
-                                <td style={{ padding: '0.35rem 0.5rem', fontFamily: 'monospace', color: 'var(--accent, #C86D51)' }}>
+                                <td style={{ padding: '0.35rem 0.5rem', fontFamily: 'monospace', color: '#60A5FA' }}>
                                   {rec.evaluatorType}
                                 </td>
                               </tr>
@@ -1885,7 +1895,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     color: '#CCCCCC',
                     padding: '0.6rem 1.2rem',
-                    borderRadius: '6px',
+                    borderRadius: '2px',
                     fontSize: '0.85rem',
                     cursor: 'pointer',
                   }}
@@ -1898,15 +1908,15 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   style={{
                     background:
                       isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid)
-                        ? '#333A42'
-                        : 'var(--accent, #C86D51)',
+                        ? '#1B1B1B'
+                        : 'var(--navy-royal, #1E3A8A)',
                     color:
                       isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid)
-                        ? '#778899'
-                        : '#FFFFFF',
-                    border: 'none',
+                        ? '#555555'
+                        : '#F2F2F2',
+                    border: '1px solid ' + (isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid) ? '#292929' : '#1E3A8A'),
                     padding: '0.6rem 1.5rem',
-                    borderRadius: '6px',
+                    borderRadius: '2px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     cursor:
@@ -2016,11 +2026,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--accent, #C86D51)',
-                    color: '#FFFFFF',
-                    border: 'none',
+                    background: 'var(--navy-royal, #1E3A8A)',
+                    color: '#F2F2F2',
+                    border: '1px solid #1E3A8A',
                     padding: '0.6rem 1.4rem',
-                    borderRadius: '6px',
+                    borderRadius: '2px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     cursor: 'pointer',

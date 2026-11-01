@@ -241,16 +241,16 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
-            <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
               DIAGNOSTICS // DETAILS & REGRESSIONS
             </div>
             {(() => {
               const mode = run.executionMode || run.comparisonReport?.executionMode || 'SAVED';
               const isLive = mode === 'LIVE';
               const isRef = mode === 'REFERENCE';
-              const color = isLive ? '#22C55E' : isRef ? '#858585' : '#0000FF';
-              const bg = isLive ? '#13241A' : isRef ? '#1B1B1B' : '#151515';
-              const border = isLive ? 'rgba(34, 197, 94, 0.3)' : isRef ? '#292929' : 'rgba(0, 0, 255, 0.3)';
+              const color = isLive ? '#22C55E' : isRef ? '#858585' : '#60A5FA';
+              const bg = isLive ? '#13241A' : isRef ? '#1B1B1B' : '#0A1A35';
+              const border = isLive ? 'rgba(34, 197, 94, 0.3)' : isRef ? '#292929' : 'rgba(37, 99, 235, 0.3)';
               const label = isLive ? 'LIVE EVALUATION' : isRef ? 'REFERENCE DATA' : 'SAVED EVALUATION';
               return (
                 <span
@@ -295,9 +295,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: '#0000FF',
-              border: 'none',
-              color: '#FFFFFF',
+              background: '#1E3A8A',
+              border: '1px solid #1E3A8A',
+              color: '#F2F2F2',
               padding: '0.45rem 1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
@@ -307,6 +307,15 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2563EB';
+              e.currentTarget.style.borderColor = '#2563EB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#1E3A8A';
+              e.currentTarget.style.borderColor = '#1E3A8A';
             }}
           >
             FULL COMPARISON REPORT
@@ -499,7 +508,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                       fontSize: '0.7rem',
                       fontWeight: 700,
                       textTransform: 'uppercase',
-                      color: 'var(--accent, #C86D51)',
+                      color: '#60A5FA',
                       letterSpacing: '0.1em',
                     }}
                   >
@@ -572,16 +581,16 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               {/* Recommendation */}
               <div
                 style={{
-                  background: 'rgba(200, 109, 81, 0.08)',
-                  border: '1px solid rgba(200, 109, 81, 0.22)',
-                  borderRadius: '6px',
+                  background: 'rgba(10, 26, 53, 0.65)',
+                  border: '1px solid rgba(37, 99, 235, 0.3)',
+                  borderRadius: '2px',
                   padding: '0.9rem',
                   fontSize: '0.82rem',
-                  color: '#FFEEDD',
+                  color: '#F2F2F2',
                   lineHeight: 1.45,
                 }}
               >
-                <strong style={{ color: 'var(--accent, #C86D51)' }}>Recommendation:</strong> {rc.recommendation}
+                <strong style={{ color: '#60A5FA' }}>Recommendation:</strong> {rc.recommendation}
               </div>
             </div>
           ))}
@@ -871,7 +880,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                     {selectedCase.testCaseId}
                   </span>
                   <span style={{ color: '#888888' }}>/</span>
-                  <span style={{ color: 'var(--accent, #C86D51)', fontWeight: 600, fontSize: '0.8rem' }}>
+                  <span style={{ color: '#60A5FA', fontWeight: 600, fontSize: '0.8rem' }}>
                     {selectedCase.category}
                   </span>
                 </div>

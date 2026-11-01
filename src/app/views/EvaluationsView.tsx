@@ -489,7 +489,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       {/* ── Page Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             HARNESS // MULTI-PROVIDER BENCHMARK
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
@@ -678,8 +678,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => setConfigMode('saved_versions')}
               style={{
-                background: configMode === 'saved_versions' ? '#1B1B1B' : 'transparent',
-                border: configMode === 'saved_versions' ? '1px solid #0000FF' : '1px solid transparent',
+                background: configMode === 'saved_versions' ? '#0A1A35' : 'transparent',
+                border: configMode === 'saved_versions' ? '1px solid #2563EB' : '1px solid transparent',
                 color: configMode === 'saved_versions' ? '#F2F2F2' : '#858585',
                 padding: '0.35rem 0.75rem',
                 borderRadius: '2px',
@@ -694,9 +694,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => setConfigMode('custom_benchmark')}
               style={{
-                background: configMode === 'custom_benchmark' ? '#0000FF' : 'transparent',
-                border: 'none',
-                color: configMode === 'custom_benchmark' ? '#FFFFFF' : '#858585',
+                background: configMode === 'custom_benchmark' ? '#1E3A8A' : 'transparent',
+                border: configMode === 'custom_benchmark' ? '1px solid #2563EB' : '1px solid transparent',
+                color: configMode === 'custom_benchmark' ? '#F2F2F2' : '#858585',
                 padding: '0.35rem 0.85rem',
                 borderRadius: '2px',
                 fontSize: '0.75rem',
@@ -811,7 +811,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <div style={{ fontSize: '0.88rem', color: '#F2F2F2', fontWeight: 700, marginTop: '0.2rem' }}>
               {selectedDataset?.name || 'Checkout Reliability Suite'}
             </div>
-            <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#0000FF', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#60A5FA', fontWeight: 600 }}>
               {selectedDataset?.cases?.length || 27} scenarios ({selectedDataset?.cases?.filter((c) => Boolean(c.expectedOutput && c.expectedOutput.trim())).length ?? (selectedDataset?.cases?.length || 0)} reference criteria)
             </div>
           </div>
@@ -835,7 +835,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <div style={{ fontSize: '0.82rem', color: '#F2F2F2', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
               {effectiveCandidateModel}
             </div>
-            <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#0000FF', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#60A5FA', fontWeight: 600 }}>
               Evaluation Target
             </div>
           </div>
@@ -845,8 +845,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {isRunning && (
           <div
             style={{
-              background: 'rgba(200, 109, 81, 0.05)',
-              border: '1px solid rgba(200, 109, 81, 0.3)',
+              background: '#0A1A35',
+              border: '1px solid #1E3A8A',
               borderRadius: '8px',
               padding: '1.2rem 1.4rem',
               display: 'flex',
@@ -863,14 +863,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    background: 'var(--accent, #C86D51)',
+                    background: '#60A5FA',
                   }}
                 />
                 <span style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.12em', color: '#ECEFF2', textTransform: 'uppercase' }}>
                   EVALUATION PROGRESS
                 </span>
               </div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent, #C86D51)', fontFamily: 'monospace' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#60A5FA', fontFamily: 'monospace' }}>
                 {progressPercent}% COMPLETE
               </span>
             </div>
@@ -889,7 +889,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 style={{
                   height: '100%',
                   width: `${Math.max(4, Math.min(100, progressPercent))}%`,
-                  background: 'var(--accent, #C86D51)',
+                  background: '#1E3A8A',
                   borderRadius: '3px',
                   transition: 'width 0.4s ease-out',
                 }}
@@ -1306,8 +1306,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   <span
                     style={{
                       fontSize: '0.72rem',
-                      background: 'rgba(200, 109, 81, 0.15)',
-                      color: 'var(--accent, #C86D51)',
+                      background: '#0A1A35',
+                      color: '#60A5FA',
                       padding: '0.15rem 0.5rem',
                       borderRadius: '4px',
                       fontFamily: 'monospace',
@@ -1317,7 +1317,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   </span>
                 )}
               </div>
-              <span style={{ color: 'var(--accent, #C86D51)', fontWeight: 800 }}>{progressPercent}%</span>
+              <span style={{ color: '#60A5FA', fontWeight: 800 }}>{progressPercent}%</span>
             </div>
             {progressCounts && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#8899AA' }}>
@@ -1330,7 +1330,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 style={{
                   height: '100%',
                   width: `${progressPercent}%`,
-                  background: 'var(--accent, #C86D51)',
+                  background: '#1E3A8A',
                   transition: 'width 0.15s ease',
                 }}
               />
@@ -1367,7 +1367,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   checked={judgeEnabled}
                   onChange={(e) => setJudgeEnabled(e.target.checked)}
                   disabled={isRunning}
-                  style={{ accentColor: '#0000FF' }}
+                  style={{ accentColor: '#2563EB' }}
                 />
                 <span>Enable Independent Judge</span>
               </label>
@@ -1542,9 +1542,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               onClick={handleStartEvaluation}
               disabled={isRunning || !selectedDataset || isJudgeConflicting}
               style={{
-                background: isRunning || isJudgeConflicting ? '#1B1B1B' : '#0000FF',
-                color: isRunning || isJudgeConflicting ? '#555555' : '#FFFFFF',
-                border: 'none',
+                background: isRunning || isJudgeConflicting ? '#1B1B1B' : '#1E3A8A',
+                color: isRunning || isJudgeConflicting ? '#555555' : '#F2F2F2',
+                border: isRunning || isJudgeConflicting ? '1px solid #292929' : '1px solid #1E3A8A',
                 padding: '0.55rem 1.4rem',
                 borderRadius: '2px',
                 fontSize: '0.8rem',
@@ -1552,7 +1552,19 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 fontWeight: 700,
                 letterSpacing: '0.04em',
                 cursor: isRunning || isJudgeConflicting ? 'not-allowed' : 'pointer',
-                transition: 'background 0.15s ease',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!isRunning && !isJudgeConflicting && selectedDataset) {
+                  e.currentTarget.style.background = '#2563EB';
+                  e.currentTarget.style.borderColor = '#2563EB';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isRunning && !isJudgeConflicting && selectedDataset) {
+                  e.currentTarget.style.background = '#1E3A8A';
+                  e.currentTarget.style.borderColor = '#1E3A8A';
+                }
               }}
             >
               {isRunning ? 'EXECUTING BENCHMARK...' : 'INITIALIZE BENCHMARK →'}
@@ -1827,8 +1839,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                         cursor: 'pointer',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#0000FF';
-                        e.currentTarget.style.color = '#0000FF';
+                        e.currentTarget.style.borderColor = '#2563EB';
+                        e.currentTarget.style.color = '#60A5FA';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.borderColor = '#292929';
@@ -1855,8 +1867,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#0000FF';
-                      e.currentTarget.style.color = '#0000FF';
+                      e.currentTarget.style.borderColor = '#2563EB';
+                      e.currentTarget.style.color = '#60A5FA';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = '#292929';

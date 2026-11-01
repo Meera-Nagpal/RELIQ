@@ -109,7 +109,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#3A3A3A')}
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
         >
-          <span style={{ color: '#0000FF', fontSize: '0.75rem' }}>◆</span>
+          <span style={{ color: '#60A5FA', fontSize: '0.75rem' }}>◆</span>
           <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {activeProject?.name || 'Select Workspace'}
           </span>
@@ -179,8 +179,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       cursor: 'pointer',
                       fontSize: '0.8rem',
                       color: isSelected ? '#F2F2F2' : '#858585',
-                      background: isSelected ? '#151515' : 'transparent',
-                      borderLeft: isSelected ? '2px solid #0000FF' : '2px solid transparent',
+                      background: isSelected ? '#0A1A35' : 'transparent',
+                      borderLeft: isSelected ? '2px solid #2563EB' : '2px solid transparent',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -196,7 +196,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       {p.name}
                     </span>
                     {isSelected && (
-                      <span style={{ color: '#0000FF', fontSize: '0.7rem', fontFamily: 'monospace' }}>●</span>
+                      <span style={{ color: '#60A5FA', fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}>●</span>
                     )}
                   </div>
                 );
@@ -213,12 +213,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 marginTop: '0.3rem',
                 padding: '0.5rem 0.65rem',
                 fontSize: '0.75rem',
-                fontFamily: 'monospace',
-                color: '#0000FF',
+                fontFamily: 'var(--font-mono)',
+                color: '#60A5FA',
                 cursor: 'pointer',
                 fontWeight: 600,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 255, 0.08)')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#0A1A35')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
               + NEW WORKSPACE
@@ -313,36 +313,36 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           }}
           title="Laboratory Identity"
         >
-          <span style={{ color: '#0000FF' }}>⌘</span>
+          <span style={{ color: '#60A5FA' }}>⌘</span>
           <span>OPERATOR // LAB-01</span>
         </div>
 
-        {/* Primary Action Button: Electric Blue */}
+        {/* Primary Action Button: Royal Navy */}
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: '#0000FF',
-            color: '#FFFFFF',
-            border: '1px solid #0000FF',
+            background: '#1E3A8A',
+            color: '#F2F2F2',
+            border: '1px solid #1E3A8A',
             padding: '0.35rem 0.9rem',
             borderRadius: '2px',
             fontSize: '0.78rem',
-            fontFamily: 'monospace',
+            fontFamily: 'var(--font-mono)',
             fontWeight: 700,
             letterSpacing: '0.04em',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '0.4rem',
-            transition: 'background 0.15s ease, box-shadow 0.15s ease',
+            transition: 'background 0.15s ease, border-color 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#1A1AFF';
-            e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 0, 255, 0.4)';
+            e.currentTarget.style.background = '#2563EB';
+            e.currentTarget.style.borderColor = '#2563EB';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#0000FF';
-            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.background = '#1E3A8A';
+            e.currentTarget.style.borderColor = '#1E3A8A';
           }}
         >
           <span>+</span>

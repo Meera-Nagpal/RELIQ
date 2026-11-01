@@ -26,7 +26,7 @@ export const JudgesView: React.FC = () => {
       {/* View Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             INDEPENDENT ARBITRATION // LLM-AS-A-JUDGE
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
@@ -40,15 +40,24 @@ export const JudgesView: React.FC = () => {
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: '#0000FF',
-            color: '#FFFFFF',
-            border: 'none',
+            background: '#1E3A8A',
+            color: '#F2F2F2',
+            border: '1px solid #1E3A8A',
             padding: '0.5rem 1rem',
             borderRadius: '2px',
             fontSize: '0.78rem',
             fontFamily: 'monospace',
             fontWeight: 700,
             cursor: 'pointer',
+            transition: 'background 0.15s ease, border-color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#2563EB';
+            e.currentTarget.style.borderColor = '#2563EB';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#1E3A8A';
+            e.currentTarget.style.borderColor = '#1E3A8A';
           }}
         >
           RUN EVALUATION
@@ -78,11 +87,11 @@ export const JudgesView: React.FC = () => {
                   fontFamily: 'monospace',
                   fontWeight: 700,
                   letterSpacing: '0.06em',
-                  color: '#0000FF',
-                  background: 'rgba(0, 0, 255, 0.1)',
+                  color: '#60A5FA',
+                  background: '#0A1A35',
                   padding: '0.15rem 0.5rem',
                   borderRadius: '2px',
-                  border: '1px solid rgba(0, 0, 255, 0.3)',
+                  border: '1px solid #1E3A8A',
                 }}
               >
                 PRIMARY INDEPENDENT JUDGE
@@ -223,7 +232,7 @@ export const JudgesView: React.FC = () => {
               gap: '0.5rem',
             }}
           >
-            <span style={{ color: '#0000FF' }}>ℹ</span>
+            <span style={{ color: '#60A5FA' }}>ℹ</span>
             <span>Deterministic evaluators are prioritized for 100% of objective checks.</span>
           </div>
         </div>
@@ -242,7 +251,7 @@ export const JudgesView: React.FC = () => {
         }}
       >
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.08em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.08em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             INTERACTIVE BENCHMARK // RUBRIC CALIBRATION
           </div>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.3rem 0' }}>
@@ -308,9 +317,9 @@ export const JudgesView: React.FC = () => {
             onClick={handleTestJudge}
             disabled={isTesting}
             style={{
-              background: '#0000FF',
-              color: '#FFFFFF',
-              border: 'none',
+              background: isTesting ? '#1B1B1B' : '#1E3A8A',
+              color: isTesting ? '#555555' : '#F2F2F2',
+              border: '1px solid ' + (isTesting ? '#292929' : '#1E3A8A'),
               padding: '0.45rem 1.1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
@@ -318,6 +327,19 @@ export const JudgesView: React.FC = () => {
               fontWeight: 700,
               cursor: isTesting ? 'wait' : 'pointer',
               opacity: isTesting ? 0.7 : 1,
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!isTesting) {
+                e.currentTarget.style.background = '#2563EB';
+                e.currentTarget.style.borderColor = '#2563EB';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isTesting) {
+                e.currentTarget.style.background = '#1E3A8A';
+                e.currentTarget.style.borderColor = '#1E3A8A';
+              }
             }}
           >
             {isTesting ? 'ARBITRATING WITH QWEN 3.8B...' : 'PROBE ARBITRATION'}

@@ -191,7 +191,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               fontWeight: 800,
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
-              color: isFailed ? '#C05C54' : 'var(--reliq-accent, #C86D51)',
+              color: isFailed ? '#C05C54' : 'var(--blue-light, #60A5FA)',
               marginBottom: '0.3rem',
             }}
           >
@@ -224,7 +224,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
             <span
               style={{
-                color: progressPercent >= 100 ? '#4E9B6F' : 'var(--reliq-accent, #C86D51)',
+                color: progressPercent >= 100 ? '#4E9B6F' : 'var(--blue-light, #60A5FA)',
                 fontWeight: 700,
                 letterSpacing: '0.02em',
               }}
@@ -295,7 +295,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   ? `Evaluating scenario ${currentCaseNumber} of ${targetTotal}`
                   : 'EVALUATION IN PROGRESS'}
               </span>
-              <span style={{ color: 'var(--reliq-accent, #C86D51)', fontWeight: 800 }}>
+              <span style={{ color: 'var(--blue-light, #60A5FA)', fontWeight: 800 }}>
                 {progressPercent > 0 ? `${progressPercent}% Complete` : ''}
               </span>
             </div>
@@ -316,7 +316,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   style={{
                     width: `${Math.max(4, Math.min(100, progressPercent))}%`,
                     height: '100%',
-                    background: '#C86D51',
+                    background: 'var(--navy-royal, #1E3A8A)',
                     borderRadius: '4px',
                     transition: 'width 0.3s ease-out',
                   }}
@@ -327,7 +327,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   style={{
                     width: '35%',
                     height: '100%',
-                    background: 'linear-gradient(90deg, transparent 0%, #C86D51 50%, transparent 100%)',
+                    background: 'var(--blue-accent, #2563EB)',
                     borderRadius: '4px',
                     animation: 'reliqIndeterminate 1.4s ease-in-out infinite',
                   }}
@@ -376,7 +376,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   <div style={{ color: '#8899AA' }}>
                     REMAINING: <strong style={{ color: '#FFFFFF' }}>{Math.max(0, targetTotal - currentCaseNumber)}</strong>
                   </div>
-                  <div style={{ color: 'var(--reliq-accent, #C86D51)' }}>
+                  <div style={{ color: 'var(--blue-light, #60A5FA)' }}>
                     TIME: <strong>{formattedTime}</strong>
                   </div>
                 </div>
@@ -442,9 +442,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                     fontWeight: 700,
                     padding: '0.2rem 0.6rem',
                     borderRadius: '4px',
-                    background: 'rgba(200, 109, 81, 0.12)',
-                    color: 'var(--reliq-accent, #C86D51)',
-                    border: '1px solid rgba(200, 109, 81, 0.28)',
+                    background: 'rgba(10, 26, 53, 0.65)',
+                    color: 'var(--blue-light, #60A5FA)',
+                    border: '1px solid rgba(37, 99, 235, 0.28)',
                   }}
                 >
                   Phase: {phase}
@@ -484,11 +484,11 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <button
               onClick={onRetry}
               style={{
-                background: 'var(--reliq-accent, #C86D51)',
-                color: '#FFFFFF',
-                border: 'none',
+                background: 'var(--navy-royal, #1E3A8A)',
+                color: '#F2F2F2',
+                border: '1px solid #1E3A8A',
                 padding: '0.55rem 1.2rem',
-                borderRadius: '6px',
+                borderRadius: '2px',
                 fontSize: '0.8rem',
                 fontWeight: 700,
                 cursor: 'pointer',

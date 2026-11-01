@@ -24,8 +24,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-sans);
   font-size: var(--font-body);
   line-height: 1.6;
   background: var(--bg);
@@ -34,6 +33,14 @@ body {
   max-width: 100vw;
   overflow-y: auto;
   overscroll-behavior: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
 }
 
 #root {
@@ -160,8 +167,8 @@ body {
 
 /* Selection */
 ::selection {
-  background: var(--accent);
-  color: #FFFFFF;
+  background: var(--navy-royal, #1E3A8A);
+  color: #F2F2F2;
 }
 
 /* Precision Scrollbars */

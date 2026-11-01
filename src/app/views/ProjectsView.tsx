@@ -83,7 +83,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             WORKSPACES // PROJECT REPOSITORIES
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
@@ -97,15 +97,24 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         <button
           onClick={handleOpenCreate}
           style={{
-            background: '#0000FF',
-            color: '#FFFFFF',
-            border: 'none',
+            background: '#1E3A8A',
+            color: '#F2F2F2',
+            border: '1px solid #1E3A8A',
             padding: '0.45rem 1rem',
             borderRadius: '2px',
             fontSize: '0.75rem',
             fontFamily: 'monospace',
             fontWeight: 700,
             cursor: 'pointer',
+            transition: 'background 0.15s ease, border-color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#2563EB';
+            e.currentTarget.style.borderColor = '#2563EB';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#1E3A8A';
+            e.currentTarget.style.borderColor = '#1E3A8A';
           }}
         >
           + NEW WORKSPACE
@@ -135,9 +144,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           <button
             onClick={handleOpenCreate}
             style={{
-              background: '#0000FF',
-              color: '#FFFFFF',
-              border: 'none',
+              background: '#1E3A8A',
+              color: '#F2F2F2',
+              border: '1px solid #1E3A8A',
               padding: '0.5rem 1.2rem',
               borderRadius: '2px',
               fontSize: '0.78rem',
@@ -145,6 +154,15 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               fontWeight: 700,
               cursor: 'pointer',
               marginTop: '0.5rem',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2563EB';
+              e.currentTarget.style.borderColor = '#2563EB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#1E3A8A';
+              e.currentTarget.style.borderColor = '#1E3A8A';
             }}
           >
             + CREATE WORKSPACE
@@ -158,9 +176,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               <div
                 key={proj.id}
                 style={{
-                  background: '#151515',
+                  background: isActive ? '#0A1A35' : '#151515',
                   border: isActive
-                    ? '1px solid #0000FF'
+                    ? '1px solid #2563EB'
                     : '1px solid #292929',
                   borderRadius: '2px',
                   padding: '1.25rem',
@@ -173,7 +191,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ color: isActive ? 'var(--accent, #C86D51)' : '#667788', fontSize: '1.1rem' }}>◈</span>
+                      <span style={{ color: isActive ? '#60A5FA' : '#858585', fontSize: '1.1rem' }}>◈</span>
                       <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#FFFFFF', fontWeight: 700 }}>
                         {proj.name}
                       </h3>
@@ -254,11 +272,11 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         navigate('#/app/dashboard');
                       }}
                       style={{
-                        background: 'var(--accent, #C86D51)',
-                        color: '#FFFFFF',
-                        border: 'none',
+                        background: 'var(--navy-royal, #1E3A8A)',
+                        color: '#F2F2F2',
+                        border: '1px solid #1E3A8A',
                         padding: '0.45rem 1rem',
-                        borderRadius: '6px',
+                        borderRadius: '2px',
                         fontSize: '0.8rem',
                         fontWeight: 700,
                         cursor: 'pointer',
@@ -421,11 +439,11 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--accent, #C86D51)',
-                    color: '#FFFFFF',
-                    border: 'none',
+                    background: 'var(--navy-royal, #1E3A8A)',
+                    color: '#F2F2F2',
+                    border: '1px solid #1E3A8A',
                     padding: '0.6rem 1.4rem',
-                    borderRadius: '6px',
+                    borderRadius: '2px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     cursor: 'pointer',

@@ -27,7 +27,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem', maxWidth: '1040px', margin: '0 auto', padding: '1rem 0' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             ONBOARDING // INITIAL BENCHMARK PIPELINE
           </div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#F2F2F2', margin: '0.25rem 0 0.4rem 0', letterSpacing: '-0.02em' }}>
@@ -42,7 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Step 1 */}
           <div style={{ background: '#151515', border: '1px solid #292929', borderRadius: '2px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1.2rem' }}>
             <div>
-              <div style={{ color: '#0000FF', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem', marginBottom: '0.4rem' }}>
+              <div style={{ color: '#60A5FA', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem', marginBottom: '0.4rem' }}>
                 STAGE 01
               </div>
               <h3 style={{ margin: '0 0 0.4rem 0', color: '#F2F2F2', fontSize: '1.05rem', fontWeight: 600 }}>
@@ -104,9 +104,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Step 3 */}
-          <div style={{ background: '#151515', border: '1px solid #0000FF', borderRadius: '2px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1.2rem' }}>
+          <div style={{ background: '#151515', border: '1px solid #1E3A8A', borderRadius: '2px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1.2rem' }}>
             <div>
-              <div style={{ color: '#0000FF', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem', marginBottom: '0.4rem' }}>
+              <div style={{ color: '#60A5FA', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem', marginBottom: '0.4rem' }}>
                 STAGE 03
               </div>
               <h3 style={{ margin: '0 0 0.4rem 0', color: '#F2F2F2', fontSize: '1.05rem', fontWeight: 600 }}>
@@ -119,9 +119,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               onClick={() => navigate('#/app/evaluations')}
               style={{
-                background: '#0000FF',
-                border: 'none',
-                color: '#FFFFFF',
+                background: '#1E3A8A',
+                border: '1px solid #1E3A8A',
+                color: '#F2F2F2',
                 padding: '0.5rem 0.8rem',
                 borderRadius: '2px',
                 fontFamily: 'monospace',
@@ -129,6 +129,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 fontSize: '0.75rem',
                 cursor: 'pointer',
                 textAlign: 'left',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#2563EB';
+                e.currentTarget.style.borderColor = '#2563EB';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#1E3A8A';
+                e.currentTarget.style.borderColor = '#1E3A8A';
               }}
             >
               LAUNCH BENCHMARK →
@@ -180,7 +189,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* ── View Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase' }}>
             INSTRUMENTATION // OVERVIEW
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
@@ -234,15 +243,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: '#0000FF',
-              border: 'none',
-              color: '#FFFFFF',
+              background: '#1E3A8A',
+              border: '1px solid #1E3A8A',
+              color: '#F2F2F2',
               padding: '0.45rem 1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
               fontFamily: 'monospace',
               fontWeight: 700,
               cursor: 'pointer',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2563EB';
+              e.currentTarget.style.borderColor = '#2563EB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#1E3A8A';
+              e.currentTarget.style.borderColor = '#1E3A8A';
             }}
           >
             FULL REPORT
@@ -505,7 +523,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.68rem', fontFamily: 'monospace' }}>
               <span style={{ color: '#858585' }}>— BASELINE</span>
-              <span style={{ color: '#0000FF' }}>— CANDIDATE</span>
+              <span style={{ color: '#60A5FA' }}>— CANDIDATE</span>
             </div>
           </div>
 
@@ -525,11 +543,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 strokeWidth="1.5"
               />
 
-              {/* Candidate Trend: Electric Blue */}
+              {/* Candidate Trend: Blue Accent */}
               <path
                 d="M 10 70 Q 80 60, 140 65 T 260 55 T 390 60"
                 fill="none"
-                stroke="#0000FF"
+                stroke="#2563EB"
                 strokeWidth="2"
               />
             </svg>
