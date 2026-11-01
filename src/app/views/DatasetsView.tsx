@@ -468,28 +468,34 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           <button
             onClick={handleOpenImportWizard}
             style={{
-              background: '#151515',
-              border: '1px solid #292929',
-              color: '#F2F2F2',
+              background: '#BAE6FD',
+              border: '1px solid #BAE6FD',
+              color: '#0A1A35',
               padding: '0.45rem 0.85rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
               fontFamily: 'monospace',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: 'pointer',
-              transition: 'border-color 0.15s ease',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#2563EB')}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
+            }}
           >
             ↑ IMPORT DATASET
           </button>
           <button
             onClick={handleOpenAddCase}
             style={{
-              background: '#1E3A8A',
-              color: '#F2F2F2',
-              border: '1px solid #1E3A8A',
+              background: '#BAE6FD',
+              color: '#0A1A35',
+              border: '1px solid #BAE6FD',
               padding: '0.45rem 1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
@@ -499,12 +505,12 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
               transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#2563EB';
-              e.currentTarget.style.borderColor = '#2563EB';
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#1E3A8A';
-              e.currentTarget.style.borderColor = '#1E3A8A';
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
             }}
           >
             + ADD TEST CASE
@@ -840,9 +846,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   <button
                     onClick={handleOpenImportWizard}
                     style={{
-                      background: 'var(--navy-royal, #1E3A8A)',
-                      color: '#F2F2F2',
-                      border: '1px solid #1E3A8A',
+                      background: '#BAE6FD',
+                      color: '#0A1A35',
+                      border: '1px solid #BAE6FD',
                       padding: '0.6rem 1.4rem',
                       borderRadius: '2px',
                       fontWeight: 700,
@@ -867,11 +873,11 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     <button
                       onClick={handleOpenImportWizard}
                       style={{
-                        background: 'rgba(91, 130, 166, 0.12)',
-                        color: '#5B82A6',
-                        border: '1px solid rgba(91, 130, 166, 0.28)',
+                        background: '#BAE6FD',
+                        color: '#0A1A35',
+                        border: '1px solid #BAE6FD',
                         padding: '0.55rem 1.2rem',
-                        borderRadius: '6px',
+                        borderRadius: '2px',
                         fontWeight: 700,
                         fontSize: '0.82rem',
                         cursor: 'pointer',
@@ -882,9 +888,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     <button
                       onClick={handleOpenAddCase}
                       style={{
-                        background: 'var(--navy-royal, #1E3A8A)',
-                        color: '#F2F2F2',
-                        border: '1px solid #1E3A8A',
+                        background: '#BAE6FD',
+                        color: '#0A1A35',
+                        border: '1px solid #BAE6FD',
                         padding: '0.55rem 1.2rem',
                         borderRadius: '2px',
                         fontWeight: 700,
@@ -1281,9 +1287,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--navy-royal, #1E3A8A)',
-                    color: '#F2F2F2',
-                    border: '1px solid #1E3A8A',
+                    background: '#BAE6FD',
+                    color: '#0A1A35',
+                    border: '1px solid #BAE6FD',
                     padding: '0.6rem 1.4rem',
                     borderRadius: '2px',
                     fontSize: '0.85rem',
@@ -1909,12 +1915,12 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                     background:
                       isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid)
                         ? '#1B1B1B'
-                        : 'var(--navy-royal, #1E3A8A)',
+                        : '#BAE6FD',
                     color:
                       isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid)
                         ? '#555555'
-                        : '#F2F2F2',
-                    border: '1px solid ' + (isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid) ? '#292929' : '#1E3A8A'),
+                        : '#0A1A35',
+                    border: '1px solid ' + (isImporting || !importDatasetName.trim() || !importText.trim() || Boolean(importPreview && !importPreview.valid) ? '#292929' : '#BAE6FD'),
                     padding: '0.6rem 1.5rem',
                     borderRadius: '2px',
                     fontSize: '0.85rem',
@@ -2026,9 +2032,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--navy-royal, #1E3A8A)',
-                    color: '#F2F2F2',
-                    border: '1px solid #1E3A8A',
+                    background: '#BAE6FD',
+                    color: '#0A1A35',
+                    border: '1px solid #BAE6FD',
                     padding: '0.6rem 1.4rem',
                     borderRadius: '2px',
                     fontSize: '0.85rem',

@@ -59,9 +59,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: '#1E3A8A',
-            color: '#F2F2F2',
-            border: '1px solid #1E3A8A',
+            background: '#BAE6FD',
+            color: '#0A1A35',
+            border: '1px solid #BAE6FD',
             padding: '0.5rem 1rem',
             borderRadius: '2px',
             fontSize: '0.78rem',
@@ -71,12 +71,12 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             transition: 'background 0.15s ease, border-color 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#2563EB';
-            e.currentTarget.style.borderColor = '#2563EB';
+            e.currentTarget.style.background = '#7DD3FC';
+            e.currentTarget.style.borderColor = '#7DD3FC';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#1E3A8A';
-            e.currentTarget.style.borderColor = '#1E3A8A';
+            e.currentTarget.style.background = '#BAE6FD';
+            e.currentTarget.style.borderColor = '#BAE6FD';
           }}
         >
           + NEW EVALUATION
@@ -282,22 +282,24 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                         navigate('#/app/regressions');
                       }}
                       style={{
-                        background: '#1B1B1B',
-                        border: '1px solid #292929',
-                        color: '#F2F2F2',
+                        background: '#BAE6FD',
+                        border: '1px solid #BAE6FD',
+                        color: '#0A1A35',
                         borderRadius: '2px',
                         padding: '0.25rem 0.6rem',
                         fontSize: '0.7rem',
                         fontFamily: 'monospace',
+                        fontWeight: 700,
                         cursor: 'pointer',
+                        transition: 'background 0.15s ease',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#2563EB';
-                        e.currentTarget.style.color = '#60A5FA';
+                        e.currentTarget.style.background = '#7DD3FC';
+                        e.currentTarget.style.borderColor = '#7DD3FC';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#292929';
-                        e.currentTarget.style.color = '#F2F2F2';
+                        e.currentTarget.style.background = '#BAE6FD';
+                        e.currentTarget.style.borderColor = '#BAE6FD';
                       }}
                     >
                       INSPECT DIFF

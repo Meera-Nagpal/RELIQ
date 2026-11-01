@@ -497,9 +497,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportJson}
               title="Download comparison report JSON"
               style={{
-                background: 'var(--navy-royal, #1E3A8A)',
-                border: '1px solid #1E3A8A',
-                color: '#F2F2F2',
+                background: '#BAE6FD',
+                border: '1px solid #BAE6FD',
+                color: '#0A1A35',
                 padding: '0.45rem 0.9rem',
                 borderRadius: '2px',
                 fontSize: '0.75rem',
@@ -513,9 +513,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportPdf}
               title="Download executive cross-model summary report as vector PDF"
               style={{
-                background: '#151515',
-                border: '1px solid #292929',
-                color: '#ECEFF2',
+                background: '#BAE6FD',
+                border: '1px solid #BAE6FD',
+                color: '#0A1A35',
                 padding: '0.45rem 0.85rem',
                 borderRadius: '2px',
                 fontSize: '0.75rem',
@@ -533,9 +533,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportTestCasesPdf}
               title="Download dedicated test cases PDF with winner determination for each scenario"
               style={{
-                background: 'var(--navy-royal, #1E3A8A)',
-                border: '1px solid #2563EB',
-                color: '#F2F2F2',
+                background: '#BAE6FD',
+                border: '1px solid #BAE6FD',
+                color: '#0A1A35',
                 padding: '0.45rem 0.85rem',
                 borderRadius: '2px',
                 fontSize: '0.75rem',
@@ -547,8 +547,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 gap: '0.4rem',
                 transition: 'background 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#2563EB')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#1E3A8A')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#7DD3FC')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#BAE6FD')}
             >
               <span>📄</span> Test Cases PDF
             </button>
@@ -1928,9 +1928,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 <button
                   onClick={handleExportTestCasesPdf}
                   style={{
-                    background: 'var(--navy-royal, #1E3A8A)',
-                    color: '#F2F2F2',
-                    border: '1px solid #2563EB',
+                    background: '#BAE6FD',
+                    color: '#0A1A35',
+                    border: '1px solid #BAE6FD',
                     padding: '0.55rem 1.15rem',
                     borderRadius: '2px',
                     fontSize: '0.78rem',
@@ -1942,8 +1942,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     gap: '0.45rem',
                     transition: 'background 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#2563EB')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#1E3A8A')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#7DD3FC')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#BAE6FD')}
                 >
                   <span>📄</span> DOWNLOAD TEST CASES PDF (WITH WINNER BREAKDOWN)
                 </button>

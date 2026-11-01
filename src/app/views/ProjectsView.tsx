@@ -97,9 +97,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         <button
           onClick={handleOpenCreate}
           style={{
-            background: '#1E3A8A',
-            color: '#F2F2F2',
-            border: '1px solid #1E3A8A',
+            background: '#BAE6FD',
+            color: '#0A1A35',
+            border: '1px solid #BAE6FD',
             padding: '0.45rem 1rem',
             borderRadius: '2px',
             fontSize: '0.75rem',
@@ -109,12 +109,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             transition: 'background 0.15s ease, border-color 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#2563EB';
-            e.currentTarget.style.borderColor = '#2563EB';
+            e.currentTarget.style.background = '#7DD3FC';
+            e.currentTarget.style.borderColor = '#7DD3FC';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#1E3A8A';
-            e.currentTarget.style.borderColor = '#1E3A8A';
+            e.currentTarget.style.background = '#BAE6FD';
+            e.currentTarget.style.borderColor = '#BAE6FD';
           }}
         >
           + NEW WORKSPACE
@@ -144,9 +144,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           <button
             onClick={handleOpenCreate}
             style={{
-              background: '#1E3A8A',
-              color: '#F2F2F2',
-              border: '1px solid #1E3A8A',
+              background: '#BAE6FD',
+              color: '#0A1A35',
+              border: '1px solid #BAE6FD',
               padding: '0.5rem 1.2rem',
               borderRadius: '2px',
               fontSize: '0.78rem',
@@ -157,12 +157,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#2563EB';
-              e.currentTarget.style.borderColor = '#2563EB';
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#1E3A8A';
-              e.currentTarget.style.borderColor = '#1E3A8A';
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
             }}
           >
             + CREATE WORKSPACE
@@ -439,9 +439,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--navy-royal, #1E3A8A)',
-                    color: '#F2F2F2',
-                    border: '1px solid #1E3A8A',
+                    background: '#BAE6FD',
+                    color: '#0A1A35',
+                    border: '1px solid #BAE6FD',
                     padding: '0.6rem 1.4rem',
                     borderRadius: '2px',
                     fontSize: '0.85rem',

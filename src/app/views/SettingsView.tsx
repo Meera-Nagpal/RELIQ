@@ -354,9 +354,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               type="submit"
               disabled={isSaving}
               style={{
-                background: isSaving ? '#122B63' : '#1E3A8A',
-                color: '#F2F2F2',
-                border: '1px solid #1E3A8A',
+                background: isSaving ? '#1B1B1B' : '#BAE6FD',
+                color: isSaving ? '#555555' : '#0A1A35',
+                border: '1px solid ' + (isSaving ? '#292929' : '#BAE6FD'),
                 padding: '0.55rem 1.4rem',
                 borderRadius: '2px',
                 fontSize: '0.78rem',
@@ -368,14 +368,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               }}
               onMouseEnter={(e) => {
                 if (!isSaving) {
-                  e.currentTarget.style.background = '#2563EB';
-                  e.currentTarget.style.borderColor = '#2563EB';
+                  e.currentTarget.style.background = '#7DD3FC';
+                  e.currentTarget.style.borderColor = '#7DD3FC';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isSaving) {
-                  e.currentTarget.style.background = '#1E3A8A';
-                  e.currentTarget.style.borderColor = '#1E3A8A';
+                  e.currentTarget.style.background = '#BAE6FD';
+                  e.currentTarget.style.borderColor = '#BAE6FD';
                 }
               }}
             >

@@ -457,9 +457,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: '#1E3A8A',
-              border: '1px solid #1E3A8A',
-              color: '#F2F2F2',
+              background: '#BAE6FD',
+              border: '1px solid #BAE6FD',
+              color: '#0A1A35',
               padding: '0.45rem 1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
@@ -472,12 +472,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#2563EB';
-              e.currentTarget.style.borderColor = '#2563EB';
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#1E3A8A';
-              e.currentTarget.style.borderColor = '#1E3A8A';
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
             }}
           >
             FULL COMPARISON REPORT
@@ -908,13 +908,23 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 <button
                   onClick={() => setStatusFilter('all')}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#FFFFFF',
+                    background: '#BAE6FD',
+                    border: '1px solid #BAE6FD',
+                    color: '#0A1A35',
                     padding: '0.45rem 1rem',
-                    borderRadius: '4px',
+                    borderRadius: '2px',
                     fontSize: '0.78rem',
+                    fontWeight: 700,
                     cursor: 'pointer',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#7DD3FC';
+                    e.currentTarget.style.borderColor = '#7DD3FC';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#BAE6FD';
+                    e.currentTarget.style.borderColor = '#BAE6FD';
                   }}
                 >
                   Show All ({caseResults.length}) Cases
@@ -1001,14 +1011,23 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                   <div style={{ textAlign: 'right' }}>
                     <button
                       style={{
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#FFFFFF',
+                        background: '#BAE6FD',
+                        border: '1px solid #BAE6FD',
+                        color: '#0A1A35',
                         padding: '0.4rem 0.8rem',
-                        borderRadius: '4px',
+                        borderRadius: '2px',
                         fontSize: '0.82rem',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         cursor: 'pointer',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#7DD3FC';
+                        e.currentTarget.style.borderColor = '#7DD3FC';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#BAE6FD';
+                        e.currentTarget.style.borderColor = '#BAE6FD';
                       }}
                     >
                       Diff View

@@ -233,7 +233,7 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                   borderRadius: '2px',
                   background: isActive ? '#0A1A35' : 'transparent',
                   border: 'none',
-                  borderLeft: isActive ? '2px solid #2563EB' : '2px solid transparent',
+                  borderLeft: isActive ? '2px solid #BAE6FD' : '2px solid transparent',
                   color: isActive ? '#F2F2F2' : '#858585',
                   fontSize: '0.82rem',
                   fontWeight: isActive ? 600 : 500,

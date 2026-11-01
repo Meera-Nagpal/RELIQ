@@ -187,9 +187,9 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           disabled={disabled}
           onClick={onChooseFileClick}
           style={{
-            background: '#1E3A8A',
-            color: '#F2F2F2',
-            border: '1px solid #1E3A8A',
+            background: '#BAE6FD',
+            color: '#0A1A35',
+            border: '1px solid #BAE6FD',
             borderRadius: '2px',
             padding: '0.4rem 0.95rem',
             fontSize: '0.75rem',
@@ -201,14 +201,14 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           }}
           onMouseEnter={(e) => {
             if (!disabled) {
-              e.currentTarget.style.background = '#2563EB';
-              e.currentTarget.style.borderColor = '#2563EB';
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
             }
           }}
           onMouseLeave={(e) => {
             if (!disabled) {
-              e.currentTarget.style.background = '#1E3A8A';
-              e.currentTarget.style.borderColor = '#1E3A8A';
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
             }
           }}
         >
@@ -1588,13 +1588,13 @@ export const DatasetUploadPanel: React.FC<DatasetUploadPanelProps> = ({
                     background:
                       !preview || !preview.valid || preview.validRecordsCount === 0 || Boolean(topLevelError)
                         ? '#343638'
-                        : '#D6D2C5',
+                        : '#BAE6FD',
                     color:
                       !preview || !preview.valid || preview.validRecordsCount === 0 || Boolean(topLevelError)
                         ? '#A4A49D'
-                        : '#111315',
+                        : '#0A1A35',
                     border: 'none',
-                    borderRadius: '5px',
+                    borderRadius: '2px',
                     padding: '0.48rem 1.05rem',
                     fontSize: '0.8rem',
                     fontWeight: 700,

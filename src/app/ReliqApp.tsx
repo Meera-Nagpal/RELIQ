@@ -408,9 +408,9 @@ export const ReliqApp: React.FC = () => {
               <button
                 onClick={() => navigate('#/app/projects')}
                 style={{
-                  background: 'var(--navy-royal, #1E3A8A)',
-                  color: '#F2F2F2',
-                  border: '1px solid #1E3A8A',
+                  background: '#BAE6FD',
+                  color: '#0A1A35',
+                  border: '1px solid #BAE6FD',
                   padding: '0.7rem 1.6rem',
                   borderRadius: '2px',
                   fontWeight: 700,
@@ -420,12 +420,12 @@ export const ReliqApp: React.FC = () => {
                   transition: 'background 0.15s ease, border-color 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#2563EB';
-                  e.currentTarget.style.borderColor = '#2563EB';
+                  e.currentTarget.style.background = '#7DD3FC';
+                  e.currentTarget.style.borderColor = '#7DD3FC';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#1E3A8A';
-                  e.currentTarget.style.borderColor = '#1E3A8A';
+                  e.currentTarget.style.background = '#BAE6FD';
+                  e.currentTarget.style.borderColor = '#BAE6FD';
                 }}
               >
                 Go to Projects Workspace →

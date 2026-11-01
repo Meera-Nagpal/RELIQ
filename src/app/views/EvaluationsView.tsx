@@ -532,14 +532,24 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           <button
             onClick={() => navigate('#/app/history')}
             style={{
-              background: '#151515',
-              border: '1px solid #292929',
-              color: '#858585',
+              background: '#BAE6FD',
+              border: '1px solid #BAE6FD',
+              color: '#0A1A35',
               padding: '0.45rem 0.85rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
               fontFamily: 'monospace',
+              fontWeight: 700,
               cursor: 'pointer',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
             }}
           >
             RUN AUDIT LOG ({evaluationRuns.length})
@@ -1190,11 +1200,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   System Prompt Directive
                 </label>
                 <textarea
-                  rows={Math.max(8, (customBaselinePrompt || '').split('\n').length + 1)}
+                  rows={8}
                   value={customBaselinePrompt}
                   onChange={(e) => setCustomBaselinePrompt(e.target.value)}
                   style={{
                     width: '100%',
+                    height: '175px',
                     padding: '0.65rem 0.8rem',
                     background: '#151515',
                     border: '1px solid #292929',
@@ -1203,10 +1214,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     fontSize: '0.8rem',
                     fontFamily: 'var(--font-mono, monospace)',
                     lineHeight: 1.5,
-                    resize: 'none',
-                    overflowY: 'hidden',
+                    resize: 'vertical',
+                    overflowY: 'auto',
                     overflowX: 'hidden',
-                    minHeight: `${Math.max(160, ((customBaselinePrompt || '').split('\n').length + 1) * 21)}px`,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#3A3A3A #151515',
                   }}
                 />
               </div>
@@ -1300,11 +1312,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   System Prompt Directive
                 </label>
                 <textarea
-                  rows={Math.max(8, (customCandidatePrompt || '').split('\n').length + 1)}
+                  rows={8}
                   value={customCandidatePrompt}
                   onChange={(e) => setCustomCandidatePrompt(e.target.value)}
                   style={{
                     width: '100%',
+                    height: '175px',
                     padding: '0.65rem 0.8rem',
                     background: '#151515',
                     border: '1px solid #292929',
@@ -1313,10 +1326,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     fontSize: '0.8rem',
                     fontFamily: 'var(--font-mono, monospace)',
                     lineHeight: 1.5,
-                    resize: 'none',
-                    overflowY: 'hidden',
+                    resize: 'vertical',
+                    overflowY: 'auto',
                     overflowX: 'hidden',
-                    minHeight: `${Math.max(160, ((customCandidatePrompt || '').split('\n').length + 1) * 21)}px`,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#3A3A3A #151515',
                   }}
                 />
               </div>
@@ -1597,9 +1611,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               onClick={handleStartEvaluation}
               disabled={isRunning || !selectedDataset || isJudgeConflicting}
               style={{
-                background: isRunning || isJudgeConflicting ? '#1B1B1B' : '#1E3A8A',
-                color: isRunning || isJudgeConflicting ? '#555555' : '#F2F2F2',
-                border: isRunning || isJudgeConflicting ? '1px solid #292929' : '1px solid #1E3A8A',
+                background: isRunning || isJudgeConflicting ? '#1B1B1B' : '#BAE6FD',
+                color: isRunning || isJudgeConflicting ? '#555555' : '#0A1A35',
+                border: isRunning || isJudgeConflicting ? '1px solid #292929' : '1px solid #BAE6FD',
                 padding: '0.55rem 1.4rem',
                 borderRadius: '2px',
                 fontSize: '0.8rem',
@@ -1611,14 +1625,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               }}
               onMouseEnter={(e) => {
                 if (!isRunning && !isJudgeConflicting && selectedDataset) {
-                  e.currentTarget.style.background = '#2563EB';
-                  e.currentTarget.style.borderColor = '#2563EB';
+                  e.currentTarget.style.background = '#7DD3FC';
+                  e.currentTarget.style.borderColor = '#7DD3FC';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isRunning && !isJudgeConflicting && selectedDataset) {
-                  e.currentTarget.style.background = '#1E3A8A';
-                  e.currentTarget.style.borderColor = '#1E3A8A';
+                  e.currentTarget.style.background = '#BAE6FD';
+                  e.currentTarget.style.borderColor = '#BAE6FD';
                 }
               }}
             >
@@ -1883,23 +1897,24 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     <button
                       onClick={() => handleOpenReport(run)}
                       style={{
-                        background: '#1B1B1B',
-                        border: '1px solid #292929',
-                        color: '#F2F2F2',
+                        background: '#BAE6FD',
+                        border: '1px solid #BAE6FD',
+                        color: '#0A1A35',
                         padding: '0.25rem 0.55rem',
                         borderRadius: '2px',
                         fontSize: '0.7rem',
                         fontFamily: 'monospace',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         cursor: 'pointer',
+                        transition: 'background 0.15s ease',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#2563EB';
-                        e.currentTarget.style.color = '#60A5FA';
+                        e.currentTarget.style.background = '#7DD3FC';
+                        e.currentTarget.style.borderColor = '#7DD3FC';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#292929';
-                        e.currentTarget.style.color = '#F2F2F2';
+                        e.currentTarget.style.background = '#BAE6FD';
+                        e.currentTarget.style.borderColor = '#BAE6FD';
                       }}
                     >
                       REPORT
@@ -1911,23 +1926,24 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       navigate('#/app/regressions');
                     }}
                     style={{
-                      background: '#1B1B1B',
-                      border: '1px solid #292929',
-                      color: '#F2F2F2',
+                      background: '#BAE6FD',
+                      border: '1px solid #BAE6FD',
+                      color: '#0A1A35',
                       padding: '0.25rem 0.55rem',
                       borderRadius: '2px',
                       fontSize: '0.7rem',
                       fontFamily: 'monospace',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       cursor: 'pointer',
+                      transition: 'background 0.15s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#2563EB';
-                      e.currentTarget.style.color = '#60A5FA';
+                      e.currentTarget.style.background = '#7DD3FC';
+                      e.currentTarget.style.borderColor = '#7DD3FC';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#292929';
-                      e.currentTarget.style.color = '#F2F2F2';
+                      e.currentTarget.style.background = '#BAE6FD';
+                      e.currentTarget.style.borderColor = '#BAE6FD';
                     }}
                   >
                     DIFF

@@ -180,9 +180,9 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               <button
                 onClick={onOpenModal}
                 style={{
-                  background: 'var(--navy-royal, #1E3A8A)',
-                  border: '1px solid #1E3A8A',
-                  color: '#F2F2F2',
+                  background: '#BAE6FD',
+                  border: '1px solid #BAE6FD',
+                  color: '#0A1A35',
                   padding: '0.3rem 0.65rem',
                   borderRadius: '2px',
                   fontSize: '0.72rem',

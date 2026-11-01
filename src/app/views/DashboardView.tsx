@@ -55,16 +55,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               onClick={() => navigate('#/app/datasets')}
               style={{
-                background: '#1B1B1B',
-                border: '1px solid #292929',
-                color: '#F2F2F2',
+                background: '#BAE6FD',
+                border: '1px solid #BAE6FD',
+                color: '#0A1A35',
                 padding: '0.5rem 0.8rem',
                 borderRadius: '2px',
                 fontFamily: 'monospace',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '0.75rem',
                 cursor: 'pointer',
                 textAlign: 'left',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#7DD3FC';
+                e.currentTarget.style.borderColor = '#7DD3FC';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#BAE6FD';
+                e.currentTarget.style.borderColor = '#BAE6FD';
               }}
             >
               NAVIGATE TO DATASETS →
@@ -87,16 +96,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               onClick={() => navigate('#/app/settings')}
               style={{
-                background: '#1B1B1B',
-                border: '1px solid #292929',
-                color: '#F2F2F2',
+                background: '#BAE6FD',
+                border: '1px solid #BAE6FD',
+                color: '#0A1A35',
                 padding: '0.5rem 0.8rem',
                 borderRadius: '2px',
                 fontFamily: 'monospace',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '0.75rem',
                 cursor: 'pointer',
                 textAlign: 'left',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#7DD3FC';
+                e.currentTarget.style.borderColor = '#7DD3FC';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#BAE6FD';
+                e.currentTarget.style.borderColor = '#BAE6FD';
               }}
             >
               REVIEW GATE POLICIES →
@@ -104,9 +122,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Step 3 */}
-          <div style={{ background: '#151515', border: '1px solid #1E3A8A', borderRadius: '2px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1.2rem' }}>
+          <div style={{ background: '#151515', border: '1px solid #292929', borderRadius: '2px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1.2rem' }}>
             <div>
-              <div style={{ color: '#60A5FA', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem', marginBottom: '0.4rem' }}>
+              <div style={{ color: '#BAE6FD', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem', marginBottom: '0.4rem' }}>
                 STAGE 03
               </div>
               <h3 style={{ margin: '0 0 0.4rem 0', color: '#F2F2F2', fontSize: '1.05rem', fontWeight: 600 }}>
@@ -119,9 +137,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               onClick={() => navigate('#/app/evaluations')}
               style={{
-                background: '#1E3A8A',
-                border: '1px solid #1E3A8A',
-                color: '#F2F2F2',
+                background: '#BAE6FD',
+                border: '1px solid #BAE6FD',
+                color: '#0A1A35',
                 padding: '0.5rem 0.8rem',
                 borderRadius: '2px',
                 fontFamily: 'monospace',
@@ -132,12 +150,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 transition: 'background 0.15s ease, border-color 0.15s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#2563EB';
-                e.currentTarget.style.borderColor = '#2563EB';
+                e.currentTarget.style.background = '#7DD3FC';
+                e.currentTarget.style.borderColor = '#7DD3FC';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#1E3A8A';
-                e.currentTarget.style.borderColor = '#1E3A8A';
+                e.currentTarget.style.background = '#BAE6FD';
+                e.currentTarget.style.borderColor = '#BAE6FD';
               }}
             >
               LAUNCH BENCHMARK →
@@ -208,17 +226,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             onClick={() => navigate('#/app/history')}
             style={{
-              background: '#151515',
-              border: '1px solid #292929',
-              color: '#858585',
+              background: '#BAE6FD',
+              border: '1px solid #BAE6FD',
+              color: '#0A1A35',
               padding: '0.45rem 0.85rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
               fontFamily: 'monospace',
+              fontWeight: 700,
               cursor: 'pointer',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F2')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#858585')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
+            }}
           >
             RUN AUDIT LOG ({evaluationRuns.length})
           </button>
@@ -243,9 +269,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: '#1E3A8A',
-              border: '1px solid #1E3A8A',
-              color: '#F2F2F2',
+              background: '#BAE6FD',
+              border: '1px solid #BAE6FD',
+              color: '#0A1A35',
               padding: '0.45rem 1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
@@ -255,12 +281,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#2563EB';
-              e.currentTarget.style.borderColor = '#2563EB';
+              e.currentTarget.style.background = '#7DD3FC';
+              e.currentTarget.style.borderColor = '#7DD3FC';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#1E3A8A';
-              e.currentTarget.style.borderColor = '#1E3A8A';
+              e.currentTarget.style.background = '#BAE6FD';
+              e.currentTarget.style.borderColor = '#BAE6FD';
             }}
           >
             FULL REPORT
