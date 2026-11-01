@@ -27537,6 +27537,9 @@ var GroqProvider = class {
     this.modelsEndpoint = modelsEndpoint;
   }
   isConfigured() {
+    if (typeof process !== "undefined" && process.env) {
+      return Boolean(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim());
+    }
     return true;
   }
   getMetadata() {
@@ -28001,9 +28004,27 @@ async function sleep(ms) {
 }
 var envCacheLoaded = false;
 var envFileCache = /* @__PURE__ */ new Map();
+var KEY_ALIASES = {
+  GROQ_API_KEY: ["GROQ_API_KEY", "GROQ_API_TOKEN", "GROQ_KEY", "GROQ_TOKEN"],
+  GEMINI_API_KEY: ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY", "GOOGLE_KEY"],
+  CEREBRAS_API_KEY: ["CEREBRAS_API_KEY", "CEREBRAS_KEY", "CEREBRAS_API_TOKEN"],
+  OPENAI_API_KEY: ["OPENAI_API_KEY", "OPENAI_KEY", "OPENAI_API_TOKEN"],
+  ANTHROPIC_API_KEY: ["ANTHROPIC_API_KEY", "ANTHROPIC_KEY", "ANTHROPIC_API_TOKEN"]
+};
+function cleanKeyValue(val) {
+  if (val === void 0 || val === null) return void 0;
+  let trimmed = String(val).trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') || trimmed.startsWith("'") && trimmed.endsWith("'")) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+  return trimmed.length > 0 ? trimmed : void 0;
+}
 function ensureEnvCacheLoaded() {
   if (envCacheLoaded) return;
   envCacheLoaded = true;
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
   const candidatePaths = [
     path2.resolve(process.cwd(), ".env.local"),
     path2.resolve(process.cwd(), ".env"),
@@ -28020,10 +28041,7 @@ function ensureEnvCacheLoaded() {
           if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
             const idx = trimmed.indexOf("=");
             const k = trimmed.substring(0, idx).trim();
-            let v = trimmed.substring(idx + 1).trim();
-            if (v.startsWith('"') && v.endsWith('"') || v.startsWith("'") && v.endsWith("'")) {
-              v = v.slice(1, -1);
-            }
+            const v = cleanKeyValue(trimmed.substring(idx + 1));
             if (k && v && !envFileCache.has(k)) {
               envFileCache.set(k, v);
             }
@@ -28035,14 +28053,32 @@ function ensureEnvCacheLoaded() {
   }
 }
 function getApiKey(name) {
-  if (process.env[name] !== void 0) {
-    return process.env[name].trim() || void 0;
+  if (typeof process !== "undefined" && process.env) {
+    if (process.env[name] !== void 0) {
+      return cleanKeyValue(process.env[name]);
+    }
+    const aliases = KEY_ALIASES[name] || [];
+    for (const alias of aliases) {
+      if (process.env[alias] !== void 0) {
+        return cleanKeyValue(process.env[alias]);
+      }
+    }
   }
-  ensureEnvCacheLoaded();
-  const cached = envFileCache.get(name);
-  if (cached) {
-    process.env[name] = cached;
-    return cached;
+  if (process.env.NODE_ENV !== "production") {
+    ensureEnvCacheLoaded();
+    const cached = cleanKeyValue(envFileCache.get(name));
+    if (cached) {
+      process.env[name] = cached;
+      return cached;
+    }
+    const aliases = KEY_ALIASES[name] || [];
+    for (const alias of aliases) {
+      const cachedAlias = cleanKeyValue(envFileCache.get(alias));
+      if (cachedAlias) {
+        process.env[name] = cachedAlias;
+        return cachedAlias;
+      }
+    }
   }
   return void 0;
 }
@@ -28343,10 +28379,19 @@ var ProviderScheduler = class _ProviderScheduler {
   }
   resolveMinDelay(provider, defaultMs) {
     if (typeof process === "undefined" || !process.env) return defaultMs;
-    const specificKey = `${provider.toUpperCase()}_MIN_DELAY_MS`;
-    if (process.env[specificKey]) {
-      const parsed = parseInt(process.env[specificKey], 10);
-      if (!isNaN(parsed) && parsed >= 0) return parsed;
+    const norm = this.normalizeProvider(provider);
+    const candidateKeys = [
+      `${norm.toUpperCase()}_MIN_DELAY_MS`,
+      `${provider.toUpperCase()}_MIN_DELAY_MS`
+    ];
+    if (norm === "google") {
+      candidateKeys.push("GEMINI_MIN_DELAY_MS", "GOOGLE_MIN_DELAY_MS");
+    }
+    for (const key of candidateKeys) {
+      if (process.env[key]) {
+        const parsed = parseInt(process.env[key], 10);
+        if (!isNaN(parsed) && parsed >= 0) return parsed;
+      }
     }
     if (process.env.PROVIDER_REQUEST_DELAY_MS) {
       const parsed = parseInt(process.env.PROVIDER_REQUEST_DELAY_MS, 10);
@@ -28356,9 +28401,22 @@ var ProviderScheduler = class _ProviderScheduler {
   }
   resolveMaxConcurrency(provider, defaultMax) {
     if (typeof process === "undefined" || !process.env) return defaultMax;
-    const specificKey = `${provider.toUpperCase()}_MAX_CONCURRENCY`;
-    if (process.env[specificKey]) {
-      const parsed = parseInt(process.env[specificKey], 10);
+    const norm = this.normalizeProvider(provider);
+    const candidateKeys = [
+      `${norm.toUpperCase()}_MAX_CONCURRENCY`,
+      `${provider.toUpperCase()}_MAX_CONCURRENCY`
+    ];
+    if (norm === "google") {
+      candidateKeys.push("GEMINI_MAX_CONCURRENCY", "GOOGLE_MAX_CONCURRENCY");
+    }
+    for (const key of candidateKeys) {
+      if (process.env[key]) {
+        const parsed = parseInt(process.env[key], 10);
+        if (!isNaN(parsed) && parsed >= 1) return parsed;
+      }
+    }
+    if (process.env.EVALUATION_CONCURRENCY) {
+      const parsed = parseInt(process.env.EVALUATION_CONCURRENCY, 10);
       if (!isNaN(parsed) && parsed >= 1) return parsed;
     }
     return defaultMax;
@@ -28810,7 +28868,7 @@ Rate 1-5 (1=fail, 3=acceptable, 5=exemplary) on correctness, instructionAdherenc
 {"correctness":5,"instructionAdherence":5,"relevance":5,"completeness":5,"groundedness":5,"safety":5,"overall":5.0,"reason":"Brief reason."}`;
     const startTime = performance.now();
     const effectiveFetch = params.customFetch || globalThis.fetch;
-    const apiKey = typeof process !== "undefined" ? getApiKey("GROQ_API_KEY") : void 0;
+    const apiKey = typeof process !== "undefined" ? process.env.GROQ_API_KEY?.trim() || getApiKey("GROQ_API_KEY") : void 0;
     const buildModelPayload = (targetModel) => {
       const p = {
         model: targetModel,
@@ -37570,7 +37628,8 @@ var EvaluationCache = class {
               model: req.modelIdentifier,
               provider: req.metadata?.provider || "cached",
               latencyMs: 1
-            }
+            },
+            isDemoMode: false
           };
           this.memoryCache.set(key, { response: resp, cachedAt: Date.now() });
           return resp;
@@ -37589,7 +37648,8 @@ var EvaluationCache = class {
                 model: req.modelIdentifier,
                 provider: req.metadata?.provider || "cached",
                 latencyMs: 1
-              }
+              },
+              isDemoMode: false
             };
             this.memoryCache.set(key, { response: resp, cachedAt: Date.now() });
             return resp;
@@ -38682,7 +38742,7 @@ var ServerCerebrasProvider = class {
           error: {
             status: 401,
             code: "AUTH_MISSING_KEY",
-            message: "CEREBRAS_API_KEY is not configured in server-side environment (.env.local)."
+            message: "CEREBRAS_API_KEY is not configured in server environment (process.env.CEREBRAS_API_KEY or .env.local)."
           }
         },
         isDemoMode: false
@@ -39129,8 +39189,23 @@ var ServerGroqProvider = class {
   id = "groq";
   name = "Groq (Server Execution)";
   providerType = "groq";
+  explicitApiKey;
+  constructor(apiKey) {
+    this.explicitApiKey = apiKey;
+  }
+  getEffectiveApiKey() {
+    if (this.explicitApiKey && this.explicitApiKey.trim()) {
+      return this.explicitApiKey.trim();
+    }
+    if (typeof process !== "undefined" && process.env) {
+      if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim()) {
+        return process.env.GROQ_API_KEY.trim();
+      }
+    }
+    return getApiKey("GROQ_API_KEY");
+  }
   isConfigured() {
-    return Boolean(getApiKey("GROQ_API_KEY"));
+    return Boolean(this.getEffectiveApiKey());
   }
   getMetadata() {
     return {
@@ -39161,7 +39236,7 @@ var ServerGroqProvider = class {
   async generate(request) {
     const startTime = Date.now();
     const model = request.modelIdentifier || "openai/gpt-oss-20b";
-    const apiKey = getApiKey("GROQ_API_KEY");
+    const apiKey = this.getEffectiveApiKey();
     if (!apiKey) {
       console.log(`[GROQ] Request started`);
       console.log(`[GROQ] Model: ${model}`);
@@ -39182,7 +39257,7 @@ var ServerGroqProvider = class {
           error: {
             status: 401,
             code: "AUTH_MISSING_KEY",
-            message: "GROQ_API_KEY is not configured in server-side environment (.env.local)."
+            message: "GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local)."
           }
         },
         isDemoMode: false
@@ -39823,6 +39898,7 @@ function resolveServerProvider(version3) {
     case "demo":
       return defaultModelProvider;
     case "google":
+    case "gemini":
       return new ServerGeminiProvider();
     case "groq":
       return new ServerGroqProvider();
@@ -44568,7 +44644,7 @@ ${userText}` }]
         sendJson(res, 200, {
           status: "API KEY MISSING",
           available: false,
-          error: "GROQ_API_KEY is not configured in server environment (.env.local)."
+          error: "GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local)."
         });
         return;
       }
@@ -44650,7 +44726,7 @@ ${userText}` }]
       const apiKey = getApiKey("GROQ_API_KEY");
       if (!apiKey) {
         sendJson(res, 401, {
-          error: "GROQ_API_KEY is not configured in server-side environment (.env.local).",
+          error: "GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local).",
           provider: "groq"
         });
         return;
@@ -44677,7 +44753,7 @@ ${userText}` }]
       const apiKey = getApiKey("GROQ_API_KEY");
       if (!apiKey) {
         sendJson(res, 401, {
-          error: "GROQ_API_KEY is not configured in server-side environment (.env.local).",
+          error: "GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local).",
           provider: "groq"
         });
         return;
@@ -44905,9 +44981,9 @@ async function handler(req, res) {
           VERCEL: process.env.VERCEL,
           NODE_ENV: process.env.NODE_ENV,
           RELIQ_DB_PATH: process.env.RELIQ_DB_PATH,
-          hasGemini: Boolean(process.env.GEMINI_API_KEY),
-          hasGroq: Boolean(process.env.GROQ_API_KEY),
-          hasCerebras: Boolean(process.env.CEREBRAS_API_KEY)
+          hasGemini: Boolean(getApiKey("GEMINI_API_KEY") || process.env.GEMINI_API_KEY),
+          hasGroq: Boolean(getApiKey("GROQ_API_KEY") || process.env.GROQ_API_KEY),
+          hasCerebras: Boolean(getApiKey("CEREBRAS_API_KEY") || process.env.CEREBRAS_API_KEY)
         }
       }, null, 2));
       return;

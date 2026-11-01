@@ -313,9 +313,27 @@ export class ServerGroqProvider implements ModelProvider {
   readonly id = 'groq';
   readonly name = 'Groq (Server Execution)';
   readonly providerType = 'groq' as const;
+  private explicitApiKey?: string;
+
+  constructor(apiKey?: string) {
+    this.explicitApiKey = apiKey;
+  }
+
+  getEffectiveApiKey(): string | undefined {
+    if (this.explicitApiKey && this.explicitApiKey.trim()) {
+      return this.explicitApiKey.trim();
+    }
+    // Read GROQ_API_KEY from process.env directly in production (Render) or via getApiKey
+    if (typeof process !== 'undefined' && process.env) {
+      if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim()) {
+        return process.env.GROQ_API_KEY.trim();
+      }
+    }
+    return getApiKey('GROQ_API_KEY');
+  }
 
   isConfigured(): boolean {
-    return Boolean(getApiKey('GROQ_API_KEY'));
+    return Boolean(this.getEffectiveApiKey());
   }
 
   getMetadata(): ProviderMetadata {
@@ -349,7 +367,7 @@ export class ServerGroqProvider implements ModelProvider {
   async generate(request: ModelRequest): Promise<ModelResponse> {
     const startTime = Date.now();
     const model = request.modelIdentifier || 'openai/gpt-oss-20b';
-    const apiKey = getApiKey('GROQ_API_KEY');
+    const apiKey = this.getEffectiveApiKey();
 
     // 1. Missing server-side credential -> AUTHENTICATION_ERROR
     if (!apiKey) {
@@ -372,7 +390,7 @@ export class ServerGroqProvider implements ModelProvider {
           error: {
             status: 401,
             code: 'AUTH_MISSING_KEY',
-            message: 'GROQ_API_KEY is not configured in server-side environment (.env.local).',
+            message: 'GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local).',
           },
         },
         isDemoMode: false,
@@ -1100,10 +1118,11 @@ export class ServerAnthropicProvider implements ModelProvider {
  * Never silently falls back to DemoProvider for real providers.
  */
 export function resolveServerProvider(version: { provider: ProviderType; modelIdentifier?: string }): ModelProvider {
-  switch (version.provider) {
+  switch (version.provider as string) {
     case 'demo':
       return defaultModelProvider;
     case 'google':
+    case 'gemini':
       return new ServerGeminiProvider();
     case 'groq':
       return new ServerGroqProvider();

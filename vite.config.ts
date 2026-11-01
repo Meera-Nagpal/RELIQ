@@ -7,15 +7,22 @@ const projectRoot = fileURLToPath(new URL('.', import.meta.url));
 
 function reliqServerPlugin(env: Record<string, string>): Plugin {
   // Populate process.env on the server side without leaking to client bundle
-  if (env.GEMINI_API_KEY) process.env.GEMINI_API_KEY = env.GEMINI_API_KEY;
-  if (env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = env.OPENAI_API_KEY;
-  if (env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
-  if (env.GROQ_API_KEY) process.env.GROQ_API_KEY = env.GROQ_API_KEY;
-  if (env.CEREBRAS_API_KEY) process.env.CEREBRAS_API_KEY = env.CEREBRAS_API_KEY;
-  if (env.SUPABASE_URL) process.env.SUPABASE_URL = env.SUPABASE_URL;
-  if (env.SUPABASE_SERVICE_ROLE_KEY) process.env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (env.SUPABASE_ANON_KEY) process.env.SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY;
-  if (env.RELIQ_DB_DRIVER) process.env.RELIQ_DB_DRIVER = env.RELIQ_DB_DRIVER;
+  // In production (Render), process.env keys already exist; do not clobber them
+  const assignIfMissing = (key: string, val?: string) => {
+    if (val && !process.env[key]) {
+      process.env[key] = val;
+    }
+  };
+
+  assignIfMissing('GEMINI_API_KEY', env.GEMINI_API_KEY);
+  assignIfMissing('OPENAI_API_KEY', env.OPENAI_API_KEY);
+  assignIfMissing('ANTHROPIC_API_KEY', env.ANTHROPIC_API_KEY);
+  assignIfMissing('GROQ_API_KEY', env.GROQ_API_KEY);
+  assignIfMissing('CEREBRAS_API_KEY', env.CEREBRAS_API_KEY);
+  assignIfMissing('SUPABASE_URL', env.SUPABASE_URL);
+  assignIfMissing('SUPABASE_SERVICE_ROLE_KEY', env.SUPABASE_SERVICE_ROLE_KEY);
+  assignIfMissing('SUPABASE_ANON_KEY', env.SUPABASE_ANON_KEY);
+  assignIfMissing('RELIQ_DB_DRIVER', env.RELIQ_DB_DRIVER);
 
   const middleware = createReliqProxyMiddleware();
 

@@ -80,11 +80,21 @@ export class ProviderScheduler {
   private resolveMinDelay(provider: string, defaultMs: number): number {
     if (typeof process === 'undefined' || !process.env) return defaultMs;
 
-    // Check specific provider env (e.g. GEMINI_MIN_DELAY_MS, GROQ_MIN_DELAY_MS)
-    const specificKey = `${provider.toUpperCase()}_MIN_DELAY_MS`;
-    if (process.env[specificKey]) {
-      const parsed = parseInt(process.env[specificKey]!, 10);
-      if (!isNaN(parsed) && parsed >= 0) return parsed;
+    const norm = this.normalizeProvider(provider);
+    // Check specific provider env (e.g. GEMINI_MIN_DELAY_MS, GROQ_MIN_DELAY_MS, GOOGLE_MIN_DELAY_MS)
+    const candidateKeys = [
+      `${norm.toUpperCase()}_MIN_DELAY_MS`,
+      `${provider.toUpperCase()}_MIN_DELAY_MS`,
+    ];
+    if (norm === 'google') {
+      candidateKeys.push('GEMINI_MIN_DELAY_MS', 'GOOGLE_MIN_DELAY_MS');
+    }
+
+    for (const key of candidateKeys) {
+      if (process.env[key]) {
+        const parsed = parseInt(process.env[key]!, 10);
+        if (!isNaN(parsed) && parsed >= 0) return parsed;
+      }
     }
 
     // Check global default env PROVIDER_REQUEST_DELAY_MS
@@ -98,11 +108,29 @@ export class ProviderScheduler {
 
   private resolveMaxConcurrency(provider: string, defaultMax: number): number {
     if (typeof process === 'undefined' || !process.env) return defaultMax;
-    const specificKey = `${provider.toUpperCase()}_MAX_CONCURRENCY`;
-    if (process.env[specificKey]) {
-      const parsed = parseInt(process.env[specificKey]!, 10);
+
+    const norm = this.normalizeProvider(provider);
+    const candidateKeys = [
+      `${norm.toUpperCase()}_MAX_CONCURRENCY`,
+      `${provider.toUpperCase()}_MAX_CONCURRENCY`,
+    ];
+    if (norm === 'google') {
+      candidateKeys.push('GEMINI_MAX_CONCURRENCY', 'GOOGLE_MAX_CONCURRENCY');
+    }
+
+    for (const key of candidateKeys) {
+      if (process.env[key]) {
+        const parsed = parseInt(process.env[key]!, 10);
+        if (!isNaN(parsed) && parsed >= 1) return parsed;
+      }
+    }
+
+    // Fall back to global EVALUATION_CONCURRENCY if configured
+    if (process.env.EVALUATION_CONCURRENCY) {
+      const parsed = parseInt(process.env.EVALUATION_CONCURRENCY, 10);
       if (!isNaN(parsed) && parsed >= 1) return parsed;
     }
+
     return defaultMax;
   }
 

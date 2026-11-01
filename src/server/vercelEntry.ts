@@ -12,6 +12,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { initializeDatabase } from './db/database';
 import { createReliqProxyMiddleware } from './proxyMiddleware';
+import { getApiKey } from './serverUtils';
 
 // Lazy-initialize database and middleware on first request to guarantee zero module-load crashes
 let initError: { message: string; stack?: string } | null = null;
@@ -64,9 +65,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           VERCEL: process.env.VERCEL,
           NODE_ENV: process.env.NODE_ENV,
           RELIQ_DB_PATH: process.env.RELIQ_DB_PATH,
-          hasGemini: Boolean(process.env.GEMINI_API_KEY),
-          hasGroq: Boolean(process.env.GROQ_API_KEY),
-          hasCerebras: Boolean(process.env.CEREBRAS_API_KEY),
+          hasGemini: Boolean(getApiKey('GEMINI_API_KEY') || process.env.GEMINI_API_KEY),
+          hasGroq: Boolean(getApiKey('GROQ_API_KEY') || process.env.GROQ_API_KEY),
+          hasCerebras: Boolean(getApiKey('CEREBRAS_API_KEY') || process.env.CEREBRAS_API_KEY),
         }
       }, null, 2));
       return;

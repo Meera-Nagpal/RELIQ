@@ -54,6 +54,9 @@ export class GroqProvider implements ModelProvider {
   }
 
   isConfigured(): boolean {
+    if (typeof process !== 'undefined' && process.env) {
+      return Boolean(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim());
+    }
     return true;
   }
 

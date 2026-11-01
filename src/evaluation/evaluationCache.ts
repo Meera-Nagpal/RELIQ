@@ -73,6 +73,7 @@ export class EvaluationCache {
               provider: req.metadata?.provider || 'cached',
               latencyMs: 1,
             },
+            isDemoMode: false,
           };
           this.memoryCache.set(key, { response: resp, cachedAt: Date.now() });
           return resp;
@@ -97,6 +98,7 @@ export class EvaluationCache {
                 provider: req.metadata?.provider || 'cached',
                 latencyMs: 1,
               },
+              isDemoMode: false,
             };
             this.memoryCache.set(key, { response: resp, cachedAt: Date.now() });
             return resp;

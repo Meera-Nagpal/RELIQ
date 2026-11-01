@@ -6877,6 +6877,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runCloudMigrationTests } = await import('./cloudMigration.test.mjs');
     await runCloudMigrationTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Groq Production Authentication & Render Environment Tests
+    // -------------------------------------------------------------
+    const { runGroqProductionAuthTests } = await import('./groqProductionAuth.test.mjs');
+    await runGroqProductionAuthTests({ test, asyncTest }, server);
   } finally {
     try {
       const { closeDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');

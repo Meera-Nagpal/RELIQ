@@ -618,7 +618,7 @@ export function createReliqProxyMiddleware() {
         sendJson(res, 200, {
           status: 'API KEY MISSING',
           available: false,
-          error: 'GROQ_API_KEY is not configured in server environment (.env.local).',
+          error: 'GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local).',
         });
         return;
       }
@@ -708,7 +708,7 @@ export function createReliqProxyMiddleware() {
       const apiKey = getApiKey('GROQ_API_KEY');
       if (!apiKey) {
         sendJson(res, 401, {
-          error: 'GROQ_API_KEY is not configured in server-side environment (.env.local).',
+          error: 'GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local).',
           provider: 'groq',
         });
         return;
@@ -740,7 +740,7 @@ export function createReliqProxyMiddleware() {
       const apiKey = getApiKey('GROQ_API_KEY');
       if (!apiKey) {
         sendJson(res, 401, {
-          error: 'GROQ_API_KEY is not configured in server-side environment (.env.local).',
+          error: 'GROQ_API_KEY is not configured in server environment (process.env.GROQ_API_KEY or .env.local).',
           provider: 'groq',
         });
         return;

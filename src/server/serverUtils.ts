@@ -13,7 +13,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 
 const MAX_BODY_BYTES = 25 * 1024 * 1024; // 25 MB limit
 
-export function parseJsonBody(req: IncomingMessage): Promise<any> {
+export function parseJsonBody<T = any>(req: IncomingMessage): Promise<T> {
   return new Promise((resolve, reject) => {
     let body = '';
     let receivedBytes = 0;
@@ -53,9 +53,45 @@ export async function sleep(ms: number): Promise<void> {
 let envCacheLoaded = false;
 const envFileCache = new Map<string, string>();
 
+/**
+ * Inconsistent environment variable aliases across platforms, providers, and legacy conventions.
+ */
+export const KEY_ALIASES: Record<string, string[]> = {
+  GROQ_API_KEY: ['GROQ_API_KEY', 'GROQ_API_TOKEN', 'GROQ_KEY', 'GROQ_TOKEN'],
+  GEMINI_API_KEY: ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GEMINI_KEY', 'GOOGLE_KEY'],
+  CEREBRAS_API_KEY: ['CEREBRAS_API_KEY', 'CEREBRAS_KEY', 'CEREBRAS_API_TOKEN'],
+  OPENAI_API_KEY: ['OPENAI_API_KEY', 'OPENAI_KEY', 'OPENAI_API_TOKEN'],
+  ANTHROPIC_API_KEY: ['ANTHROPIC_API_KEY', 'ANTHROPIC_KEY', 'ANTHROPIC_API_TOKEN'],
+};
+
+/**
+ * Strips accidental wrapping quotes (single or double) and trims whitespace.
+ */
+export function cleanKeyValue(val?: string | null): string | undefined {
+  if (val === undefined || val === null) return undefined;
+  let trimmed = String(val).trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * Loads .env.local and .env strictly for local development.
+ * Never requires or attempts to read physical files in production (Render).
+ */
 function ensureEnvCacheLoaded(): void {
   if (envCacheLoaded) return;
   envCacheLoaded = true;
+
+  // In production (e.g. Render), process.env is injected by hosting infrastructure.
+  // Physical .env.local / .env files are NOT required and dotenv loading is skipped.
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
 
   const candidatePaths = [
     path.resolve(process.cwd(), '.env.local'),
@@ -74,10 +110,7 @@ function ensureEnvCacheLoaded(): void {
           if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
             const idx = trimmed.indexOf('=');
             const k = trimmed.substring(0, idx).trim();
-            let v = trimmed.substring(idx + 1).trim();
-            if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-              v = v.slice(1, -1);
-            }
+            const v = cleanKeyValue(trimmed.substring(idx + 1));
             if (k && v && !envFileCache.has(k)) {
               envFileCache.set(k, v);
             }
@@ -90,17 +123,40 @@ function ensureEnvCacheLoaded(): void {
 
 /**
  * Safely retrieve an API key from process.env or cached .env.local without exposing it to client.
+ * In production (Render), reads directly from process.env without requiring any physical .env.local file.
  */
 export function getApiKey(name: string): string | undefined {
-  if (process.env[name] !== undefined) {
-    return process.env[name]!.trim() || undefined;
+  // 1. Direct process.env check (Production / Render environment variables)
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env[name] !== undefined) {
+      return cleanKeyValue(process.env[name]);
+    }
+
+    // Check known aliases for this key in process.env
+    const aliases = KEY_ALIASES[name] || [];
+    for (const alias of aliases) {
+      if (process.env[alias] !== undefined) {
+        return cleanKeyValue(process.env[alias]);
+      }
+    }
   }
 
-  ensureEnvCacheLoaded();
-  const cached = envFileCache.get(name);
-  if (cached) {
-    process.env[name] = cached;
-    return cached;
+  // 2. Local development fallback (strictly when NODE_ENV !== 'production')
+  if (process.env.NODE_ENV !== 'production') {
+    ensureEnvCacheLoaded();
+    const cached = cleanKeyValue(envFileCache.get(name));
+    if (cached) {
+      process.env[name] = cached;
+      return cached;
+    }
+    const aliases = KEY_ALIASES[name] || [];
+    for (const alias of aliases) {
+      const cachedAlias = cleanKeyValue(envFileCache.get(alias));
+      if (cachedAlias) {
+        process.env[name] = cachedAlias;
+        return cachedAlias;
+      }
+    }
   }
 
   return undefined;

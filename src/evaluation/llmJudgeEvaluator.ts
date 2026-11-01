@@ -139,7 +139,7 @@ Rate 1-5 (1=fail, 3=acceptable, 5=exemplary) on correctness, instructionAdherenc
     const effectiveFetch = params.customFetch || globalThis.fetch;
 
     // Check for server-side direct key or client proxy endpoint
-    const apiKey = typeof process !== 'undefined' ? getApiKey('GROQ_API_KEY') : undefined;
+    const apiKey = typeof process !== 'undefined' ? (process.env.GROQ_API_KEY?.trim() || getApiKey('GROQ_API_KEY')) : undefined;
 
     const buildModelPayload = (targetModel: string): Record<string, any> => {
       const p: Record<string, any> = {

@@ -84,7 +84,7 @@ export class ServerCerebrasProvider implements ModelProvider {
           error: {
             status: 401,
             code: 'AUTH_MISSING_KEY',
-            message: 'CEREBRAS_API_KEY is not configured in server-side environment (.env.local).',
+            message: 'CEREBRAS_API_KEY is not configured in server environment (process.env.CEREBRAS_API_KEY or .env.local).',
           },
         },
         isDemoMode: false,

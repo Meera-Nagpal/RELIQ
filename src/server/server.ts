@@ -16,8 +16,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
 
-// Safely populate process.env from .env.local without logging values
+// Safely populate process.env from .env.local for local development only without logging values
 function loadLocalEnv() {
+  // In production (Render), credentials are provided directly via process.env.
+  // Physical .env.local / .env files are NOT required and dotenv loading is skipped.
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
   const candidateFiles = ['.env.local', '.env'];
   for (const file of candidateFiles) {
     const fullPath = path.resolve(process.cwd(), file);
