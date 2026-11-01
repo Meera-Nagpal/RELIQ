@@ -35,24 +35,24 @@
   --blue-light: #60A5FA;          /* Light Blue */
 
   /* Primary Interactive Accents & Uniform Button Shade */
-  --accent: #BAE6FD;              /* Exact Button Shade #BAE6FD */
-  --accent-navy: #BAE6FD;
-  --accent-blue: #BAE6FD;
-  --accent-light: #BAE6FD;
-  --accent-hover: #7DD3FC;
+  --accent: #ADC0D6;              /* Exact Button Shade #ADC0D6 */
+  --accent-navy: #ADC0D6;
+  --accent-blue: #ADC0D6;
+  --accent-light: #ADC0D6;
+  --accent-hover: #C5D4E5;
   --accent-active: #38BDF8;
-  --accent-glow: rgba(186, 230, 253, 0.25);
-  --accent-dim: rgba(186, 230, 253, 0.12);
-  --accent-subtle: rgba(186, 230, 253, 0.65);
+  --accent-glow: rgba(173, 192, 214, 0.25);
+  --accent-dim: rgba(173, 192, 214, 0.12);
+  --accent-subtle: rgba(173, 192, 214, 0.65);
 
-  --btn-shade: #BAE6FD;
+  --btn-shade: #ADC0D6;
   --btn-shade-text: #0A1A35;
-  --btn-shade-hover: #7DD3FC;
-  --btn-shade-border: #BAE6FD;
+  --btn-shade-hover: #C5D4E5;
+  --btn-shade-border: #ADC0D6;
 
   /* RELIQ Brand CSS Variables */
-  --reliq-accent: #BAE6FD;
-  --reliq-accent-secondary: #7DD3FC;
+  --reliq-accent: #ADC0D6;
+  --reliq-accent-secondary: #C5D4E5;
   --reliq-background: #0F0F0F;
 
   /* Restrained State Colors — No bright saturated alarms */

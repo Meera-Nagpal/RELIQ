@@ -187,9 +187,9 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           disabled={disabled}
           onClick={onChooseFileClick}
           style={{
-            background: '#BAE6FD',
+            background: '#ADC0D6',
             color: '#0A1A35',
-            border: '1px solid #BAE6FD',
+            border: '1px solid #ADC0D6',
             borderRadius: '2px',
             padding: '0.4rem 0.95rem',
             fontSize: '0.75rem',
@@ -201,14 +201,14 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           }}
           onMouseEnter={(e) => {
             if (!disabled) {
-              e.currentTarget.style.background = '#7DD3FC';
-              e.currentTarget.style.borderColor = '#7DD3FC';
+              e.currentTarget.style.background = '#C5D4E5';
+              e.currentTarget.style.borderColor = '#C5D4E5';
             }
           }}
           onMouseLeave={(e) => {
             if (!disabled) {
-              e.currentTarget.style.background = '#BAE6FD';
-              e.currentTarget.style.borderColor = '#BAE6FD';
+              e.currentTarget.style.background = '#ADC0D6';
+              e.currentTarget.style.borderColor = '#ADC0D6';
             }
           }}
         >
@@ -1588,7 +1588,7 @@ export const DatasetUploadPanel: React.FC<DatasetUploadPanelProps> = ({
                     background:
                       !preview || !preview.valid || preview.validRecordsCount === 0 || Boolean(topLevelError)
                         ? '#343638'
-                        : '#BAE6FD',
+                        : '#ADC0D6',
                     color:
                       !preview || !preview.valid || preview.validRecordsCount === 0 || Boolean(topLevelError)
                         ? '#A4A49D'

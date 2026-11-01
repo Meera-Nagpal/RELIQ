@@ -457,8 +457,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: '#BAE6FD',
-              border: '1px solid #BAE6FD',
+              background: '#ADC0D6',
+              border: '1px solid #ADC0D6',
               color: '#0A1A35',
               padding: '0.45rem 1rem',
               borderRadius: '2px',
@@ -472,12 +472,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#7DD3FC';
-              e.currentTarget.style.borderColor = '#7DD3FC';
+              e.currentTarget.style.background = '#C5D4E5';
+              e.currentTarget.style.borderColor = '#C5D4E5';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#BAE6FD';
-              e.currentTarget.style.borderColor = '#BAE6FD';
+              e.currentTarget.style.background = '#ADC0D6';
+              e.currentTarget.style.borderColor = '#ADC0D6';
             }}
           >
             FULL COMPARISON REPORT
@@ -772,7 +772,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               <button
                 onClick={() => setStatusFilter('all')}
                 style={{
-                  background: statusFilter === 'all' ? '#BAE6FD' : 'transparent',
+                  background: statusFilter === 'all' ? '#ADC0D6' : 'transparent',
                   border: 'none',
                   color: statusFilter === 'all' ? '#0A1A35' : '#858585',
                   padding: '0.35rem 0.75rem',
@@ -908,8 +908,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                 <button
                   onClick={() => setStatusFilter('all')}
                   style={{
-                    background: '#BAE6FD',
-                    border: '1px solid #BAE6FD',
+                    background: '#ADC0D6',
+                    border: '1px solid #ADC0D6',
                     color: '#0A1A35',
                     padding: '0.45rem 1rem',
                     borderRadius: '2px',
@@ -919,12 +919,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                     transition: 'background 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#7DD3FC';
-                    e.currentTarget.style.borderColor = '#7DD3FC';
+                    e.currentTarget.style.background = '#C5D4E5';
+                    e.currentTarget.style.borderColor = '#C5D4E5';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#BAE6FD';
-                    e.currentTarget.style.borderColor = '#BAE6FD';
+                    e.currentTarget.style.background = '#ADC0D6';
+                    e.currentTarget.style.borderColor = '#ADC0D6';
                   }}
                 >
                   Show All ({caseResults.length}) Cases
@@ -1011,8 +1011,8 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                   <div style={{ textAlign: 'right' }}>
                     <button
                       style={{
-                        background: '#BAE6FD',
-                        border: '1px solid #BAE6FD',
+                        background: '#ADC0D6',
+                        border: '1px solid #ADC0D6',
                         color: '#0A1A35',
                         padding: '0.4rem 0.8rem',
                         borderRadius: '2px',
@@ -1022,12 +1022,12 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         transition: 'background 0.15s ease',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#7DD3FC';
-                        e.currentTarget.style.borderColor = '#7DD3FC';
+                        e.currentTarget.style.background = '#C5D4E5';
+                        e.currentTarget.style.borderColor = '#C5D4E5';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#BAE6FD';
-                        e.currentTarget.style.borderColor = '#BAE6FD';
+                        e.currentTarget.style.background = '#ADC0D6';
+                        e.currentTarget.style.borderColor = '#ADC0D6';
                       }}
                     >
                       Diff View

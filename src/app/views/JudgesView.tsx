@@ -40,9 +40,9 @@ export const JudgesView: React.FC = () => {
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: '#BAE6FD',
+            background: '#ADC0D6',
             color: '#0A1A35',
-            border: '1px solid #BAE6FD',
+            border: '1px solid #ADC0D6',
             padding: '0.5rem 1rem',
             borderRadius: '2px',
             fontSize: '0.78rem',
@@ -52,12 +52,12 @@ export const JudgesView: React.FC = () => {
             transition: 'background 0.15s ease, border-color 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#7DD3FC';
-            e.currentTarget.style.borderColor = '#7DD3FC';
+            e.currentTarget.style.background = '#C5D4E5';
+            e.currentTarget.style.borderColor = '#C5D4E5';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#BAE6FD';
-            e.currentTarget.style.borderColor = '#BAE6FD';
+            e.currentTarget.style.background = '#ADC0D6';
+            e.currentTarget.style.borderColor = '#ADC0D6';
           }}
         >
           RUN EVALUATION
@@ -317,9 +317,9 @@ export const JudgesView: React.FC = () => {
             onClick={handleTestJudge}
             disabled={isTesting}
             style={{
-              background: isTesting ? '#1B1B1B' : '#BAE6FD',
+              background: isTesting ? '#1B1B1B' : '#ADC0D6',
               color: isTesting ? '#555555' : '#0A1A35',
-              border: '1px solid ' + (isTesting ? '#292929' : '#BAE6FD'),
+              border: '1px solid ' + (isTesting ? '#292929' : '#ADC0D6'),
               padding: '0.45rem 1.1rem',
               borderRadius: '2px',
               fontSize: '0.75rem',
@@ -331,14 +331,14 @@ export const JudgesView: React.FC = () => {
             }}
             onMouseEnter={(e) => {
               if (!isTesting) {
-                e.currentTarget.style.background = '#7DD3FC';
-                e.currentTarget.style.borderColor = '#7DD3FC';
+                e.currentTarget.style.background = '#C5D4E5';
+                e.currentTarget.style.borderColor = '#C5D4E5';
               }
             }}
             onMouseLeave={(e) => {
               if (!isTesting) {
-                e.currentTarget.style.background = '#BAE6FD';
-                e.currentTarget.style.borderColor = '#BAE6FD';
+                e.currentTarget.style.background = '#ADC0D6';
+                e.currentTarget.style.borderColor = '#ADC0D6';
               }
             }}
           >

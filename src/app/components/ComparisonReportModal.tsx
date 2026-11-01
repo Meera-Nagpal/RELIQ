@@ -497,8 +497,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportJson}
               title="Download comparison report JSON"
               style={{
-                background: '#BAE6FD',
-                border: '1px solid #BAE6FD',
+                background: '#ADC0D6',
+                border: '1px solid #ADC0D6',
                 color: '#0A1A35',
                 padding: '0.45rem 0.9rem',
                 borderRadius: '2px',
@@ -513,8 +513,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportPdf}
               title="Download executive cross-model summary report as vector PDF"
               style={{
-                background: '#BAE6FD',
-                border: '1px solid #BAE6FD',
+                background: '#ADC0D6',
+                border: '1px solid #ADC0D6',
                 color: '#0A1A35',
                 padding: '0.45rem 0.85rem',
                 borderRadius: '2px',
@@ -533,8 +533,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               onClick={handleExportTestCasesPdf}
               title="Download dedicated test cases PDF with winner determination for each scenario"
               style={{
-                background: '#BAE6FD',
-                border: '1px solid #BAE6FD',
+                background: '#ADC0D6',
+                border: '1px solid #ADC0D6',
                 color: '#0A1A35',
                 padding: '0.45rem 0.85rem',
                 borderRadius: '2px',
@@ -547,8 +547,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 gap: '0.4rem',
                 transition: 'background 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#7DD3FC')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#BAE6FD')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#C5D4E5')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#ADC0D6')}
             >
               <span>📄</span> Test Cases PDF
             </button>
@@ -1101,7 +1101,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               borderRadius: '8px',
               padding: '0.7rem 1.2rem',
               fontSize: '0.76rem',
-              color: '#BAE6FD',
+              color: '#ADC0D6',
             }}
           >
             ℹ️ <strong>Latency Percentile Notice:</strong> Low sample size for percentile interpretation (N &lt; 20). Tail latency (P95) may be unstable.
@@ -1928,9 +1928,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 <button
                   onClick={handleExportTestCasesPdf}
                   style={{
-                    background: '#BAE6FD',
+                    background: '#ADC0D6',
                     color: '#0A1A35',
-                    border: '1px solid #BAE6FD',
+                    border: '1px solid #ADC0D6',
                     padding: '0.55rem 1.15rem',
                     borderRadius: '2px',
                     fontSize: '0.78rem',
@@ -1942,8 +1942,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     gap: '0.45rem',
                     transition: 'background 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#7DD3FC')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#BAE6FD')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#C5D4E5')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#ADC0D6')}
                 >
                   <span>📄</span> DOWNLOAD TEST CASES PDF (WITH WINNER BREAKDOWN)
                 </button>
@@ -2004,9 +2004,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     fontSize: '0.76rem',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    background: selectedSection === 'ALL' ? '#BAE6FD' : 'transparent',
+                    background: selectedSection === 'ALL' ? '#ADC0D6' : 'transparent',
                     color: selectedSection === 'ALL' ? '#0A1A35' : '#CCCCCC',
-                    border: selectedSection === 'ALL' ? '1px solid #BAE6FD' : '1px solid rgba(255, 255, 255, 0.08)',
+                    border: selectedSection === 'ALL' ? '1px solid #ADC0D6' : '1px solid rgba(255, 255, 255, 0.08)',
                   }}
                 >
                   All Active Sections ({activeSections.length})
@@ -2021,9 +2021,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       fontSize: '0.76rem',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      background: selectedSection === sec.name ? '#BAE6FD' : 'transparent',
+                      background: selectedSection === sec.name ? '#ADC0D6' : 'transparent',
                       color: selectedSection === sec.name ? '#0A1A35' : '#CCCCCC',
-                      border: selectedSection === sec.name ? '1px solid #BAE6FD' : '1px solid rgba(255, 255, 255, 0.08)',
+                      border: selectedSection === sec.name ? '1px solid #ADC0D6' : '1px solid rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.4rem',
@@ -2318,9 +2318,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               position: 'sticky',
               bottom: '1rem',
               alignSelf: 'flex-end',
-              background: '#BAE6FD',
+              background: '#ADC0D6',
               color: '#0A1A35',
-              border: '1px solid #BAE6FD',
+              border: '1px solid #ADC0D6',
               borderRadius: '2px',
               padding: '0.45rem 0.9rem',
               fontSize: '0.75rem',
@@ -2334,8 +2334,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               zIndex: 100,
               transition: 'background 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#7DD3FC')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#BAE6FD')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#C5D4E5')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#ADC0D6')}
           >
             ↑ SCROLL TO TOP
           </button>

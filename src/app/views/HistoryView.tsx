@@ -59,9 +59,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: '#BAE6FD',
+            background: '#ADC0D6',
             color: '#0A1A35',
-            border: '1px solid #BAE6FD',
+            border: '1px solid #ADC0D6',
             padding: '0.5rem 1rem',
             borderRadius: '2px',
             fontSize: '0.78rem',
@@ -71,12 +71,12 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             transition: 'background 0.15s ease, border-color 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#7DD3FC';
-            e.currentTarget.style.borderColor = '#7DD3FC';
+            e.currentTarget.style.background = '#C5D4E5';
+            e.currentTarget.style.borderColor = '#C5D4E5';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#BAE6FD';
-            e.currentTarget.style.borderColor = '#BAE6FD';
+            e.currentTarget.style.background = '#ADC0D6';
+            e.currentTarget.style.borderColor = '#ADC0D6';
           }}
         >
           + NEW EVALUATION
@@ -105,9 +105,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                 key={filter}
                 onClick={() => setStatusFilter(filter)}
                 style={{
-                  background: isSelected ? '#BAE6FD' : 'transparent',
+                  background: isSelected ? '#ADC0D6' : 'transparent',
                   color: isSelected ? '#0A1A35' : '#858585',
-                  border: isSelected ? '1px solid #BAE6FD' : '1px solid transparent',
+                  border: isSelected ? '1px solid #ADC0D6' : '1px solid transparent',
                   borderRadius: '2px',
                   padding: '0.3rem 0.65rem',
                   fontSize: '0.72rem',
@@ -282,8 +282,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                         navigate('#/app/regressions');
                       }}
                       style={{
-                        background: '#BAE6FD',
-                        border: '1px solid #BAE6FD',
+                        background: '#ADC0D6',
+                        border: '1px solid #ADC0D6',
                         color: '#0A1A35',
                         borderRadius: '2px',
                         padding: '0.25rem 0.6rem',
@@ -294,12 +294,12 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                         transition: 'background 0.15s ease',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#7DD3FC';
-                        e.currentTarget.style.borderColor = '#7DD3FC';
+                        e.currentTarget.style.background = '#C5D4E5';
+                        e.currentTarget.style.borderColor = '#C5D4E5';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#BAE6FD';
-                        e.currentTarget.style.borderColor = '#BAE6FD';
+                        e.currentTarget.style.background = '#ADC0D6';
+                        e.currentTarget.style.borderColor = '#ADC0D6';
                       }}
                     >
                       INSPECT DIFF

@@ -109,7 +109,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#3A3A3A')}
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
         >
-          <span style={{ color: '#BAE6FD', fontSize: '0.75rem' }}>◆</span>
+          <span style={{ color: '#ADC0D6', fontSize: '0.75rem' }}>◆</span>
           <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {activeProject?.name || 'Select Workspace'}
           </span>
@@ -265,13 +265,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           );
         })()}
 
-        {/* Primary Action Button: #BAE6FD */}
+        {/* Primary Action Button: #ADC0D6 */}
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: '#BAE6FD',
+            background: '#ADC0D6',
             color: '#0A1A35',
-            border: '1px solid #BAE6FD',
+            border: '1px solid #ADC0D6',
             padding: '0.35rem 0.9rem',
             borderRadius: '2px',
             fontSize: '0.78rem',
@@ -285,12 +285,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             transition: 'background 0.15s ease, border-color 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#7DD3FC';
-            e.currentTarget.style.borderColor = '#7DD3FC';
+            e.currentTarget.style.background = '#C5D4E5';
+            e.currentTarget.style.borderColor = '#C5D4E5';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#BAE6FD';
-            e.currentTarget.style.borderColor = '#BAE6FD';
+            e.currentTarget.style.background = '#ADC0D6';
+            e.currentTarget.style.borderColor = '#ADC0D6';
           }}
         >
           <span>+</span>

@@ -532,8 +532,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           <button
             onClick={() => navigate('#/app/history')}
             style={{
-              background: '#BAE6FD',
-              border: '1px solid #BAE6FD',
+              background: '#ADC0D6',
+              border: '1px solid #ADC0D6',
               color: '#0A1A35',
               padding: '0.45rem 0.85rem',
               borderRadius: '2px',
@@ -544,12 +544,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               transition: 'background 0.15s ease, border-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#7DD3FC';
-              e.currentTarget.style.borderColor = '#7DD3FC';
+              e.currentTarget.style.background = '#C5D4E5';
+              e.currentTarget.style.borderColor = '#C5D4E5';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#BAE6FD';
-              e.currentTarget.style.borderColor = '#BAE6FD';
+              e.currentTarget.style.background = '#ADC0D6';
+              e.currentTarget.style.borderColor = '#ADC0D6';
             }}
           >
             RUN AUDIT LOG ({evaluationRuns.length})
@@ -716,8 +716,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => setConfigMode('saved_versions')}
               style={{
-                background: configMode === 'saved_versions' ? '#BAE6FD' : 'transparent',
-                border: configMode === 'saved_versions' ? '1px solid #BAE6FD' : '1px solid transparent',
+                background: configMode === 'saved_versions' ? '#ADC0D6' : 'transparent',
+                border: configMode === 'saved_versions' ? '1px solid #ADC0D6' : '1px solid transparent',
                 color: configMode === 'saved_versions' ? '#0A1A35' : '#858585',
                 padding: '0.35rem 0.75rem',
                 borderRadius: '2px',
@@ -733,8 +733,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => setConfigMode('custom_benchmark')}
               style={{
-                background: configMode === 'custom_benchmark' ? '#BAE6FD' : 'transparent',
-                border: configMode === 'custom_benchmark' ? '1px solid #BAE6FD' : '1px solid transparent',
+                background: configMode === 'custom_benchmark' ? '#ADC0D6' : 'transparent',
+                border: configMode === 'custom_benchmark' ? '1px solid #ADC0D6' : '1px solid transparent',
                 color: configMode === 'custom_benchmark' ? '#0A1A35' : '#858585',
                 padding: '0.35rem 0.85rem',
                 borderRadius: '2px',
@@ -1615,9 +1615,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               onClick={handleStartEvaluation}
               disabled={isRunning || !selectedDataset || isJudgeConflicting}
               style={{
-                background: isRunning || isJudgeConflicting ? '#1B1B1B' : '#BAE6FD',
+                background: isRunning || isJudgeConflicting ? '#1B1B1B' : '#ADC0D6',
                 color: isRunning || isJudgeConflicting ? '#555555' : '#0A1A35',
-                border: isRunning || isJudgeConflicting ? '1px solid #292929' : '1px solid #BAE6FD',
+                border: isRunning || isJudgeConflicting ? '1px solid #292929' : '1px solid #ADC0D6',
                 padding: '0.55rem 1.4rem',
                 borderRadius: '2px',
                 fontSize: '0.8rem',
@@ -1629,14 +1629,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               }}
               onMouseEnter={(e) => {
                 if (!isRunning && !isJudgeConflicting && selectedDataset) {
-                  e.currentTarget.style.background = '#7DD3FC';
-                  e.currentTarget.style.borderColor = '#7DD3FC';
+                  e.currentTarget.style.background = '#C5D4E5';
+                  e.currentTarget.style.borderColor = '#C5D4E5';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isRunning && !isJudgeConflicting && selectedDataset) {
-                  e.currentTarget.style.background = '#BAE6FD';
-                  e.currentTarget.style.borderColor = '#BAE6FD';
+                  e.currentTarget.style.background = '#ADC0D6';
+                  e.currentTarget.style.borderColor = '#ADC0D6';
                 }
               }}
             >
@@ -1901,8 +1901,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     <button
                       onClick={() => handleOpenReport(run)}
                       style={{
-                        background: '#BAE6FD',
-                        border: '1px solid #BAE6FD',
+                        background: '#ADC0D6',
+                        border: '1px solid #ADC0D6',
                         color: '#0A1A35',
                         padding: '0.25rem 0.55rem',
                         borderRadius: '2px',
@@ -1913,12 +1913,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                         transition: 'background 0.15s ease',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#7DD3FC';
-                        e.currentTarget.style.borderColor = '#7DD3FC';
+                        e.currentTarget.style.background = '#C5D4E5';
+                        e.currentTarget.style.borderColor = '#C5D4E5';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#BAE6FD';
-                        e.currentTarget.style.borderColor = '#BAE6FD';
+                        e.currentTarget.style.background = '#ADC0D6';
+                        e.currentTarget.style.borderColor = '#ADC0D6';
                       }}
                     >
                       REPORT
@@ -1930,8 +1930,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       navigate('#/app/regressions');
                     }}
                     style={{
-                      background: '#BAE6FD',
-                      border: '1px solid #BAE6FD',
+                      background: '#ADC0D6',
+                      border: '1px solid #ADC0D6',
                       color: '#0A1A35',
                       padding: '0.25rem 0.55rem',
                       borderRadius: '2px',
@@ -1942,12 +1942,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       transition: 'background 0.15s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#7DD3FC';
-                      e.currentTarget.style.borderColor = '#7DD3FC';
+                      e.currentTarget.style.background = '#C5D4E5';
+                      e.currentTarget.style.borderColor = '#C5D4E5';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#BAE6FD';
-                      e.currentTarget.style.borderColor = '#BAE6FD';
+                      e.currentTarget.style.background = '#ADC0D6';
+                      e.currentTarget.style.borderColor = '#ADC0D6';
                     }}
                   >
                     DIFF

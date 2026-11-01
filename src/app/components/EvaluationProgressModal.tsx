@@ -484,9 +484,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
             <button
               onClick={onRetry}
               style={{
-                background: '#BAE6FD',
+                background: '#ADC0D6',
                 color: '#0A1A35',
-                border: '1px solid #BAE6FD',
+                border: '1px solid #ADC0D6',
                 padding: '0.55rem 1.2rem',
                 borderRadius: '2px',
                 fontSize: '0.8rem',

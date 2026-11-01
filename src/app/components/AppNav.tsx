@@ -160,8 +160,8 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
             style={{
               width: '10px',
               height: '10px',
-              background: '#BAE6FD',
-              border: '1px solid #BAE6FD',
+              background: '#ADC0D6',
+              border: '1px solid #ADC0D6',
               borderRadius: '2px',
               flexShrink: 0,
             }}
@@ -231,9 +231,9 @@ export const AppNav: React.FC<AppNavProps> = ({ currentView, regressionCount = 0
                   padding: isCollapsed ? '0.65rem 0' : '0.55rem 0.75rem',
                   justifyContent: isCollapsed ? 'center' : 'flex-start',
                   borderRadius: '2px',
-                  background: isActive ? '#BAE6FD' : 'transparent',
+                  background: isActive ? '#ADC0D6' : 'transparent',
                   border: 'none',
-                  borderLeft: isActive ? '2px solid #BAE6FD' : '2px solid transparent',
+                  borderLeft: isActive ? '2px solid #ADC0D6' : '2px solid transparent',
                   color: isActive ? '#0A1A35' : '#858585',
                   fontSize: '0.82rem',
                   fontWeight: isActive ? 700 : 500,
