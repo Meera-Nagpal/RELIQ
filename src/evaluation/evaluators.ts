@@ -51,7 +51,10 @@ export const ExactMatchEvaluator: Evaluator = {
         details: 'Missing expected_output reference required for exact_match evaluation.',
       };
     }
-    const passed = actual.trim() === expected;
+    const cleanActual = (actual || '').trim();
+    const passed =
+      cleanActual === expected ||
+      cleanActual.replace(/[.]+$/, '') === expected.replace(/[.]+$/, '');
     return {
       evaluatorType: 'exact_match',
       score: passed ? 1.0 : 0.0,
@@ -131,9 +134,11 @@ export const KeywordCriteriaEvaluator: Evaluator = {
       }
     }
 
-    const missingKeywords = required.filter(
-      (kw) => !lowerActual.includes(kw.toLowerCase().trim())
-    );
+    const missingKeywords = required.filter((kw) => {
+      const cleanKw = kw.toLowerCase().trim();
+      const kwWithoutDot = cleanKw.replace(/[.]+$/, '');
+      return !lowerActual.includes(cleanKw) && (!kwWithoutDot || !lowerActual.includes(kwWithoutDot));
+    });
     const presentForbidden = forbidden.filter((kw) =>
       lowerActual.includes(kw.toLowerCase().trim())
     );
@@ -308,6 +313,8 @@ export const JsonValidityEvaluator: Evaluator = {
       if (codeBlockMatch && codeBlockMatch[1]) {
         jsonStr = codeBlockMatch[1].trim();
       }
+      // Strip trailing periods or punctuation that LLMs sometimes append after JSON
+      jsonStr = jsonStr.replace(/^[.\s]+|[.\s]+$/g, '');
 
       const cleaned = stripJsonCommentsAndTrailingCommas(jsonStr);
 

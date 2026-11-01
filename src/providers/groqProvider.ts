@@ -33,6 +33,7 @@ export const GROQ_SUPPORTED_MODELS = [
   'groq/compound',
   'groq/compound-mini',
   'qwen/qwen3.8-27b',
+  'qwen-2.5-32b',
   'allam-2-7b',
 ];
 
@@ -143,7 +144,7 @@ export class GroqProvider implements ModelProvider {
         groqPayload.response_format = { type: 'json_object' };
       }
 
-      const response = await fetch(this.proxyEndpoint, {
+      let response: Response = await fetch(this.proxyEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,6 +152,29 @@ export class GroqProvider implements ModelProvider {
         },
         body: JSON.stringify(groqPayload),
       });
+
+      let clientRetries = 0;
+      // If proxy hit rate limit or transient service error, retry with backoff
+      if (!response.ok && (response.status === 429 || response.status === 503)) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          clientRetries++;
+          const waitMs = 1500 * Math.pow(2, attempt) + Math.floor(Math.random() * 400);
+          await new Promise((r) => setTimeout(r, waitMs));
+
+          response = await fetch(this.proxyEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Reliq-Provider': 'groq',
+            },
+            body: JSON.stringify(groqPayload),
+          });
+
+          if (response.ok || (response.status !== 429 && response.status !== 503)) {
+            break;
+          }
+        }
+      }
 
       const clientLatencyMs = Math.round(performance.now() - startTime);
 
@@ -170,7 +194,7 @@ export class GroqProvider implements ModelProvider {
           rawMsg,
           clientLatencyMs,
           response.status,
-          errorJson.retries || 0,
+          (errorJson.retries || 0) + clientRetries,
           errorJson.rateLimits
         );
       }

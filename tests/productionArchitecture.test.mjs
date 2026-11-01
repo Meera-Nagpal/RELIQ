@@ -34,6 +34,8 @@ export async function runProductionArchitectureTests(harness, viteServer) {
   const { evaluationCache } = await viteServer.ssrLoadModule('/src/evaluation/evaluationCache.ts');
   const { pruneOldJobs } = await viteServer.ssrLoadModule('/src/server/evaluationService.ts');
   const { getSupabaseUserClient } = await viteServer.ssrLoadModule('/src/server/db/supabaseClient.ts');
+  const { GROQ_MODEL_REGISTRY, getEligibleJudgeModels, validateJudgeConfiguration } = await viteServer.ssrLoadModule('/src/evaluation/judgeRegistry.ts');
+  const { ExactMatchEvaluator, KeywordCriteriaEvaluator, JsonValidityEvaluator } = await viteServer.ssrLoadModule('/src/evaluation/evaluators.ts');
 
   // Test 1: vercel.json rewrites /api/* to Render backend
   test('PROD-ARCH-01: vercel.json rewrites /api/* to Render backend (https://reliq-backend.onrender.com/api/$1)', () => {
@@ -330,6 +332,75 @@ export async function runProductionArchitectureTests(harness, viteServer) {
       if (origKey !== undefined) process.env.SUPABASE_ANON_KEY = origKey;
       else delete process.env.SUPABASE_ANON_KEY;
     }
+  });
+
+  // Test 14: Qwen models are eligible judges and 120b models are excluded
+  test('PROD-ARCH-14: Qwen models are eligible for judging and 120b models are excluded', () => {
+    assert.strictEqual(GROQ_MODEL_REGISTRY['qwen/qwen3.8-27b']?.isJudgeEligible, true);
+    assert.strictEqual(GROQ_MODEL_REGISTRY['qwen-2.5-32b']?.isJudgeEligible, true);
+    assert.strictEqual(GROQ_MODEL_REGISTRY['openai/gpt-oss-120b']?.isJudgeEligible, false);
+    assert.strictEqual(GROQ_MODEL_REGISTRY['gpt-oss-120b']?.isJudgeEligible, false);
+
+    // Even if 120B is neither baseline nor candidate, it must be excluded from eligible judge models
+    const eligible = getEligibleJudgeModels('openai/gpt-oss-20b', 'allam-2-7b');
+    assert.ok(eligible.some((m) => m.id === 'qwen/qwen3.8-27b'), 'Qwen must be in eligible judges');
+    assert.ok(eligible.some((m) => m.id === 'qwen-2.5-32b'), 'Qwen 2.5 must be in eligible judges');
+    assert.strictEqual(eligible.some((m) => m.id.includes('120b')), false, 'No 120B model may be in eligible judges');
+  });
+
+  // Test 15: validateJudgeConfiguration rejects 120B model as judge
+  test('PROD-ARCH-15: validateJudgeConfiguration rejects 120b models as judges with clear error', () => {
+    const res = validateJudgeConfiguration(
+      { enabled: true, modelIdentifier: 'openai/gpt-oss-120b', provider: 'groq' },
+      'openai/gpt-oss-20b',
+      'allam-2-7b'
+    );
+    assert.strictEqual(res.valid, false);
+    assert.ok(res.error.includes('120B'), 'Error message must explain 120B model ineligibility');
+  });
+
+  // Test 16: Evaluators tolerate trailing periods in model responses
+  test('PROD-ARCH-16: Evaluators tolerate trailing periods in model responses', () => {
+    // 1. Exact match with trailing dot
+    const emTest = { id: 't1', name: 'T1', category: 'General', input: 'test', expectedOutput: 'Order confirmed' };
+    const emResWithDot = ExactMatchEvaluator.evaluate('Order confirmed.', emTest);
+    assert.strictEqual(emResWithDot.passed, true, 'Exact match must pass when actual has trailing dot');
+    assert.strictEqual(emResWithDot.score, 1.0);
+
+    // 2. Keyword criteria with trailing dot
+    const kwTest = {
+      id: 't2',
+      name: 'T2',
+      category: 'General',
+      input: 'test',
+      evaluatorConfig: { requiredKeywords: ['success.'] },
+    };
+    const kwRes = KeywordCriteriaEvaluator.evaluate('Operation ended with success', kwTest);
+    assert.strictEqual(kwRes.passed, true, 'Keyword criteria must pass when keyword has trailing dot but actual does not');
+
+    // 3. JSON validity with trailing dot outside JSON block
+    const jsonTest = {
+      id: 't3',
+      name: 'T3',
+      category: 'General',
+      input: 'test',
+      evaluatorConfig: { requiredJsonKeys: ['status'] },
+    };
+    const jsonRes = JsonValidityEvaluator.evaluate('{"status": "ok"}.', jsonTest);
+    assert.strictEqual(jsonRes.passed, true, 'JSON validity must pass when JSON has trailing dot');
+  });
+
+  // Test 17: ComparisonReportModal renders Baseline Output on left and Candidate Output on right
+  test('PROD-ARCH-17: ComparisonReportModal source places Baseline Output before Candidate Output', () => {
+    const modalPath = path.resolve(process.cwd(), 'src/app/components/ComparisonReportModal.tsx');
+    assert.ok(fs.existsSync(modalPath), 'ComparisonReportModal.tsx must exist');
+    const content = fs.readFileSync(modalPath, 'utf8');
+
+    const baseIdx = content.indexOf('Baseline Output:');
+    const candIdx = content.indexOf('Candidate Output:');
+    assert.ok(baseIdx !== -1, 'Must contain Baseline Output: label');
+    assert.ok(candIdx !== -1, 'Must contain Candidate Output: label');
+    assert.ok(baseIdx < candIdx, 'Baseline Output must appear before Candidate Output in the DOM order (Baseline on left, Candidate on right)');
   });
 
   console.log('--- All Production Architecture Verification Tests Completed Successfully ---');

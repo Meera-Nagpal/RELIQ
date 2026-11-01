@@ -347,6 +347,7 @@ export class ServerGroqProvider implements ModelProvider {
         'groq/compound',
         'groq/compound-mini',
         'qwen/qwen3.8-27b',
+        'qwen-2.5-32b',
         'allam-2-7b',
       ],
       supportsStreaming: true,
@@ -413,9 +414,10 @@ export class ServerGroqProvider implements ModelProvider {
     try {
       const isGptOss = model === 'openai/gpt-oss-20b' || model === 'openai/gpt-oss-120b';
       const reasoningEffort = isGptOss ? (request.reasoningEffort || 'medium') : undefined;
+      const effectiveGroqModel = model === 'qwen-2.5-32b' ? 'qwen/qwen3.8-27b' : model;
 
       const groqPayload: any = {
-        model,
+        model: effectiveGroqModel,
         messages,
         temperature: request.temperature ?? 0.0,
         max_tokens: request.maxTokens ?? 2048,
@@ -440,8 +442,8 @@ export class ServerGroqProvider implements ModelProvider {
           },
           body: JSON.stringify(groqPayload),
         },
-        maxRetries: 3,
-        baseDelayMs: 600,
+        maxRetries: 6,
+        baseDelayMs: 800,
         timeoutMs: 30000,
       });
 

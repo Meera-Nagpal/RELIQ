@@ -2128,23 +2128,23 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                               {c.expected_behavior || c.expectedOutput || '—'}
                             </div>
 
-                            {/* Candidate Output & Baseline Output Comparison */}
+                            {/* Baseline Output (Left) & Candidate Output (Right) Comparison */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.65rem' }}>
-                              <div style={{ fontSize: '0.84rem', color: '#ECECEC', background: 'rgba(91, 130, 166, 0.04)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(91, 130, 166, 0.18)' }}>
-                                <span style={{ color: '#5B82A6', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
-                                  Candidate Output:
-                                </span>
-                                <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
-                                  {c.candidateOutput || '—'}
-                                </div>
-                              </div>
-
                               <div style={{ fontSize: '0.84rem', color: '#AAAAAA', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                                 <span style={{ color: '#8899AA', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
                                   Baseline Output:
                                 </span>
                                 <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
                                   {c.baselineOutput || '—'}
+                                </div>
+                              </div>
+
+                              <div style={{ fontSize: '0.84rem', color: '#ECECEC', background: 'rgba(91, 130, 166, 0.04)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(91, 130, 166, 0.18)' }}>
+                                <span style={{ color: '#5B82A6', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.2rem' }}>
+                                  Candidate Output:
+                                </span>
+                                <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '140px', overflowY: 'auto' }}>
+                                  {c.candidateOutput || '—'}
                                 </div>
                               </div>
                             </div>

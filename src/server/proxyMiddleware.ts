@@ -777,6 +777,10 @@ export function createReliqProxyMiddleware() {
         const { metadata, ...groqPayload } = body;
         const caseId = metadata?.testCaseId || 'n/a';
 
+        if (groqPayload.model === 'qwen-2.5-32b') {
+          groqPayload.model = 'qwen/qwen3.8-27b';
+        }
+
         const isGptOss = groqPayload.model === 'openai/gpt-oss-20b' || groqPayload.model === 'openai/gpt-oss-120b';
         if (isGptOss && !groqPayload.reasoning_effort) {
           groqPayload.reasoning_effort = 'medium';
@@ -794,8 +798,8 @@ export function createReliqProxyMiddleware() {
             },
             body: JSON.stringify(groqPayload),
           },
-          maxRetries: 3,
-          baseDelayMs: 1000,
+          maxRetries: 6,
+          baseDelayMs: 800,
           timeoutMs: 30000,
         });
 

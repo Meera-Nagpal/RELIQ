@@ -452,7 +452,7 @@ export class EvaluationRunner {
     // Bounded parallel worker pool concurrency:
     // ProviderScheduler enforces per-provider/per-model rate limits and concurrency semaphores.
     const maxSafeConcurrency = 20;
-    const defaultConcurrency = 8;
+    const defaultConcurrency = 4;
     const envConcurrency = typeof process !== 'undefined' && process.env?.EVALUATION_CONCURRENCY
       ? parseInt(process.env.EVALUATION_CONCURRENCY, 10)
       : undefined;
@@ -541,6 +541,12 @@ export class EvaluationRunner {
         }
         if (!baselineResp) {
           baselineResp = await baselineProvider.generate(baselineRequest);
+          // If baseline failed with transient rate limit (429) or transient error, retry once after backoff
+          if (baselineResp.usage?.error && (baselineResp.usage.error.status === 429 || baselineResp.usage.error.code === 'RATE_LIMIT_EXCEEDED')) {
+            const waitTime = Math.min(6000, 1500 + Math.floor(Math.random() * 500));
+            await new Promise((r) => setTimeout(r, waitTime));
+            baselineResp = await baselineProvider.generate(baselineRequest);
+          }
           if (options.useCache === true && !baselineResp.usage.error) {
             await evaluationCache.set(baselineRequest, baselineResp);
           }
@@ -569,6 +575,12 @@ export class EvaluationRunner {
         }
         if (!candidateResp) {
           candidateResp = await candidateProvider.generate(candidateRequest);
+          // If candidate failed with transient rate limit (429) or transient error, retry once after backoff
+          if (candidateResp.usage?.error && (candidateResp.usage.error.status === 429 || candidateResp.usage.error.code === 'RATE_LIMIT_EXCEEDED')) {
+            const waitTime = Math.min(6000, 1500 + Math.floor(Math.random() * 500));
+            await new Promise((r) => setTimeout(r, waitTime));
+            candidateResp = await candidateProvider.generate(candidateRequest);
+          }
           if (options.useCache === true && !candidateResp.usage.error) {
             await evaluationCache.set(candidateRequest, candidateResp);
           }

@@ -213,8 +213,8 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
   const {
     url,
     init,
-    maxRetries = 3,
-    baseDelayMs = 600,
+    maxRetries = 5,
+    baseDelayMs = 800,
     timeoutMs = 30000,
   } = options;
 

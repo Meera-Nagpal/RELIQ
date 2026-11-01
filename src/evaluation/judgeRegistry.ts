@@ -66,13 +66,39 @@ export const GROQ_MODEL_REGISTRY: Record<string, GroqJudgeModelDescriptor> = {
     tier: 'reasoning',
     contextWindow: 131072,
   },
-  'openai/gpt-oss-120b': {
-    id: 'openai/gpt-oss-120b',
-    displayName: 'OpenAI GPT-OSS 120B (Groq High Capability)',
-    description: 'High-parameter open-weight reasoning model (Current benchmark candidate).',
+  'qwen-2.5-32b': {
+    id: 'qwen-2.5-32b',
+    displayName: 'Qwen 2.5 32B (Groq / Tongyi Lab)',
+    description: 'High-capability instruction-tuned model for independent qualitative judging.',
     isJudgeEligible: true,
     tier: 'reasoning',
     contextWindow: 131072,
+  },
+  'qwen/qwen-2.5-32b': {
+    id: 'qwen/qwen-2.5-32b',
+    displayName: 'Qwen 2.5 32B (128k Context)',
+    description: 'High-capability open-weights judge model for qualitative evaluations.',
+    isJudgeEligible: true,
+    tier: 'reasoning',
+    contextWindow: 131072,
+  },
+  'openai/gpt-oss-120b': {
+    id: 'openai/gpt-oss-120b',
+    displayName: 'OpenAI GPT-OSS 120B (Groq High Capability)',
+    description: 'High-parameter open-weight reasoning model (Benchmark candidate only; ineligible as independent judge).',
+    isJudgeEligible: false,
+    tier: 'reasoning',
+    contextWindow: 131072,
+    recommendedForJudge: false,
+  },
+  'gpt-oss-120b': {
+    id: 'gpt-oss-120b',
+    displayName: 'Cerebras GPT-OSS 120B (Ultra-Fast)',
+    description: 'High-parameter model (Benchmark candidate only; ineligible as independent judge).',
+    isJudgeEligible: false,
+    tier: 'reasoning',
+    contextWindow: 131072,
+    recommendedForJudge: false,
   },
   // Ineligible or non-general Groq models (audio, guardrails, specialized)
   'whisper-large-v3': {
@@ -133,6 +159,9 @@ export function getEligibleJudgeModels(
     if (!model.isJudgeEligible) return false;
 
     const normId = model.id.toLowerCase();
+
+    // Strict Rule: 120B models are benchmark models and ineligible to act as independent judges
+    if (normId.includes('120b')) return false;
 
     // Must not be the baseline model
     if (normBase && normId === normBase) return false;
@@ -220,6 +249,14 @@ export function validateJudgeConfiguration(
     return {
       valid: false,
       error: `Configuration Error: Judge model ('${judgeId}') cannot be the candidate model being evaluated ('${candidateModel}').`,
+    };
+  }
+
+  // Strict Independence Rule 3: 120B models are benchmark models and cannot be judges
+  if (normJudge.includes('120b')) {
+    return {
+      valid: false,
+      error: `Configuration Error: Model '${judgeId}' (120B) is a benchmark candidate and ineligible to act as an independent LLM judge.`,
     };
   }
 
