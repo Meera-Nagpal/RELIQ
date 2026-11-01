@@ -89,6 +89,29 @@ export const ReliqApp: React.FC = () => {
   const activeDataset = datasets.find((d) => d.id === activeDatasetId) || datasets[0] || null;
   const activeRun = evaluationRuns.find((r) => r.id === activeRunId) || evaluationRuns[0] || null;
 
+  // Hydrate full run cases if active run is from summary list
+  useEffect(() => {
+    if (!activeRun?.id) return;
+    if (activeRun.caseResults && activeRun.caseResults.length > 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const full = await repository.getEvaluationRunById?.(activeRun.id);
+        if (!cancelled && full && Array.isArray(full.caseResults) && full.caseResults.length > 0) {
+          setEvaluationRuns((prev) =>
+            prev.map((r) => (r.id === full.id ? { ...r, ...full } : r))
+          );
+        }
+      } catch {
+        // silent fallback to local/summary state
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRun?.id, activeRun?.caseResults?.length]);
+
   // Project Switch
   const handleSelectProject = async (projectId: string) => {
     repository.setActiveProjectId(projectId);

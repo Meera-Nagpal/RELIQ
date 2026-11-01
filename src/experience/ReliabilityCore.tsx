@@ -139,7 +139,7 @@ export function ReliabilityCore() {
     // Ring material color
     if (ringMaterialRef.current) {
       const targetRingColor = new THREE.Color(
-        healthStatus === 'regression' ? '#FF3B14' : '#88AACC'
+        healthStatus === 'regression' ? '#FF3B14' : '#E07A5F'
       );
       ringMaterialRef.current.color.lerp(targetRingColor, delta * 3);
     }
@@ -185,7 +185,7 @@ export function ReliabilityCore() {
           <torusGeometry args={[1.7, 0.008, 16, 100]} />
           <meshBasicMaterial
             ref={ringMaterialRef}
-            color="#88AACC"
+            color="#E07A5F"
             transparent={true}
             opacity={0.45}
           />
@@ -209,7 +209,7 @@ export function ReliabilityCore() {
         <mesh>
           <torusGeometry args={[2.2, 0.005, 16, 100]} />
           <meshBasicMaterial
-            color="#6688AA"
+            color="#FFAA55"
             transparent={true}
             opacity={0.25}
           />
@@ -222,7 +222,7 @@ export function ReliabilityCore() {
           <mesh key={index} position={[sat.radius, sat.y, 0]}>
             <sphereGeometry args={[sat.size, 16, 16]} />
             <meshBasicMaterial
-              color={index % 2 === 0 ? '#FF6B35' : '#4DA6FF'}
+              color={index % 2 === 0 ? '#FF6B35' : '#FFAA55'}
               transparent={true}
               opacity={0.8}
             />

@@ -85,7 +85,7 @@ export function ReflectiveGround() {
             depthScale={1.2}
             minDepthThreshold={0.4}
             maxDepthThreshold={1.5}
-            color="#080e14"
+            color="#0A0A0A"
             metalness={0.6}
             mirror={0.65}
           />

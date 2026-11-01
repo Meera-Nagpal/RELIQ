@@ -626,16 +626,45 @@ export class EvaluationDbService {
     if (isSupabaseDriverActive()) {
       return (async () => {
         const rows = await supabaseRepository.getAllEvaluationRuns();
+        const diskRuns = getRunsFromDisk();
+        const diskMap = new Map<string, any>(diskRuns.map((r) => [r.id, r]));
+
         return rows.map((sRun) => {
+          let parsed: any = null;
           if (sRun.run_json) {
             try {
-              const parsed = typeof sRun.run_json === 'string' ? JSON.parse(sRun.run_json) : sRun.run_json;
-              if (sRun.release_decision && parsed.releaseDecision) {
-                parsed.releaseDecision.status = sRun.release_decision;
-                parsed.releaseDecision.reason = sRun.release_reason || '';
-              }
-              return parsed;
+              parsed = typeof sRun.run_json === 'string' ? JSON.parse(sRun.run_json) : sRun.run_json;
             } catch {}
+          }
+          const diskRun = diskMap.get(sRun.id);
+          const base = diskRun || parsed;
+          if (base) {
+            return {
+              ...base,
+              status: sRun.status || base.status,
+              datasetVersion: sRun.dataset_version || base.datasetVersion || '1.0.0',
+              datasetSourceType: sRun.dataset_source_type || base.datasetSourceType || 'builtin',
+              totalScenarioCount: base.totalScenarioCount ?? sRun.total_cases,
+              selectedScenarioCount: sRun.selected_case_count ?? base.selectedScenarioCount ?? sRun.total_cases,
+              skippedScenarioCount: sRun.skipped_cases ?? base.skippedScenarioCount ?? 0,
+              cancelledScenarioCount: sRun.cancelled_cases ?? base.cancelledScenarioCount ?? 0,
+              metrics: {
+                ...base.metrics,
+                totalCases: sRun.total_cases,
+                evaluatedCases: sRun.evaluated_cases,
+                candidateEvaluatedCases: sRun.evaluated_cases,
+                candidatePassed: sRun.passed_cases,
+                candidatePassRate: sRun.pass_rate,
+                candidateQualityScore: sRun.quality_score,
+                skippedCases: sRun.skipped_cases ?? base.metrics?.skippedCases ?? 0,
+                cancelledCases: sRun.cancelled_cases ?? base.metrics?.cancelledCases ?? 0,
+              },
+              releaseDecision: {
+                ...base.releaseDecision,
+                status: sRun.release_decision || base.releaseDecision?.status,
+                reason: sRun.release_reason || base.releaseDecision?.reason,
+              },
+            };
           }
           const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
           return {
@@ -789,16 +818,31 @@ export class EvaluationDbService {
     if (isSupabaseDriverActive()) {
       return (async () => {
         const sRun = await supabaseRepository.getEvaluationRunById(id);
-        if (!sRun) return null;
+        const diskRun = getRunFromDisk(id);
+        if (!sRun) return diskRun || null;
         if (sRun.run_json) {
           try {
             const parsed = typeof sRun.run_json === 'string' ? JSON.parse(sRun.run_json) : sRun.run_json;
+            if (diskRun && (!parsed.caseResults || parsed.caseResults.length === 0)) {
+              parsed.caseResults = diskRun.caseResults;
+            }
             if (sRun.release_decision && parsed.releaseDecision) {
               parsed.releaseDecision.status = sRun.release_decision;
               parsed.releaseDecision.reason = sRun.release_reason || '';
             }
             return parsed;
           } catch {}
+        }
+        if (diskRun && Array.isArray(diskRun.caseResults) && diskRun.caseResults.length > 0) {
+          return {
+            ...diskRun,
+            status: sRun.status || diskRun.status,
+            releaseDecision: {
+              ...diskRun.releaseDecision,
+              status: sRun.release_decision || diskRun.releaseDecision?.status,
+              reason: sRun.release_reason || diskRun.releaseDecision?.reason,
+            },
+          };
         }
         const resultsRows = await supabaseRepository.getEvaluationResultsByRunId(id);
         const caseResults = resultsRows.map(mapDbResultToDomain);
@@ -951,7 +995,39 @@ export class EvaluationDbService {
     if (isSupabaseDriverActive()) {
       return (async () => {
         const rows = await supabaseRepository.getEvaluationResultsByRunId(runId);
-        return rows.map(mapDbResultToDomain);
+        if (rows && rows.length > 0) {
+          return rows.map(mapDbResultToDomain);
+        }
+        const diskRun = getRunFromDisk(runId);
+        if (diskRun && Array.isArray(diskRun.caseResults) && diskRun.caseResults.length > 0) {
+          return diskRun.caseResults.map((c, i) => ({
+            ...c,
+            id: `res-${runId}-${c.testCaseId || i}`,
+            run_id: runId,
+            runId,
+            test_case_id: c.testCaseId,
+            testCaseName: c.testCaseName || c.testCaseId,
+            model_version_id: diskRun.candidateVersion?.id,
+            modelVersionId: diskRun.candidateVersion?.id,
+            provider: diskRun.candidateVersion?.provider,
+            model: diskRun.candidateVersion?.modelIdentifier,
+            response: c.candidateOutput,
+            passed: c.passed === null || c.passed === undefined ? null : (c.passed ? 1 : 0),
+            quality_score: c.candidateScore,
+            qualityScore: c.candidateScore,
+            latency_ms: c.candidateLatencyMs,
+            input_tokens: c.candidateUsage?.inputTokens ?? 0,
+            output_tokens: c.candidateUsage?.outputTokens ?? 0,
+            cost: (c as any).candidateCost ?? (c as any).cost ?? 0,
+            failure_category: c.failureCategory,
+            failureCategory: c.failureCategory,
+            failure_reason: c.failureReason,
+            failureReason: c.failureReason,
+            is_regression: c.isRegression ? 1 : 0,
+            isRegression: Boolean(c.isRegression),
+          }));
+        }
+        return [];
       })();
     }
 

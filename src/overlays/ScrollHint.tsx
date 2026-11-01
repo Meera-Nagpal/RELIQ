@@ -73,7 +73,7 @@ export function ScrollHint() {
         style={{
           width: '1px',
           height: '32px',
-          background: 'linear-gradient(to bottom, var(--accent, #FF6B35), transparent)',
+          background: 'linear-gradient(to bottom, #FF6B35, transparent)',
           animation: 'scroll-pulse 2s ease-in-out infinite',
         }}
       />

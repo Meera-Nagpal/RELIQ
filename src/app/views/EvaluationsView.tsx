@@ -1190,10 +1190,24 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   System Prompt Directive
                 </label>
                 <textarea
-                  rows={3}
+                  rows={Math.max(8, (customBaselinePrompt || '').split('\n').length + 1)}
                   value={customBaselinePrompt}
                   onChange={(e) => setCustomBaselinePrompt(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.8rem',
+                    background: '#151515',
+                    border: '1px solid #292929',
+                    borderRadius: '4px',
+                    color: '#F2F2F2',
+                    fontSize: '0.8rem',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    lineHeight: 1.5,
+                    resize: 'none',
+                    overflowY: 'hidden',
+                    overflowX: 'hidden',
+                    minHeight: `${Math.max(160, ((customBaselinePrompt || '').split('\n').length + 1) * 21)}px`,
+                  }}
                 />
               </div>
 
@@ -1216,8 +1230,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </div>
 
             {/* Candidate Configuration Panel */}
-            <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(77, 166, 255, 0.3)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4DA6FF', textTransform: 'uppercase' }}>
+            <div style={{ background: '#0D1117', padding: '1.2rem', borderRadius: '8px', border: '1px solid #292929', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#60A5FA', textTransform: 'uppercase' }}>
                 Candidate Model Configuration
               </div>
 
@@ -1286,10 +1300,24 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   System Prompt Directive
                 </label>
                 <textarea
-                  rows={3}
+                  rows={Math.max(8, (customCandidatePrompt || '').split('\n').length + 1)}
                   value={customCandidatePrompt}
                   onChange={(e) => setCustomCandidatePrompt(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem', background: '#161B22', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '4px', color: '#FFFFFF', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.8rem',
+                    background: '#151515',
+                    border: '1px solid #292929',
+                    borderRadius: '4px',
+                    color: '#F2F2F2',
+                    fontSize: '0.8rem',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    lineHeight: 1.5,
+                    resize: 'none',
+                    overflowY: 'hidden',
+                    overflowX: 'hidden',
+                    minHeight: `${Math.max(160, ((customCandidatePrompt || '').split('\n').length + 1) * 21)}px`,
+                  }}
                 />
               </div>
 

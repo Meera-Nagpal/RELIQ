@@ -60,7 +60,7 @@ export function StateTypography() {
           fontSize: '0.78rem',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          color: 'var(--accent, #FF6B35)',
+          color: '#FF6B35',
           fontWeight: 600,
           marginBottom: '0.5rem',
         }}

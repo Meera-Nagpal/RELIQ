@@ -67,7 +67,7 @@ export function Particles({ count = 800 }: ParticlesProps) {
       targetColor.set('#ff3300');
       targetHealthFactor = 0.3;
     } else if (healthStatus === 'recovered') {
-      targetColor.set('#4da6ff');
+      targetColor.set('#FFAA55');
       targetHealthFactor = 0.9;
     }
 

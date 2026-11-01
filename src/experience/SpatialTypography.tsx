@@ -155,7 +155,7 @@ export function SpatialTypography() {
         <Text
           fontSize={1.7}
           letterSpacing={0.12}
-          color="#4DA6FF"
+          color="#FFAA55"
           anchorX="center"
           anchorY="middle"
           fillOpacity={0.8}
@@ -253,7 +253,7 @@ export function SpatialTypography() {
           position={[0, 0.78, 0]}
           fontSize={0.2}
           letterSpacing={0.3}
-          color="#4DA6FF"
+          color="#FFAA55"
           anchorX="center"
           anchorY="middle"
           fillOpacity={0.9}

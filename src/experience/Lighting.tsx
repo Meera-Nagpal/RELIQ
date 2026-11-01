@@ -52,7 +52,7 @@ export function Lighting() {
         ref={directionalLightRef}
         position={[5, 10, 5]}
         intensity={0.5}
-        color="#ccf2ff"
+        color="#FFF5EB"
       />
       
       <fog attach="fog" args={['#0A0A0A', 5, 20]} />

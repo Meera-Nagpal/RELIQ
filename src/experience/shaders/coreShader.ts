@@ -11,7 +11,7 @@ export const coreShader = {
     uHealthFactor: { value: 1.0 }, // 1.0 = healthy/calm, 0.0 = regression/distorted
     uScrollProgress: { value: 0 },
     uAccentColor: { value: new THREE.Color('#FF6B35') },
-    uSecondaryColor: { value: new THREE.Color('#4DA6FF') },
+    uSecondaryColor: { value: new THREE.Color('#FFAA55') },
     uDangerColor: { value: new THREE.Color('#FF2200') },
   },
   vertexShader: `
@@ -122,10 +122,10 @@ export const coreShader = {
       fresnel = pow(fresnel, fresnelPow);
       
       // Deep crystalline base color
-      vec3 deepBase = vec3(0.015, 0.025, 0.04);
+      vec3 deepBase = vec3(0.02, 0.015, 0.012);
       
       // Health color interpolation:
-      // Healthy (1.0) -> Warm Amber #FF6B35 & Cyan #4DA6FF
+      // Healthy (1.0) -> Warm Amber #FF6B35 & Warm Gold #FFAA55
       // Warning (0.7) -> Intense Amber
       // Regression (0.0 - 0.3) -> Pulsing Crimson #FF2200
       vec3 healthyColor = mix(uAccentColor, uSecondaryColor, 0.25);

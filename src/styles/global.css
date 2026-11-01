@@ -49,6 +49,16 @@ code, pre, kbd, samp {
   width: 100%;
 }
 
+/* 3D Immersive Landing Experience — Warm copper/terracotta/amber brand palette, zero blue */
+.app-container {
+  --accent: #FF6B35;
+  --accent-navy: #C86D51;
+  --accent-blue: #FFAA55;
+  --accent-light: #FFB380;
+  --reliq-accent: #FF6B35;
+  --reliq-accent-secondary: #FFAA55;
+}
+
 /* Canvas Layer — Fixed behind everything */
 .canvas-wrapper {
   position: fixed;

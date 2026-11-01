@@ -350,14 +350,14 @@ export function VersionCards() {
                       ? 'rgba(255, 34, 0, 0.2)'
                       : isWarn
                       ? 'rgba(255, 153, 68, 0.15)'
-                      : 'rgba(77, 166, 255, 0.15)',
+                      : 'rgba(255, 170, 85, 0.15)',
                     color: isReg
                       ? '#FF3311'
                       : isWarn
                       ? '#FFAA55'
-                      : '#4DA6FF',
+                      : '#FFAA55',
                     border: `1px solid ${
-                      isReg ? '#FF2200' : isWarn ? '#FFAA55' : 'rgba(77, 166, 255, 0.3)'
+                      isReg ? '#FF2200' : isWarn ? '#FFAA55' : 'rgba(255, 170, 85, 0.3)'
                     }`,
                   }}
                 >
@@ -412,7 +412,7 @@ export function VersionCards() {
                   style={{
                     fontSize: '2.8rem',
                     fontWeight: 800,
-                    color: isReg ? '#FF2200' : isWarn ? '#FFAA55' : '#4DA6FF',
+                    color: isReg ? '#FF2200' : isWarn ? '#FFAA55' : '#FFAA55',
                     letterSpacing: '-0.03em',
                     marginTop: '0.2rem',
                   }}

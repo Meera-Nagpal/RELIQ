@@ -100,7 +100,7 @@ export function HeroOverlay() {
           <button
             onClick={() => navigate('#/app/dashboard')}
             style={{
-              background: 'var(--accent, #FF6B35)',
+              background: '#FF6B35',
               color: '#000000',
               border: 'none',
               padding: '0.45rem 1.1rem',
@@ -132,7 +132,7 @@ export function HeroOverlay() {
               fontSize: '0.72rem',
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
-              color: 'var(--accent, #FF6B35)',
+              color: '#FF6B35',
               fontWeight: 600,
               marginBottom: '0.4rem',
             }}
@@ -174,8 +174,8 @@ export function HeroOverlay() {
             onClick={scrollToStart}
             style={{
               background: 'transparent',
-              border: '1px solid var(--accent, #FF6B35)',
-              color: 'var(--accent, #FF6B35)',
+              border: '1px solid #FF6B35',
+              color: '#FF6B35',
               padding: '0.75rem 1.6rem',
               borderRadius: '6px',
               fontSize: '0.78rem',
@@ -184,6 +184,12 @@ export function HeroOverlay() {
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 107, 53, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
             }}
           >
             Explore 3D Journey ↓

@@ -104,7 +104,7 @@ export function ProgressIndicator() {
                   height: '4px',
                   borderRadius: '2px',
                   background: isActive
-                    ? 'var(--accent, #FF6B35)'
+                    ? '#FF6B35'
                     : 'rgba(255, 255, 255, 0.2)',
                   transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
                   boxShadow: isActive ? '0 0 10px rgba(255, 107, 53, 0.6)' : 'none',
@@ -130,7 +130,7 @@ export function ProgressIndicator() {
           style={{
             width: '100%',
             height: `${scrollProgress * 100}%`,
-            background: 'var(--accent, #FF6B35)',
+            background: '#FF6B35',
             transition: 'height 0.1s linear',
           }}
         />

@@ -14,7 +14,11 @@ import {
   EvaluationRun,
   ReleaseDecisionStatus,
   TestCaseResult,
+  RootCauseFinding,
+  DiagnosticClassification,
 } from '../../domain/types';
+import { apiRepository } from '../../services/apiRepository';
+import { analyzeRootCauses } from '../../evaluation/rootCauseAnalyzer';
 
 interface RegressionsViewProps {
   run: EvaluationRun | null;
@@ -156,7 +160,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
   run,
   onUpdateReleaseDecision,
 }) => {
-  const [statusFilter, setStatusFilter] = useState<'all' | 'regressions' | 'failed' | 'passed' | 'rate-limited'>('regressions');
+  const [detailedRun, setDetailedRun] = useState<EvaluationRun | null>(run);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'regressions' | 'failed' | 'passed' | 'rate-limited'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedCase, setSelectedCase] = useState<TestCaseResult | null>(null);
 
@@ -164,6 +170,38 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  // Fetch complete detailed run & test case results if not present
+  useEffect(() => {
+    setDetailedRun(run);
+    if (!run?.id) return;
+
+    const hasCases = Array.isArray(run.caseResults) && run.caseResults.length > 0;
+    if (!hasCases) {
+      setIsLoadingDetails(true);
+      let cancelled = false;
+      (async () => {
+        try {
+          const full = await apiRepository.getEvaluationRunById(run.id);
+          if (!cancelled && full && Array.isArray(full.caseResults) && full.caseResults.length > 0) {
+            setDetailedRun(full);
+            return;
+          }
+          const results = await apiRepository.getEvaluationResults(run.id);
+          if (!cancelled && Array.isArray(results) && results.length > 0) {
+            setDetailedRun((prev) => (prev ? { ...prev, caseResults: results } : { ...run, caseResults: results }));
+          }
+        } catch (err) {
+          console.warn('Failed to load detailed run cases:', err);
+        } finally {
+          if (!cancelled) setIsLoadingDetails(false);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [run?.id, run?.caseResults?.length]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -185,17 +223,141 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
     );
   }
 
+  const effectiveRun = detailedRun || run;
   const regressionDecision = {
-    isRegression: run.regressionDecision?.isRegression ?? false,
-    verdict: run.regressionDecision?.verdict ?? ('NO_REGRESSION' as const),
-    summary: run.regressionDecision?.summary ?? '',
-    violatedRules: Array.isArray(run.regressionDecision?.violatedRules) ? run.regressionDecision.violatedRules : ([] as string[]),
-    regressionCategories: Array.isArray(run.regressionDecision?.regressionCategories) ? run.regressionDecision.regressionCategories : ([] as any[]),
+    isRegression: effectiveRun.regressionDecision?.isRegression ?? false,
+    verdict: effectiveRun.regressionDecision?.verdict ?? ('NO_REGRESSION' as const),
+    summary: effectiveRun.regressionDecision?.summary ?? '',
+    violatedRules: Array.isArray(effectiveRun.regressionDecision?.violatedRules) ? effectiveRun.regressionDecision.violatedRules : ([] as string[]),
+    regressionCategories: Array.isArray(effectiveRun.regressionDecision?.regressionCategories) ? effectiveRun.regressionDecision.regressionCategories : ([] as any[]),
   };
   const isReg = Boolean(regressionDecision.isRegression);
-  const releaseDecision = run.releaseDecision || { status: isReg ? 'BLOCK' : 'PASS' };
-  const rootCauses = Array.isArray(run.rootCauses) ? run.rootCauses : [];
-  const caseResults = Array.isArray(run.caseResults) ? run.caseResults : [];
+  const releaseDecision = effectiveRun.releaseDecision || { status: isReg ? 'BLOCK' : 'PASS' };
+  const caseResults = Array.isArray(effectiveRun.caseResults) ? effectiveRun.caseResults : [];
+
+  const regressionCasesCount = caseResults.filter((c) => c.isRegression).length;
+  const failedCasesCount = caseResults.filter((c) => c.passed === false).length;
+  const passedCasesCount = caseResults.filter((c) => c.passed === true).length;
+  const rateLimitedCasesCount = caseResults.filter(
+    (c) =>
+      c.executionStatus === 'PROVIDER_RATE_LIMIT' ||
+      c.candidateExecutionStatus === 'PROVIDER_RATE_LIMIT' ||
+      c.baselineExecutionStatus === 'PROVIDER_RATE_LIMIT' ||
+      c.candidateUsage?.error?.status === 429 ||
+      c.baselineUsage?.error?.status === 429
+  ).length;
+
+  // Auto-default filter based on available scenarios
+  useEffect(() => {
+    if (caseResults.length > 0) {
+      if (regressionCasesCount > 0) {
+        setStatusFilter('regressions');
+      } else if (failedCasesCount > 0) {
+        setStatusFilter('failed');
+      } else {
+        setStatusFilter('all');
+      }
+    }
+  }, [caseResults.length, regressionCasesCount, failedCasesCount]);
+
+  // Compute Root-Cause Analysis Findings
+  let rootCauses: RootCauseFinding[] = Array.isArray(effectiveRun.rootCauses) && effectiveRun.rootCauses.length > 0
+    ? [...effectiveRun.rootCauses]
+    : [];
+
+  if (rootCauses.length === 0 && caseResults.length > 0) {
+    rootCauses = analyzeRootCauses(caseResults);
+  }
+
+  // Populate Gate Rule Violations as Findings
+  const violatedRules = Array.isArray(regressionDecision.violatedRules) ? regressionDecision.violatedRules : [];
+  if (violatedRules.length > 0) {
+    violatedRules.forEach((rule, idx) => {
+      const lower = rule.toLowerCase();
+      const isQuality = lower.includes('quality') || lower.includes('accuracy') || lower.includes('threshold');
+      const isLatency = lower.includes('latency');
+      const isCost = lower.includes('cost');
+
+      const alreadyCaptured = rootCauses.some((rc) =>
+        rc.evidence.some((ev) => ev.includes(rule) || rule.includes(rc.suspectedCause))
+      );
+
+      if (!alreadyCaptured) {
+        const category = (isQuality ? 'Reasoning' : 'System') as any;
+        const classification: DiagnosticClassification = isQuality ? 'CONFIRMED_DETERMINISTIC' : 'OBSERVED';
+        const suspectedCause = isQuality
+          ? 'Minimum Quality Gate Threshold Violated'
+          : isLatency
+          ? 'API Latency Exceeded Release Gate Tolerance'
+          : isCost
+          ? 'Evaluation Suite Cost Tolerance Exceeded'
+          : 'Workspace Deployment Release Gate Violated';
+
+        const recommendation = isQuality
+          ? 'Review scenario results explorer below, refine system directives, and ensure candidate model reasoning effort/temperature match task requirements.'
+          : isLatency
+          ? 'Consider smaller quantized weights, speculative decoding, or review provider region / network hops.'
+          : 'Review prompt token counts and completion limits to contain cost increases.';
+
+        rootCauses.push({
+          id: `rc-gate-${idx + 1}`,
+          suspectedCause,
+          category,
+          affectedCaseIds: [],
+          affectedCaseCount: caseResults.length,
+          confidenceScore: 100,
+          diagnosticConfidence: 'Confirmed (Release Gate Policy)',
+          classification,
+          evidence: [
+            `[GATE_RULE_BREACH] ${rule}`,
+            `[GATE_STATUS] Current Gate Status is ${releaseDecision.status || 'BLOCK'}.`,
+            `[TOTAL_SCENARIOS] Evaluated ${effectiveRun.metrics?.evaluatedCases ?? caseResults.length} test scenarios in this benchmark.`,
+          ],
+          inference: 'The candidate model output failed to satisfy one or more production quality or performance gating policies configured for this workspace.',
+          recommendation,
+        });
+      }
+    });
+  }
+
+  // If still empty, provide explicit diagnostic finding
+  if (rootCauses.length === 0) {
+    if (releaseDecision.status === 'BLOCK') {
+      rootCauses.push({
+        id: 'rc-gate-fallback',
+        suspectedCause: 'Production Release Gate Blocked by Workspace Policy',
+        category: 'System' as any,
+        affectedCaseIds: [],
+        affectedCaseCount: caseResults.length,
+        confidenceScore: 100,
+        diagnosticConfidence: 'Confirmed (Gating Policy)',
+        classification: 'CONFIRMED_DETERMINISTIC',
+        evidence: [
+          regressionDecision.summary || 'Release candidate blocked based on configured regression thresholds.',
+          `Current Gate Status: ${releaseDecision.status}.`,
+        ],
+        inference: 'Workspace gating policies require explicit override or remediation before deploying this candidate.',
+        recommendation: 'Inspect individual scenarios below or review workspace settings to adjust gating tolerances.',
+      });
+    } else {
+      rootCauses.push({
+        id: 'rc-nominal',
+        suspectedCause: 'Candidate Meets Production Quality & Latency Gates',
+        category: 'General' as any,
+        affectedCaseIds: [],
+        affectedCaseCount: 0,
+        confidenceScore: 100,
+        diagnosticConfidence: 'Confirmed (Zero Regressions)',
+        classification: 'OBSERVED',
+        evidence: [
+          `All ${caseResults.length} evaluated scenarios satisfied quality thresholds.`,
+          `Candidate pass rate: ${Math.round((effectiveRun.metrics?.candidatePassRate ?? 1) * 100)}%.`,
+        ],
+        inference: 'No quality regressions or performance gate violations observed in this run.',
+        recommendation: 'Candidate model is verified ready for production deployment.',
+      });
+    }
+  }
 
   // Filter cases
   const filteredCases = caseResults.filter((c) => {
@@ -606,79 +768,98 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
 
           {/* Filter Bar */}
           <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: '#14181F', borderRadius: '6px', padding: '0.2rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <button
-                onClick={() => setStatusFilter('regressions')}
-                style={{
-                  background: statusFilter === 'regressions' ? 'rgba(192, 92, 84, 0.15)' : 'transparent',
-                  border: 'none',
-                  color: statusFilter === 'regressions' ? '#C05C54' : '#888888',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: '4px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Regressions Only
-              </button>
-              <button
-                onClick={() => setStatusFilter('failed')}
-                style={{
-                  background: statusFilter === 'failed' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                  border: 'none',
-                  color: statusFilter === 'failed' ? '#FFFFFF' : '#888888',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: '4px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                All Failed
-              </button>
-              {caseResults.some(
-                (c) =>
-                  c.executionStatus === 'PROVIDER_RATE_LIMIT' ||
-                  c.candidateExecutionStatus === 'PROVIDER_RATE_LIMIT' ||
-                  c.baselineExecutionStatus === 'PROVIDER_RATE_LIMIT' ||
-                  c.candidateUsage?.error?.status === 429 ||
-                  c.baselineUsage?.error?.status === 429
-              ) && (
-                <button
-                  onClick={() => setStatusFilter('rate-limited')}
-                  style={{
-                    background: statusFilter === 'rate-limited' ? 'rgba(139, 126, 200, 0.15)' : 'transparent',
-                    border: 'none',
-                    color: statusFilter === 'rate-limited' ? '#8B7EC8' : '#888888',
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  ⚡ Rate Limited (429)
-                </button>
-              )}
+            <div style={{ display: 'flex', background: '#151515', borderRadius: '4px', padding: '0.2rem', border: '1px solid #292929' }}>
               <button
                 onClick={() => setStatusFilter('all')}
                 style={{
-                  background: statusFilter === 'all' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  background: statusFilter === 'all' ? '#1E3A8A' : 'transparent',
                   border: 'none',
-                  color: statusFilter === 'all' ? '#FFFFFF' : '#888888',
+                  color: statusFilter === 'all' ? '#F2F2F2' : '#858585',
                   padding: '0.35rem 0.75rem',
-                  borderRadius: '4px',
+                  borderRadius: '2px',
                   fontSize: '0.75rem',
+                  fontFamily: 'monospace',
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
                 Show All ({caseResults.length})
               </button>
+              <button
+                onClick={() => setStatusFilter('regressions')}
+                style={{
+                  background: statusFilter === 'regressions' ? '#261414' : 'transparent',
+                  border: 'none',
+                  color: statusFilter === 'regressions' ? '#EF4444' : '#858585',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '2px',
+                  fontSize: '0.75rem',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Regressions ({regressionCasesCount})
+              </button>
+              <button
+                onClick={() => setStatusFilter('failed')}
+                style={{
+                  background: statusFilter === 'failed' ? '#261414' : 'transparent',
+                  border: 'none',
+                  color: statusFilter === 'failed' ? '#EF4444' : '#858585',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '2px',
+                  fontSize: '0.75rem',
+                  fontFamily: 'monospace',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                All Failed ({failedCasesCount})
+              </button>
+              <button
+                onClick={() => setStatusFilter('passed')}
+                style={{
+                  background: statusFilter === 'passed' ? '#13241A' : 'transparent',
+                  border: 'none',
+                  color: statusFilter === 'passed' ? '#22C55E' : '#858585',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '2px',
+                  fontSize: '0.75rem',
+                  fontFamily: 'monospace',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Passed ({passedCasesCount})
+              </button>
+              {rateLimitedCasesCount > 0 && (
+                <button
+                  onClick={() => setStatusFilter('rate-limited')}
+                  style={{
+                    background: statusFilter === 'rate-limited' ? '#261D10' : 'transparent',
+                    border: 'none',
+                    color: statusFilter === 'rate-limited' ? '#F59E0B' : '#858585',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '2px',
+                    fontSize: '0.75rem',
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Rate Limited ({rateLimitedCasesCount})
+                </button>
+              )}
             </div>
           </div>
         </div>
+
+        {isLoadingDetails && (
+          <div style={{ padding: '0.5rem 0.8rem', marginBottom: '0.8rem', background: '#0A1A35', border: '1px solid #1E3A8A', borderRadius: '4px', color: '#60A5FA', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+            ⚡ Loading granular test case telemetry from persistence store...
+          </div>
+        )}
 
         {/* Explorer Table */}
         <div

@@ -344,7 +344,7 @@ export function DashboardTransition() {
               >
                 <div>
                   <div style={{ fontSize: '0.7rem', color: '#888888' }}>Accuracy</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#4DA6FF' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#FFAA55' }}>
                     {displayAccuracy}
                   </div>
                 </div>
@@ -371,7 +371,7 @@ export function DashboardTransition() {
                     fontSize: '0.72rem',
                     letterSpacing: '0.2em',
                     textTransform: 'uppercase',
-                    color: '#55DDFF',
+                    color: '#FFAA55',
                     fontWeight: 600,
                   }}
                 >
@@ -500,10 +500,10 @@ export function DashboardTransition() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
                       <span style={{ color: '#CCCCCC' }}>Safety Policy False Positives</span>
-                      <span style={{ color: '#4DA6FF', fontWeight: 600 }}>14% (7 cases)</span>
+                      <span style={{ color: '#FFAA55', fontWeight: 600 }}>14% (7 cases)</span>
                     </div>
                     <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '14%', background: '#4DA6FF' }} />
+                      <div style={{ height: '100%', width: '14%', background: '#FFAA55' }} />
                     </div>
                   </div>
                 </div>
@@ -530,7 +530,7 @@ export function DashboardTransition() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
                     <span style={{ color: '#888888' }}>Candidate Model</span>
-                    <span style={{ color: '#4DA6FF', fontFamily: 'monospace' }}>{candidateModelId}</span>
+                    <span style={{ color: '#FFAA55', fontFamily: 'monospace' }}>{candidateModelId}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
                     <span style={{ color: '#888888' }}>Independent Judge</span>
@@ -541,9 +541,9 @@ export function DashboardTransition() {
                   onClick={() => navigate('#/app/evaluations')}
                   style={{
                     marginTop: 'auto',
-                    background: 'rgba(77, 166, 255, 0.12)',
-                    color: '#55DDFF',
-                    border: '1px solid rgba(77, 166, 255, 0.3)',
+                    background: 'rgba(255, 107, 53, 0.12)',
+                    color: '#FF6B35',
+                    border: '1px solid rgba(255, 107, 53, 0.3)',
                     padding: '0.6rem',
                     borderRadius: '6px',
                     fontSize: '0.8rem',

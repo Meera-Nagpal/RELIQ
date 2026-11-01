@@ -157,7 +157,7 @@ export function MetricOverlay() {
             style={{
               fontSize: 'clamp(1.8rem, 3.5vw, 3.5rem)',
               fontWeight: 700,
-              color: isRegressionWarning ? '#E5673E' : 'var(--accent, #FF6B35)',
+              color: isRegressionWarning ? '#E5673E' : '#FF6B35',
             }}
           >
             %

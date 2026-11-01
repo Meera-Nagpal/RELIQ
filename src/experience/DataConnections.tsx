@@ -53,7 +53,7 @@ export function DataConnections() {
     if (!lineRef.current || !materialRef.current) return;
 
     let connectionThreshold = 2.1;
-    const targetColor = new THREE.Color('#4DA6FF');
+    const targetColor = new THREE.Color('#FFAA55');
 
     if (healthStatus === 'warning') {
       targetColor.set('#FF6B35');
@@ -62,7 +62,7 @@ export function DataConnections() {
       targetColor.set('#FF2200');
       connectionThreshold = 0.9; // Connections fracture
     } else if (healthStatus === 'recovered') {
-      targetColor.set('#55DDFF');
+      targetColor.set('#FFAA55');
       connectionThreshold = 2.3;
     }
 
@@ -132,7 +132,7 @@ export function DataConnections() {
         </bufferGeometry>
         <lineBasicMaterial
           ref={materialRef}
-          color="#4DA6FF"
+          color="#FFAA55"
           transparent={true}
           opacity={0.35}
           blending={THREE.AdditiveBlending}
