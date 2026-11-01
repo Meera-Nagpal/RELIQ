@@ -1,10 +1,11 @@
 /* ============================================================
-   RELIQ — Application Header Bar
+   RELIQ — AI Evaluation Laboratory Top Header Bar
+   Precision Instrumentation • Breadcrumbs • Live Backend Status
    ============================================================ */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { EvaluationRun, Project } from '../../domain/types';
-import { useRouter } from '../../router/useRouter';
+import { AppView, useRouter } from '../../router/useRouter';
 
 interface AppHeaderProps {
   projects: Project[];
@@ -23,178 +24,271 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   activeRun,
   isRegressionDetected,
 }) => {
-  const { navigate } = useRouter();
+  const { appView, navigate } = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [dropdownOpen]);
+
+  // Format breadcrumb text based on current view
+  const getViewBreadcrumb = (view: AppView): string => {
+    switch (view) {
+      case 'overview':
+      case 'dashboard':
+        return 'Overview';
+      case 'evaluations':
+      case 'new-evaluation':
+        return 'Evaluations';
+      case 'datasets':
+        return 'Datasets';
+      case 'models':
+        return 'Models';
+      case 'judges':
+        return 'Judges';
+      case 'history':
+        return 'History';
+      case 'regressions':
+      case 'details':
+        return 'Details';
+      case 'settings':
+        return 'Settings';
+      case 'projects':
+        return 'Projects';
+      default:
+        return 'Workspace';
+    }
+  };
 
   return (
     <header
       style={{
-        height: '60px',
-        background: 'var(--bg-elevated, #14181F)',
-        borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.07))',
+        height: '52px',
+        background: '#151515',
+        borderBottom: '1px solid #292929',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 2rem',
+        padding: '0 1.5rem',
         boxSizing: 'border-box',
+        zIndex: 40,
+        userSelect: 'none',
       }}
     >
-      {/* Left: Project Selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', position: 'relative' }}>
-        <div style={{ fontSize: '0.8rem', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Project:
-        </div>
-
+      {/* Left: Workspace Selector & Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', position: 'relative' }} ref={dropdownRef}>
+        {/* Workspace Project Dropdown Trigger */}
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.6rem',
-            background: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            padding: '0.4rem 0.85rem',
-            borderRadius: '6px',
-            color: '#FFFFFF',
-            fontSize: '0.85rem',
+            gap: '0.5rem',
+            background: '#1B1B1B',
+            border: '1px solid #292929',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '2px',
+            color: '#F2F2F2',
+            fontSize: '0.78rem',
             fontWeight: 600,
             cursor: 'pointer',
+            transition: 'border-color 0.15s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#3A3A3A')}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
         >
-          <span style={{ color: 'var(--accent, #C86D51)' }}>●</span>
-          <span>{activeProject?.name || 'Select Project'}</span>
-          <span style={{ fontSize: '0.7rem', color: '#888888', marginLeft: '0.4rem' }}>▼</span>
+          <span style={{ color: '#0000FF', fontSize: '0.75rem' }}>◆</span>
+          <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {activeProject?.name || 'Select Workspace'}
+          </span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#858585" strokeWidth="2.5">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
 
+        {/* Breadcrumb Separator */}
+        <span style={{ color: '#555555', fontSize: '0.75rem', fontFamily: 'monospace' }}>/</span>
+
+        {/* Current View Breadcrumb */}
+        <span
+          style={{
+            fontSize: '0.75rem',
+            fontFamily: 'monospace',
+            color: '#858585',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {getViewBreadcrumb(appView)}
+        </span>
+
+        {/* Dropdown Menu */}
         {dropdownOpen && (
           <div
             style={{
               position: 'absolute',
-              top: '110%',
-              left: '60px',
-              width: '240px',
-              background: '#181D25',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '8px',
-              boxShadow: '0 12px 28px rgba(0, 0, 0, 0.7)',
+              top: '120%',
+              left: '0',
+              width: '260px',
+              background: '#1B1B1B',
+              border: '1px solid #292929',
+              borderRadius: '2px',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8)',
               zIndex: 100,
-              padding: '0.4rem',
+              padding: '0.35rem',
             }}
           >
-            {projects.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => {
-                  onSelectProject(p.id);
-                  setDropdownOpen(false);
-                }}
-                style={{
-                  padding: '0.5rem 0.8rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.82rem',
-                  color: p.id === activeProject?.id ? 'var(--accent, #C86D51)' : '#ECECEC',
-                  background: p.id === activeProject?.id ? 'rgba(200, 109, 81, 0.12)' : 'transparent',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <span>{p.name}</span>
-                {p.id === activeProject?.id && <span style={{ fontSize: '0.7rem' }}>✓</span>}
-              </div>
-            ))}
+            <div
+              style={{
+                fontSize: '0.65rem',
+                fontFamily: 'monospace',
+                color: '#555555',
+                padding: '0.35rem 0.6rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}
+            >
+              WORKSPACES ({projects.length})
+            </div>
+
+            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              {projects.map((p) => {
+                const isSelected = p.id === activeProject?.id;
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      onSelectProject(p.id);
+                      setDropdownOpen(false);
+                    }}
+                    style={{
+                      padding: '0.45rem 0.65rem',
+                      borderRadius: '2px',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      color: isSelected ? '#F2F2F2' : '#858585',
+                      background: isSelected ? '#151515' : 'transparent',
+                      borderLeft: isSelected ? '2px solid #0000FF' : '2px solid transparent',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = '#222222';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.name}
+                    </span>
+                    {isSelected && (
+                      <span style={{ color: '#0000FF', fontSize: '0.7rem', fontFamily: 'monospace' }}>●</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             <div
               onClick={() => {
                 setDropdownOpen(false);
                 onCreateProjectClick();
               }}
               style={{
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                borderTop: '1px solid #292929',
                 marginTop: '0.3rem',
-                padding: '0.5rem 0.8rem',
-                fontSize: '0.8rem',
-                color: 'var(--recovered, #5B82A6)',
+                padding: '0.5rem 0.65rem',
+                fontSize: '0.75rem',
+                fontFamily: 'monospace',
+                color: '#0000FF',
                 cursor: 'pointer',
                 fontWeight: 600,
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 255, 0.08)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
-              + Create New Project
+              + NEW WORKSPACE
             </div>
           </div>
         )}
       </div>
 
-      {/* Right: Status Badges and Quick Action */}
+      {/* Right: System Status Telemetry, Operator Badge & Primary Action */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {(() => {
-          if (!activeRun) {
-            return (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.3rem 0.75rem',
-                  borderRadius: '999px',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: '#8899AA',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                }}
-              >
-                <span>⚪ RELEASE GATE: NO EVALUATIONS</span>
-              </div>
-            );
-          }
+        {/* Render Backend & Supabase Live Status Pill */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.25rem 0.65rem',
+            borderRadius: '2px',
+            fontSize: '0.68rem',
+            fontFamily: 'monospace',
+            letterSpacing: '0.04em',
+            background: '#1B1B1B',
+            color: '#858585',
+            border: '1px solid #292929',
+          }}
+          title="Backend: Render (Node.js) • Database: Supabase (PostgreSQL)"
+        >
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: '#22C55E',
+              boxShadow: '0 0 6px rgba(34, 197, 94, 0.6)',
+              display: 'inline-block',
+            }}
+          />
+          <span style={{ color: '#22C55E', fontWeight: 600 }}>RENDER LIVE</span>
+          <span style={{ color: '#3A3A3A' }}>|</span>
+          <span style={{ color: '#858585' }}>SUPABASE</span>
+        </div>
 
+        {/* Release Gate Indicator Pill (if active run exists) */}
+        {activeRun && (() => {
           const status = activeRun.releaseDecision?.status;
           const isBlocked =
             status === 'BLOCK' ||
             status === 'REGRESSION_DETECTED' ||
             (isRegressionDetected ?? activeRun.regressionDecision?.isRegression);
-          const isInsufficient =
-            status === 'INSUFFICIENT_EVIDENCE' || (status as any) === 'INSUFFICIENT EVIDENCE';
-          const isConditions =
-            status === 'SHIP_WITH_CONDITIONS' || (status as any) === 'SHIP WITH CONDITIONS';
+          const isPass = status === 'SHIP' || status === 'NO_REGRESSION';
 
-          let bg = 'rgba(78, 155, 111, 0.12)';
-          let color = 'var(--healthy, #4E9B6F)';
-          let border = 'rgba(78, 155, 111, 0.28)';
-          let text = '✓ RELEASE GATE: PASSED';
-
-          if (isBlocked) {
-            bg = 'rgba(192, 92, 84, 0.12)';
-            color = 'var(--regression, #C05C54)';
-            border = 'rgba(192, 92, 84, 0.28)';
-            text = '● RELEASE GATE: BLOCKED';
-          } else if (isInsufficient) {
-            bg = 'rgba(91, 130, 166, 0.12)';
-            color = 'var(--recovered, #5B82A6)';
-            border = 'rgba(91, 130, 166, 0.28)';
-            text = '⚠ RELEASE GATE: INSUFFICIENT EVIDENCE';
-          } else if (isConditions) {
-            bg = 'rgba(198, 139, 69, 0.12)';
-            color = 'var(--warning, #C68B45)';
-            border = 'rgba(198, 139, 69, 0.28)';
-            text = '⚡ RELEASE GATE: CONDITIONS';
-          }
+          const color = isBlocked ? '#EF4444' : isPass ? '#22C55E' : '#F59E0B';
+          const bg = isBlocked ? '#261414' : isPass ? '#13241A' : '#261D10';
+          const border = isBlocked ? 'rgba(239, 68, 68, 0.3)' : isPass ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)';
+          const text = isBlocked ? 'GATE: BLOCKED' : isPass ? 'GATE: PASSED' : 'GATE: CONDITIONS';
 
           return (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.3rem 0.75rem',
-                borderRadius: '999px',
-                fontSize: '0.72rem',
+                gap: '0.4rem',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '2px',
+                fontSize: '0.68rem',
+                fontFamily: 'monospace',
                 fontWeight: 700,
-                letterSpacing: '0.08em',
+                letterSpacing: '0.05em',
                 background: bg,
-                color,
+                color: color,
                 border: `1px solid ${border}`,
               }}
             >
@@ -203,22 +297,56 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           );
         })()}
 
+        {/* Operator User Badge */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.25rem 0.55rem',
+            borderRadius: '2px',
+            background: '#1B1B1B',
+            border: '1px solid #292929',
+            fontSize: '0.68rem',
+            fontFamily: 'monospace',
+            color: '#858585',
+          }}
+          title="Laboratory Identity"
+        >
+          <span style={{ color: '#0000FF' }}>⌘</span>
+          <span>OPERATOR // LAB-01</span>
+        </div>
+
+        {/* Primary Action Button: Electric Blue */}
         <button
           onClick={() => navigate('#/app/evaluations')}
           style={{
-            background: 'var(--accent, #C86D51)',
+            background: '#0000FF',
             color: '#FFFFFF',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            padding: '0.45rem 1.1rem',
-            borderRadius: '6px',
-            fontSize: '0.8rem',
+            border: '1px solid #0000FF',
+            padding: '0.35rem 0.9rem',
+            borderRadius: '2px',
+            fontSize: '0.78rem',
+            fontFamily: 'monospace',
             fontWeight: 700,
-            cursor: 'pointer',
             letterSpacing: '0.04em',
-            boxShadow: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            transition: 'background 0.15s ease, box-shadow 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#1A1AFF';
+            e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 0, 255, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#0000FF';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         >
-          + Run Evaluation
+          <span>+</span>
+          <span>NEW EVALUATION</span>
         </button>
       </div>
     </header>

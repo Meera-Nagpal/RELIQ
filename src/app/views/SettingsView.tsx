@@ -64,38 +64,38 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '880px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1040px', margin: '0 auto' }}>
       {/* Header */}
       <div>
-        <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
-          CONFIGURATION // RELIABILITY POLICIES
+        <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+          CONFIGURATION // POLICIES & STORAGE
         </div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
           Regression Policies & Settings
         </h1>
-        <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0 }}>
-          Define automated pass/block boundary criteria for AI releases and manage provider harnesses.
+        <p style={{ color: '#858585', fontSize: '0.82rem', margin: 0, maxWidth: '640px', lineHeight: 1.5 }}>
+          Define automated pass/block boundary criteria for AI releases and manage provider harnesses. All settings persist in Supabase PostgreSQL.
         </p>
       </div>
 
       {/* ── 1. Regression Thresholds Form ── */}
       <div
         style={{
-          background: '#14181F',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '2rem',
+          background: '#151515',
+          border: '1px solid #292929',
+          borderRadius: '2px',
+          padding: '1.5rem',
         }}
       >
-        <h3 style={{ margin: '0 0 1.2rem 0', color: '#FFFFFF', fontSize: '1.15rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#F2F2F2', fontSize: '1.05rem', fontWeight: 700, fontFamily: 'monospace' }}>
           Automated Release Gate Thresholds
         </h3>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
-                Minimum Absolute Accuracy (%)
+              <label style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: '#F2F2F2', fontWeight: 600, marginBottom: '0.35rem' }}>
+                MINIMUM ACCURACY GATE (%)
               </label>
               <input
                 type="number"
@@ -106,23 +106,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setMinAccuracy(Number(e.target.value))}
                 style={{
                   width: '100%',
-                  padding: '0.65rem 0.8rem',
-                  background: '#101419',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  fontSize: '0.9rem',
+                  padding: '0.55rem 0.75rem',
+                  background: '#111111',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  color: '#F2F2F2',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
                   boxSizing: 'border-box',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#778899' }}>
+              <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#555555' }}>
                 Release is blocked if candidate accuracy drops below this value.
               </span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
-                Max Allowed Accuracy Degradation (pts)
+              <label style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: '#F2F2F2', fontWeight: 600, marginBottom: '0.35rem' }}>
+                MAX ALLOWED ACCURACY DEGRADATION (PTS)
               </label>
               <input
                 type="number"
@@ -133,25 +134,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setMaxDegradation(Number(e.target.value))}
                 style={{
                   width: '100%',
-                  padding: '0.65rem 0.8rem',
-                  background: '#101419',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  fontSize: '0.9rem',
+                  padding: '0.55rem 0.75rem',
+                  background: '#111111',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  color: '#F2F2F2',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
                   boxSizing: 'border-box',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#778899' }}>
+              <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#555555' }}>
                 Maximum acceptable percentage points drop compared to baseline standard.
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
-                Max Allowable Latency Increase (%)
+              <label style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: '#F2F2F2', fontWeight: 600, marginBottom: '0.35rem' }}>
+                MAX ALLOWABLE LATENCY INCREASE (%)
               </label>
               <input
                 type="number"
@@ -162,23 +164,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setMaxLatency(Number(e.target.value))}
                 style={{
                   width: '100%',
-                  padding: '0.65rem 0.8rem',
-                  background: '#101419',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  fontSize: '0.9rem',
+                  padding: '0.55rem 0.75rem',
+                  background: '#111111',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  color: '#F2F2F2',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
                   boxSizing: 'border-box',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#778899' }}>
+              <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#555555' }}>
                 Blocks deployment if candidate average latency spikes beyond this percentage.
               </span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
-                Max Allowed Scenario Failure Rate (%)
+              <label style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: '#F2F2F2', fontWeight: 600, marginBottom: '0.35rem' }}>
+                MAX ALLOWED SCENARIO FAILURE RATE (%)
               </label>
               <input
                 type="number"
@@ -189,25 +192,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setMaxFailure(Number(e.target.value))}
                 style={{
                   width: '100%',
-                  padding: '0.65rem 0.8rem',
-                  background: '#101419',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  fontSize: '0.9rem',
+                  padding: '0.55rem 0.75rem',
+                  background: '#111111',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  color: '#F2F2F2',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
                   boxSizing: 'border-box',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#778899' }}>
+              <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#555555' }}>
                 Overall tolerance limit for total test scenario failures.
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', color: '#CCCCCC', fontWeight: 600, marginBottom: '0.4rem' }}>
-                Minimum Required Evaluation Coverage (%)
+              <label style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: '#F2F2F2', fontWeight: 600, marginBottom: '0.35rem' }}>
+                MINIMUM REQUIRED EVALUATION COVERAGE (%)
               </label>
               <input
                 type="number"
@@ -218,29 +222,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setMinCoverage(Number(e.target.value))}
                 style={{
                   width: '100%',
-                  padding: '0.65rem 0.8rem',
-                  background: '#101419',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  fontSize: '0.9rem',
+                  padding: '0.55rem 0.75rem',
+                  background: '#111111',
+                  border: '1px solid #292929',
+                  borderRadius: '2px',
+                  color: '#F2F2F2',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
                   boxSizing: 'border-box',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#778899' }}>
+              <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#555555' }}>
                 Releases are flagged as INSUFFICIENT_EVIDENCE if completed case coverage drops below this threshold.
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              <span style={{ fontSize: '0.78rem', color: '#8899AA', lineHeight: 1.4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: '0.85rem', background: '#111111', borderRadius: '2px', border: '1px solid #292929' }}>
+              <span style={{ fontSize: '0.74rem', fontFamily: 'monospace', color: '#858585', lineHeight: 1.4 }}>
                 ℹ Benchmark runs require sufficient coverage and sample size (N ≥ 100) to certify full production release without caveats.
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.8rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem' }}>
             {savedSuccess ? (
-              <span style={{ color: '#4E9B6F', fontSize: '0.85rem', fontWeight: 600 }}>
+              <span style={{ color: '#22C55E', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}>
                 ✓ Threshold policies updated successfully!
               </span>
             ) : <span />}
@@ -248,17 +253,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="submit"
               style={{
-                background: 'var(--accent, #C86D51)',
+                background: '#0000FF',
                 color: '#FFFFFF',
                 border: 'none',
-                padding: '0.7rem 1.8rem',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
+                padding: '0.55rem 1.4rem',
+                borderRadius: '2px',
+                fontSize: '0.78rem',
+                fontFamily: 'monospace',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
             >
-              Save Policy Rules
+              SAVE POLICIES
             </button>
           </div>
         </form>

@@ -26,9 +26,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.isRegression) {
     return {
       text: 'REGRESSION',
-      bg: 'rgba(192, 92, 84, 0.12)',
-      color: '#C05C54',
-      border: 'rgba(192, 92, 84, 0.28)',
+      bg: '#261414',
+      color: '#EF4444',
+      border: 'rgba(239, 68, 68, 0.35)',
     };
   }
 
@@ -47,9 +47,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'PROVIDER AUTHENTICATION',
-      bg: 'rgba(192, 92, 84, 0.12)',
-      color: '#C05C54',
-      border: 'rgba(192, 92, 84, 0.28)',
+      bg: '#261414',
+      color: '#EF4444',
+      border: 'rgba(239, 68, 68, 0.35)',
     };
   }
 
@@ -64,9 +64,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'PROVIDER QUOTA',
-      bg: 'rgba(139, 126, 200, 0.12)',
-      color: '#8B7EC8',
-      border: 'rgba(139, 126, 200, 0.28)',
+      bg: '#261D10',
+      color: '#F59E0B',
+      border: 'rgba(245, 158, 11, 0.35)',
     };
   }
 
@@ -80,9 +80,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'PROVIDER ERROR',
-      bg: 'rgba(198, 139, 69, 0.12)',
-      color: '#C68B45',
-      border: 'rgba(198, 139, 69, 0.28)',
+      bg: '#261D10',
+      color: '#F59E0B',
+      border: 'rgba(245, 158, 11, 0.35)',
     };
   }
 
@@ -90,9 +90,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.failureCategory === 'MALFORMED_RESPONSE') {
     return {
       text: 'MALFORMED RESPONSE',
-      bg: 'rgba(198, 139, 69, 0.12)',
-      color: '#C68B45',
-      border: 'rgba(198, 139, 69, 0.28)',
+      bg: '#261D10',
+      color: '#F59E0B',
+      border: 'rgba(245, 158, 11, 0.35)',
     };
   }
 
@@ -107,9 +107,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   ) {
     return {
       text: 'SAFETY FAILURE',
-      bg: 'rgba(192, 92, 84, 0.16)',
-      color: '#C05C54',
-      border: 'rgba(192, 92, 84, 0.32)',
+      bg: '#261414',
+      color: '#EF4444',
+      border: 'rgba(239, 68, 68, 0.4)',
     };
   }
 
@@ -117,9 +117,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.failureCategory === 'REFUSAL_CRITERIA_MISMATCH' || c.safetyClassification === 'REFUSAL_CRITERIA_MISMATCH') {
     return {
       text: 'REFUSAL MISMATCH',
-      bg: 'rgba(198, 139, 69, 0.12)',
-      color: '#C68B45',
-      border: 'rgba(198, 139, 69, 0.28)',
+      bg: '#261D10',
+      color: '#F59E0B',
+      border: 'rgba(245, 158, 11, 0.35)',
     };
   }
 
@@ -127,9 +127,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.passed === true) {
     return {
       text: 'PASSED',
-      bg: 'rgba(78, 155, 111, 0.12)',
-      color: '#4E9B6F',
-      border: 'rgba(78, 155, 111, 0.28)',
+      bg: '#13241A',
+      color: '#22C55E',
+      border: 'rgba(34, 197, 94, 0.35)',
     };
   }
 
@@ -137,9 +137,9 @@ export const getTestCaseBadge = (c: TestCaseResult) => {
   if (c.passed === false && (c.candidateQualityEvaluated || c.failureCategory === 'QUALITY_FAILURE')) {
     return {
       text: 'QUALITY FAIL',
-      bg: 'rgba(198, 139, 69, 0.12)',
-      color: '#C68B45',
-      border: 'rgba(198, 139, 69, 0.28)',
+      bg: '#261414',
+      color: '#EF4444',
+      border: 'rgba(239, 68, 68, 0.35)',
     };
   }
 
@@ -241,28 +241,29 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
-              DIAGNOSTICS // FAILURE EXPLORER
+            <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+              DIAGNOSTICS // DETAILS & REGRESSIONS
             </div>
             {(() => {
               const mode = run.executionMode || run.comparisonReport?.executionMode || 'SAVED';
               const isLive = mode === 'LIVE';
               const isRef = mode === 'REFERENCE';
-              const color = isLive ? '#4E9B6F' : isRef ? '#8B7EC8' : '#5B82A6';
-              const bg = isLive ? 'rgba(78, 155, 111, 0.12)' : isRef ? 'rgba(139, 126, 200, 0.12)' : 'rgba(91, 130, 166, 0.12)';
-              const border = isLive ? 'rgba(78, 155, 111, 0.28)' : isRef ? 'rgba(139, 126, 200, 0.28)' : 'rgba(91, 130, 166, 0.28)';
+              const color = isLive ? '#22C55E' : isRef ? '#858585' : '#0000FF';
+              const bg = isLive ? '#13241A' : isRef ? '#1B1B1B' : '#151515';
+              const border = isLive ? 'rgba(34, 197, 94, 0.3)' : isRef ? '#292929' : 'rgba(0, 0, 255, 0.3)';
               const label = isLive ? 'LIVE EVALUATION' : isRef ? 'REFERENCE DATA' : 'SAVED EVALUATION';
               return (
                 <span
                   style={{
-                    fontSize: '0.66rem',
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '4px',
+                    fontSize: '0.65rem',
+                    fontFamily: 'monospace',
+                    padding: '0.12rem 0.45rem',
+                    borderRadius: '2px',
                     background: bg,
                     color,
                     border: `1px solid ${border}`,
-                    fontWeight: 800,
-                    letterSpacing: '0.06em',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.3rem',
@@ -274,7 +275,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
                         width: '5px',
                         height: '5px',
                         borderRadius: '50%',
-                        background: '#4E9B6F',
+                        background: '#22C55E',
                       }}
                     />
                   )}
@@ -283,23 +284,24 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               );
             })()}
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.2rem 0' }}>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
             Regression & Failure Analysis
           </h1>
-          <div style={{ color: '#8899AA', fontSize: '0.82rem', margin: 0, fontFamily: 'monospace' }}>
-            Run ID: <strong style={{ color: '#CCCCCC' }}>{run.id}</strong> • Recorded: {new Date(run.timestamp).toLocaleString()}
+          <div style={{ color: '#858585', fontSize: '0.78rem', margin: 0, fontFamily: 'monospace' }}>
+            Run ID: <strong style={{ color: '#F2F2F2' }}>{run.id}</strong> • Recorded: {new Date(run.timestamp).toLocaleString()}
           </div>
         </div>
         {run.comparisonReport && (
           <button
             onClick={() => setIsReportModalOpen(true)}
             style={{
-              background: 'rgba(200, 109, 81, 0.12)',
-              border: '1px solid rgba(200, 109, 81, 0.35)',
-              color: '#C86D51',
-              padding: '0.65rem 1.25rem',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
+              background: '#0000FF',
+              border: 'none',
+              color: '#FFFFFF',
+              padding: '0.45rem 1rem',
+              borderRadius: '2px',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
               fontWeight: 700,
               cursor: 'pointer',
               display: 'flex',
@@ -307,7 +309,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
               gap: '0.5rem',
             }}
           >
-            📊 View Full Comparison Report
+            FULL COMPARISON REPORT
           </button>
         )}
       </div>
@@ -320,33 +322,37 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         const isBlocked = isReg || releaseDecision.status === 'BLOCK' || regressionDecision.verdict === 'REGRESSION_DETECTED' || (regressionDecision.verdict as string) === 'BLOCK';
         const isInsufficient = releaseDecision.status === 'INSUFFICIENT_EVIDENCE' || regressionDecision.verdict === 'INSUFFICIENT_EVIDENCE';
         const isConditional = releaseDecision.status === 'SHIP_WITH_CONDITIONS' || (regressionDecision.verdict as string) === 'SHIP_WITH_CONDITIONS';
-        const statusColor = isBlocked ? '#C05C54' : isInsufficient ? '#8D98A5' : isConditional ? '#C68B45' : '#4E9B6F';
-        const statusBg = isBlocked ? 'rgba(192, 92, 84, 0.12)' : isInsufficient ? 'rgba(141, 152, 165, 0.12)' : isConditional ? 'rgba(198, 139, 69, 0.12)' : 'rgba(78, 155, 111, 0.12)';
+        const statusColor = isBlocked ? '#EF4444' : isInsufficient ? '#858585' : isConditional ? '#F59E0B' : '#22C55E';
+        const statusBg = isBlocked ? '#261414' : isInsufficient ? '#1B1B1B' : isConditional ? '#261D10' : '#13241A';
+        const statusBorder = isBlocked ? 'rgba(239, 68, 68, 0.35)' : isInsufficient ? '#292929' : isConditional ? 'rgba(245, 158, 11, 0.35)' : 'rgba(34, 197, 94, 0.35)';
 
         return (
           <div
             style={{
-              background: '#14181F',
-              border: `1px solid ${statusColor}`,
-              borderRadius: '12px',
-              padding: '1.8rem',
+              background: '#151515',
+              border: `1px solid ${statusBorder}`,
+              borderRadius: '2px',
+              padding: '1.25rem',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem',
             }}
           >
             <div style={{ maxWidth: '680px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
                 <span
                   style={{
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: '999px',
-                    fontSize: '0.72rem',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '2px',
+                    fontSize: '0.7rem',
+                    fontFamily: 'monospace',
                     fontWeight: 700,
-                    letterSpacing: '0.1em',
+                    letterSpacing: '0.06em',
                     background: statusBg,
                     color: statusColor,
-                    border: `1px solid ${statusColor}`,
+                    border: `1px solid ${statusBorder}`,
                   }}
                 >
                   {regressionDecision.verdict}

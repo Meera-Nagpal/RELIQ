@@ -485,27 +485,47 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1240px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1440px', margin: '0 auto' }}>
       {/* ── Page Header ── */}
-      <div>
-        <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
-          HARNESS // MULTI-PROVIDER BENCHMARK
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+            HARNESS // MULTI-PROVIDER BENCHMARK
+          </div>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
+            Comparative Evaluation Harness
+          </h1>
+          <p style={{ color: '#858585', fontSize: '0.82rem', margin: 0, maxWidth: '680px', lineHeight: 1.5 }}>
+            Execute parallel comparative benchmarks across real AI providers against identical datasets. Enforces strict release gate rules with independent Qwen 3.8B judging.
+          </p>
         </div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#ECEFF2', margin: '0.3rem 0 0.4rem 0' }}>
-          Cross-Provider Evaluation Harness
-        </h1>
-        <p style={{ color: '#8D98A5', fontSize: '0.9rem', margin: 0 }}>
-          Benchmark real AI providers (Google Gemini, OpenAI, Anthropic Claude, Demo) against identical datasets to detect regressions and enforce deployment decisions.
-        </p>
+
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => navigate('#/app/history')}
+            style={{
+              background: '#151515',
+              border: '1px solid #292929',
+              color: '#858585',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '2px',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
+              cursor: 'pointer',
+            }}
+          >
+            RUN AUDIT LOG ({evaluationRuns.length})
+          </button>
+        </div>
       </div>
 
       {/* ── Provider Readiness Bar ── */}
       <div
         style={{
-          background: '#14181F',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '10px',
-          padding: '0.9rem 1.4rem',
+          background: '#151515',
+          border: '1px solid #292929',
+          borderRadius: '2px',
+          padding: '0.75rem 1.1rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -514,114 +534,119 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ECEFF2' }}>
-            Provider Status:
+          <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', fontWeight: 700, color: '#F2F2F2', textTransform: 'uppercase' }}>
+            Provider Endpoints:
           </span>
-          <span style={{ fontSize: '0.72rem', color: '#8D98A5' }}>
-            (Enterprise Gateway & Sandboxed Evaluation Proxies)
+          <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#555555' }}>
+            (Render Gateway Proxies)
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {/* Demo */}
-          <span style={{ fontSize: '0.7rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'rgba(78, 155, 111, 0.12)', color: '#4E9B6F', border: '1px solid rgba(78, 155, 111, 0.28)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4E9B6F' }} />
-            DEMO: AVAILABLE
+          <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', padding: '0.2rem 0.5rem', borderRadius: '2px', background: '#13241A', color: '#22C55E', border: '1px solid rgba(34, 197, 94, 0.28)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22C55E' }} />
+            DEMO: READY
           </span>
 
           {/* Gemini */}
           <span
             style={{
-              fontSize: '0.7rem',
-              padding: '0.25rem 0.6rem',
-              borderRadius: '4px',
-              background: serverStatus.gemini ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-              color: serverStatus.gemini ? '#4E9B6F' : '#8D98A5',
-              border: serverStatus.gemini ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
+              fontSize: '0.68rem',
+              fontFamily: 'monospace',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '2px',
+              background: serverStatus.gemini ? '#13241A' : '#1B1B1B',
+              color: serverStatus.gemini ? '#22C55E' : '#555555',
+              border: serverStatus.gemini ? '1px solid rgba(34, 197, 94, 0.28)' : '1px solid #292929',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.gemini ? '#4E9B6F' : '#556677' }} />
-            GEMINI: {serverStatus.gemini ? 'AVAILABLE' : 'NOT CONFIGURED'}
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: serverStatus.gemini ? '#22C55E' : '#3A3A3A' }} />
+            GEMINI: {serverStatus.gemini ? 'LIVE' : 'OFFLINE'}
           </span>
 
           {/* OpenAI */}
           <span
             style={{
-              fontSize: '0.7rem',
-              padding: '0.25rem 0.6rem',
-              borderRadius: '4px',
-              background: serverStatus.openai ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-              color: serverStatus.openai ? '#4E9B6F' : '#8D98A5',
-              border: serverStatus.openai ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
+              fontSize: '0.68rem',
+              fontFamily: 'monospace',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '2px',
+              background: serverStatus.openai ? '#13241A' : '#1B1B1B',
+              color: serverStatus.openai ? '#22C55E' : '#555555',
+              border: serverStatus.openai ? '1px solid rgba(34, 197, 94, 0.28)' : '1px solid #292929',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.openai ? '#4E9B6F' : '#556677' }} />
-            OPENAI: {serverStatus.openai ? 'AVAILABLE' : 'NOT CONFIGURED'}
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: serverStatus.openai ? '#22C55E' : '#3A3A3A' }} />
+            OPENAI: {serverStatus.openai ? 'LIVE' : 'OFFLINE'}
           </span>
 
-          {/* Anthropic */}
+          {/* Claude */}
           <span
             style={{
-              fontSize: '0.7rem',
-              padding: '0.25rem 0.6rem',
-              borderRadius: '4px',
-              background: serverStatus.anthropic ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-              color: serverStatus.anthropic ? '#4E9B6F' : '#8D98A5',
-              border: serverStatus.anthropic ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
+              fontSize: '0.68rem',
+              fontFamily: 'monospace',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '2px',
+              background: serverStatus.anthropic ? '#13241A' : '#1B1B1B',
+              color: serverStatus.anthropic ? '#22C55E' : '#555555',
+              border: serverStatus.anthropic ? '1px solid rgba(34, 197, 94, 0.28)' : '1px solid #292929',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.anthropic ? '#4E9B6F' : '#556677' }} />
-            CLAUDE: {serverStatus.anthropic ? 'AVAILABLE' : 'NOT CONFIGURED'}
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: serverStatus.anthropic ? '#22C55E' : '#3A3A3A' }} />
+            CLAUDE: {serverStatus.anthropic ? 'LIVE' : 'OFFLINE'}
           </span>
 
           {/* Groq */}
           <span
             style={{
-              fontSize: '0.7rem',
-              padding: '0.25rem 0.6rem',
-              borderRadius: '4px',
-              background: serverStatus.groq ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-              color: serverStatus.groq ? '#4E9B6F' : '#8D98A5',
-              border: serverStatus.groq ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
+              fontSize: '0.68rem',
+              fontFamily: 'monospace',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '2px',
+              background: serverStatus.groq ? '#13241A' : '#1B1B1B',
+              color: serverStatus.groq ? '#22C55E' : '#555555',
+              border: serverStatus.groq ? '1px solid rgba(34, 197, 94, 0.28)' : '1px solid #292929',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.groq ? '#4E9B6F' : '#556677' }} />
-            GROQ: {serverStatus.groq ? 'AVAILABLE' : 'NOT CONFIGURED'}
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: serverStatus.groq ? '#22C55E' : '#3A3A3A' }} />
+            GROQ: {serverStatus.groq ? 'LIVE' : 'OFFLINE'}
           </span>
 
           {/* Cerebras */}
           <span
             style={{
-              fontSize: '0.7rem',
-              padding: '0.25rem 0.6rem',
-              borderRadius: '4px',
-              background: serverStatus.cerebras ? 'rgba(78, 155, 111, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-              color: serverStatus.cerebras ? '#4E9B6F' : '#8D98A5',
-              border: serverStatus.cerebras ? '1px solid rgba(78, 155, 111, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
+              fontSize: '0.68rem',
+              fontFamily: 'monospace',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '2px',
+              background: serverStatus.cerebras ? '#13241A' : '#1B1B1B',
+              color: serverStatus.cerebras ? '#22C55E' : '#555555',
+              border: serverStatus.cerebras ? '1px solid rgba(34, 197, 94, 0.28)' : '1px solid #292929',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: serverStatus.cerebras ? '#4E9B6F' : '#556677' }} />
-            CEREBRAS: {serverStatus.cerebras ? 'AVAILABLE' : 'NOT CONFIGURED'}
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: serverStatus.cerebras ? '#22C55E' : '#3A3A3A' }} />
+            CEREBRAS: {serverStatus.cerebras ? 'LIVE' : 'OFFLINE'}
           </span>
         </div>
       </div>
@@ -629,51 +654,53 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       {/* ── Evaluation Launch Configuration Card ── */}
       <div
         style={{
-          background: '#14181F',
-          borderRadius: '12px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '2rem',
+          background: '#151515',
+          borderRadius: '2px',
+          border: '1px solid #292929',
+          padding: '1.5rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.5rem',
+          gap: '1.25rem',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: '1.2rem' }}>
+            <h3 style={{ margin: 0, color: '#F2F2F2', fontSize: '1.1rem', fontWeight: 700 }}>
               Configure Comparative Run
             </h3>
-            <span style={{ fontSize: '0.8rem', color: '#888888' }}>
-              Select candidate configurations. Both will run against the exact same evaluation dataset.
+            <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#858585' }}>
+              Baseline model on left, Candidate model on right. Evaluated simultaneously across identical cases.
             </span>
           </div>
 
           {/* Mode Switcher */}
-          <div style={{ display: 'flex', background: '#0F1216', padding: '0.25rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ display: 'flex', background: '#111111', padding: '0.2rem', borderRadius: '2px', border: '1px solid #292929' }}>
             <button
               onClick={() => setConfigMode('saved_versions')}
               style={{
-                background: configMode === 'saved_versions' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                border: 'none',
-                color: configMode === 'saved_versions' ? '#FFFFFF' : '#888888',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '4px',
-                fontSize: '0.78rem',
+                background: configMode === 'saved_versions' ? '#1B1B1B' : 'transparent',
+                border: configMode === 'saved_versions' ? '1px solid #0000FF' : '1px solid transparent',
+                color: configMode === 'saved_versions' ? '#F2F2F2' : '#858585',
+                padding: '0.35rem 0.75rem',
+                borderRadius: '2px',
+                fontSize: '0.75rem',
+                fontFamily: 'monospace',
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              Saved Project Versions
+              Saved Versions
             </button>
             <button
               onClick={() => setConfigMode('custom_benchmark')}
               style={{
-                background: configMode === 'custom_benchmark' ? 'var(--accent, #C86D51)' : 'transparent',
+                background: configMode === 'custom_benchmark' ? '#0000FF' : 'transparent',
                 border: 'none',
-                color: configMode === 'custom_benchmark' ? '#FFFFFF' : '#888888',
-                padding: '0.4rem 0.9rem',
-                borderRadius: '4px',
-                fontSize: '0.78rem',
+                color: configMode === 'custom_benchmark' ? '#FFFFFF' : '#858585',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '2px',
+                fontSize: '0.75rem',
+                fontFamily: 'monospace',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -720,20 +747,20 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {evaluationError && (
           <div
             style={{
-              background: 'rgba(239, 68, 68, 0.12)',
+              background: '#261414',
               border: '1px solid rgba(239, 68, 68, 0.4)',
-              borderRadius: '8px',
-              padding: '0.85rem 1.2rem',
+              borderRadius: '2px',
+              padding: '0.8rem 1.1rem',
               color: '#EF4444',
-              fontSize: '0.88rem',
-              fontWeight: 500,
+              fontSize: '0.8rem',
+              fontFamily: 'monospace',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span>⚠️</span>
+              <span>⚠</span>
               <span>{evaluationError}</span>
             </div>
             <button
@@ -743,7 +770,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 border: 'none',
                 color: '#EF4444',
                 cursor: 'pointer',
-                fontSize: '1rem',
+                fontSize: '0.9rem',
               }}
             >
               ✕
@@ -754,10 +781,10 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {/* ── Active Benchmark Overview Bar ── */}
         <div
           style={{
-            background: 'rgba(200, 109, 81, 0.06)',
-            border: '1px solid rgba(200, 109, 81, 0.22)',
-            borderRadius: '8px',
-            padding: '0.85rem 1.2rem',
+            background: '#1B1B1B',
+            border: '1px solid #292929',
+            borderRadius: '2px',
+            padding: '0.85rem 1.1rem',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '1rem',
@@ -765,56 +792,51 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           }}
         >
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <span>Active Benchmark Suite</span>
+            <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: '#858585', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span>ACTIVE SUITE</span>
               <span
                 style={{
-                  fontSize: '0.62rem',
+                  fontSize: '0.6rem',
                   padding: '0.08rem 0.35rem',
-                  borderRadius: '3px',
+                  borderRadius: '2px',
                   fontWeight: 700,
-                  background:
-                    selectedDataset?.sourceType === 'upload'
-                      ? 'rgba(91, 130, 166, 0.15)'
-                      : 'rgba(78, 155, 111, 0.15)',
-                  color: selectedDataset?.sourceType === 'upload' ? '#5B82A6' : '#4E9B6F',
+                  background: '#151515',
+                  color: '#858585',
+                  border: '1px solid #292929',
                 }}
               >
                 {selectedDataset?.sourceType === 'upload' ? 'USER UPLOAD' : 'BUILT-IN'}
               </span>
-              <span style={{ fontFamily: 'monospace', color: '#8D98A5' }}>
-                v{selectedDataset?.version || '1.0.0'}
-              </span>
             </div>
-            <div style={{ fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 700, marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.88rem', color: '#F2F2F2', fontWeight: 700, marginTop: '0.2rem' }}>
               {selectedDataset?.name || 'Checkout Reliability Suite'}
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--accent, #C86D51)', fontWeight: 600 }}>
-              {selectedDataset?.cases?.length || 100} scenarios ({selectedDataset?.cases?.filter((c) => Boolean(c.expectedOutput && c.expectedOutput.trim())).length ?? (selectedDataset?.cases?.length || 0)} with expected reference)
+            <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#0000FF', fontWeight: 600 }}>
+              {selectedDataset?.cases?.length || 27} scenarios ({selectedDataset?.cases?.filter((c) => Boolean(c.expectedOutput && c.expectedOutput.trim())).length ?? (selectedDataset?.cases?.length || 0)} reference criteria)
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Baseline Model ({configMode === 'custom_benchmark' ? customBaselineProvider.toUpperCase() : (baselineVersion?.provider?.toUpperCase() || 'DEMO')})
+            <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: '#858585', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Baseline Model (Left — {configMode === 'custom_benchmark' ? customBaselineProvider.toUpperCase() : (baselineVersion?.provider?.toUpperCase() || 'DEMO')})
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#ECECEC', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.82rem', color: '#F2F2F2', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
               {effectiveBaselineModel}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#4E9B6F', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#22C55E', fontWeight: 600 }}>
               Reference Anchor
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Candidate Model ({configMode === 'custom_benchmark' ? customCandidateProvider.toUpperCase() : (candidateVersion?.provider?.toUpperCase() || 'DEMO')})
+            <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: '#858585', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Candidate Model (Right — {configMode === 'custom_benchmark' ? customCandidateProvider.toUpperCase() : (candidateVersion?.provider?.toUpperCase() || 'DEMO')})
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#5B82A6', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.82rem', color: '#F2F2F2', fontFamily: 'monospace', fontWeight: 600, marginTop: '0.2rem' }}>
               {effectiveCandidateModel}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#5B82A6', fontWeight: 600 }}>
-              Evaluation Candidate
+            <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#0000FF', fontWeight: 600 }}>
+              Evaluation Target
             </div>
           </div>
         </div>
@@ -1319,35 +1341,35 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {/* ── Evaluation Models & LLM Judge Configuration ── */}
         <div
           style={{
-            background: '#101419',
-            border: isJudgeConflicting ? '1px solid #C05C54' : '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
+            background: '#1B1B1B',
+            border: isJudgeConflicting ? '1px solid #EF4444' : '1px solid #292929',
+            borderRadius: '2px',
             padding: '1.25rem',
             marginBottom: '1.25rem',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>⚖️ Evaluation Models & LLM Judge</span>
+              <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#F2F2F2', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'monospace' }}>
+                <span>[INDEPENDENT ARBITRATION] LLM Judge Configuration</span>
               </h3>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.76rem', color: isJudgeConflicting ? '#D48B85' : '#8899AA' }}>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.74rem', fontFamily: 'monospace', color: isJudgeConflicting ? '#EF4444' : '#858585' }}>
                 {isJudgeConflicting
-                  ? '⚠️ Configuration Error: Judge model must be different from both benchmark models.'
-                  : 'Judge model must be different from both benchmark models. Reuses existing GROQ_API_KEY.'}
+                  ? 'Configuration Conflict: Judge model cannot match either benchmark model.'
+                  : 'Independent evaluation duty using Qwen 3.8B. Eliminates provider self-bias.'}
               </p>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#CCCCCC', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontFamily: 'monospace', color: '#F2F2F2', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={judgeEnabled}
                   onChange={(e) => setJudgeEnabled(e.target.checked)}
                   disabled={isRunning}
-                  style={{ accentColor: 'var(--accent, #C86D51)' }}
+                  style={{ accentColor: '#0000FF' }}
                 />
-                <span>Enable LLM Judge</span>
+                <span>Enable Independent Judge</span>
               </label>
             </div>
           </div>
@@ -1513,43 +1535,43 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#8D98A5' }}>
-              Will benchmark {maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 0)} scenarios
+            <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#858585' }}>
+              Benchmarking {maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 0)} scenarios
             </span>
-          <button
-            onClick={handleStartEvaluation}
-            disabled={isRunning || !selectedDataset || isJudgeConflicting}
-            style={{
-              background: isRunning || isJudgeConflicting ? '#2C3440' : 'var(--accent, #C86D51)',
-              color: isRunning || isJudgeConflicting ? '#8D98A5' : '#FFFFFF',
-              border: 'none',
-              padding: '0.75rem 2rem',
-              borderRadius: '6px',
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              cursor: isRunning || isJudgeConflicting ? 'not-allowed' : 'pointer',
-              boxShadow: 'none',
-              transition: 'background 0.15s ease',
-            }}
-          >
-            {isRunning ? 'Running Evaluation...' : 'Run Evaluation →'}
-          </button>
+            <button
+              onClick={handleStartEvaluation}
+              disabled={isRunning || !selectedDataset || isJudgeConflicting}
+              style={{
+                background: isRunning || isJudgeConflicting ? '#1B1B1B' : '#0000FF',
+                color: isRunning || isJudgeConflicting ? '#555555' : '#FFFFFF',
+                border: 'none',
+                padding: '0.55rem 1.4rem',
+                borderRadius: '2px',
+                fontSize: '0.8rem',
+                fontFamily: 'monospace',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                cursor: isRunning || isJudgeConflicting ? 'not-allowed' : 'pointer',
+                transition: 'background 0.15s ease',
+              }}
+            >
+              {isRunning ? 'EXECUTING BENCHMARK...' : 'INITIALIZE BENCHMARK →'}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
       {/* ── Historical Runs Table ── */}
       <div>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '1rem' }}>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#F2F2F2', marginBottom: '0.75rem', fontFamily: 'monospace' }}>
           Evaluation Run History ({evaluationRuns.length})
         </h2>
 
         <div
           style={{
-            background: '#161B22',
-            borderRadius: '10px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#151515',
+            borderRadius: '2px',
+            border: '1px solid #292929',
             overflowX: 'auto',
           }}
         >
@@ -1558,13 +1580,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               style={{
                 display: 'grid',
                 gridTemplateColumns: '120px 105px 1.4fr 1.1fr 85px 85px 140px 170px',
-                padding: '0.8rem 1.2rem',
-                background: '#0D1117',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                fontSize: '0.72rem',
+                padding: '0.65rem 1.1rem',
+                background: '#1B1B1B',
+                borderBottom: '1px solid #292929',
+                fontSize: '0.68rem',
+                fontFamily: 'monospace',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: '#888888',
+                color: '#858585',
                 fontWeight: 600,
               }}
             >
@@ -1788,22 +1811,31 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   })()}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.35rem' }}>
                   {report && (
                     <button
                       onClick={() => handleOpenReport(run)}
                       style={{
-                        background: 'rgba(91, 130, 166, 0.12)',
-                        border: '1px solid rgba(91, 130, 166, 0.3)',
-                        color: '#5B82A6',
-                        padding: '0.3rem 0.6rem',
-                        borderRadius: '4px',
-                        fontSize: '0.72rem',
+                        background: '#1B1B1B',
+                        border: '1px solid #292929',
+                        color: '#F2F2F2',
+                        padding: '0.25rem 0.55rem',
+                        borderRadius: '2px',
+                        fontSize: '0.7rem',
+                        fontFamily: 'monospace',
                         fontWeight: 600,
                         cursor: 'pointer',
                       }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#0000FF';
+                        e.currentTarget.style.color = '#0000FF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#292929';
+                        e.currentTarget.style.color = '#F2F2F2';
+                      }}
                     >
-                      Report
+                      REPORT
                     </button>
                   )}
                   <button
@@ -1812,17 +1844,26 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       navigate('#/app/regressions');
                     }}
                     style={{
-                      background: 'rgba(200, 109, 81, 0.1)',
-                      border: '1px solid rgba(200, 109, 81, 0.3)',
-                      color: 'var(--accent, #C86D51)',
-                      padding: '0.3rem 0.6rem',
-                      borderRadius: '4px',
-                      fontSize: '0.72rem',
+                      background: '#1B1B1B',
+                      border: '1px solid #292929',
+                      color: '#F2F2F2',
+                      padding: '0.25rem 0.55rem',
+                      borderRadius: '2px',
+                      fontSize: '0.7rem',
+                      fontFamily: 'monospace',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#0000FF';
+                      e.currentTarget.style.color = '#0000FF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#292929';
+                      e.currentTarget.style.color = '#F2F2F2';
+                    }}
                   >
-                    Failures
+                    DIFF
                   </button>
                   {evaluationRuns.length > 1 && (
                     <button
@@ -1831,11 +1872,13 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: '#666666',
-                        fontSize: '0.8rem',
+                        color: '#555555',
+                        fontSize: '0.85rem',
                         cursor: 'pointer',
                         padding: '0 0.3rem',
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = '#555555')}
                     >
                       ✕
                     </button>

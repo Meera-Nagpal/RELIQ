@@ -124,10 +124,10 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       style={{
-        background: isDragging ? 'rgba(214, 210, 197, 0.07)' : '#111315',
-        border: isDragging ? '1px dashed #E8E4D9' : '1px dashed #343638',
-        borderRadius: '8px',
-        padding: '1.6rem 1.25rem',
+        background: isDragging ? 'rgba(0, 0, 255, 0.08)' : '#151515',
+        border: isDragging ? '1px dashed #0000FF' : '1px dashed #292929',
+        borderRadius: '2px',
+        padding: '1.4rem 1.25rem',
         textAlign: 'center',
         transition: 'border-color 0.15s ease, background-color 0.15s ease',
         display: 'flex',
@@ -140,15 +140,15 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
       <div
         aria-hidden="true"
         style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '6px',
-          background: '#191B1C',
-          border: '1px solid #343638',
+          width: '36px',
+          height: '36px',
+          borderRadius: '2px',
+          background: '#1B1B1B',
+          border: '1px solid #292929',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: isDragging ? '#E8E4D9' : '#A4A49D',
+          color: isDragging ? '#0000FF' : '#858585',
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -161,22 +161,23 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
       <div>
         <div
           style={{
-            fontSize: '0.92rem',
-            fontWeight: 600,
-            color: '#E8E4D9',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            color: '#F2F2F2',
             letterSpacing: '-0.01em',
+            fontFamily: 'monospace',
           }}
         >
-          {isDragging ? 'Release file to parse dataset' : 'Drop a dataset file here'}
+          {isDragging ? 'RELEASE TO PARSE DATASET' : 'DROP TEST SUITE FILE'}
         </div>
         <div
           style={{
-            fontSize: '0.78rem',
-            color: '#A4A49D',
-            marginTop: '0.2rem',
+            fontSize: '0.75rem',
+            color: '#858585',
+            marginTop: '0.15rem',
           }}
         >
-          or choose a file from your computer
+          or click below to browse local storage
         </div>
       </div>
 
@@ -186,18 +187,19 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           disabled={disabled}
           onClick={onChooseFileClick}
           style={{
-            background: '#D6D2C5',
-            color: '#111315',
-            border: '1px solid #D6D2C5',
-            borderRadius: '5px',
-            padding: '0.45rem 0.95rem',
-            fontSize: '0.78rem',
-            fontWeight: 600,
+            background: '#0000FF',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: '2px',
+            padding: '0.4rem 0.95rem',
+            fontSize: '0.75rem',
+            fontFamily: 'monospace',
+            fontWeight: 700,
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.6 : 1,
           }}
         >
-          Choose dataset
+          CHOOSE DATASET FILE
         </button>
       </div>
 
@@ -217,14 +219,14 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
           <span
             key={fmt}
             style={{
-              fontSize: '0.68rem',
+              fontSize: '0.65rem',
               fontFamily: 'monospace',
               fontWeight: 600,
-              color: '#D6D2C5',
-              background: '#191B1C',
-              border: '1px solid #343638',
-              borderRadius: '4px',
-              padding: '0.14rem 0.45rem',
+              color: '#858585',
+              background: '#1B1B1B',
+              border: '1px solid #292929',
+              borderRadius: '2px',
+              padding: '0.12rem 0.45rem',
               letterSpacing: '0.03em',
             }}
           >
@@ -234,8 +236,8 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
       </div>
 
       {/* Limits */}
-      <div style={{ fontSize: '0.72rem', color: '#A4A49D' }}>
-        Maximum 5 MB · Up to 500 scenarios
+      <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#555555' }}>
+        MAX 5 MB · UP TO 500 SCENARIOS · RFC 4180 / JSON
       </div>
 
       {/* Optional quick sample loaders for testing */}

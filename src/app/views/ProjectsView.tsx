@@ -79,35 +79,36 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1100px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1440px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
-            WORKSPACE // REPOSITORIES
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+            WORKSPACES // PROJECT REPOSITORIES
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
-            Projects & Workspaces
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
+            Workspaces & Repositories
           </h1>
-          <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0 }}>
-            Organize evaluation datasets, regression baselines, and deployment gates by AI application.
+          <p style={{ color: '#858585', fontSize: '0.82rem', margin: 0, maxWidth: '640px', lineHeight: 1.5 }}>
+            Organize evaluation datasets, regression baselines, and deployment gates by application workspace.
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
           style={{
-            background: 'var(--accent, #C86D51)',
+            background: '#0000FF',
             color: '#FFFFFF',
             border: 'none',
-            padding: '0.65rem 1.4rem',
-            borderRadius: '6px',
-            fontSize: '0.85rem',
+            padding: '0.45rem 1rem',
+            borderRadius: '2px',
+            fontSize: '0.75rem',
+            fontFamily: 'monospace',
             fontWeight: 700,
             cursor: 'pointer',
           }}
         >
-          + Create Project
+          + NEW WORKSPACE
         </button>
       </div>
 
@@ -115,56 +116,58 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       {projects.length === 0 ? (
         <div
           style={{
-            padding: '4rem 2rem',
+            padding: '3rem 2rem',
             textAlign: 'center',
-            background: '#14181F',
-            borderRadius: '10px',
-            border: '1px dashed rgba(255, 255, 255, 0.15)',
+            background: '#151515',
+            borderRadius: '2px',
+            border: '1px dashed #292929',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: '1rem',
           }}
         >
-          <div style={{ fontSize: '2rem', color: '#888888' }}>◫</div>
-          <h3 style={{ color: '#FFFFFF', margin: 0, fontSize: '1.25rem', letterSpacing: '0.05em' }}>NO SAVED PROJECTS</h3>
-          <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0, maxWidth: '440px', lineHeight: 1.5 }}>
-            Get started by creating your first evaluation project workspace to organize datasets, models, and regression gates.
+          <div style={{ fontSize: '1.5rem', color: '#858585', fontFamily: 'monospace' }}>[0 WORKSPACES]</div>
+          <h3 style={{ color: '#F2F2F2', margin: 0, fontSize: '1.1rem', letterSpacing: '0.05em' }}>NO SAVED WORKSPACES</h3>
+          <p style={{ color: '#858585', fontSize: '0.85rem', margin: 0, maxWidth: '440px', lineHeight: 1.5 }}>
+            Create an evaluation workspace to organize test suites, models, and regression gate policies.
           </p>
           <button
             onClick={handleOpenCreate}
             style={{
-              background: 'var(--accent, #C86D51)',
+              background: '#0000FF',
               color: '#FFFFFF',
               border: 'none',
-              padding: '0.65rem 1.4rem',
-              borderRadius: '6px',
-              fontSize: '0.85rem',
+              padding: '0.5rem 1.2rem',
+              borderRadius: '2px',
+              fontSize: '0.78rem',
+              fontFamily: 'monospace',
               fontWeight: 700,
               cursor: 'pointer',
               marginTop: '0.5rem',
             }}
           >
-            + Create First Project
+            + CREATE WORKSPACE
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem' }}>
           {projects.map((proj) => {
             const isActive = proj.id === activeProject?.id;
             return (
               <div
                 key={proj.id}
                 style={{
-                  background: '#14181F',
+                  background: '#151515',
                   border: isActive
-                    ? '1px solid var(--accent, #C86D51)'
-                    : '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '10px',
-                  padding: '1.8rem',
+                    ? '1px solid #0000FF'
+                    : '1px solid #292929',
+                  borderRadius: '2px',
+                  padding: '1.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
+                  gap: '1rem',
                 }}
               >
                 <div>

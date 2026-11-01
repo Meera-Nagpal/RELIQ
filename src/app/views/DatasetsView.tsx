@@ -449,51 +449,55 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
     ['behavioral_safety', 'llm_judge', 'response_length', 'latency', 'json_validity'].includes(ev);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1280px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1440px', margin: '0 auto' }}>
       {/* ── Top Bar: Title & Dataset Actions ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', color: 'var(--accent, #C86D51)', fontWeight: 600, textTransform: 'uppercase' }}>
-            TEST SUITES // BENCHMARK REGISTRY & USER DATASETS
+          <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.12em', color: '#0000FF', fontWeight: 700, textTransform: 'uppercase' }}>
+            TEST SUITES // REGISTRY & UPLOADS
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', margin: '0.3rem 0 0.4rem 0' }}>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F2F2F2', margin: '0.2rem 0 0.35rem 0', letterSpacing: '-0.02em' }}>
             Evaluation Datasets
           </h1>
-          <p style={{ color: '#8899AA', fontSize: '0.9rem', margin: 0 }}>
-            Evaluate models against immutable built-in benchmarks or import your own datasets (<code>.json</code>, <code>.jsonl</code>, <code>.ndjson</code>, <code>.csv</code>).
+          <p style={{ color: '#858585', fontSize: '0.82rem', margin: 0, maxWidth: '640px', lineHeight: 1.5 }}>
+            Manage immutable reference benchmarks and curated test scenarios. Supports multi-format ingest (.json, .jsonl, .csv) with schema validation.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button
             onClick={handleOpenImportWizard}
             style={{
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#ECEFF2',
-              padding: '0.6rem 1.15rem',
-              borderRadius: '6px',
-              fontSize: '0.82rem',
+              background: '#151515',
+              border: '1px solid #292929',
+              color: '#F2F2F2',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '2px',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
               fontWeight: 600,
               cursor: 'pointer',
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#0000FF')}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#292929')}
           >
-            ↑ Advanced Import / Paste Raw (.json / .jsonl / .ndjson / .csv)
+            ↑ IMPORT DATASET
           </button>
           <button
             onClick={handleOpenAddCase}
             style={{
-              background: 'var(--accent, #C86D51)',
+              background: '#0000FF',
               color: '#FFFFFF',
               border: 'none',
-              padding: '0.6rem 1.3rem',
-              borderRadius: '6px',
-              fontSize: '0.82rem',
+              padding: '0.45rem 1rem',
+              borderRadius: '2px',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
               fontWeight: 700,
               cursor: 'pointer',
             }}
           >
-            + Add Test Case
+            + ADD TEST CASE
           </button>
         </div>
       </div>
@@ -520,15 +524,15 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: '0.8rem',
-          background: '#14181F',
-          padding: '0.8rem 1.2rem',
-          borderRadius: '8px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: '#151515',
+          padding: '0.65rem 0.95rem',
+          borderRadius: '2px',
+          border: '1px solid #292929',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.78rem', color: '#888888', textTransform: 'uppercase', fontWeight: 600 }}>
-            Suites ({datasets.length}):
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#858585', textTransform: 'uppercase', fontWeight: 600 }}>
+            SUITES ({datasets.length}):
           </span>
           {datasets.map((d) => {
             const isBuiltin = d.sourceType === 'builtin' || d.isImmutable || isBuiltinDatasetId(d.id);
@@ -538,15 +542,14 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 key={d.id}
                 onClick={() => onSelectDataset(d.id)}
                 style={{
-                  background: isSelected ? 'rgba(200, 109, 81, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-                  border: isSelected
-                    ? '1px solid var(--accent, #C86D51)'
-                    : '1px solid rgba(255, 255, 255, 0.08)',
-                  color: isSelected ? '#FFFFFF' : '#99AABB',
-                  padding: '0.45rem 0.85rem',
-                  borderRadius: '6px',
-                  fontSize: '0.83rem',
-                  fontWeight: 600,
+                  background: isSelected ? '#1B1B1B' : 'transparent',
+                  border: isSelected ? '1px solid #0000FF' : '1px solid transparent',
+                  color: isSelected ? '#F2F2F2' : '#858585',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '2px',
+                  fontSize: '0.78rem',
+                  fontFamily: 'monospace',
+                  fontWeight: isSelected ? 700 : 500,
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -556,18 +559,19 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 <span>{d.name}</span>
                 <span
                   style={{
-                    fontSize: '0.66rem',
-                    padding: '0.1rem 0.38rem',
-                    borderRadius: '4px',
+                    fontSize: '0.62rem',
+                    padding: '0.08rem 0.35rem',
+                    borderRadius: '2px',
                     fontWeight: 700,
-                    background: isBuiltin ? 'rgba(78, 155, 111, 0.12)' : 'rgba(91, 130, 166, 0.12)',
-                    color: isBuiltin ? '#4E9B6F' : '#5B82A6',
+                    background: isBuiltin ? '#13241A' : '#111111',
+                    color: isBuiltin ? '#22C55E' : '#858585',
+                    border: isBuiltin ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #292929',
                   }}
                 >
                   {isBuiltin ? 'BUILT-IN' : 'UPLOAD'}
                 </span>
-                <span style={{ fontSize: '0.74rem', color: '#8899AA', fontFamily: 'monospace' }}>
-                  v{d.version || '1.0.0'} ({d.cases.length})
+                <span style={{ fontSize: '0.7rem', color: '#555555' }}>
+                  ({d.cases.length})
                 </span>
               </button>
             );
@@ -576,15 +580,18 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             onClick={() => setIsNewDatasetModalOpen(true)}
             style={{
               background: 'transparent',
-              border: '1px dashed rgba(255, 255, 255, 0.2)',
-              color: '#AAAAAA',
-              padding: '0.4rem 0.7rem',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
+              border: '1px dashed #3A3A3A',
+              color: '#858585',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '2px',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
               cursor: 'pointer',
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F2')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#858585')}
           >
-            + New Empty Suite
+            + NEW SUITE
           </button>
         </div>
 
@@ -597,11 +604,12 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             }}
             style={{
               background: 'transparent',
-              border: '1px solid rgba(192, 92, 84, 0.3)',
-              borderRadius: '5px',
-              padding: '0.35rem 0.75rem',
-              color: '#C05C54',
-              fontSize: '0.76rem',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '2px',
+              padding: '0.3rem 0.65rem',
+              color: '#EF4444',
+              fontSize: '0.72rem',
+              fontFamily: 'monospace',
               fontWeight: 600,
               cursor: 'pointer',
             }}

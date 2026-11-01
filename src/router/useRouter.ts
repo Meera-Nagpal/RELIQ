@@ -14,12 +14,18 @@
 import { useEffect, useState, useCallback } from 'react';
 
 export type AppView =
+  | 'overview'
   | 'dashboard'
-  | 'projects'
-  | 'datasets'
   | 'evaluations'
+  | 'new-evaluation'
+  | 'datasets'
+  | 'models'
+  | 'judges'
+  | 'history'
   | 'regressions'
-  | 'settings';
+  | 'details'
+  | 'settings'
+  | 'projects';
 
 export interface RouteState {
   isApp: boolean;
@@ -32,25 +38,32 @@ function parseHash(hash: string): RouteState {
 
   if (cleanHash.startsWith('app')) {
     const parts = cleanHash.split('/');
-    const view = (parts[1] as AppView) || 'dashboard';
+    const view = (parts[1] as AppView) || 'overview';
     const validViews: AppView[] = [
+      'overview',
       'dashboard',
-      'projects',
-      'datasets',
       'evaluations',
+      'new-evaluation',
+      'datasets',
+      'models',
+      'judges',
+      'history',
       'regressions',
+      'details',
       'settings',
+      'projects',
     ];
+    const resolvedView = validViews.includes(view) ? view : 'overview';
     return {
       isApp: true,
-      appView: validViews.includes(view) ? view : 'dashboard',
-      fullPath: `#/app/${view}`,
+      appView: resolvedView,
+      fullPath: `#/app/${resolvedView}`,
     };
   }
 
   return {
     isApp: false,
-    appView: 'dashboard',
+    appView: 'overview',
     fullPath: '#/',
   };
 }

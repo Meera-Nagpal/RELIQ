@@ -28,6 +28,9 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { DashboardView } from './views/DashboardView';
 import { DatasetsView } from './views/DatasetsView';
 import { EvaluationsView } from './views/EvaluationsView';
+import { HistoryView } from './views/HistoryView';
+import { JudgesView } from './views/JudgesView';
+import { ModelsView } from './views/ModelsView';
 import { ProjectsView } from './views/ProjectsView';
 import { RegressionsView } from './views/RegressionsView';
 import { SettingsView } from './views/SettingsView';
@@ -275,7 +278,7 @@ export const ReliqApp: React.FC = () => {
             </div>
           ) : (
           <ErrorBoundary>
-          {appView === 'dashboard' && activeProject && (
+          {(appView === 'overview' || appView === 'dashboard') && activeProject && (
             <DashboardView
               project={activeProject}
               latestRun={activeRun}
@@ -309,7 +312,25 @@ export const ReliqApp: React.FC = () => {
             />
           )}
 
-          {appView === 'evaluations' && activeProject && (
+          {appView === 'models' && (
+            <ModelsView />
+          )}
+
+          {appView === 'judges' && (
+            <JudgesView />
+          )}
+
+          {appView === 'history' && (
+            <HistoryView
+              evaluationRuns={evaluationRuns}
+              onSelectRun={(run) => {
+                setActiveRunId(run.id);
+              }}
+              onDeleteRun={handleDeleteRun}
+            />
+          )}
+
+          {(appView === 'evaluations' || appView === 'new-evaluation') && activeProject && (
             <EvaluationsView
               project={activeProject}
               datasets={datasets}
@@ -329,7 +350,7 @@ export const ReliqApp: React.FC = () => {
             />
           )}
 
-          {appView === 'regressions' && (
+          {(appView === 'regressions' || appView === 'details') && (
             <RegressionsView
               run={activeRun}
               onUpdateReleaseDecision={handleUpdateReleaseDecision}
