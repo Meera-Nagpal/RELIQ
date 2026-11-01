@@ -12,9 +12,9 @@
    - Concrete evidence findings & recommended engineering actions
    ============================================================ */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ComparisonReport, RecommendationVerdict } from '../../evaluation/comparator';
-import { downloadReportPdf } from '../../utils/pdfExporter';
+import { downloadReportPdf, downloadTestCasesPdf } from '../../utils/pdfExporter';
 
 interface ComparisonReportModalProps {
   report: ComparisonReport;
@@ -27,6 +27,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 }) => {
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [selectedSection, setSelectedSection] = useState<string>('ALL');
+  const [showTestCasesInModal, setShowTestCasesInModal] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
   // ── 0. Evaluated Cases & Active Sections Processing ──
   const validCaseResults = (report.caseResults || []).filter((c) => {
     return Boolean(
@@ -129,6 +132,22 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
   const handleExportPdf = () => {
     downloadReportPdf(report);
+  };
+
+  const handleExportTestCasesPdf = () => {
+    downloadTestCasesPdf(report);
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (e.currentTarget.scrollTop > 220) {
+      setShowScrollTop(true);
+    } else {
+      setShowScrollTop(false);
+    }
+  };
+
+  const scrollToTop = () => {
+    modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCopySummary = async () => {
@@ -366,19 +385,23 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
       onClick={onClose}
     >
       <div
+        ref={modalScrollRef}
+        onScroll={handleScroll}
         style={{
-          background: '#14181F',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '12px',
+          position: 'relative',
+          background: '#151515',
+          border: '1px solid #292929',
+          borderRadius: '2px',
           width: '100%',
-          maxWidth: '1000px',
-          maxHeight: '92vh',
+          maxWidth: '1240px',
+          maxHeight: '94vh',
           overflowY: 'auto',
           padding: '2rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '1.5rem',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.6)',
+          boxShadow: '0 16px 48px rgba(0, 0, 0, 0.8)',
+          scrollBehavior: 'smooth',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -488,14 +511,15 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             </button>
             <button
               onClick={handleExportPdf}
-              title="Download cross-model comparison report as real vector PDF"
+              title="Download executive cross-model summary report as vector PDF"
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: '#151515',
+                border: '1px solid #292929',
                 color: '#ECEFF2',
-                padding: '0.45rem 0.9rem',
-                borderRadius: '6px',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '2px',
                 fontSize: '0.75rem',
+                fontFamily: 'monospace',
                 fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
@@ -503,7 +527,30 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 gap: '0.4rem',
               }}
             >
-              <span>📄</span> Export PDF
+              <span>📊</span> Summary PDF
+            </button>
+            <button
+              onClick={handleExportTestCasesPdf}
+              title="Download dedicated test cases PDF with winner determination for each scenario"
+              style={{
+                background: 'var(--navy-royal, #1E3A8A)',
+                border: '1px solid #2563EB',
+                color: '#F2F2F2',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '2px',
+                fontSize: '0.75rem',
+                fontFamily: 'monospace',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#2563EB')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#1E3A8A')}
+            >
+              <span>📄</span> Test Cases PDF
             </button>
             <button
               onClick={onClose}
@@ -1848,29 +1895,103 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
         </div>
 
-        {/* ── 4. Independent Test Case Section Reports (Segmented by Category) ── */}
+        {/* ── 4. Test Cases & Better Response Breakdown ── */}
         {validCaseResults.length > 0 && (
-          <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Dedicated PDF Download Card */}
+            <div
+              style={{
+                background: '#151515',
+                border: '1px solid #292929',
+                borderRadius: '2px',
+                padding: '1.25rem 1.4rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem',
+              }}
+            >
               <div>
-                <h3 style={{ fontSize: '1.2rem', color: '#FFFFFF', margin: 0, fontWeight: 800, letterSpacing: '0.02em' }}>
-                  Independent Test Case Section Reports
-                </h3>
-                <div style={{ fontSize: '0.82rem', color: '#8899AA', marginTop: '0.2rem' }}>
-                  {activeSections.length} active section{activeSections.length > 1 ? 's' : ''} • {validCaseResults.length} required evaluation{validCaseResults.length > 1 ? 's' : ''} completed (100% evaluated scope)
+                <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#60A5FA', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  INDIVIDUAL SCENARIO TELEMETRY & BETTER-RESPONSE BREAKDOWN
                 </div>
+                <h4 style={{ margin: '0.2rem 0 0.25rem 0', color: '#F2F2F2', fontSize: '1rem', fontWeight: 700 }}>
+                  Evaluated Scenarios ({validCaseResults.length} Cases)
+                </h4>
+                <p style={{ margin: 0, color: '#858585', fontSize: '0.78rem', lineHeight: 1.45, maxWidth: '600px' }}>
+                  Prompts, expected behaviors, baseline vs candidate outputs, and individual winner determinations are compiled into a standalone vector PDF.
+                </p>
               </div>
 
-              {/* Overall Pass / Fail Pills */}
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: '#4E9B6F', background: 'rgba(78, 155, 111, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(78, 155, 111, 0.28)' }}>
-                  {passedCasesCount} PASS
-                </span>
-                <span style={{ fontSize: '0.8rem', color: '#C05C54', background: 'rgba(192, 92, 84, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(192, 92, 84, 0.28)' }}>
-                  {validCaseResults.length - passedCasesCount} FAIL
-                </span>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleExportTestCasesPdf}
+                  style={{
+                    background: 'var(--navy-royal, #1E3A8A)',
+                    color: '#F2F2F2',
+                    border: '1px solid #2563EB',
+                    padding: '0.55rem 1.15rem',
+                    borderRadius: '2px',
+                    fontSize: '0.78rem',
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#2563EB')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#1E3A8A')}
+                >
+                  <span>📄</span> DOWNLOAD TEST CASES PDF (WITH WINNER BREAKDOWN)
+                </button>
+
+                <button
+                  onClick={() => setShowTestCasesInModal(!showTestCasesInModal)}
+                  style={{
+                    background: 'transparent',
+                    color: '#858585',
+                    border: '1px solid #292929',
+                    padding: '0.55rem 0.9rem',
+                    borderRadius: '2px',
+                    fontSize: '0.75rem',
+                    fontFamily: 'monospace',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F2')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#858585')}
+                >
+                  {showTestCasesInModal ? '▲ Hide Cases in Modal' : '▼ Expand Cases in Modal'}
+                </button>
               </div>
             </div>
+
+            {/* In-Modal Cases (Hidden by default to keep report concise to metric comparisons) */}
+            {showTestCasesInModal && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', color: '#FFFFFF', margin: 0, fontWeight: 800, letterSpacing: '0.02em' }}>
+                      Independent Test Case Section Reports
+                    </h3>
+                    <div style={{ fontSize: '0.82rem', color: '#8899AA', marginTop: '0.2rem' }}>
+                      {activeSections.length} active section{activeSections.length > 1 ? 's' : ''} • {validCaseResults.length} required evaluation{validCaseResults.length > 1 ? 's' : ''} completed (100% evaluated scope)
+                    </div>
+                  </div>
+
+                  {/* Overall Pass / Fail Pills */}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#4E9B6F', background: 'rgba(78, 155, 111, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(78, 155, 111, 0.28)' }}>
+                      {passedCasesCount} PASS
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#C05C54', background: 'rgba(192, 92, 84, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(192, 92, 84, 0.28)' }}>
+                      {validCaseResults.length - passedCasesCount} FAIL
+                    </span>
+                  </div>
+                </div>
 
             {/* Section Filter Tabs */}
             {activeSections.length > 1 && (
@@ -2169,6 +2290,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   </div>
                 );
               })}
+              </div>
+            )}
           </div>
         )}
 
@@ -2184,6 +2307,38 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               ))}
             </ul>
           </div>
+        )}
+
+        {/* Floating Scroll to Top button for maximized / long reports */}
+        {showScrollTop && (
+          <button
+            onClick={scrollToTop}
+            title="Scroll back to top"
+            style={{
+              position: 'sticky',
+              bottom: '1rem',
+              alignSelf: 'flex-end',
+              background: 'var(--navy-royal, #1E3A8A)',
+              color: '#F2F2F2',
+              border: '1px solid #2563EB',
+              borderRadius: '2px',
+              padding: '0.45rem 0.9rem',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.7)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              zIndex: 100,
+              transition: 'background 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#2563EB')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#1E3A8A')}
+          >
+            ↑ SCROLL TO TOP
+          </button>
         )}
       </div>
     </div>

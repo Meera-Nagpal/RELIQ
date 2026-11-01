@@ -9,6 +9,7 @@
    ============================================================ */
 
 import { ComparisonReport } from '../evaluation/comparator';
+import { TestCaseResult } from '../domain/types';
 
 /**
  * Escapes characters for PDF literal strings (standard PDF syntax).
@@ -836,6 +837,284 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
 }
 
 /**
+ * Evaluates which model gave the better response for an individual test scenario.
+ */
+export function evaluateScenarioBetterResponse(c: TestCaseResult): {
+  winner: 'CANDIDATE' | 'BASELINE' | 'PARITY' | 'FAILED';
+  winnerLabel: string;
+  reason: string;
+} {
+  const bPass = c.baselineExecutionStatus === 'PASS' || (c.baselineScore !== null && c.baselineScore >= 0.7);
+  const cPass = c.passed === true || c.candidateExecutionStatus === 'PASS';
+  const bScore = c.baselineScore ?? (bPass ? 1.0 : 0.0);
+  const cScore = c.candidateScore ?? (cPass ? 1.0 : 0.0);
+
+  if (cPass && !bPass) {
+    return {
+      winner: 'CANDIDATE',
+      winnerLabel: '★ CANDIDATE SUPERIOR (Passed where baseline failed)',
+      reason: 'Candidate satisfied criteria while baseline failed',
+    };
+  }
+  if (bPass && !cPass) {
+    return {
+      winner: 'BASELINE',
+      winnerLabel: '★ BASELINE SUPERIOR (Passed where candidate failed)',
+      reason: 'Baseline satisfied criteria while candidate failed',
+    };
+  }
+  if (!bPass && !cPass) {
+    return {
+      winner: 'FAILED',
+      winnerLabel: '⚠ BOTH FAILED (Did not meet target criteria)',
+      reason: 'Neither model met criteria',
+    };
+  }
+
+  // Both passed - compare quality score
+  const scoreDiff = (cScore ?? 0) - (bScore ?? 0);
+  if (scoreDiff > 0.04) {
+    return {
+      winner: 'CANDIDATE',
+      winnerLabel: `★ CANDIDATE BETTER (+${Math.round(scoreDiff * 100)} Quality Pts)`,
+      reason: `Higher evaluation score (${Math.round((cScore ?? 0) * 100)}% vs ${Math.round((bScore ?? 0) * 100)}%)`,
+    };
+  }
+  if (scoreDiff < -0.04) {
+    return {
+      winner: 'BASELINE',
+      winnerLabel: `★ BASELINE BETTER (+${Math.round(Math.abs(scoreDiff) * 100)} Quality Pts)`,
+      reason: `Higher evaluation score (${Math.round((bScore ?? 0) * 100)}% vs ${Math.round((cScore ?? 0) * 100)}%)`,
+    };
+  }
+
+  // Quality equal - compare latency if difference > 80ms
+  const bLat = c.baselineLatencyMs || 0;
+  const cLat = c.candidateLatencyMs || 0;
+  if (bLat > 0 && cLat > 0 && (bLat - cLat) > 80) {
+    return {
+      winner: 'CANDIDATE',
+      winnerLabel: `★ CANDIDATE FASTER (${cLat}ms vs ${bLat}ms)`,
+      reason: `Responded ${bLat - cLat}ms faster with equal accuracy`,
+    };
+  }
+  if (bLat > 0 && cLat > 0 && (cLat - bLat) > 80) {
+    return {
+      winner: 'BASELINE',
+      winnerLabel: `★ BASELINE FASTER (${bLat}ms vs ${cLat}ms)`,
+      reason: `Responded ${cLat - bLat}ms faster with equal accuracy`,
+    };
+  }
+
+  return {
+    winner: 'PARITY',
+    winnerLabel: '★ EQUIVALENT / STATISTICAL PARITY',
+    reason: 'Both models produced equivalent response quality and latency',
+  };
+}
+
+/**
+ * Generates a dedicated vector PDF containing all individual test scenarios
+ * with side-by-side prompt, expected behavior, baseline and candidate outputs,
+ * and a clear winner determination for which gave the better response.
+ */
+export function generateTestCasesPdf(report: ComparisonReport): Uint8Array {
+  const doc = new PdfDocumentBuilder();
+  const left = doc.margin;
+  const width = doc.contentWidth;
+
+  const executedCases = (report.caseResults || []).filter(
+    (c) => c && (c.testCaseId || c.testCaseName || c.prompt || c.input)
+  );
+
+  // Compute summary stats
+  let candWins = 0;
+  let baseWins = 0;
+  let ties = 0;
+  let bothFailed = 0;
+
+  for (const c of executedCases) {
+    const res = evaluateScenarioBetterResponse(c);
+    if (res.winner === 'CANDIDATE') candWins++;
+    else if (res.winner === 'BASELINE') baseWins++;
+    else if (res.winner === 'FAILED') bothFailed++;
+    else ties++;
+  }
+
+  // 1. Title & Header
+  doc.ensureSpace(80);
+  const headerY = doc.y - 75;
+  doc.setFillColor(0.08, 0.1, 0.14);
+  doc.setStrokeColor(0.2, 0.25, 0.35);
+  doc.drawRect(left, headerY, width, 75, true, true);
+
+  doc.setFillColor(0.38, 0.65, 0.98);
+  doc.drawText('RELIQ // INDIVIDUAL TEST CASES & BETTER-RESPONSE BREAKDOWN', left + 14, headerY + 58, 8, 'Helvetica-Bold');
+
+  doc.setFillColor(0.95, 0.96, 0.98);
+  doc.drawText(`Dataset: ${report.datasetName} (${executedCases.length} Scenarios Evaluated)`, left + 14, headerY + 40, 12, 'Helvetica-Bold');
+
+  const baseProv = report.baseline.provider.toUpperCase();
+  const candProv = report.candidate.provider.toUpperCase();
+  doc.setFillColor(0.6, 0.65, 0.72);
+  doc.drawText(
+    `Baseline: ${baseProv} (${report.baseline.model})   vs   Candidate: ${candProv} (${report.candidate.model})`,
+    left + 14,
+    headerY + 24,
+    8,
+    'Helvetica'
+  );
+
+  doc.drawText(`Generated: ${new Date().toLocaleString()}   •   Run ID: ${report.id || 'benchmark'}`, left + 14, headerY + 10, 7.5, 'Courier');
+
+  doc.y = headerY - 14;
+
+  // 2. Summary Winner Overview Strip
+  doc.ensureSpace(34);
+  const sumY = doc.y - 28;
+  doc.setFillColor(0.96, 0.97, 0.98);
+  doc.setStrokeColor(0.85, 0.88, 0.9);
+  doc.drawRect(left, sumY, width, 28, true, true);
+
+  doc.setFillColor(0.12, 0.15, 0.2);
+  doc.drawText(`TOTAL EVALUATED: ${executedCases.length}`, left + 12, sumY + 10, 8, 'Helvetica-Bold');
+
+  doc.setFillColor(0.1, 0.6, 0.25);
+  doc.drawText(`CANDIDATE WINS: ${candWins}`, left + 140, sumY + 10, 8, 'Helvetica-Bold');
+
+  doc.setFillColor(0.12, 0.25, 0.55);
+  doc.drawText(`BASELINE WINS: ${baseWins}`, left + 265, sumY + 10, 8, 'Helvetica-Bold');
+
+  doc.setFillColor(0.45, 0.5, 0.55);
+  doc.drawText(`PARITY / TIES: ${ties}`, left + 380, sumY + 10, 8, 'Helvetica-Bold');
+
+  if (bothFailed > 0) {
+    doc.setFillColor(0.85, 0.2, 0.2);
+    doc.drawText(`BOTH FAILED: ${bothFailed}`, left + 460, sumY + 10, 8, 'Helvetica-Bold');
+  }
+
+  doc.y = sumY - 16;
+
+  // 3. Render Each Scenario
+  for (let i = 0; i < executedCases.length; i++) {
+    const c = executedCases[i];
+    const caseOrder = c.order ?? (i + 1);
+    const rawId = c.testCaseId || `tc-${String(caseOrder).padStart(2, '0')}`;
+    const caseCode = rawId.startsWith('tc-') ? `CASE-${rawId.slice(3).padStart(3, '0')}` : rawId.toUpperCase();
+    const title = c.title || c.testCaseName || `Scenario ${caseOrder}`;
+    const category = c.category || 'General';
+    const promptText = (c.prompt || c.input || '').trim();
+    const expectedText = (c.expected_behavior || c.expectedOutput || '').trim();
+    const baselineText = (c.baselineOutput || '—').trim();
+    const candidateText = (c.candidateOutput || '—').trim();
+
+    const better = evaluateScenarioBetterResponse(c);
+
+    const isPass = c.passed === true;
+    const cardH = 112;
+    doc.ensureSpace(cardH + 10);
+    const cY = doc.y - cardH;
+
+    // Outer card box
+    doc.setFillColor(0.985, 0.99, 1.0);
+    doc.setStrokeColor(0.85, 0.88, 0.92);
+    doc.drawRect(left, cY, width, cardH, true, true);
+
+    // Left status strip
+    if (better.winner === 'CANDIDATE') {
+      doc.setFillColor(0.15, 0.75, 0.35);
+    } else if (better.winner === 'BASELINE') {
+      doc.setFillColor(0.12, 0.35, 0.75);
+    } else if (better.winner === 'FAILED') {
+      doc.setFillColor(0.9, 0.25, 0.25);
+    } else {
+      doc.setFillColor(0.55, 0.6, 0.65);
+    }
+    doc.drawRect(left, cY, 5, cardH, true, false);
+
+    // Case Header Line
+    doc.setFillColor(0.1, 0.12, 0.16);
+    doc.drawText(`[${caseCode}]  #${caseOrder} — ${title.slice(0, 50)}`, left + 12, cY + cardH - 13, 8.5, 'Helvetica-Bold');
+
+    doc.setFillColor(0.45, 0.5, 0.56);
+    doc.drawText(`Category: ${category}`, left + width - 140, cY + cardH - 13, 7, 'Helvetica');
+
+    // Better Response / Winner Banner
+    doc.setFillColor(
+      better.winner === 'CANDIDATE' ? 0.9 : better.winner === 'BASELINE' ? 0.92 : better.winner === 'FAILED' ? 0.98 : 0.95,
+      better.winner === 'CANDIDATE' ? 0.98 : better.winner === 'BASELINE' ? 0.94 : better.winner === 'FAILED' ? 0.92 : 0.95,
+      better.winner === 'CANDIDATE' ? 0.92 : better.winner === 'BASELINE' ? 0.99 : better.winner === 'FAILED' ? 0.92 : 0.96
+    );
+    doc.setStrokeColor(
+      better.winner === 'CANDIDATE' ? 0.6 : better.winner === 'BASELINE' ? 0.5 : better.winner === 'FAILED' ? 0.85 : 0.75,
+      better.winner === 'CANDIDATE' ? 0.85 : better.winner === 'BASELINE' ? 0.7 : better.winner === 'FAILED' ? 0.5 : 0.75,
+      better.winner === 'CANDIDATE' ? 0.65 : better.winner === 'BASELINE' ? 0.9 : better.winner === 'FAILED' ? 0.5 : 0.78
+    );
+    doc.drawRect(left + 10, cY + cardH - 30, width - 20, 14, true, true);
+
+    doc.setFillColor(
+      better.winner === 'CANDIDATE' ? 0.08 : better.winner === 'BASELINE' ? 0.08 : better.winner === 'FAILED' ? 0.75 : 0.3,
+      better.winner === 'CANDIDATE' ? 0.55 : better.winner === 'BASELINE' ? 0.25 : better.winner === 'FAILED' ? 0.15 : 0.35,
+      better.winner === 'CANDIDATE' ? 0.2 : better.winner === 'BASELINE' ? 0.65 : better.winner === 'FAILED' ? 0.15 : 0.4
+    );
+    doc.drawText(
+      `${better.winnerLabel}  •  ${better.reason}`,
+      left + 16,
+      cY + cardH - 26,
+      7,
+      'Helvetica-Bold'
+    );
+
+    // Prompt Line
+    doc.setFillColor(0.4, 0.44, 0.5);
+    doc.drawText('INPUT / PROMPT:', left + 12, cY + cardH - 42, 6.5, 'Helvetica-Bold');
+    doc.setFillColor(0.18, 0.2, 0.25);
+    doc.drawText(promptText.slice(0, 110), left + 85, cY + cardH - 42, 7, 'Helvetica');
+
+    // Expected Line
+    doc.setFillColor(0.4, 0.44, 0.5);
+    doc.drawText('EXPECTED:', left + 12, cY + cardH - 54, 6.5, 'Helvetica-Bold');
+    doc.setFillColor(0.18, 0.2, 0.25);
+    doc.drawText(expectedText.slice(0, 110), left + 85, cY + cardH - 54, 7, 'Helvetica');
+
+    // Baseline Output Line (Left / Anchor)
+    doc.setFillColor(0.15, 0.3, 0.6);
+    doc.drawText('BASELINE OUTPUT:', left + 12, cY + cardH - 68, 6.5, 'Helvetica-Bold');
+    doc.setFillColor(0.12, 0.15, 0.2);
+    doc.drawText(baselineText.slice(0, 110), left + 85, cY + cardH - 68, 7, 'Helvetica');
+
+    // Candidate Output Line (Right / Target)
+    doc.setFillColor(0.1, 0.55, 0.25);
+    doc.drawText('CANDIDATE OUTPUT:', left + 12, cY + cardH - 82, 6.5, 'Helvetica-Bold');
+    doc.setFillColor(0.12, 0.15, 0.2);
+    doc.drawText(candidateText.slice(0, 110), left + 85, cY + cardH - 82, 7, 'Helvetica');
+
+    // Telemetry Footer Bar
+    doc.setFillColor(0.94, 0.95, 0.97);
+    doc.drawRect(left + 6, cY + 4, width - 12, 16, true, false);
+
+    const cScoreStr = c.candidateScore !== null && c.candidateScore !== undefined ? `${(c.candidateScore * 100).toFixed(0)}%` : isPass ? '100%' : '0%';
+    const bScoreStr = c.baselineScore !== null && c.baselineScore !== undefined ? `${(c.baselineScore * 100).toFixed(0)}%` : '100%';
+    const cLatStr = c.candidateLatencyMs ? `${c.candidateLatencyMs}ms` : '—';
+    const bLatStr = c.baselineLatencyMs ? `${c.baselineLatencyMs}ms` : '—';
+    const tokStr = c.candidateUsage ? `In: ${c.candidateUsage.inputTokens} | Out: ${c.candidateUsage.outputTokens}` : '—';
+
+    doc.setFillColor(0.3, 0.35, 0.42);
+    doc.drawText(
+      `Score: Base ${bScoreStr} vs Cand ${cScoreStr}   •   Latency: Base ${bLatStr} vs Cand ${cLatStr}   •   Tokens: ${tokStr}`,
+      left + 12,
+      cY + 8,
+      7,
+      'Helvetica'
+    );
+
+    doc.y = cY - 8;
+  }
+
+  return doc.buildPdfBytes();
+}
+
+/**
  * Downloads a generated PDF in browser environments.
  */
 export function downloadReportPdf(report: ComparisonReport): void {
@@ -845,7 +1124,7 @@ export function downloadReportPdf(report: ComparisonReport): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reliq-report-${report.id || 'benchmark'}.pdf`;
+    a.download = `reliq-summary-${report.id || 'benchmark'}.pdf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -855,3 +1134,25 @@ export function downloadReportPdf(report: ComparisonReport): void {
     alert(`Failed to export PDF: ${err.message || 'Unknown error'}`);
   }
 }
+
+/**
+ * Downloads a dedicated test cases PDF with winner determinations for every scenario.
+ */
+export function downloadTestCasesPdf(report: ComparisonReport): void {
+  try {
+    const pdfBytes = generateTestCasesPdf(report);
+    const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reliq-test-cases-breakdown-${report.id || 'cases'}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err: any) {
+    console.error('Failed to export Test Cases PDF:', err);
+    alert(`Failed to export Test Cases PDF: ${err.message || 'Unknown error'}`);
+  }
+}
+

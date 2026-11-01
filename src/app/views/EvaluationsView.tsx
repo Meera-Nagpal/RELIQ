@@ -217,6 +217,34 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     return getEligibleJudgeModels(effectiveBaselineModel, effectiveCandidateModel);
   }, [effectiveBaselineModel, effectiveCandidateModel]);
 
+  // Deduplicate user-uploaded datasets by name so duplicate versions (e.g. v1.0.0 and v1.1.0) don't clutter the selector
+  const selectableDatasets = useMemo(() => {
+    const uploadMap = new Map<string, Dataset>();
+    const builtins: Dataset[] = [];
+
+    for (const d of datasets) {
+      if (d.sourceType === 'upload') {
+        const existing = uploadMap.get(d.name);
+        if (!existing) {
+          uploadMap.set(d.name, d);
+        } else {
+          // Keep newest by date or higher version number
+          const existingDate = existing.updatedAt || existing.createdAt || '';
+          const currentDate = d.updatedAt || d.createdAt || '';
+          if (currentDate >= existingDate) {
+            uploadMap.set(d.name, d);
+          }
+        }
+      } else {
+        builtins.push(d);
+      }
+    }
+
+    return [...builtins, ...Array.from(uploadMap.values())].sort(
+      (a, b) => (a.cases?.length || 0) - (b.cases?.length || 0)
+    );
+  }, [datasets]);
+
   // Judge selection states
   const [judgeEnabled, setJudgeEnabled] = useState<boolean>(true);
   const [selectedJudgeModel, setSelectedJudgeModel] = useState<string>('qwen/qwen3.8-27b');
@@ -987,23 +1015,22 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               style={{
                 width: '100%',
                 padding: '0.65rem',
-                background: '#111315',
-                border: '1px solid #343638',
-                borderRadius: '6px',
-                color: '#E8E4D9',
-                fontSize: '0.85rem',
+                background: '#111111',
+                border: '1px solid #292929',
+                borderRadius: '2px',
+                color: '#F2F2F2',
+                fontSize: '0.82rem',
+                fontFamily: 'monospace',
               }}
             >
-              {[...datasets]
-                .sort((a, b) => (a.cases?.length || 0) - (b.cases?.length || 0))
-                .map((d) => {
-                  const badge = d.sourceType === 'upload' ? '[USER UPLOAD' : '[BUILT-IN';
-                  return (
-                    <option key={d.id} value={d.id}>
-                      {badge} v{d.version || '1.0.0'}] {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
-                    </option>
-                  );
-                })}
+              {selectableDatasets.map((d) => {
+                const badge = d.sourceType === 'upload' ? '[USER UPLOAD' : '[BUILT-IN';
+                return (
+                  <option key={d.id} value={d.id}>
+                    {badge} v{d.version || '1.0.0'}] {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
