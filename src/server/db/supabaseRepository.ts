@@ -167,6 +167,34 @@ export class SupabaseRepository {
     return inserted;
   }
 
+  async getTestCaseById(id: string): Promise<TestCaseRecord | null> {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.from('test_cases').select('*').eq('id', id).maybeSingle();
+    if (error) throw new Error(`[Supabase] getTestCaseById failed: ${error.message}`);
+    return (data as TestCaseRecord) || null;
+  }
+
+  async createTestCase(testCase: Partial<TestCaseRecord>): Promise<TestCaseRecord> {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.from('test_cases').insert(testCase).select('*').single();
+    if (error) throw new Error(`[Supabase] createTestCase failed: ${error.message}`);
+    return data as TestCaseRecord;
+  }
+
+  async updateTestCase(id: string, updates: Partial<TestCaseRecord>): Promise<TestCaseRecord | null> {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.from('test_cases').update(updates).eq('id', id).select('*').maybeSingle();
+    if (error) throw new Error(`[Supabase] updateTestCase failed: ${error.message}`);
+    return (data as TestCaseRecord) || null;
+  }
+
+  async deleteTestCase(id: string): Promise<boolean> {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.from('test_cases').delete().eq('id', id);
+    if (error) throw new Error(`[Supabase] deleteTestCase failed: ${error.message}`);
+    return true;
+  }
+
   async deleteTestCasesByDatasetId(datasetId: string): Promise<boolean> {
     const supabase = getSupabaseAdmin();
     const { error } = await supabase.from('test_cases').delete().eq('dataset_id', datasetId);
@@ -265,6 +293,15 @@ export class SupabaseRepository {
         if (resError) throw new Error(`[Supabase] saveEvaluationResults chunk failed: ${resError.message}`);
       }
     }
+  }
+
+  async deleteEvaluationRun(id: string): Promise<boolean> {
+    const supabase = getSupabaseAdmin();
+    // Delete results first (if no cascade)
+    await supabase.from('evaluation_results').delete().eq('run_id', id);
+    const { error } = await supabase.from('evaluation_runs').delete().eq('id', id);
+    if (error) throw new Error(`[Supabase] deleteEvaluationRun failed: ${error.message}`);
+    return true;
   }
 
   async updateReleaseDecision(

@@ -23,7 +23,7 @@ export async function handleProjectRoutes(
   // 1. GET /api/projects
   if (method === 'GET' && parsedUrl === '/api/projects') {
     try {
-      const projects = projectService.getAllProjects();
+      const projects = await projectService.getAllProjects();
       sendJson(res, 200, { projects });
     } catch (err: any) {
       sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve projects');
@@ -42,7 +42,7 @@ export async function handleProjectRoutes(
     }
 
     try {
-      const created = projectService.createProject({
+      const created = await projectService.createProject({
         id: typeof body.id === 'string' ? body.id : undefined,
         name: body.name,
         description: typeof body.description === 'string' ? body.description : undefined,
@@ -65,7 +65,7 @@ export async function handleProjectRoutes(
     // 3. GET /api/projects/:id
     if (method === 'GET') {
       try {
-        const project = projectService.getProjectById(id);
+        const project = await projectService.getProjectById(id);
         if (!project) {
           sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${id}' not found`);
           return true;
@@ -88,7 +88,7 @@ export async function handleProjectRoutes(
       }
 
       try {
-        const updated = projectService.updateProject(id, {
+        const updated = await projectService.updateProject(id, {
           name: body.name,
           description: typeof body.description === 'string' ? body.description : undefined,
           defaultDatasetId: typeof body.defaultDatasetId === 'string' ? body.defaultDatasetId : undefined,
@@ -111,7 +111,7 @@ export async function handleProjectRoutes(
     // 5. DELETE /api/projects/:id
     if (method === 'DELETE') {
       try {
-        const deleted = projectService.deleteProject(id);
+        const deleted = await projectService.deleteProject(id);
         if (!deleted) {
           sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${id}' not found`);
           return true;

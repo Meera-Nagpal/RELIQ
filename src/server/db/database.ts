@@ -47,9 +47,6 @@ export function getDefaultDbPath(): string {
   if (process.env.RELIQ_DB_PATH) {
     return path.resolve(process.cwd(), process.env.RELIQ_DB_PATH);
   }
-  if (process.env.VERCEL) {
-    return '/tmp/reliq.db';
-  }
   return path.resolve(process.cwd(), 'data', 'reliq.db');
 }
 
@@ -62,6 +59,11 @@ export interface InitializeDatabaseOptions {
  * Returns the currently active Database instance, opening it if not yet open.
  */
 export function getDatabase(customPath?: string): DatabaseType.Database {
+  if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+    throw new Error(
+      `[RELIQ DB] SQLite is disabled in production (RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER}). All operations must use Supabase PostgreSQL.`
+    );
+  }
   if (dbInstance && (!customPath || currentDbPath === path.resolve(customPath))) {
     return dbInstance;
   }
@@ -78,6 +80,12 @@ export function getDatabase(customPath?: string): DatabaseType.Database {
  * Safe to call multiple times; idempotent.
  */
 export function initializeDatabase(options: InitializeDatabaseOptions = {}): DatabaseType.Database {
+  if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+    throw new Error(
+      `[RELIQ DB] SQLite initialization blocked: RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER}. Production must use Supabase PostgreSQL only.`
+    );
+  }
+
   const resolvedPath = path.resolve(options.dbPath || getDefaultDbPath());
 
   // Return existing open connection if pointing to the same file
@@ -91,30 +99,16 @@ export function initializeDatabase(options: InitializeDatabaseOptions = {}): Dat
   }
 
   try {
-    // Ensure parent directory exists (e.g. data/ or /tmp)
+    // Ensure parent directory exists (e.g. data/)
     const dir = path.dirname(resolvedPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
-    }
-
-    // On Vercel, copy pre-bundled database if available and /tmp/reliq.db does not exist
-    if (process.env.VERCEL && !fs.existsSync(resolvedPath)) {
-      const bundledDb = path.resolve(process.cwd(), 'data', 'reliq.db');
-      if (fs.existsSync(bundledDb)) {
-        try {
-          fs.copyFileSync(bundledDb, resolvedPath);
-          console.log(`[RELIQ DB] Copied bundled database to ${resolvedPath}`);
-        } catch (copyErr: any) {
-          console.warn(`[RELIQ DB] Notice: initializing fresh database at ${resolvedPath} (${copyErr.message})`);
-        }
-      }
     }
 
     const Database = getDatabaseConstructor();
     const bindingOptions: DatabaseType.Options = {};
     const candidateBindings = [
       path.resolve(process.cwd(), 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'),
-      path.resolve('/var/task/node_modules/better-sqlite3/build/Release/better_sqlite3.node'),
     ];
     for (const cand of candidateBindings) {
       if (fs.existsSync(cand)) {

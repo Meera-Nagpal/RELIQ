@@ -113,22 +113,25 @@ async function startServer() {
     appType: 'custom',
   });
 
-  // Initialize Database (Supabase PostgreSQL if configured, SQLite fallback)
+  // Initialize Database (Supabase PostgreSQL in production, SQLite for local/test only)
   let closeDb: (() => void) | null = null;
   try {
     const supabaseClientModule = await vite.ssrLoadModule('/src/server/db/supabaseClient.ts');
-    if (supabaseClientModule.isSupabaseConfigured() && process.env.RELIQ_DB_DRIVER !== 'sqlite') {
+    if (supabaseClientModule.isSupabaseDriverActive()) {
+      console.log(`[RELIQ DB] Supabase PostgreSQL mode active (RELIQ_DB_DRIVER=${process.env.RELIQ_DB_DRIVER || 'supabase_postgresql'})`);
       const conn = await supabaseClientModule.testSupabaseConnection();
       if (conn.connected) {
         console.log(`[RELIQ DB] Connected to Supabase PostgreSQL (${supabaseClientModule.getSupabaseUrl()}) in ${conn.latencyMs}ms`);
       } else {
         console.warn(`[RELIQ DB] Supabase probe notice: ${conn.error}`);
       }
+      // SQLite initialization is completely skipped in production Supabase mode
+    } else {
+      console.log(`[RELIQ DB] Local/Test mode: Initializing SQLite database...`);
+      const dbModule = await vite.ssrLoadModule('/src/server/db/database.ts');
+      dbModule.initializeDatabase();
+      closeDb = dbModule.closeDatabase;
     }
-
-    const dbModule = await vite.ssrLoadModule('/src/server/db/database.ts');
-    dbModule.initializeDatabase();
-    closeDb = dbModule.closeDatabase;
   } catch (err: any) {
     console.error(`[RELIQ DB] Fatal: Failed to initialize database:`, err.message);
     process.exit(1);

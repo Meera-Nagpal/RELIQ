@@ -1,10 +1,15 @@
 /* ============================================================
    RELIQ — Project Service
    
-   Business logic and SQLite persistence for Projects.
+   Business logic and persistence for Projects.
+   Uses Supabase PostgreSQL in production (when RELIQ_DB_DRIVER=supabase_postgresql
+   or Supabase credentials are configured).
+   Uses SQLite in local offline development and automated tests.
    ============================================================ */
 
 import { getDatabase } from '../db/database';
+import { isSupabaseDriverActive } from '../db/supabaseClient';
+import { supabaseRepository } from '../db/supabaseRepository';
 
 export interface ProjectRecord {
   id: string;
@@ -21,7 +26,10 @@ export class ProjectService {
   /**
    * Retrieves all projects, ordered by creation date descending.
    */
-  getAllProjects(): ProjectRecord[] {
+  getAllProjects(): ProjectRecord[] | Promise<ProjectRecord[]> {
+    if (isSupabaseDriverActive()) {
+      return supabaseRepository.getAllProjects();
+    }
     const db = getDatabase();
     return db
       .prepare('SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at FROM projects ORDER BY created_at DESC')
@@ -31,7 +39,10 @@ export class ProjectService {
   /**
    * Retrieves a single project by ID.
    */
-  getProjectById(id: string): ProjectRecord | null {
+  getProjectById(id: string): (ProjectRecord | null) | Promise<ProjectRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return supabaseRepository.getProjectById(id);
+    }
     const db = getDatabase();
     const row = db
       .prepare('SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at FROM projects WHERE id = ?')
@@ -49,8 +60,7 @@ export class ProjectService {
     defaultDatasetId?: string;
     baselineVersionId?: string;
     candidateVersionId?: string;
-  }): ProjectRecord {
-    const db = getDatabase();
+  }): ProjectRecord | Promise<ProjectRecord> {
     const id = data.id?.trim() || `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
     const description = data.description?.trim() || null;
@@ -58,6 +68,20 @@ export class ProjectService {
     const baselineVersionId = data.baselineVersionId?.trim() || 'ver-v1-4';
     const candidateVersionId = data.candidateVersionId?.trim() || 'ver-v1-5';
 
+    if (isSupabaseDriverActive()) {
+      return supabaseRepository.createProject({
+        id,
+        name: data.name.trim(),
+        description,
+        default_dataset_id: defaultDatasetId,
+        baseline_version_id: baselineVersionId,
+        candidate_version_id: candidateVersionId,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+
+    const db = getDatabase();
     db.prepare(`
       INSERT INTO projects (id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -87,9 +111,23 @@ export class ProjectService {
       baselineVersionId?: string;
       candidateVersionId?: string;
     }
-  ): ProjectRecord | null {
+  ): (ProjectRecord | null) | Promise<ProjectRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const existing = await supabaseRepository.getProjectById(id);
+        if (!existing) return null;
+        const updates: any = { updated_at: new Date().toISOString() };
+        if (data.name !== undefined) updates.name = data.name.trim();
+        if (data.description !== undefined) updates.description = data.description.trim() || null;
+        if (data.defaultDatasetId !== undefined) updates.default_dataset_id = data.defaultDatasetId.trim() || null;
+        if (data.baselineVersionId !== undefined) updates.baseline_version_id = data.baselineVersionId.trim() || null;
+        if (data.candidateVersionId !== undefined) updates.candidate_version_id = data.candidateVersionId.trim() || null;
+        return await supabaseRepository.updateProject(id, updates);
+      })();
+    }
+
     const db = getDatabase();
-    const existing = this.getProjectById(id);
+    const existing = this.getProjectById(id) as ProjectRecord | null;
     if (!existing) return null;
 
     const name = data.name !== undefined ? data.name.trim() : existing.name;
@@ -120,7 +158,10 @@ export class ProjectService {
   /**
    * Deletes a project by ID. Foreign keys cascade to datasets, runs, settings, etc.
    */
-  deleteProject(id: string): boolean {
+  deleteProject(id: string): boolean | Promise<boolean> {
+    if (isSupabaseDriverActive()) {
+      return supabaseRepository.deleteProject(id);
+    }
     const db = getDatabase();
     const info = db.prepare('DELETE FROM projects WHERE id = ?').run(id);
     return info.changes > 0;

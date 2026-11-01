@@ -24,7 +24,7 @@ export async function handleVersionRoutes(
   if (method === 'GET' && parsedUrl === '/api/versions') {
     try {
       const projectId = query.get('projectId') || undefined;
-      const versions = versionService.getVersions(projectId);
+      const versions = await versionService.getVersions(projectId);
       sendJson(res, 200, { versions });
     } catch (err: any) {
       sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve model versions');
@@ -55,7 +55,7 @@ export async function handleVersionRoutes(
     }
 
     try {
-      const created = versionService.createVersion({
+      const created = await versionService.createVersion({
         id: typeof body.id === 'string' ? body.id : undefined,
         projectId: body.projectId.trim(),
         provider: body.provider.trim(),
@@ -86,7 +86,7 @@ export async function handleVersionRoutes(
     // 3. GET /api/versions/:id
     if (method === 'GET') {
       try {
-        const version = versionService.getVersionById(id);
+        const version = await versionService.getVersionById(id);
         if (!version) {
           sendError(res, 404, 'MODEL_VERSION_NOT_FOUND', `Model version with ID '${id}' not found`);
           return true;
@@ -104,7 +104,7 @@ export async function handleVersionRoutes(
       if (!body) return true;
 
       try {
-        const updated = versionService.updateVersion(id, {
+        const updated = await versionService.updateVersion(id, {
           provider: body.provider,
           model: body.model,
           displayName: body.displayName,
@@ -130,7 +130,7 @@ export async function handleVersionRoutes(
     // 5. DELETE /api/versions/:id
     if (method === 'DELETE') {
       try {
-        const deleted = versionService.deleteVersion(id);
+        const deleted = await versionService.deleteVersion(id);
         if (!deleted) {
           sendError(res, 404, 'MODEL_VERSION_NOT_FOUND', `Model version with ID '${id}' not found`);
           return true;

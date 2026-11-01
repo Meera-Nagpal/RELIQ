@@ -6883,6 +6883,12 @@ async function runTests() {
     // -------------------------------------------------------------
     const { runGroqProductionAuthTests } = await import('./groqProductionAuth.test.mjs');
     await runGroqProductionAuthTests({ test, asyncTest }, server);
+
+    // -------------------------------------------------------------
+    // Production Architecture Verification Tests (Vercel, Render, Supabase)
+    // -------------------------------------------------------------
+    const { runProductionArchitectureTests } = await import('./productionArchitecture.test.mjs');
+    await runProductionArchitectureTests({ test, asyncTest }, server);
   } finally {
     try {
       const { closeDatabase } = await server.ssrLoadModule('/src/server/db/database.ts');

@@ -36,7 +36,7 @@ export async function handleEvaluationDbRoutes(
       }
 
       try {
-        const result = evaluationDbService.updateReleaseDecision(
+        const result = await evaluationDbService.updateReleaseDecision(
           runId,
           body.decision.trim(),
           body.justification.trim()
@@ -61,12 +61,12 @@ export async function handleEvaluationDbRoutes(
     if (method === 'GET') {
       const runId = decodeURIComponent(resultsMatch[1]);
       try {
-        const run = evaluationDbService.getEvaluationRunById(runId);
+        const run = await evaluationDbService.getEvaluationRunById(runId);
         if (!run) {
           sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run with ID '${runId}' not found`);
           return true;
         }
-        const results = evaluationDbService.getRunResults(runId);
+        const results = await evaluationDbService.getRunResults(runId);
         sendJson(res, 200, { runId, results, count: results.length });
       } catch (err: any) {
         sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve run results');
@@ -81,12 +81,12 @@ export async function handleEvaluationDbRoutes(
     if (method === 'GET') {
       const runId = decodeURIComponent(failuresMatch[1]);
       try {
-        const run = evaluationDbService.getEvaluationRunById(runId);
+        const run = await evaluationDbService.getEvaluationRunById(runId);
         if (!run) {
           sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run with ID '${runId}' not found`);
           return true;
         }
-        const failures = evaluationDbService.getRunFailures(runId);
+        const failures = await evaluationDbService.getRunFailures(runId);
         sendJson(res, 200, { runId, failures, count: failures.length });
       } catch (err: any) {
         sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve run failures');

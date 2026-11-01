@@ -25,7 +25,7 @@ export async function handleSettingsRoutes(
   // 1. GET /api/projects/:projectId/settings
   if (method === 'GET') {
     try {
-      const settings = settingsService.getSettings(projectId);
+      const settings = await settingsService.getSettings(projectId);
       if (!settings) {
         sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${projectId}' not found`);
         return true;
@@ -56,7 +56,7 @@ export async function handleSettingsRoutes(
     }
 
     try {
-      const updated = settingsService.upsertSettings(projectId, {
+      const updated = await settingsService.upsertSettings(projectId, {
         minAccuracy: body.minAccuracy,
         maxDegradation: body.maxDegradation,
         latencyTolerance: body.latencyTolerance,

@@ -1,11 +1,16 @@
 /* ============================================================
    RELIQ — Project Settings Service
    
-   Business logic and SQLite persistence for Project Settings.
+   Business logic and persistence for Project Settings.
+   Uses Supabase PostgreSQL in production (when RELIQ_DB_DRIVER=supabase_postgresql
+   or Supabase credentials are configured).
+   Uses SQLite in local offline development and automated tests.
    Upserts regression thresholds and raw output privacy toggles.
    ============================================================ */
 
 import { getDatabase } from '../db/database';
+import { isSupabaseDriverActive } from '../db/supabaseClient';
+import { supabaseRepository } from '../db/supabaseRepository';
 import { projectService } from './projectService';
 
 export interface ProjectSettingsRecord {
@@ -57,7 +62,34 @@ export class SettingsService {
    * Retrieves settings for a specific project.
    * If not yet created, initializes with project defaults.
    */
-  getSettings(projectId: string): FormattedProjectSettings | null {
+  getSettings(projectId: string): (FormattedProjectSettings | null) | Promise<FormattedProjectSettings | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const project = await projectService.getProjectById(projectId);
+        if (!project) return null;
+
+        let row = await supabaseRepository.getProjectSettings(projectId);
+        if (!row) {
+          const now = new Date().toISOString();
+          const id = `settings-${projectId}`;
+          row = await supabaseRepository.upsertProjectSettings({
+            id,
+            project_id: projectId,
+            min_accuracy: 95.0,
+            max_degradation: 2.0,
+            latency_tolerance: 20.0,
+            max_failure_rate: 5.0,
+            min_coverage: 80.0,
+            min_evaluated_cases: 100,
+            raw_output_privacy: 1,
+            created_at: now,
+            updated_at: now,
+          });
+        }
+        return formatSettingsRecord(row);
+      })();
+    }
+
     const db = getDatabase();
     const project = projectService.getProjectById(projectId);
     if (!project) return null;
@@ -98,7 +130,42 @@ export class SettingsService {
       minEvaluatedCases?: number;
       rawOutputPrivacy?: boolean;
     }
-  ): FormattedProjectSettings {
+  ): FormattedProjectSettings | Promise<FormattedProjectSettings> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const project = await projectService.getProjectById(projectId);
+        if (!project) {
+          const err = new Error(`Project with ID '${projectId}' not found`);
+          (err as any).code = 'PROJECT_NOT_FOUND';
+          throw err;
+        }
+
+        const existing = await this.getSettings(projectId);
+        const id = `settings-${projectId}`;
+        const now = new Date().toISOString();
+        const privacy = data.rawOutputPrivacy !== false ? 1 : 0;
+        const maxFailureRate = typeof data.maxFailureRate === 'number' && !isNaN(data.maxFailureRate) ? data.maxFailureRate : (existing?.maxFailureRate ?? 5.0);
+        const minCoverage = typeof data.minCoverage === 'number' && !isNaN(data.minCoverage) ? data.minCoverage : (existing?.minCoverage ?? 80.0);
+        const minEvaluatedCases = typeof data.minEvaluatedCases === 'number' && !isNaN(data.minEvaluatedCases) ? data.minEvaluatedCases : (existing?.minEvaluatedCases ?? 100);
+
+        const updated = await supabaseRepository.upsertProjectSettings({
+          id,
+          project_id: projectId,
+          min_accuracy: data.minAccuracy,
+          max_degradation: data.maxDegradation,
+          latency_tolerance: data.latencyTolerance,
+          max_failure_rate: maxFailureRate,
+          min_coverage: minCoverage,
+          min_evaluated_cases: minEvaluatedCases,
+          raw_output_privacy: privacy,
+          created_at: existing?.createdAt || now,
+          updated_at: now,
+        });
+
+        return formatSettingsRecord(updated);
+      })();
+    }
+
     const db = getDatabase();
     const project = projectService.getProjectById(projectId);
     if (!project) {
@@ -107,7 +174,7 @@ export class SettingsService {
       throw err;
     }
 
-    const existing = this.getSettings(projectId);
+    const existing = this.getSettings(projectId) as FormattedProjectSettings | null;
     const id = `settings-${projectId}`;
     const now = new Date().toISOString();
     const privacy = data.rawOutputPrivacy !== false ? 1 : 0;

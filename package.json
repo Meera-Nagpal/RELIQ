@@ -8,14 +8,13 @@
     "start": "node dist-server/server.js",
     "dev:server": "node src/server/server.ts",
     "server": "node dist-server/server.js",
-    "build": "vite build && npm run build:backend",
-    "build:api": "esbuild src/server/vercelEntry.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=api/index.js",
+    "build": "npm run build:web",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "node tests/runTests.mjs",
     "test:web": "node tests/runTests.mjs",
     "build:web": "tsc && vite build",
-    "build:backend": "npm run build:api && esbuild src/server/server.ts --bundle --platform=node --format=esm --external:better-sqlite3 --external:vite --outfile=dist-server/server.js",
+    "build:backend": "esbuild src/server/server.ts --bundle --platform=node --format=esm --external:better-sqlite3 --external:vite --outfile=dist-server/server.js",
     "migrate:supabase": "node scripts/migrate-to-supabase.mjs"
   },
   "dependencies": {

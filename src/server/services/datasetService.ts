@@ -31,6 +31,8 @@ import {
   ParseAndValidateOptions,
 } from '../../data/datasetImporter';
 import { getDatabase } from '../db/database';
+import { isSupabaseDriverActive } from '../db/supabaseClient';
+import { supabaseRepository } from '../db/supabaseRepository';
 import { projectService } from './projectService';
 
 export interface DatasetRecord {
@@ -178,7 +180,13 @@ export class DatasetService {
   /**
    * Retrieves datasets, optionally filtered by projectId.
    */
-  getDatasets(projectId?: string): DatasetRecord[] {
+  getDatasets(projectId?: string): DatasetRecord[] | Promise<DatasetRecord[]> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const rows = await supabaseRepository.getAllDatasets(projectId);
+        return rows.map((r) => enrichDatasetRecord(r));
+      })();
+    }
     const db = getDatabase();
     if (projectId) {
       const rows = db
@@ -220,7 +228,16 @@ export class DatasetService {
   /**
    * Retrieves a single dataset by ID, including its normalized test cases.
    */
-  getDatasetById(id: string): DatasetRecord | null {
+  getDatasetById(id: string): (DatasetRecord | null) | Promise<DatasetRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const row = await supabaseRepository.getDatasetById(id);
+        if (!row) return null;
+        const caseRows = await supabaseRepository.getTestCasesByDatasetId(id);
+        const cases = caseRows.map(enrichTestCaseRecord);
+        return enrichDatasetRecord(row, cases);
+      })();
+    }
     const db = getDatabase();
     const row = db
       .prepare(`
@@ -233,14 +250,22 @@ export class DatasetService {
       `)
       .get(id) as any | undefined;
     if (!row) return null;
-    const cases = this.getDatasetCases(id).map(enrichTestCaseRecord);
+    const cases = (this.getDatasetCases(id) as TestCaseRecord[]).map(enrichTestCaseRecord);
     return enrichDatasetRecord(row, cases);
   }
 
   /**
    * Finds datasets matching a name within a project (case-insensitive).
    */
-  findDatasetsByName(projectId: string, name: string): DatasetRecord[] {
+  findDatasetsByName(projectId: string, name: string): DatasetRecord[] | Promise<DatasetRecord[]> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const all = await supabaseRepository.getAllDatasets(projectId);
+        return all
+          .filter((d) => (d.name || '').trim().toLowerCase() === name.trim().toLowerCase())
+          .map((r) => enrichDatasetRecord(r));
+      })();
+    }
     const db = getDatabase();
     const rows = db
       .prepare(`
@@ -269,15 +294,7 @@ export class DatasetService {
     status?: DatasetStatus;
     sourceFilename?: string;
     contentHash?: string;
-  }): DatasetRecord {
-    const db = getDatabase();
-    const project = projectService.getProjectById(data.projectId);
-    if (!project) {
-      const err = new Error(`Project with ID '${data.projectId}' not found`);
-      (err as any).code = 'PROJECT_NOT_FOUND';
-      throw err;
-    }
-
+  }): DatasetRecord | Promise<DatasetRecord> {
     const id = data.id?.trim() || `ds-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
     const description = data.description?.trim() || null;
@@ -287,6 +304,40 @@ export class DatasetService {
     const status: DatasetStatus = data.status || 'active';
     const sourceFilename = data.sourceFilename?.trim() || null;
     const contentHash = data.contentHash?.trim() || null;
+
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const project = await projectService.getProjectById(data.projectId);
+        if (!project) {
+          const err = new Error(`Project with ID '${data.projectId}' not found`);
+          (err as any).code = 'PROJECT_NOT_FOUND';
+          throw err;
+        }
+        const created = await supabaseRepository.createDataset({
+          id,
+          project_id: data.projectId,
+          name: data.name.trim(),
+          description,
+          case_count: 0,
+          source_type: sourceType,
+          version,
+          status,
+          source_filename: sourceFilename,
+          content_hash: contentHash,
+          created_at: now,
+          updated_at: now,
+        });
+        return enrichDatasetRecord(created);
+      })();
+    }
+
+    const db = getDatabase();
+    const project = projectService.getProjectById(data.projectId) as any;
+    if (!project) {
+      const err = new Error(`Project with ID '${data.projectId}' not found`);
+      (err as any).code = 'PROJECT_NOT_FOUND';
+      throw err;
+    }
 
     db.prepare(`
       INSERT INTO datasets (
@@ -332,9 +383,23 @@ export class DatasetService {
   updateDataset(
     id: string,
     data: { name?: string; description?: string; version?: string; status?: DatasetStatus }
-  ): DatasetRecord | null {
+  ): (DatasetRecord | null) | Promise<DatasetRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const existing = await supabaseRepository.getDatasetById(id);
+        if (!existing) return null;
+        const updates: any = { updated_at: new Date().toISOString() };
+        if (data.name !== undefined) updates.name = data.name.trim();
+        if (data.description !== undefined) updates.description = data.description.trim() || null;
+        if (data.version !== undefined) updates.version = data.version.trim();
+        if (data.status !== undefined) updates.status = data.status;
+        const updated = await supabaseRepository.updateDataset(id, updates);
+        return updated ? enrichDatasetRecord(updated) : null;
+      })();
+    }
+
     const db = getDatabase();
-    const existing = this.getDatasetById(id);
+    const existing = this.getDatasetById(id) as DatasetRecord | null;
     if (!existing) return null;
 
     const name = data.name !== undefined ? data.name.trim() : existing.name;
@@ -362,7 +427,13 @@ export class DatasetService {
   /**
    * Deletes a dataset by ID. Foreign keys cascade to test cases.
    */
-  deleteDataset(id: string): boolean {
+  deleteDataset(id: string): boolean | Promise<boolean> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        await supabaseRepository.deleteTestCasesByDatasetId(id);
+        return await supabaseRepository.deleteDataset(id);
+      })();
+    }
     const db = getDatabase();
     const info = db.prepare('DELETE FROM datasets WHERE id = ?').run(id);
     return info.changes > 0;
@@ -374,7 +445,19 @@ export class DatasetService {
   getDatasetCases(
     datasetId: string,
     options?: { limit?: number; offset?: number }
-  ): TestCaseRecord[] {
+  ): TestCaseRecord[] | Promise<TestCaseRecord[]> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const rows = await supabaseRepository.getTestCasesByDatasetId(datasetId);
+        let cases = rows.map(enrichTestCaseRecord);
+        if (options && typeof options.limit === 'number' && options.limit > 0) {
+          const offset = typeof options.offset === 'number' && options.offset >= 0 ? options.offset : 0;
+          cases = cases.slice(offset, offset + options.limit);
+        }
+        return cases;
+      })();
+    }
+
     const db = getDatabase();
     if (options && typeof options.limit === 'number' && options.limit > 0) {
       const offset = typeof options.offset === 'number' && options.offset >= 0 ? options.offset : 0;
@@ -405,7 +488,15 @@ export class DatasetService {
   /**
    * Retrieves a single test case by ID and verifies it belongs to datasetId.
    */
-  getTestCase(datasetId: string, caseId: string): TestCaseRecord | null {
+  getTestCase(datasetId: string, caseId: string): (TestCaseRecord | null) | Promise<TestCaseRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const row = await supabaseRepository.getTestCaseById(caseId);
+        if (!row || row.dataset_id !== datasetId) return null;
+        return enrichTestCaseRecord(row);
+      })();
+    }
+
     const db = getDatabase();
     const row = db
       .prepare(`
@@ -439,7 +530,44 @@ export class DatasetService {
       severity?: string;
       metadata?: Record<string, any>;
     }
-  ): TestCaseRecord {
+  ): TestCaseRecord | Promise<TestCaseRecord> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const dataset = await supabaseRepository.getDatasetById(datasetId);
+        if (!dataset) {
+          const err = new Error(`Dataset with ID '${datasetId}' not found`);
+          (err as any).code = 'DATASET_NOT_FOUND';
+          throw err;
+        }
+        const id = data.id?.trim() || `tc-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+        const caseKey = data.caseKey?.trim() || id;
+        const now = new Date().toISOString();
+
+        const created = await supabaseRepository.createTestCase({
+          id,
+          dataset_id: datasetId,
+          case_key: caseKey,
+          source_record_number: data.sourceRecordNumber ?? null,
+          name: data.name.trim(),
+          category: data.category.trim(),
+          input: data.input,
+          expected_behavior: data.expectedBehavior ?? '',
+          context: data.context ?? null,
+          evaluator_type: (data.evaluatorType || 'normalized_text') as any,
+          evaluator_config: data.evaluatorConfig ? JSON.stringify(data.evaluatorConfig) : null,
+          tags: JSON.stringify(data.tags || []),
+          severity: (data.severity || 'medium') as any,
+          metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+          created_at: now,
+          updated_at: now,
+        });
+
+        const allCases = await supabaseRepository.getTestCasesByDatasetId(datasetId);
+        await supabaseRepository.updateDataset(datasetId, { case_count: allCases.length });
+        return enrichTestCaseRecord(created);
+      })();
+    }
+
     const db = getDatabase();
     const dataset = this.getDatasetById(datasetId);
     if (!dataset) {
@@ -528,9 +656,47 @@ export class DatasetService {
       severity?: string;
       metadata?: Record<string, any>;
     }
-  ): TestCaseRecord | null {
+  ): (TestCaseRecord | null) | Promise<TestCaseRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const existing = await supabaseRepository.getTestCaseById(caseId);
+        if (!existing || existing.dataset_id !== datasetId) return null;
+
+        const caseKey = data.caseKey !== undefined ? data.caseKey.trim() : (existing.case_key ?? caseId);
+        const name = data.name !== undefined ? data.name.trim() : existing.name;
+        const category = data.category !== undefined ? data.category.trim() : existing.category;
+        const input = data.input !== undefined ? data.input : existing.input;
+        const expectedBehavior = data.expectedBehavior !== undefined ? data.expectedBehavior : existing.expected_behavior;
+        const context = data.context !== undefined ? data.context : (existing.context ?? null);
+        const evaluatorType = data.evaluatorType !== undefined ? data.evaluatorType : (existing.evaluator_type || 'normalized_text');
+        const evaluatorConfig = data.evaluatorConfig !== undefined ? data.evaluatorConfig : parseJsonObject(existing.evaluator_config);
+        const tags = data.tags !== undefined ? data.tags : parseJsonArray(existing.tags);
+        const severity = data.severity !== undefined ? data.severity : (existing.severity || 'medium');
+        const metadata = data.metadata !== undefined ? data.metadata : parseJsonObject(existing.metadata);
+        const now = new Date().toISOString();
+
+        const updated = await supabaseRepository.updateTestCase(caseId, {
+          case_key: caseKey,
+          name,
+          category: category as any,
+          input,
+          expected_behavior: expectedBehavior,
+          context,
+          evaluator_type: evaluatorType as any,
+          evaluator_config: evaluatorConfig ? JSON.stringify(evaluatorConfig) : null,
+          tags: JSON.stringify(tags || []),
+          severity: severity as any,
+          metadata: metadata ? JSON.stringify(metadata) : null,
+          updated_at: now,
+        });
+
+        await supabaseRepository.updateDataset(datasetId, { updated_at: now });
+        return updated ? enrichTestCaseRecord(updated) : null;
+      })();
+    }
+
     const db = getDatabase();
-    const existing = this.getTestCase(datasetId, caseId);
+    const existing = this.getTestCase(datasetId, caseId) as TestCaseRecord | null;
     if (!existing) return null;
 
     const caseKey = data.caseKey !== undefined ? data.caseKey.trim() : (existing.case_key ?? caseId);
@@ -600,9 +766,25 @@ export class DatasetService {
   /**
    * Deletes a test case from a dataset, updating the dataset's case_count atomically.
    */
-  deleteTestCase(datasetId: string, caseId: string): boolean {
+  deleteTestCase(datasetId: string, caseId: string): boolean | Promise<boolean> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const existing = await supabaseRepository.getTestCaseById(caseId);
+        if (!existing || existing.dataset_id !== datasetId) return false;
+        const deleted = await supabaseRepository.deleteTestCase(caseId);
+        if (deleted) {
+          const allCases = await supabaseRepository.getTestCasesByDatasetId(datasetId);
+          await supabaseRepository.updateDataset(datasetId, {
+            case_count: allCases.length,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        return deleted;
+      })();
+    }
+
     const db = getDatabase();
-    const existing = this.getTestCase(datasetId, caseId);
+    const existing = this.getTestCase(datasetId, caseId) as TestCaseRecord | null;
     if (!existing) return false;
 
     const now = new Date().toISOString();
@@ -630,10 +812,60 @@ export class DatasetService {
    */
   previewDatasetImport(
     options: ParseAndValidateOptions & { projectId?: string; name?: string }
-  ): DatasetPreviewResult & { existingConflict?: DatasetConflictInfo } {
+  ):
+    | (DatasetPreviewResult & { existingConflict?: DatasetConflictInfo })
+    | Promise<DatasetPreviewResult & { existingConflict?: DatasetConflictInfo }> {
     const preview = parseAndValidateDataset(options);
     const projectId = options.projectId?.trim() || 'proj-checkout-agent';
     const candidateName = (options.name || preview.suggestedName || '').trim();
+
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        let existingConflict: DatasetConflictInfo | undefined;
+        if (candidateName) {
+          if (isBuiltinDatasetName(candidateName)) {
+            existingConflict = {
+              id: 'builtin',
+              name: candidateName,
+              version: '1.0.0',
+              sourceType: 'builtin',
+              isBuiltin: true,
+            };
+            preview.issues.push({
+              severity: 'warning',
+              code: 'NAME_CONFLICT',
+              message: `Dataset name '${candidateName}' matches a built-in benchmark. Built-in benchmarks cannot be overwritten; choose a new name or select 'rename' on import.`,
+            });
+            preview.warningCount = preview.issues.filter((i) => i.severity === 'warning').length;
+          } else {
+            const matches = (await this.findDatasetsByName(projectId, candidateName)) as DatasetRecord[];
+            if (matches.length > 0) {
+              const latest = matches[0];
+              const isBuiltin = latest.source_type === 'builtin' || isBuiltinDatasetId(latest.id);
+              existingConflict = {
+                id: latest.id,
+                name: latest.name,
+                version: latest.version || '1.0.0',
+                sourceType: latest.source_type,
+                isBuiltin,
+              };
+              preview.issues.push({
+                severity: 'warning',
+                code: 'NAME_CONFLICT',
+                message: isBuiltin
+                  ? `Dataset name '${candidateName}' belongs to a protected built-in benchmark.`
+                  : `Dataset '${candidateName}' (v${latest.version}) already exists. Import as a new version (v${bumpDatasetVersion(latest.version)}) or rename.`,
+              });
+              preview.warningCount = preview.issues.filter((i) => i.severity === 'warning').length;
+            }
+          }
+        }
+        return {
+          ...preview,
+          existingConflict,
+        };
+      })();
+    }
 
     let existingConflict: DatasetConflictInfo | undefined;
     if (candidateName) {
@@ -652,7 +884,7 @@ export class DatasetService {
         });
         preview.warningCount = preview.issues.filter((i) => i.severity === 'warning').length;
       } else {
-        const matches = this.findDatasetsByName(projectId, candidateName);
+        const matches = (this.findDatasetsByName(projectId, candidateName) as DatasetRecord[]) || [];
         if (matches.length > 0) {
           const latest = matches[0];
           const isBuiltin = latest.source_type === 'builtin' || isBuiltinDatasetId(latest.id);
@@ -682,21 +914,192 @@ export class DatasetService {
   }
 
   /**
-   * Validates and atomically imports a user-uploaded dataset into SQLite.
+   * Validates and atomically imports a user-uploaded dataset.
+   * Uses Supabase PostgreSQL in production and SQLite in local/offline test mode.
    */
-  importDataset(request: DatasetImportRequest): {
-    dataset: DatasetRecord;
-    cases: TestCaseRecord[];
-    preview: DatasetPreviewResult;
-    evaluatorCompatibility: DatasetEvaluatorCompatibility[];
-  } {
+  importDataset(request: DatasetImportRequest):
+    | {
+        dataset: DatasetRecord;
+        cases: TestCaseRecord[];
+        preview: DatasetPreviewResult;
+        evaluatorCompatibility: DatasetEvaluatorCompatibility[];
+      }
+    | Promise<{
+        dataset: DatasetRecord;
+        cases: TestCaseRecord[];
+        preview: DatasetPreviewResult;
+        evaluatorCompatibility: DatasetEvaluatorCompatibility[];
+      }> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const projectId = request.projectId?.trim() || 'proj-checkout-agent';
+        let project = await projectService.getProjectById(projectId);
+        if (!project) {
+          const allProjects = await projectService.getAllProjects();
+          if (allProjects.length > 0) {
+            project = allProjects[0];
+          } else {
+            project = await projectService.createProject({
+              id: projectId,
+              name: 'Default Project',
+              description: 'Auto-created project for dataset import',
+            });
+          }
+        }
+        const targetProjectId = project?.id || projectId;
+        const effectiveFilename = request.filename || request.sourceFilename;
+        const preview = parseAndValidateDataset({
+          rawContent: request.rawContent,
+          filename: effectiveFilename,
+          format: request.format,
+          fieldMapping: request.fieldMapping,
+          defaultCategory: request.defaultCategory,
+          defaultEvaluatorType: request.defaultEvaluatorType,
+          defaultSeverity: request.defaultSeverity,
+          selectedEvaluators: request.selectedEvaluators,
+        });
+
+        if (!preview.valid || preview.errorCount > 0 || preview.normalizedCases.length === 0) {
+          const firstError =
+            preview.issues.find((i) => i.severity === 'error')?.message ||
+            'Dataset validation failed';
+          const err = new Error(firstError);
+          (err as any).code = 'DATASET_VALIDATION_FAILED';
+          (err as any).preview = preview;
+          throw err;
+        }
+
+        let finalName = (request.name || preview.suggestedName || 'Imported Dataset').trim() || 'Imported Dataset';
+        let finalVersion = (request.version || preview.suggestedVersion || '1.0.0').trim();
+        const conflictResolution = request.conflictResolution || 'error';
+
+        const matchesExisting = (await this.findDatasetsByName(targetProjectId, finalName)) as DatasetRecord[];
+        const matchesBuiltin =
+          isBuiltinDatasetName(finalName) ||
+          matchesExisting.some((m) => m.source_type === 'builtin' || isBuiltinDatasetId(m.id));
+
+        if (matchesBuiltin) {
+          if (conflictResolution === 'rename') {
+            finalName = request.customResolvedName?.trim() || `${finalName} (Custom Upload)`;
+          } else {
+            const err = new Error(
+              `Cannot overwrite built-in benchmark suite '${finalName}'. Please provide a different dataset name or set conflictResolution to 'rename'.`
+            );
+            (err as any).code = 'BUILTIN_DATASET_PROTECTED';
+            throw err;
+          }
+        } else if (matchesExisting.length > 0) {
+          const latestExisting = matchesExisting[0];
+          if (conflictResolution === 'new_version') {
+            const bumped = bumpDatasetVersion(latestExisting.version);
+            if (!request.version || request.version.trim() === latestExisting.version) {
+              finalVersion = bumped;
+            }
+          } else if (conflictResolution === 'rename') {
+            finalName =
+              request.customResolvedName?.trim() || `${finalName} (${matchesExisting.length + 1})`;
+          } else {
+            const err = new Error(
+              `Dataset '${finalName}' (v${latestExisting.version}) already exists in this project. Specify conflictResolution: 'new_version' to create v${bumpDatasetVersion(latestExisting.version)}, or choose a new name.`
+            );
+            (err as any).code = 'DATASET_NAME_CONFLICT';
+            (err as any).conflict = {
+              id: latestExisting.id,
+              name: latestExisting.name,
+              version: latestExisting.version,
+              suggestedNewVersion: bumpDatasetVersion(latestExisting.version),
+            };
+            throw err;
+          }
+        }
+
+        const datasetId = `ds-up-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+        const now = new Date().toISOString();
+        const description =
+          (request.description ?? preview.suggestedDescription ?? '').trim() ||
+          `Imported from ${effectiveFilename || preview.detectedFormat.toUpperCase()} (${preview.normalizedCases.length} scenarios)`;
+        const sourceFilename = effectiveFilename?.trim() || `upload.${preview.detectedFormat}`;
+
+        await supabaseRepository.createDataset({
+          id: datasetId,
+          project_id: targetProjectId,
+          name: finalName,
+          description,
+          case_count: preview.normalizedCases.length,
+          source_type: 'upload',
+          version: finalVersion,
+          status: request.status || 'active',
+          source_filename: sourceFilename,
+          content_hash: preview.contentHash,
+          created_at: now,
+          updated_at: now,
+        });
+
+        const testCaseInserts: any[] = [];
+        const insertedCases: TestCaseRecord[] = [];
+
+        for (const tc of preview.normalizedCases) {
+          const baseKey = tc.caseKey || tc.id;
+          const pkId = `${datasetId}_${baseKey}`;
+
+          const tcRow = {
+            id: pkId,
+            dataset_id: datasetId,
+            case_key: baseKey,
+            source_record_number: tc.sourceRecordNumber ?? tc.order ?? null,
+            name: tc.name,
+            category: tc.category as any,
+            input: tc.input,
+            expected_behavior: tc.expectedOutput ?? '',
+            context: tc.context ?? null,
+            evaluator_type: tc.evaluatorType as any,
+            evaluator_config: tc.evaluatorConfig ? JSON.stringify(tc.evaluatorConfig) : null,
+            tags: JSON.stringify(tc.tags || []),
+            severity: (tc.severity || 'medium') as any,
+            metadata: tc.metadata ? JSON.stringify(tc.metadata) : null,
+            created_at: now,
+            updated_at: now,
+          };
+          testCaseInserts.push(tcRow);
+          insertedCases.push(enrichTestCaseRecord(tcRow));
+        }
+
+        await supabaseRepository.createTestCases(testCaseInserts);
+
+        const dataset = enrichDatasetRecord(
+          {
+            id: datasetId,
+            project_id: targetProjectId,
+            name: finalName,
+            description,
+            case_count: preview.normalizedCases.length,
+            source_type: 'upload',
+            version: finalVersion,
+            status: request.status || 'active',
+            source_filename: sourceFilename,
+            content_hash: preview.contentHash,
+            created_at: now,
+            updated_at: now,
+          },
+          insertedCases
+        );
+
+        return {
+          dataset,
+          cases: insertedCases,
+          preview,
+          evaluatorCompatibility: computeEvaluatorCompatibility(preview.normalizedCases),
+        };
+      })();
+    }
+
     const db = getDatabase();
     const projectId = request.projectId?.trim() || 'proj-checkout-agent';
 
     // Ensure target project exists
-    let project = projectService.getProjectById(projectId);
+    let project = projectService.getProjectById(projectId) as any;
     if (!project) {
-      const allProjects = projectService.getAllProjects();
+      const allProjects = (projectService.getAllProjects() as any[]) || [];
       if (allProjects.length > 0) {
         project = allProjects[0];
       } else {
@@ -705,7 +1108,7 @@ export class DatasetService {
           INSERT OR IGNORE INTO projects (id, name, description, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?)
         `).run(projectId, 'Default Project', 'Auto-created project for dataset import', now, now);
-        project = projectService.getProjectById(projectId);
+        project = projectService.getProjectById(projectId) as any;
       }
     }
     const targetProjectId = project?.id || projectId;
@@ -741,7 +1144,7 @@ export class DatasetService {
     const conflictResolution = request.conflictResolution || 'error';
 
     // 1. Protect built-in benchmark names from overwrite
-    const matchesExisting = this.findDatasetsByName(targetProjectId, finalName);
+    const matchesExisting = (this.findDatasetsByName(targetProjectId, finalName) as DatasetRecord[]) || [];
     const matchesBuiltin =
       isBuiltinDatasetName(finalName) ||
       matchesExisting.some((m) => m.source_type === 'builtin' || isBuiltinDatasetId(m.id));

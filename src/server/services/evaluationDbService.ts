@@ -9,7 +9,7 @@
 
 import { getDatabase } from '../db/database';
 import { getRunFromDisk, getRunsFromDisk, saveRunToDisk } from '../evaluationService';
-import { isSupabaseConfigured } from '../db/supabaseClient';
+import { isSupabaseConfigured, isSupabaseDriverActive } from '../db/supabaseClient';
 import { supabaseRepository } from '../db/supabaseRepository';
 
 export const ALLOWED_RELEASE_DECISIONS = new Set([
@@ -121,6 +121,35 @@ export class EvaluationDbService {
     selectedCaseCount?: number;
     startedAt?: string;
   }): void {
+    if (isSupabaseDriverActive()) {
+      const now = data.startedAt || new Date().toISOString();
+      const resolvedVersion = data.datasetVersion || '1.0.0';
+      const resolvedSourceType = data.datasetSourceType || 'builtin';
+      const selectedCaseCount = data.selectedCaseCount ?? data.totalCases;
+
+      const runRecord = {
+        id: data.id,
+        project_id: data.projectId,
+        dataset_id: data.datasetId,
+        dataset_version: resolvedVersion,
+        dataset_source_type: resolvedSourceType,
+        status: 'RUNNING',
+        total_cases: data.totalCases,
+        selected_case_count: selectedCaseCount,
+        evaluated_cases: 0,
+        passed_cases: 0,
+        failed_cases: 0,
+        skipped_cases: 0,
+        cancelled_cases: 0,
+        started_at: now,
+      };
+
+      supabaseRepository.saveEvaluationRun(runRecord).catch((err) => {
+        console.error('[RELIQ Supabase] Error creating evaluation run:', err.message);
+      });
+      return;
+    }
+
     const db = getDatabase();
     const now = data.startedAt || new Date().toISOString();
 
@@ -197,6 +226,42 @@ export class EvaluationDbService {
     caseResults: any[]
   ): void {
     if (!Array.isArray(caseResults) || caseResults.length === 0) return;
+
+    if (isSupabaseDriverActive()) {
+      const now = new Date().toISOString();
+      const records: any[] = [];
+      for (const result of caseResults) {
+        const caseId = result.testCaseId || result.caseKey || result.id;
+        const resId = `res-${runId}-${caseId}`;
+        const isPass = result.passed !== undefined ? (result.passed ? 1 : 0) : null;
+
+        records.push({
+          id: resId,
+          run_id: runId,
+          test_case_id: caseId,
+          model_version_id: candidateVersion?.id || 'v-unknown',
+          provider: candidateVersion?.provider || result.provider || 'unknown',
+          model: candidateVersion?.model || result.model || 'unknown',
+          response: result.response ?? result.candidateOutput ?? '',
+          passed: isPass,
+          quality_score: result.qualityScore ?? null,
+          latency_ms: result.latencyMs ?? 0,
+          input_tokens: result.inputTokens ?? 0,
+          output_tokens: result.outputTokens ?? 0,
+          reasoning_tokens: result.reasoningTokens ?? 0,
+          total_tokens: result.totalTokens ?? 0,
+          cost: result.cost ?? 0,
+          failure_type: result.failureType || null,
+          failure_category: result.failureCategory || null,
+          created_at: now,
+        });
+      }
+
+      supabaseRepository.saveEvaluationRun({ id: runId }, records).catch((err) => {
+        console.error('[RELIQ Supabase] Error saving case results batch:', err.message);
+      });
+      return;
+    }
 
     const db = getDatabase();
     const now = new Date().toISOString();
@@ -338,7 +403,6 @@ export class EvaluationDbService {
    * Finalizes an evaluation run with completed metrics and release decision.
    */
   finalizeEvaluationRun(finalRun: any): void {
-    const db = getDatabase();
     const runId = finalRun.id;
     const now = finalRun.timestamp || new Date().toISOString();
 
@@ -355,6 +419,38 @@ export class EvaluationDbService {
     const releaseReason = finalRun.releaseDecision?.reason || null;
     const datasetVersion = finalRun.datasetVersion || '1.0.0';
     const datasetSourceType = finalRun.datasetSourceType || 'builtin';
+
+    if (isSupabaseDriverActive()) {
+      const runRecord = {
+        id: runId,
+        project_id: finalRun.projectId || 'proj-checkout-agent',
+        dataset_id: finalRun.datasetId || 'ds-checkout-golden',
+        dataset_version: datasetVersion,
+        dataset_source_type: datasetSourceType,
+        status: 'COMPLETED',
+        total_cases: totalCases,
+        selected_case_count: selectedCaseCount,
+        evaluated_cases: evaluatedCases,
+        passed_cases: passedCases,
+        failed_cases: failedCases,
+        skipped_cases: skippedCases,
+        cancelled_cases: cancelledCases,
+        pass_rate: passRate,
+        quality_score: qualityScore,
+        started_at: finalRun.timestamp || now,
+        completed_at: now,
+        release_decision: releaseDecision,
+        release_reason: releaseReason,
+        run_json: finalRun,
+      };
+
+      supabaseRepository.saveEvaluationRun(runRecord).catch((err) => {
+        console.error('[RELIQ Supabase] Error finalizing evaluation run:', err.message);
+      });
+      return;
+    }
+
+    const db = getDatabase();
     let serializedRun: string | null = null;
     try {
       serializedRun = JSON.stringify(finalRun);
@@ -397,42 +493,84 @@ export class EvaluationDbService {
       serializedRun,
       runId
     );
-
-    if (isSupabaseConfigured() && process.env.RELIQ_DB_DRIVER !== 'sqlite') {
-      try {
-        const runRecord = {
-          id: runId,
-          project_id: finalRun.projectId || 'proj-checkout-agent',
-          dataset_id: finalRun.datasetId || 'ds-checkout-golden',
-          dataset_version: datasetVersion,
-          dataset_source_type: datasetSourceType,
-          status: 'COMPLETED',
-          total_cases: totalCases,
-          selected_case_count: selectedCaseCount,
-          evaluated_cases: evaluatedCases,
-          passed_cases: passedCases,
-          failed_cases: failedCases,
-          skipped_cases: skippedCases,
-          cancelled_cases: cancelledCases,
-          pass_rate: passRate,
-          quality_score: qualityScore,
-          started_at: finalRun.timestamp || new Date().toISOString(),
-          completed_at: now,
-          release_decision: releaseDecision,
-          release_reason: releaseReason,
-          run_json: finalRun,
-        };
-        supabaseRepository.saveEvaluationRun(runRecord).catch((err) => {
-          console.warn('[RELIQ Supabase Sync] Async run sync notice:', err.message);
-        });
-      } catch {}
-    }
   }
 
   /**
    * Persists a completed evaluation run (creates row if missing, records case results, and finalizes).
    */
   saveEvaluationRun(finalRun: any): void {
+    if (isSupabaseDriverActive()) {
+      const runId = finalRun.id;
+      const now = finalRun.timestamp || new Date().toISOString();
+      const totalCases = finalRun.metrics?.totalCases ?? finalRun.caseResults?.length ?? 0;
+      const selectedCaseCount = finalRun.selectedScenarioCount ?? totalCases;
+      const evaluatedCases = finalRun.metrics?.evaluatedCases ?? finalRun.metrics?.candidateEvaluatedCases ?? 0;
+      const passedCases = finalRun.metrics?.candidatePassed ?? 0;
+      const failedCases = Math.max(0, evaluatedCases - passedCases);
+      const skippedCases = finalRun.skippedScenarioCount ?? finalRun.metrics?.skippedCases ?? 0;
+      const cancelledCases = finalRun.cancelledScenarioCount ?? finalRun.metrics?.cancelledCases ?? 0;
+      const passRate = evaluatedCases > 0 ? (finalRun.metrics?.candidatePassRate ?? null) : null;
+      const qualityScore = evaluatedCases > 0 ? (finalRun.metrics?.candidateQualityScore ?? null) : null;
+      const releaseDecision = finalRun.releaseDecision?.status || null;
+      const releaseReason = finalRun.releaseDecision?.reason || null;
+      const datasetVersion = finalRun.datasetVersion || '1.0.0';
+      const datasetSourceType = finalRun.datasetSourceType || 'builtin';
+
+      const runRecord = {
+        id: runId,
+        project_id: finalRun.projectId || 'proj-checkout-agent',
+        dataset_id: finalRun.datasetId || 'ds-checkout-golden',
+        dataset_version: datasetVersion,
+        dataset_source_type: datasetSourceType,
+        status: 'COMPLETED',
+        total_cases: totalCases,
+        selected_case_count: selectedCaseCount,
+        evaluated_cases: evaluatedCases,
+        passed_cases: passedCases,
+        failed_cases: failedCases,
+        skipped_cases: skippedCases,
+        cancelled_cases: cancelledCases,
+        pass_rate: passRate,
+        quality_score: qualityScore,
+        started_at: finalRun.timestamp || now,
+        completed_at: now,
+        release_decision: releaseDecision,
+        release_reason: releaseReason,
+        run_json: finalRun,
+      };
+
+      const resultsRecords: any[] = [];
+      if (Array.isArray(finalRun.caseResults)) {
+        for (const r of finalRun.caseResults) {
+          resultsRecords.push({
+            id: `res-${runId}-${r.testCaseId || r.id || Math.random().toString(36).substring(2, 8)}`,
+            run_id: runId,
+            test_case_id: r.testCaseId || r.id,
+            model_version_id: finalRun.candidateVersion?.id || 'v-unknown',
+            provider: r.provider || finalRun.candidateVersion?.provider || 'unknown',
+            model: r.model || finalRun.candidateVersion?.model || 'unknown',
+            response: r.response || r.candidateOutput || '',
+            passed: r.passed !== undefined ? (r.passed ? 1 : 0) : null,
+            quality_score: r.qualityScore ?? null,
+            latency_ms: r.latencyMs ?? 0,
+            input_tokens: r.inputTokens ?? 0,
+            output_tokens: r.outputTokens ?? 0,
+            reasoning_tokens: r.reasoningTokens ?? 0,
+            total_tokens: r.totalTokens ?? 0,
+            cost: r.cost ?? 0,
+            failure_type: r.failureType || null,
+            failure_category: r.failureCategory || null,
+            created_at: now,
+          });
+        }
+      }
+
+      supabaseRepository.saveEvaluationRun(runRecord, resultsRecords).catch((err) => {
+        console.error('[RELIQ Supabase] Error saving evaluation run:', err.message);
+      });
+      return;
+    }
+
     const db = getDatabase();
     const existing = db.prepare('SELECT id FROM evaluation_runs WHERE id = ?').get(finalRun.id);
     if (!existing) {
@@ -457,6 +595,19 @@ export class EvaluationDbService {
    * Marks an evaluation run as failed.
    */
   failEvaluationRun(runId: string, errorMessage: string): void {
+    if (isSupabaseDriverActive()) {
+      const now = new Date().toISOString();
+      supabaseRepository.saveEvaluationRun({
+        id: runId,
+        status: 'FAILED',
+        completed_at: now,
+        release_reason: errorMessage,
+      }).catch((err) => {
+        console.error('[RELIQ Supabase] Error failing evaluation run:', err.message);
+      });
+      return;
+    }
+
     const db = getDatabase();
     const now = new Date().toISOString();
     db.prepare(`
@@ -471,7 +622,65 @@ export class EvaluationDbService {
   /**
    * Retrieves all evaluation runs. Merges SQLite runs with disk runs, avoiding duplicates.
    */
-  getEvaluationRuns(): any[] {
+  getEvaluationRuns(): any[] | Promise<any[]> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const rows = await supabaseRepository.getAllEvaluationRuns();
+        return rows.map((sRun) => {
+          if (sRun.run_json) {
+            try {
+              const parsed = typeof sRun.run_json === 'string' ? JSON.parse(sRun.run_json) : sRun.run_json;
+              if (sRun.release_decision && parsed.releaseDecision) {
+                parsed.releaseDecision.status = sRun.release_decision;
+                parsed.releaseDecision.reason = sRun.release_reason || '';
+              }
+              return parsed;
+            } catch {}
+          }
+          const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
+          return {
+            id: sRun.id,
+            projectId: sRun.project_id,
+            datasetId: sRun.dataset_id,
+            datasetVersion: sRun.dataset_version || '1.0.0',
+            datasetSourceType: sRun.dataset_source_type || 'builtin',
+            totalScenarioCount: sRun.total_cases + (sRun.skipped_cases ?? 0),
+            selectedScenarioCount: sRun.selected_case_count ?? sRun.total_cases,
+            skippedScenarioCount: sRun.skipped_cases ?? 0,
+            cancelledScenarioCount: sRun.cancelled_cases ?? 0,
+            status: sRun.status,
+            timestamp: sRun.started_at,
+            durationMs: sRun.completed_at
+              ? new Date(sRun.completed_at).getTime() - new Date(sRun.started_at).getTime()
+              : 0,
+            metrics: {
+              totalCases: sRun.total_cases,
+              evaluatedCases: sRun.evaluated_cases,
+              candidateEvaluatedCases: sRun.evaluated_cases,
+              candidatePassed: sRun.passed_cases,
+              candidatePassRate: sRun.pass_rate,
+              candidateQualityScore: sRun.quality_score,
+              skippedCases: sRun.skipped_cases ?? 0,
+              cancelledCases: sRun.cancelled_cases ?? 0,
+            },
+            regressionDecision: {
+              isRegression: isReg,
+              verdict: sRun.evaluated_cases === 0 ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+              summary: sRun.release_reason || '',
+              violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+              regressionCategories: [],
+            },
+            releaseDecision: {
+              status: sRun.release_decision,
+              reason: sRun.release_reason,
+              decidedAt: sRun.completed_at || sRun.started_at,
+            },
+            rootCauses: [],
+          };
+        });
+      })();
+    }
+
     const db = getDatabase();
     const dbRuns = db
       .prepare('SELECT * FROM evaluation_runs ORDER BY started_at DESC')
@@ -576,7 +785,67 @@ export class EvaluationDbService {
   /**
    * Retrieves a single evaluation run by ID from SQLite or disk.
    */
-  getEvaluationRunById(id: string): any | null {
+  getEvaluationRunById(id: string): (any | null) | Promise<any | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const sRun = await supabaseRepository.getEvaluationRunById(id);
+        if (!sRun) return null;
+        if (sRun.run_json) {
+          try {
+            const parsed = typeof sRun.run_json === 'string' ? JSON.parse(sRun.run_json) : sRun.run_json;
+            if (sRun.release_decision && parsed.releaseDecision) {
+              parsed.releaseDecision.status = sRun.release_decision;
+              parsed.releaseDecision.reason = sRun.release_reason || '';
+            }
+            return parsed;
+          } catch {}
+        }
+        const resultsRows = await supabaseRepository.getEvaluationResultsByRunId(id);
+        const caseResults = resultsRows.map(mapDbResultToDomain);
+        const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
+        return {
+          id: sRun.id,
+          projectId: sRun.project_id,
+          datasetId: sRun.dataset_id,
+          datasetVersion: sRun.dataset_version || '1.0.0',
+          datasetSourceType: sRun.dataset_source_type || 'builtin',
+          totalScenarioCount: sRun.total_cases + (sRun.skipped_cases ?? 0),
+          selectedScenarioCount: sRun.selected_case_count ?? sRun.total_cases,
+          skippedScenarioCount: sRun.skipped_cases ?? 0,
+          cancelledScenarioCount: sRun.cancelled_cases ?? 0,
+          status: sRun.status,
+          timestamp: sRun.started_at,
+          durationMs: sRun.completed_at
+            ? new Date(sRun.completed_at).getTime() - new Date(sRun.started_at).getTime()
+            : 0,
+          metrics: {
+            totalCases: sRun.total_cases,
+            evaluatedCases: sRun.evaluated_cases,
+            candidateEvaluatedCases: sRun.evaluated_cases,
+            candidatePassed: sRun.passed_cases,
+            candidatePassRate: sRun.pass_rate,
+            candidateQualityScore: sRun.quality_score,
+            skippedCases: sRun.skipped_cases ?? 0,
+            cancelledCases: sRun.cancelled_cases ?? 0,
+          },
+          caseResults,
+          regressionDecision: {
+            isRegression: isReg,
+            verdict: sRun.evaluated_cases === 0 ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+            summary: sRun.release_reason || '',
+            violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+            regressionCategories: [],
+          },
+          releaseDecision: {
+            status: sRun.release_decision,
+            reason: sRun.release_reason,
+            decidedAt: sRun.completed_at || sRun.started_at,
+          },
+          rootCauses: [],
+        };
+      })();
+    }
+
     const db = getDatabase();
     const sRun = db.prepare('SELECT * FROM evaluation_runs WHERE id = ?').get(id) as any;
     let parsedJsonRun: any = null;
@@ -588,7 +857,7 @@ export class EvaluationDbService {
     const dRun = getRunFromDisk(id) || parsedJsonRun;
 
     if (sRun && dRun) {
-      const results = this.getRunResults(id);
+      const results = (this.getRunResults(id) as any[]) || [];
       return {
         ...dRun,
         status: sRun.status,
@@ -626,7 +895,7 @@ export class EvaluationDbService {
     }
 
     if (sRun) {
-      const results = this.getRunResults(id);
+      const results = (this.getRunResults(id) as any[]) || [];
       const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
       return {
         id: sRun.id,
@@ -678,7 +947,14 @@ export class EvaluationDbService {
   /**
    * Retrieves evaluation results for a given run ID.
    */
-  getRunResults(runId: string): any[] {
+  getRunResults(runId: string): any[] | Promise<any[]> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const rows = await supabaseRepository.getEvaluationResultsByRunId(runId);
+        return rows.map(mapDbResultToDomain);
+      })();
+    }
+
     const db = getDatabase();
     const rows = db
       .prepare('SELECT * FROM evaluation_results WHERE run_id = ? ORDER BY created_at ASC')
@@ -724,8 +1000,20 @@ export class EvaluationDbService {
   /**
    * Retrieves only failed evaluation results for a given run ID.
    */
-  getRunFailures(runId: string): any[] {
-    const all = this.getRunResults(runId);
+  getRunFailures(runId: string): any[] | Promise<any[]> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const all = (await this.getRunResults(runId)) as any[];
+        return all.filter((r) => {
+          const isFailed = r.passed === 0 || r.passed === false;
+          const hasFailureType = Boolean(r.failure_type || r.failureType);
+          const hasFailureCat = Boolean(r.failure_category || r.failureCategory);
+          return isFailed || hasFailureType || hasFailureCat;
+        });
+      })();
+    }
+
+    const all = this.getRunResults(runId) as any[];
     return all.filter((r) => {
       const isFailed = r.passed === 0 || r.passed === false;
       const hasFailureType = Boolean(r.failure_type || r.failureType);
@@ -742,7 +1030,9 @@ export class EvaluationDbService {
     runId: string,
     decision: string,
     justification: string
-  ): { runId: string; decision: string; previousDecision: string | null; audit: ReleaseDecisionAuditRecord } {
+  ):
+    | { runId: string; decision: string; previousDecision: string | null; audit: ReleaseDecisionAuditRecord }
+    | Promise<{ runId: string; decision: string; previousDecision: string | null; audit: ReleaseDecisionAuditRecord }> {
     if (!ALLOWED_RELEASE_DECISIONS.has(decision)) {
       const err = new Error(
         `Invalid release decision '${decision}'. Allowed decisions: ${Array.from(ALLOWED_RELEASE_DECISIONS).join(', ')}`
@@ -751,8 +1041,46 @@ export class EvaluationDbService {
       throw err;
     }
 
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const existingRun = (await this.getEvaluationRunById(runId)) as any;
+        if (!existingRun) {
+          const err = new Error(`Evaluation run with ID '${runId}' not found`);
+          (err as any).code = 'RUN_NOT_FOUND';
+          throw err;
+        }
+
+        const previousDecision =
+          existingRun.releaseDecision?.status ||
+          existingRun.release_decision ||
+          null;
+
+        const reasonText = justification.trim();
+        const now = new Date().toISOString();
+        const auditId = `audit-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+
+        await supabaseRepository.updateReleaseDecision(runId, decision, reasonText, previousDecision);
+
+        const auditRecord: ReleaseDecisionAuditRecord = {
+          id: auditId,
+          run_id: runId,
+          previous_decision: previousDecision,
+          new_decision: decision,
+          justification: reasonText,
+          created_at: now,
+        };
+
+        return {
+          runId,
+          decision,
+          previousDecision,
+          audit: auditRecord,
+        };
+      })();
+    }
+
     const db = getDatabase();
-    const existingRun = this.getEvaluationRunById(runId);
+    const existingRun = this.getEvaluationRunById(runId) as any;
     if (!existingRun) {
       const err = new Error(`Evaluation run with ID '${runId}' not found`);
       (err as any).code = 'RUN_NOT_FOUND';

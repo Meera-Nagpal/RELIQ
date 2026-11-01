@@ -30,7 +30,7 @@ export async function handleDatasetRoutes(
   if (method === 'GET' && parsedUrl === '/api/datasets') {
     try {
       const projectId = query.get('projectId') || undefined;
-      const datasets = datasetService.getDatasets(projectId);
+      const datasets = await datasetService.getDatasets(projectId);
       sendJson(res, 200, { datasets });
     } catch (err: any) {
       sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve datasets');
@@ -98,7 +98,7 @@ export async function handleDatasetRoutes(
         : Array.isArray(body.selected_evaluators)
         ? body.selected_evaluators
         : undefined;
-      const preview = datasetService.previewDatasetImport({
+      const preview = await datasetService.previewDatasetImport({
         projectId:
           typeof body.projectId === 'string'
             ? body.projectId
@@ -194,7 +194,7 @@ export async function handleDatasetRoutes(
         ? body.selected_evaluators
         : undefined;
 
-      const imported = datasetService.importDataset({
+      const imported = await datasetService.importDataset({
         projectId,
         name: body.name.trim(),
         description: typeof body.description === 'string' ? body.description : undefined,
@@ -286,7 +286,7 @@ export async function handleDatasetRoutes(
     }
 
     try {
-      const created = datasetService.createDataset({
+      const created = await datasetService.createDataset({
         id: typeof body.id === 'string' ? body.id : undefined,
         projectId: body.projectId.trim(),
         name: body.name.trim(),
@@ -320,7 +320,7 @@ export async function handleDatasetRoutes(
 
       try {
         const expectedBehavior = body.expectedBehavior !== undefined ? body.expectedBehavior : body.expectedOutput;
-        const updated = datasetService.updateTestCase(datasetId, caseId, {
+        const updated = await datasetService.updateTestCase(datasetId, caseId, {
           caseKey: typeof body.caseKey === 'string' ? body.caseKey : undefined,
           name: body.name,
           category: body.category,
@@ -349,7 +349,7 @@ export async function handleDatasetRoutes(
     // DELETE /api/datasets/:datasetId/cases/:caseId
     if (method === 'DELETE') {
       try {
-        const deleted = datasetService.deleteTestCase(datasetId, caseId);
+        const deleted = await datasetService.deleteTestCase(datasetId, caseId);
         if (!deleted) {
           sendError(res, 404, 'TEST_CASE_NOT_FOUND', `Test case '${caseId}' not found in dataset '${datasetId}'`);
           return true;
@@ -370,7 +370,7 @@ export async function handleDatasetRoutes(
     // GET /api/datasets/:datasetId/cases
     if (method === 'GET') {
       try {
-        const dataset = datasetService.getDatasetById(datasetId);
+        const dataset = await datasetService.getDatasetById(datasetId);
         if (!dataset) {
           sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${datasetId}' not found`);
           return true;
@@ -379,7 +379,7 @@ export async function handleDatasetRoutes(
         const offsetRaw = query.get('offset');
         const limit = limitRaw !== null ? parseInt(limitRaw, 10) : undefined;
         const offset = offsetRaw !== null ? parseInt(offsetRaw, 10) : undefined;
-        const cases = datasetService.getDatasetCases(datasetId, {
+        const cases = await datasetService.getDatasetCases(datasetId, {
           limit: typeof limit === 'number' && !isNaN(limit) ? limit : undefined,
           offset: typeof offset === 'number' && !isNaN(offset) ? offset : undefined,
         });
@@ -417,7 +417,7 @@ export async function handleDatasetRoutes(
       }
 
       try {
-        const created = datasetService.createTestCase(datasetId, {
+        const created = await datasetService.createTestCase(datasetId, {
           id: typeof body.id === 'string' ? body.id : undefined,
           caseKey: typeof body.caseKey === 'string' ? body.caseKey : undefined,
           sourceRecordNumber: typeof body.sourceRecordNumber === 'number' ? body.sourceRecordNumber : undefined,
@@ -452,7 +452,7 @@ export async function handleDatasetRoutes(
     // GET /api/datasets/:id
     if (method === 'GET') {
       try {
-        const dataset = datasetService.getDatasetById(id);
+        const dataset = await datasetService.getDatasetById(id);
         if (!dataset) {
           sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${id}' not found`);
           return true;
@@ -475,7 +475,7 @@ export async function handleDatasetRoutes(
       }
 
       try {
-        const updated = datasetService.updateDataset(id, {
+        const updated = await datasetService.updateDataset(id, {
           name: body.name,
           description: typeof body.description === 'string' ? body.description : undefined,
           version: typeof body.version === 'string' ? body.version : undefined,
@@ -497,7 +497,7 @@ export async function handleDatasetRoutes(
     // DELETE /api/datasets/:id
     if (method === 'DELETE') {
       try {
-        const deleted = datasetService.deleteDataset(id);
+        const deleted = await datasetService.deleteDataset(id);
         if (!deleted) {
           sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${id}' not found`);
           return true;

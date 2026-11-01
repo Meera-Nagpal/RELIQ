@@ -36,7 +36,8 @@ import { handleVersionRoutes } from './routes/versionRoutes';
 import { handleSettingsRoutes } from './routes/settingsRoutes';
 import { handleEvaluationDbRoutes } from './routes/evaluationDbRoutes';
 import { handleAuthRoutes } from './routes/authRoutes';
-import { isSupabaseConfigured, testSupabaseConnection } from './db/supabaseClient';
+import { isSupabaseConfigured, isSupabaseDriverActive, testSupabaseConnection } from './db/supabaseClient';
+import { supabaseRepository } from './db/supabaseRepository';
 import { evaluationDbService } from './services/evaluationDbService';
 import { datasetService } from './services/datasetService';
 import { sendError } from './routes/httpUtils';
@@ -145,24 +146,29 @@ export function createReliqProxyMiddleware() {
       let databaseType = 'none';
       let latencyMs = 0;
 
-      if (isSupabaseConfigured() && process.env.RELIQ_DB_DRIVER !== 'sqlite') {
+      if (isSupabaseDriverActive()) {
         const check = await testSupabaseConnection();
         databaseType = 'supabase_postgresql';
         databaseStatus = check.connected ? 'connected' : `error: ${check.error}`;
         latencyMs = check.latencyMs;
       } else {
-        try {
-          const start = Date.now();
-          const db = getDatabase();
-          const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
-          if (row && row.alive === 1) {
-            databaseStatus = 'connected';
+        if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+          databaseType = 'supabase_postgresql';
+          databaseStatus = 'error: Supabase credentials missing (SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)';
+        } else {
+          try {
+            const start = Date.now();
+            const db = getDatabase();
+            const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
+            if (row && row.alive === 1) {
+              databaseStatus = 'connected';
+              databaseType = 'sqlite';
+              latencyMs = Date.now() - start;
+            }
+          } catch (dbErr: any) {
+            databaseStatus = `error: ${dbErr.message}`;
             databaseType = 'sqlite';
-            latencyMs = Date.now() - start;
           }
-        } catch (dbErr: any) {
-          databaseStatus = `error: ${dbErr.message}`;
-          databaseType = 'sqlite';
         }
       }
 
@@ -207,7 +213,7 @@ export function createReliqProxyMiddleware() {
           targetDatasetId &&
           (!body.dataset || !Array.isArray(body.dataset.cases) || body.dataset.cases.length === 0)
         ) {
-          const resolvedDs = datasetService.getDatasetById(targetDatasetId);
+          const resolvedDs = await datasetService.getDatasetById(targetDatasetId);
           if (resolvedDs) {
             body.dataset = {
               id: resolvedDs.id,
@@ -321,7 +327,7 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: GET /api/evaluations/runs ──────────────
     if (req.method === 'GET' && parsedUrl === '/api/evaluations/runs') {
       try {
-        const runs = evaluationDbService.getEvaluationRuns();
+        const runs = await evaluationDbService.getEvaluationRuns();
         sendJson(res, 200, { runs });
       } catch (err: any) {
         sendJson(res, 500, { error: err.message, runs: [] });
@@ -333,7 +339,7 @@ export function createReliqProxyMiddleware() {
     const runIdGetMatch = req.method === 'GET' ? parsedUrl.match(/^\/api\/evaluations\/runs\/([^/]+)$/) : null;
     if (runIdGetMatch) {
       const runId = runIdGetMatch[1].trim();
-      const run = evaluationDbService.getEvaluationRunById(runId);
+      const run = await evaluationDbService.getEvaluationRunById(runId);
       if (!run) {
         sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run '${runId}' not found`);
         return;
@@ -347,11 +353,18 @@ export function createReliqProxyMiddleware() {
     if (runIdDelMatch) {
       const runId = runIdDelMatch[1].trim();
       let deletedFromDb = false;
-      try {
-        const db = getDatabase();
-        const delRes = db.prepare('DELETE FROM evaluation_runs WHERE id = ?').run(runId);
-        deletedFromDb = delRes.changes > 0;
-      } catch {}
+      if (isSupabaseDriverActive()) {
+        try {
+          await supabaseRepository.deleteEvaluationRun(runId);
+          deletedFromDb = true;
+        } catch {}
+      } else {
+        try {
+          const db = getDatabase();
+          const delRes = db.prepare('DELETE FROM evaluation_runs WHERE id = ?').run(runId);
+          deletedFromDb = delRes.changes > 0;
+        } catch {}
+      }
       const deletedFromDisk = deleteRunFromDisk(runId);
       if (!deletedFromDisk && !deletedFromDb) {
         sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run '${runId}' not found`);
@@ -363,6 +376,13 @@ export function createReliqProxyMiddleware() {
 
     // ── Seed Reset API: POST /api/seed/reset or /api/reset ──────
     if (req.method === 'POST' && (parsedUrl === '/api/seed/reset' || parsedUrl === '/api/reset')) {
+      if (isSupabaseDriverActive()) {
+        sendJson(res, 200, {
+          success: true,
+          message: 'Production Supabase database reset is disabled to protect production data.',
+        });
+        return;
+      }
       try {
         const db = getDatabase();
         const result = seedDatabase(db);

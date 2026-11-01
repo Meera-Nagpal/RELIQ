@@ -1,18 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 60,
-      "includeFiles": "node_modules/better-sqlite3/**"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api?reliq_path=$1"
+      "destination": "https://reliq-backend.onrender.com/api/$1"
     },
     {
       "source": "/((?!api).*)",

@@ -1,11 +1,16 @@
 /* ============================================================
    RELIQ — Model Version Service
    
-   Business logic and SQLite persistence for Model Versions.
+   Business logic and persistence for Model Versions.
+   Uses Supabase PostgreSQL in production (when RELIQ_DB_DRIVER=supabase_postgresql
+   or Supabase credentials are configured).
+   Uses SQLite in local offline development and automated tests.
    SECURITY: Never accepts, stores, or returns API keys.
    ============================================================ */
 
 import { getDatabase } from '../db/database';
+import { isSupabaseDriverActive } from '../db/supabaseClient';
+import { supabaseRepository } from '../db/supabaseRepository';
 import { projectService } from './projectService';
 
 export interface ModelVersionRecord {
@@ -27,7 +32,10 @@ export class VersionService {
   /**
    * Retrieves all model versions, optionally filtered by projectId.
    */
-  getVersions(projectId?: string): ModelVersionRecord[] {
+  getVersions(projectId?: string): ModelVersionRecord[] | Promise<ModelVersionRecord[]> {
+    if (isSupabaseDriverActive()) {
+      return supabaseRepository.getModelVersions(projectId);
+    }
     const db = getDatabase();
     if (projectId) {
       return db
@@ -42,7 +50,10 @@ export class VersionService {
   /**
    * Retrieves a single model version by ID.
    */
-  getVersionById(id: string): ModelVersionRecord | null {
+  getVersionById(id: string): (ModelVersionRecord | null) | Promise<ModelVersionRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return supabaseRepository.getModelVersionById(id);
+    }
     const db = getDatabase();
     const row = db
       .prepare('SELECT id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at FROM model_versions WHERE id = ?')
@@ -64,15 +75,7 @@ export class VersionService {
     temperature?: number;
     maxTokens?: number;
     reasoningEffort?: string;
-  }): ModelVersionRecord {
-    const db = getDatabase();
-    const project = projectService.getProjectById(data.projectId);
-    if (!project) {
-      const err = new Error(`Project with ID '${data.projectId}' not found`);
-      (err as any).code = 'PROJECT_NOT_FOUND';
-      throw err;
-    }
-
+  }): ModelVersionRecord | Promise<ModelVersionRecord> {
     const id = data.id?.trim() || `ver-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
     const systemPrompt = data.systemPrompt !== undefined ? data.systemPrompt : null;
@@ -80,6 +83,39 @@ export class VersionService {
     const temperature = typeof data.temperature === 'number' ? data.temperature : 0.2;
     const maxTokens = typeof data.maxTokens === 'number' ? data.maxTokens : 2048;
     const reasoningEffort = data.reasoningEffort !== undefined ? data.reasoningEffort : null;
+
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const project = await projectService.getProjectById(data.projectId);
+        if (!project) {
+          const err = new Error(`Project with ID '${data.projectId}' not found`);
+          (err as any).code = 'PROJECT_NOT_FOUND';
+          throw err;
+        }
+        return await supabaseRepository.createModelVersion({
+          id,
+          project_id: data.projectId,
+          provider: data.provider.trim(),
+          model: data.model.trim(),
+          display_name: data.displayName.trim(),
+          system_prompt: systemPrompt,
+          prompt_version: promptVersion,
+          temperature,
+          max_tokens: maxTokens,
+          reasoning_effort: reasoningEffort,
+          created_at: now,
+          updated_at: now,
+        });
+      })();
+    }
+
+    const db = getDatabase();
+    const project = projectService.getProjectById(data.projectId);
+    if (!project) {
+      const err = new Error(`Project with ID '${data.projectId}' not found`);
+      (err as any).code = 'PROJECT_NOT_FOUND';
+      throw err;
+    }
 
     db.prepare(`
       INSERT INTO model_versions (id, project_id, provider, model, display_name, system_prompt, prompt_version, temperature, max_tokens, reasoning_effort, created_at, updated_at)
@@ -130,9 +166,26 @@ export class VersionService {
       maxTokens?: number;
       reasoningEffort?: string;
     }
-  ): ModelVersionRecord | null {
+  ): (ModelVersionRecord | null) | Promise<ModelVersionRecord | null> {
+    if (isSupabaseDriverActive()) {
+      return (async () => {
+        const existing = await supabaseRepository.getModelVersionById(id);
+        if (!existing) return null;
+        const updates: any = { updated_at: new Date().toISOString() };
+        if (data.provider !== undefined) updates.provider = data.provider.trim();
+        if (data.model !== undefined) updates.model = data.model.trim();
+        if (data.displayName !== undefined) updates.display_name = data.displayName.trim();
+        if (data.systemPrompt !== undefined) updates.system_prompt = data.systemPrompt;
+        if (data.promptVersion !== undefined) updates.prompt_version = data.promptVersion;
+        if (typeof data.temperature === 'number') updates.temperature = data.temperature;
+        if (typeof data.maxTokens === 'number') updates.max_tokens = data.maxTokens;
+        if (data.reasoningEffort !== undefined) updates.reasoning_effort = data.reasoningEffort;
+        return await supabaseRepository.updateModelVersion(id, updates);
+      })();
+    }
+
     const db = getDatabase();
-    const existing = this.getVersionById(id);
+    const existing = this.getVersionById(id) as ModelVersionRecord | null;
     if (!existing) return null;
 
     const provider = data.provider !== undefined ? data.provider.trim() : existing.provider;
@@ -170,7 +223,10 @@ export class VersionService {
   /**
    * Deletes a model version by ID.
    */
-  deleteVersion(id: string): boolean {
+  deleteVersion(id: string): boolean | Promise<boolean> {
+    if (isSupabaseDriverActive()) {
+      return supabaseRepository.deleteModelVersion(id);
+    }
     const db = getDatabase();
     const info = db.prepare('DELETE FROM model_versions WHERE id = ?').run(id);
     return info.changes > 0;

@@ -44,6 +44,21 @@ export function isSupabaseConfigured(): boolean {
 }
 
 /**
+ * Returns true if Supabase is the active database driver.
+ * Returns true when RELIQ_DB_DRIVER=supabase_postgresql or when Supabase credentials are configured,
+ * unless RELIQ_DB_DRIVER is explicitly set to 'sqlite' (local development & automated tests).
+ */
+export function isSupabaseDriverActive(): boolean {
+  if (process.env.RELIQ_DB_DRIVER === 'sqlite') {
+    return false;
+  }
+  if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+    return true;
+  }
+  return isSupabaseConfigured();
+}
+
+/**
  * Returns the singleton Supabase admin client with service-role permissions.
  * Throws an error if Supabase credentials are not configured.
  */
