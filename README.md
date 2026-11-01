@@ -1,19 +1,39 @@
 # RELIQ — AI Reliability & Model Regression Testing Platform
-**Version 2.8.0 — Cloud-First Architecture**
 
-RELIQ is a real-time AI reliability, regression detection, and model evaluation platform. It evaluates, compares, and monitors production AI models and agent systems using authentic provider APIs, deterministic reference evaluators, and qualitative LLM judging.
-
----
-
-## 🚀 Live Deployments & Demos
-
-- **Frontend (Vercel):** [https://reliq-id3mhh3q2-meera-nagpal.vercel.app](https://reliq-id3mhh3q2-meera-nagpal.vercel.app)
-- **Production Backend (Render):** Configured via [`render.yaml`](./render.yaml) (`/api/health`)
-- **Cloud Database (Supabase PostgreSQL):** [https://fvzdkyozonzpkrzlkzcl.supabase.co](https://fvzdkyozonzpkrzlkzcl.supabase.co)
+RELIQ is an enterprise-grade AI reliability, regression detection, and model evaluation platform. It enables engineering teams to evaluate, benchmark, and gate production AI models and agent systems against strict quality, latency, safety, and cost thresholds before deployment.
 
 ---
 
-## 🏛️ Cloud Architecture
+## 🚀 Key Capabilities
+
+### 1. Side-by-Side Model Benchmarking
+- **Head-to-Head Comparison:** Compare baseline vs. candidate models with synchronized input/output inspection and side-by-side prompt execution.
+- **Live Provider Integration:** Real-time inference across Groq (OpenAI GPT-OSS, Qwen), Cerebras, Google Gemini, OpenAI, and Anthropic.
+- **Granular Telemetry:** Captures observed round-trip latency, prompt/completion tokens, reasoning tokens, and token-level cost accounting.
+
+### 2. Multi-Layered Evaluation Pipeline
+- **Deterministic Evaluators:** Fast, zero-API-cost deterministic checks including Exact Match, Normalized Text, and Keyword Criteria with punctuation tolerance.
+- **Structured JSON Validation:** Strict RFC 8259 JSON validation, schema key enforcement, duplicate key detection, and markdown code fence extraction.
+- **Behavioral Safety & Refusal Gates:** Distinguishes valid safety refusals from true quality failures; detects prompt injection indicators, credential leaks, and policy bypasses.
+- **Surface Semantic Similarity:** Cosine vector math and token overlap for nuance-aware similarity scoring without external API dependencies.
+- **Independent LLM-as-a-Judge:** Decoupled qualitative judging powered by independent models (e.g. Qwen 3.8 27B), strictly isolated from benchmark candidates.
+
+### 3. Automated Regression Gating & Release Decisions
+- **Decision Engine:** Automatically computes definitive release decisions (`SHIP`, `SHIP_WITH_CONDITIONS`, `BLOCK`, `INSUFFICIENT_EVIDENCE`) based on sample sizes and evidence strength.
+- **Configurable Thresholds:** Set maximum allowable degradation in accuracy, maximum latency increase, and minimum pass rate requirements.
+- **Root Cause Analysis:** Categorizes regressions into operational failures (rate limits, timeouts) vs. quality failures (formatting, reasoning, safety).
+
+### 4. Flexible Dataset Management
+- **Built-in Benchmarks:** Pre-configured golden datasets such as the 27-scenario Checkout Reliability Suite.
+- **Multi-Format Ingestion:** Seamlessly upload and evaluate custom test suites via JSON, JSONL / NDJSON, CSV, and pairwise preference formats (chosen/rejected pairs).
+
+### 5. Enterprise Security & Architecture
+- **Zero Raw Secret Exposure:** API credentials and database service keys are secured strictly on the server-side proxy; keys are never transmitted to the client bundle or telemetry payloads.
+- **Cloud-First Persistence:** Fully persisted projects, datasets, test cases, and evaluation runs backed by Supabase PostgreSQL with local offline fallback.
+
+---
+
+## 🏛️ System Architecture
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -26,7 +46,7 @@ RELIQ is a real-time AI reliability, regression detection, and model evaluation 
 ┌────────────────────────────────────────────────────────┐
 │                    Render (Backend)                    │
 │          Node.js Standalone Evaluation Server          │
-│       - Worker Pool Concurrency (1-20 workers)         │
+│       - Worker Pool Concurrency (Bounded Memory)       │
 │       - SHA-256 Evaluation Response Caching            │
 │       - Provider Rate-Limit Scheduler & Token Bucket   │
 │       - Auth Verification & Secret Protection          │
@@ -35,7 +55,7 @@ RELIQ is a real-time AI reliability, regression detection, and model evaluation 
                ▼                          ▼
 ┌──────────────────────────────┐  ┌──────────────────────┐
 │     Supabase PostgreSQL      │  │ Real AI Provider APIs│
-│   - Projects & Datasets      │  │ - Groq (Qwen/Llama)  │
+│   - Projects & Datasets      │  │ - Groq (Qwen / LPU)  │
 │   - Test Cases & Versions    │  │ - Cerebras           │
 │   - Evaluation Runs & Results│  │ - Google Gemini      │
 │   - Row Level Security (RLS) │  │ - OpenAI             │
@@ -45,109 +65,36 @@ RELIQ is a real-time AI reliability, regression detection, and model evaluation 
 
 ---
 
-## ⚡ Key Upgrades in Version 2.8.0
+## 🤖 Supported Providers & Models
 
-### 1. Cloud-First Persistence (Supabase PostgreSQL)
-- **Migrated from ephemeral SQLite** to production-grade Supabase PostgreSQL.
-- **Relational Integrity:** Foreign keys on all tables (`ON DELETE CASCADE`, `ON DELETE SET NULL`).
-- **Row Level Security (RLS):** Service role bypass for backend engine; user-ownership scoping via `auth.users(id)`.
-- **Dual-Engine Architecture:** Seamlessly falls back to local SQLite when offline or during test runs.
-
-### 2. Upgraded Evaluation Engine
-- **Deterministic Offline Evaluation:** Zero-API-cost evaluations for exact match, normalized text, behavioral safety, json validity, and cosine vector semantic similarity.
-- **Cryptographic Response Caching:** SHA-256 cache keys over prompt, model, system prompt, temperature, and tokens. Instant 1ms cached replay for previously executed scenarios.
-- **Worker Pool Parallelism:** Configurable concurrency (up to 20 parallel workers) with bounded backoff and rate-limit aware pacing.
-- **Optional LLM-as-a-Judge:** AI judging is fully decoupled and optional. Missing or unavailable judge models safely fall back to deterministic scoring without masking provider errors.
-
-### 3. Production Security & Secret Management
-- **Zero Raw Secret Exposure:** API keys and database service role secrets are strictly backend-only. Never passed to client bundles or returned in `/api/versions` or `/api/health`.
-- **Bearer Token Auth:** `/api/auth/me`, `/api/auth/signin`, `/api/auth/signup` delegated directly to Supabase Auth.
+| Provider | Supported Models | Primary Role |
+|---|---|---|
+| **Groq** | `openai/gpt-oss-20b`, `openai/gpt-oss-120b`, `qwen/qwen3.8-27b`, `allam-2-7b` | Ultra-fast inference & independent LLM judging |
+| **Cerebras** | `gpt-oss-120b`, `llama3.1-8b` | Low-latency inference benchmarking |
+| **Google Gemini** | `gemini-2.0-flash`, `gemini-1.5-pro`, `gemini-1.5-flash` | Multimodal & complex reasoning |
+| **OpenAI** | `gpt-4o`, `gpt-4o-mini`, `o3-mini`, `o1` | Benchmark baseline / candidate |
+| **Anthropic** | `claude-3-5-sonnet`, `claude-3-5-haiku`, `claude-3-opus` | Benchmark baseline / candidate |
 
 ---
 
-## 🗄️ Database Schema & Supabase Setup
-
-The complete, idempotent PostgreSQL schema is located in:
-[`supabase/migrations/20261031_initial_schema.sql`](./supabase/migrations/20261031_initial_schema.sql)
-
-### Tables
-1. `projects`: Evaluation workspaces and regression gate thresholds.
-2. `datasets`: Uploaded or built-in test suites (JSON, JSONL, CSV, preference pairs).
-3. `test_cases`: Test scenarios, expected behaviors, and evaluator criteria.
-4. `model_versions`: Model identifiers, system prompts, hyperparameters.
-5. `evaluation_runs`: Evaluation run lifecycle, pass rates, and release decisions.
-6. `evaluation_results`: Granular per-case telemetry (latency, tokens, cost, failure classification).
-7. `project_settings`: Configurable gating rules (min accuracy, max degradation, latency tolerance).
-8. `release_decision_audit`: Immutable audit trail of supervisor release decisions.
-9. `evaluation_cache`: SHA-256 cached model responses for fast replay.
-
-### Applying Migrations to Supabase
-1. Open the [Supabase Dashboard](https://supabase.com/dashboard/project/fvzdkyozonzpkrzlkzcl/sql).
-2. Navigate to **SQL Editor** -> **New Query**.
-3. Copy the contents of [`supabase/migrations/20261031_initial_schema.sql`](./supabase/migrations/20261031_initial_schema.sql) and click **Run**.
-4. To sync all local SQLite data into Supabase, run:
-   ```bash
-   npm run migrate:supabase
-   ```
-
----
-
-## 🛠️ Local Development & Running
+## 🛠️ Quickstart & Local Setup
 
 ```bash
-# 1. Install dependencies
+# 1. Clone the repository and install dependencies
+git clone https://github.com/Meera-Nagpal/RELIQ.git
+cd RELIQ
 npm install
 
-# 2. Configure environment
+# 2. Configure local environment variables
 cp .env.example .env.local
-# Add your real Supabase & AI provider keys to .env.local
+# Add your Supabase and provider API keys in .env.local
 
-# 3. Run automated test suite (382 tests)
-npm test
-
-# 4. Start local development server
+# 3. Start local development server
 npm run dev
 ```
 
 ---
 
-## 🌐 Cloud Deployment Instructions
+## 📜 License
 
-### Deploy Backend to Render
-1. Connect your repository to Render.
-2. Select **New Web Service** and choose **Blueprint** pointing to [`render.yaml`](./render.yaml).
-3. In Render Dashboard Environment Variables, configure:
-   - `SUPABASE_URL`: `https://fvzdkyozonzpkrzlkzcl.supabase.co`
-   - `SUPABASE_SERVICE_ROLE_KEY`: `sb_secret_...`
-   - `GROQ_API_KEY`: `gsk_...`
-   - `CEREBRAS_API_KEY`: `csk-...`
-   - `GEMINI_API_KEY`: `AQ....`
-4. Health check URL is `/api/health`.
-
-### Deploy Frontend to Vercel
-1. Import repository into Vercel.
-2. Framework Preset: **Vite**.
-3. Output Directory: `dist`.
-4. Build Command: `npm run build`.
-5. Environment Variables:
-   - `RENDER_EXTERNAL_URL`: URL of your deployed Render backend (e.g. `https://reliq-backend.onrender.com`).
-   - `SUPABASE_URL`: `https://fvzdkyozonzpkrzlkzcl.supabase.co`
-   - `SUPABASE_ANON_KEY`: `sb_publishable_...`
-
----
-
-## 🧪 Verification & Automated Testing
-
-RELIQ includes 382 unit, integration, and cloud migration tests covering:
-- Unit Evaluators & Classification (1-202)
-- SQLite & Supabase Persistence (DB-1 to DB-11, EVAL-PERSIST-1 to 38)
-- REST API Integration (API-1 to 36)
-- Frontend Repository Storage (REPO-1 to 27)
-- Dataset-Driven Uploads & Preference JSONL (DDU-1 to 21)
-- Cloud Migration & Caching Engine (CLOUD-1 to 8)
-
-Run tests anytime:
-```bash
-npm test
-```
-Result: **382 passed, 0 failed**.
+Private & Confidential — Built for AI Reliability and Production LLM Governance.
