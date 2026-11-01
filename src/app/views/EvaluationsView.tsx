@@ -885,9 +885,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {isRunning && (
           <div
             style={{
-              background: '#0A1A35',
-              border: '1px solid #1E3A8A',
-              borderRadius: '8px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '1.2rem 1.4rem',
               display: 'flex',
               flexDirection: 'column',
@@ -903,14 +903,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    background: '#60A5FA',
+                    background: '#ADC0D6',
                   }}
                 />
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.12em', color: '#ECEFF2', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.12em', color: '#F2F2F2', textTransform: 'uppercase', fontFamily: 'monospace' }}>
                   EVALUATION PROGRESS
                 </span>
               </div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#60A5FA', fontFamily: 'monospace' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ADC0D6', fontFamily: 'monospace' }}>
                 {progressPercent}% COMPLETE
               </span>
             </div>
@@ -920,8 +920,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               style={{
                 width: '100%',
                 height: '6px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                borderRadius: '3px',
+                background: '#0F0F0F',
+                borderRadius: '2px',
+                border: '1px solid #222222',
                 overflow: 'hidden',
               }}
             >
@@ -929,8 +930,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                 style={{
                   height: '100%',
                   width: `${Math.max(4, Math.min(100, progressPercent))}%`,
-                  background: '#1E3A8A',
-                  borderRadius: '3px',
+                  background: '#ADC0D6',
+                  borderRadius: '2px',
                   transition: 'width 0.4s ease-out',
                 }}
               />
@@ -1379,31 +1380,33 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   <span
                     style={{
                       fontSize: '0.72rem',
-                      background: '#0A1A35',
-                      color: '#60A5FA',
+                      background: '#0F0F0F',
+                      color: '#ADC0D6',
                       padding: '0.15rem 0.5rem',
-                      borderRadius: '4px',
+                      borderRadius: '2px',
                       fontFamily: 'monospace',
+                      border: '1px solid #292929',
                     }}
                   >
                     Run ID: {currentRunId}
                   </span>
                 )}
               </div>
-              <span style={{ color: '#60A5FA', fontWeight: 800 }}>{progressPercent}%</span>
+              <span style={{ color: '#ADC0D6', fontWeight: 800, fontFamily: 'monospace' }}>{progressPercent}%</span>
             </div>
             {progressCounts && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#8899AA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#858585', fontFamily: 'monospace' }}>
                 <span>{progressCounts.current} of {progressCounts.total} scenarios processed</span>
                 <span>{progressCounts.total - progressCounts.current} remaining</span>
               </div>
             )}
-            <div style={{ height: '8px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ height: '6px', background: '#0F0F0F', borderRadius: '2px', overflow: 'hidden', border: '1px solid #222222' }}>
               <div
                 style={{
                   height: '100%',
                   width: `${progressPercent}%`,
-                  background: '#1E3A8A',
+                  background: '#ADC0D6',
+                  borderRadius: '2px',
                   transition: 'width 0.15s ease',
                 }}
               />
@@ -1414,7 +1417,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {/* ── Evaluation Models & LLM Judge Configuration ── */}
         <div
           style={{
-            background: '#1B1B1B',
+            background: '#151515',
             border: isJudgeConflicting ? '1px solid #EF4444' : '1px solid #292929',
             borderRadius: '2px',
             padding: '1.25rem',
@@ -1440,7 +1443,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   checked={judgeEnabled}
                   onChange={(e) => setJudgeEnabled(e.target.checked)}
                   disabled={isRunning}
-                  style={{ accentColor: '#2563EB' }}
+                  style={{ accentColor: '#ADC0D6' }}
                 />
                 <span>Enable Independent Judge</span>
               </label>
@@ -1449,22 +1452,22 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
             {/* Benchmark Models Summary */}
-            <div style={{ background: '#14181F', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              <div style={{ fontSize: '0.72rem', color: '#8899AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', fontWeight: 600 }}>
+            <div style={{ background: '#0F0F0F', borderRadius: '2px', padding: '0.85rem', border: '1px solid #292929' }}>
+              <div style={{ fontSize: '0.72rem', color: '#858585', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', fontWeight: 600, fontFamily: 'monospace' }}>
                 Active Benchmark Models
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.82rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#AAAAAA' }}>Baseline:</span>
-                  <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontSize: '0.78rem' }}>{effectiveBaselineModel}</span>
+                  <span style={{ color: '#858585' }}>Baseline:</span>
+                  <span style={{ color: '#F2F2F2', fontFamily: 'monospace', fontSize: '0.78rem' }}>{effectiveBaselineModel}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#AAAAAA' }}>Candidate:</span>
-                  <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontSize: '0.78rem' }}>{effectiveCandidateModel}</span>
+                  <span style={{ color: '#858585' }}>Candidate:</span>
+                  <span style={{ color: '#F2F2F2', fontFamily: 'monospace', fontSize: '0.78rem' }}>{effectiveCandidateModel}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#AAAAAA' }}>Reasoning Effort:</span>
-                  <span style={{ color: '#4E95FF', fontWeight: 600, textTransform: 'capitalize' }}>
+                  <span style={{ color: '#858585' }}>Reasoning Effort:</span>
+                  <span style={{ color: '#ADC0D6', fontWeight: 600, textTransform: 'capitalize', fontFamily: 'monospace' }}>
                     {configMode === 'custom_benchmark'
                       ? `${customBaselineReasoningEffort} / ${customCandidateReasoningEffort}`
                       : (candidateVersion?.reasoningEffort || baselineVersion?.reasoningEffort || 'medium')}
@@ -1474,9 +1477,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             </div>
 
             {/* LLM Judge Selector & Status */}
-            <div style={{ background: '#181D25', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ background: '#0F0F0F', borderRadius: '2px', padding: '0.85rem', border: '1px solid #292929' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.72rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.72rem', color: '#858585', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, fontFamily: 'monospace' }}>
                   Independent LLM Judge
                 </span>
                 <span
@@ -1484,23 +1487,33 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     fontSize: '0.68rem',
                     fontWeight: 700,
                     padding: '0.15rem 0.45rem',
-                    borderRadius: '4px',
+                    borderRadius: '2px',
+                    fontFamily: 'monospace',
+                    border: '1px solid',
                     background:
                       judgeStatus === 'AVAILABLE'
-                        ? 'rgba(78, 155, 111, 0.15)'
+                        ? 'rgba(34, 197, 94, 0.12)'
                         : judgeStatus === 'CHECKING'
-                        ? 'rgba(91, 130, 166, 0.15)'
+                        ? 'rgba(173, 192, 214, 0.12)'
                         : judgeStatus === 'API KEY MISSING'
-                        ? 'rgba(192, 92, 84, 0.15)'
-                        : 'rgba(198, 139, 69, 0.15)',
+                        ? 'rgba(239, 68, 68, 0.12)'
+                        : 'rgba(234, 179, 8, 0.12)',
+                    borderColor:
+                      judgeStatus === 'AVAILABLE'
+                        ? 'rgba(34, 197, 94, 0.25)'
+                        : judgeStatus === 'CHECKING'
+                        ? 'rgba(173, 192, 214, 0.25)'
+                        : judgeStatus === 'API KEY MISSING'
+                        ? 'rgba(239, 68, 68, 0.25)'
+                        : 'rgba(234, 179, 8, 0.25)',
                     color:
                       judgeStatus === 'AVAILABLE'
-                        ? '#4E9B6F'
+                        ? '#22C55E'
                         : judgeStatus === 'CHECKING'
-                        ? '#5B82A6'
+                        ? '#ADC0D6'
                         : judgeStatus === 'API KEY MISSING'
-                        ? '#C05C54'
-                        : '#C68B45',
+                        ? '#EF4444'
+                        : '#EAB308',
                   }}
                 >
                   {judgeStatus}
@@ -1517,11 +1530,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                       style={{
                         width: '100%',
                         padding: '0.5rem 0.75rem',
-                        background: '#0F1216',
-                        border: isJudgeConflicting ? '1px solid #C05C54' : '1px solid rgba(255, 255, 255, 0.12)',
-                        borderRadius: '6px',
-                        color: '#ECEFF2',
+                        background: '#151515',
+                        border: isJudgeConflicting ? '1px solid #EF4444' : '1px solid #292929',
+                        borderRadius: '2px',
+                        color: '#F2F2F2',
                         fontSize: '0.82rem',
+                        fontFamily: 'monospace',
                       }}
                     >
                       {eligibleJudgeModels.map((m) => (
@@ -1532,29 +1546,29 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     </select>
                   </div>
 
-                  <div style={{ marginTop: '0.45rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.72rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8D98A5' }}>
-                      <span>Judge: <strong style={{ color: '#FFFFFF' }}>{eligibleJudgeModels.find((m) => m.id === selectedJudgeModel)?.displayName || selectedJudgeModel}</strong></span>
-                      <span>Status: <strong style={{ color: judgeStatus === 'AVAILABLE' ? '#4E9B6F' : judgeStatus === 'CHECKING' ? '#5B82A6' : '#C05C54' }}>{judgeStatus === 'CHECKING' ? 'TESTING…' : judgeStatus}</strong></span>
+                  <div style={{ marginTop: '0.45rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#858585' }}>
+                      <span>Judge: <strong style={{ color: '#F2F2F2' }}>{eligibleJudgeModels.find((m) => m.id === selectedJudgeModel)?.displayName || selectedJudgeModel}</strong></span>
+                      <span>Status: <strong style={{ color: judgeStatus === 'AVAILABLE' ? '#22C55E' : judgeStatus === 'CHECKING' ? '#ADC0D6' : '#EF4444' }}>{judgeStatus === 'CHECKING' ? 'TESTING…' : judgeStatus}</strong></span>
                     </div>
                     {judgeStatusDetails && (
-                      <div style={{ color: judgeStatus === 'AVAILABLE' ? '#4E9B6F' : '#E59892', fontSize: '0.72rem' }}>
+                      <div style={{ color: judgeStatus === 'AVAILABLE' ? '#22C55E' : '#EF4444', fontSize: '0.72rem' }}>
                         {judgeStatusDetails}
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <div style={{ fontSize: '0.8rem', color: '#666666', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                <div style={{ fontSize: '0.8rem', color: '#858585', fontStyle: 'italic', padding: '0.5rem 0' }}>
                   LLM Judge is currently disabled. Evaluation will use deterministic criteria.
                 </div>
               )}
             </div>
 
             {/* Semantic Evaluation Status */}
-            <div style={{ background: '#181D25', borderRadius: '6px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ background: '#0F0F0F', borderRadius: '2px', padding: '0.85rem', border: '1px solid #292929' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.72rem', color: '#8D98A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.72rem', color: '#858585', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, fontFamily: 'monospace' }}>
                   Semantic Evaluation
                 </span>
                 <span
@@ -1562,15 +1576,17 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     fontSize: '0.68rem',
                     fontWeight: 700,
                     padding: '0.15rem 0.45rem',
-                    borderRadius: '4px',
-                    background: 'rgba(78, 155, 111, 0.15)',
-                    color: '#4E9B6F',
+                    borderRadius: '2px',
+                    border: '1px solid rgba(34, 197, 94, 0.25)',
+                    background: 'rgba(34, 197, 94, 0.12)',
+                    color: '#22C55E',
+                    fontFamily: 'monospace',
                   }}
                 >
                   Local (Configured)
                 </span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.76rem', color: '#CCCCCC', lineHeight: 1.4 }}>
+              <p style={{ margin: 0, fontSize: '0.76rem', color: '#858585', lineHeight: 1.4, fontFamily: 'monospace' }}>
                 Local mathematical n-gram vectorization & cosine similarity analyzer. Zero external API calls.
               </p>
             </div>
@@ -1580,7 +1596,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {/* Action Controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#8D98A5', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.8rem', color: '#858585', fontWeight: 600, fontFamily: 'monospace' }}>
               Test Scale:
             </span>
             <select
@@ -1589,11 +1605,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
               disabled={isRunning}
               style={{
                 padding: '0.45rem 0.8rem',
-                background: '#0F1216',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '6px',
-                color: '#ECEFF2',
+                background: '#151515',
+                border: '1px solid #292929',
+                borderRadius: '2px',
+                color: '#F2F2F2',
                 fontSize: '0.82rem',
+                fontFamily: 'monospace',
               }}
             >
               <option value={5}>Validation Smoke Test (5 scenarios)</option>

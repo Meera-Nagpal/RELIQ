@@ -361,9 +361,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         >
           <div
             style={{
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '2rem',
               width: '100%',
               maxWidth: '480px',

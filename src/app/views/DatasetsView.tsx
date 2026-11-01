@@ -639,11 +639,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
       {activeDataset && (
         <div
           style={{
-            background: '#14181F',
-            border: isActiveBuiltin
-              ? '1px solid rgba(78, 155, 111, 0.28)'
-              : '1px solid rgba(91, 130, 166, 0.28)',
-            borderRadius: '8px',
+            background: '#151515',
+            border: '1px solid #292929',
+            borderRadius: '2px',
             padding: '0.9rem 1.2rem',
             display: 'flex',
             justifyContent: 'space-between',
@@ -751,12 +749,13 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
             style={{
               width: '100%',
               padding: '0.65rem 1rem',
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '6px',
-              color: '#FFFFFF',
-              fontSize: '0.85rem',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
+              color: '#F2F2F2',
+              fontSize: '0.82rem',
               boxSizing: 'border-box',
+              fontFamily: 'monospace',
             }}
           />
         </div>
@@ -766,11 +765,12 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           onChange={(e) => setSelectedCategory(e.target.value)}
           style={{
             padding: '0.65rem 0.9rem',
-            background: '#14181F',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '6px',
-            color: '#FFFFFF',
+            background: '#151515',
+            border: '1px solid #292929',
+            borderRadius: '2px',
+            color: '#F2F2F2',
             fontSize: '0.82rem',
+            fontFamily: 'monospace',
           }}
         >
           <option value="All">All Categories ({cases.length})</option>
@@ -786,11 +786,12 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
           onChange={(e) => setSelectedSeverity(e.target.value)}
           style={{
             padding: '0.65rem 0.9rem',
-            background: '#14181F',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '6px',
-            color: '#FFFFFF',
+            background: '#151515',
+            border: '1px solid #292929',
+            borderRadius: '2px',
+            color: '#F2F2F2',
             fontSize: '0.82rem',
+            fontFamily: 'monospace',
           }}
         >
           <option value="All">All Severities</option>
@@ -804,9 +805,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
       {/* ── Test Cases Table ── */}
       <div
         style={{
-          background: '#14181F',
-          borderRadius: '10px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: '#0F0F0F',
+          borderRadius: '2px',
+          border: '1px solid #292929',
           overflowX: 'auto',
         }}
       >
@@ -816,8 +817,8 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
               display: 'grid',
               gridTemplateColumns: '95px 1.5fr 120px 1.6fr 125px 120px',
               padding: '0.8rem 1.2rem',
-              background: '#101419',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              background: '#151515',
+              borderBottom: '1px solid #292929',
               fontSize: '0.75rem',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
@@ -1053,9 +1054,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
         >
           <div
             style={{
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '2rem',
               width: '100%',
               maxWidth: '620px',
@@ -1322,9 +1323,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
         >
           <div
             style={{
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '1.8rem 2rem',
               width: '100%',
               maxWidth: '880px',
@@ -1958,9 +1959,9 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
         >
           <div
             style={{
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '2rem',
               width: '100%',
               maxWidth: '460px',

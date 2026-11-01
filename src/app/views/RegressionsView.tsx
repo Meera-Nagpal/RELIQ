@@ -654,9 +654,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
             <div
               key={rc.id}
               style={{
-                background: '#14181F',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '10px',
+                background: '#151515',
+                border: '1px solid #292929',
+                borderRadius: '2px',
                 padding: '1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -856,7 +856,7 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         </div>
 
         {isLoadingDetails && (
-          <div style={{ padding: '0.5rem 0.8rem', marginBottom: '0.8rem', background: '#0A1A35', border: '1px solid #1E3A8A', borderRadius: '4px', color: '#60A5FA', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+          <div style={{ padding: '0.5rem 0.8rem', marginBottom: '0.8rem', background: '#151515', border: '1px solid #292929', borderRadius: '2px', color: '#ADC0D6', fontSize: '0.75rem', fontFamily: 'monospace' }}>
             ⚡ Loading granular test case telemetry from persistence store...
           </div>
         )}
@@ -864,9 +864,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         {/* Explorer Table */}
         <div
           style={{
-            background: '#14181F',
-            borderRadius: '10px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#0F0F0F',
+            borderRadius: '2px',
+            border: '1px solid #292929',
             overflowX: 'auto',
           }}
         >
@@ -1058,9 +1058,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         >
           <div
             style={{
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '2rem',
               width: '100%',
               maxWidth: '960px',
@@ -1432,9 +1432,9 @@ export const RegressionsView: React.FC<RegressionsViewProps> = ({
         >
           <div
             style={{
-              background: '#14181F',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '2rem',
               width: '100%',
               maxWidth: '480px',

@@ -172,16 +172,16 @@ export function useRouter() {
       return;
     }
 
-    // Execute with global ripple transition calibrated to ~680ms (600-750ms requirement)
+    // Execute with global ripple transition calibrated to 2500ms for deliberate, smooth page transition
     triggerGlobalTransition(() => {
       if (typeof window !== 'undefined') {
         window.location.hash = target;
       }
-    }, 680);
+    }, 2500);
   }, []);
 
   const triggerTransition = useCallback((action: () => void) => {
-    triggerGlobalTransition(action, 680);
+    triggerGlobalTransition(action, 2500);
   }, []);
 
   return {

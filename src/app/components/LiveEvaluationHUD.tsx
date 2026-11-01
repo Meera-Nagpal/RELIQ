@@ -123,11 +123,11 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
               fontWeight: 800,
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
-              color: '#60A5FA',
-              background: '#0A1A35',
-              border: '1px solid rgba(37, 99, 235, 0.3)',
+              color: '#ADC0D6',
+              background: '#151515',
+              border: '1px solid #292929',
               padding: '0.15rem 0.5rem',
-              borderRadius: '4px',
+              borderRadius: '2px',
               whiteSpace: 'nowrap',
             }}
           >
@@ -228,8 +228,8 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
             style={{
               height: '100%',
               width: `${Math.max(3, Math.min(100, progressPercent))}%`,
-              background: '#1E3A8A',
-              borderRadius: '3px',
+              background: '#ADC0D6',
+              borderRadius: '2px',
               transition: 'width 0.25s ease-out',
             }}
           />

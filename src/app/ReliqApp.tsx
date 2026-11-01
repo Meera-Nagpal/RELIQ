@@ -264,9 +264,9 @@ export const ReliqApp: React.FC = () => {
         display: 'flex',
         width: '100vw',
         height: '100vh',
-        background: 'var(--bg, #0F1216)',
-        color: 'var(--text, #ECEFF2)',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        background: 'var(--bg, #0F0F0F)',
+        color: 'var(--text, #F2F2F2)',
+        fontFamily: "'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: 'hidden',
       }}
     >
@@ -289,7 +289,7 @@ export const ReliqApp: React.FC = () => {
         />
 
         {/* Viewport Content */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '2rem', boxSizing: 'border-box' }}>
+        <main style={{ flex: 1, overflowY: 'auto', padding: '2rem', boxSizing: 'border-box', transition: 'opacity 0.35s ease' }}>
           {isLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
               <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>

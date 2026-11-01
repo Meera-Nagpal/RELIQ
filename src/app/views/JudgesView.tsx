@@ -87,11 +87,11 @@ export const JudgesView: React.FC = () => {
                   fontFamily: 'monospace',
                   fontWeight: 700,
                   letterSpacing: '0.06em',
-                  color: '#60A5FA',
-                  background: '#0A1A35',
+                  color: '#ADC0D6',
+                  background: '#1B1B1B',
                   padding: '0.15rem 0.5rem',
                   borderRadius: '2px',
-                  border: '1px solid #1E3A8A',
+                  border: '1px solid #292929',
                 }}
               >
                 PRIMARY INDEPENDENT JUDGE

@@ -577,7 +577,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {/* ── TOP PROMINENT WINNER / COMPARISON RESULT SECTION ── */}
         <div
           style={{
-            background: '#181D25',
+            background: '#151515',
             border: `1px solid ${hasGateFailures ? 'rgba(192, 92, 84, 0.35)' : relativeBorderColor}`,
             borderRadius: '10px',
             padding: '1.4rem 1.6rem',
@@ -878,7 +878,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {/* ── 1.2 Evaluation Configuration Disclosures (Honest Semantics) ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.8rem' }}>
           {/* Factuality & Groundedness */}
-          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
+          <div style={{ background: '#151515', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8D98A5' }}>
                 FACTUALITY / GROUNDEDNESS
@@ -952,7 +952,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Semantic Evaluation (Local Lexical / Semantic Similarity) */}
-          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
+          <div style={{ background: '#151515', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8D98A5' }}>
                 LOCAL LEXICAL / SEMANTIC SIMILARITY
@@ -1005,7 +1005,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* LLM-as-a-Judge */}
-          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
+          <div style={{ background: '#151515', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8D98A5' }}>
                 LLM-AS-A-JUDGE
@@ -1323,7 +1323,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {/* ── 2. Winner Determination & Overall Deltas ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr', gap: '1rem' }}>
           {/* Winner Card */}
-          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ background: '#151515', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5', letterSpacing: '0.1em' }}>
               Comparison Winner
             </div>
@@ -1352,7 +1352,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Quality Delta */}
-          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ background: '#151515', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Quality Delta
             </div>
@@ -1365,7 +1365,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Latency Delta */}
-          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ background: '#151515', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Observed API Latency
             </div>
@@ -1378,7 +1378,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Token Delta */}
-          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ background: '#151515', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Token Delta
             </div>
@@ -1391,7 +1391,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
 
           {/* Cost Delta */}
-          <div style={{ background: '#181D25', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ background: '#151515', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#8D98A5' }}>
               Cost Delta
             </div>
@@ -1408,7 +1408,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {report.dimensions && (
           <div
             style={{
-              background: '#181D25',
+              background: '#151515',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: '8px',
               padding: '1rem 1.2rem',
@@ -1596,7 +1596,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
         {sanitizedReleaseGates && sanitizedReleaseGates.length > 0 && (
           <div
             style={{
-              background: '#181D25',
+              background: '#151515',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: '8px',
               padding: '1.1rem 1.3rem',
@@ -1788,7 +1788,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             Metric-by-Metric Detailed Comparison
           </h3>
 
-          <div style={{ background: '#181D25', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
+          <div style={{ background: '#151515', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
             <div
               style={{
                 display: 'grid',
@@ -2075,7 +2075,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   <div
                     key={sec.name}
                     style={{
-                      background: '#181D25',
+                      background: '#151515',
                       border: `1px solid ${sec.status === 'PASS' ? 'rgba(78, 155, 111, 0.25)' : 'rgba(255, 255, 255, 0.08)'}`,
                       borderRadius: '10px',
                       overflow: 'hidden',
@@ -2199,7 +2199,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                           <div
                             key={c.testCaseId || i}
                             style={{
-                              background: '#14181F',
+                              background: '#151515',
                               border: isPass ? '1px solid rgba(78, 155, 111, 0.2)' : '1px solid rgba(192, 92, 84, 0.25)',
                               borderRadius: '8px',
                               padding: '1.1rem 1.25rem',
@@ -2211,7 +2211,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                             {/* Header: CASE ID, ORDER, TITLE, STATUS */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                                <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.82rem', color: '#60A5FA', background: '#0A1A35', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(37, 99, 235, 0.3)' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.82rem', color: '#60A5FA', background: '#151515', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid #292929' }}>
                                   {caseCode} (#{caseOrder})
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ECEFF2' }}>
@@ -2297,7 +2297,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
 
         {/* ── 5. Evidence & Diagnostics ── */}
         {filteredEvidence.length > 0 && (
-          <div style={{ background: '#181D25', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ background: '#151515', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <h4 style={{ margin: '0 0 0.6rem 0', fontSize: '0.85rem', color: '#ECEFF2', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Diagnostic Evidence & Decision Rationale
             </h4>

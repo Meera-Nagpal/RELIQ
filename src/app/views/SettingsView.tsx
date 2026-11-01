@@ -402,7 +402,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <h3 style={{ margin: 0, color: '#F2F2F2', fontSize: '1.05rem', fontWeight: 700, fontFamily: 'monospace' }}>
               Normalized AI Provider Architecture
             </h3>
-            <span style={{ fontSize: '0.72rem', color: '#60A5FA', background: '#0A1A35', border: '1px solid #1E3A8A', padding: '0.2rem 0.6rem', borderRadius: '2px', fontFamily: 'monospace', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.72rem', color: '#ADC0D6', background: '#1B1B1B', border: '1px solid #292929', padding: '0.2rem 0.6rem', borderRadius: '2px', fontFamily: 'monospace', fontWeight: 600 }}>
               {providerRegistry.listProviders().length} Registered Adapters
             </span>
           </div>
@@ -518,7 +518,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {/* Capabilities */}
                 <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.68rem', fontFamily: 'monospace' }}>
                   {prov.supportsReasoningTokens && (
-                    <span style={{ color: '#60A5FA', background: '#0A1A35', border: '1px solid #1E3A8A', padding: '0.15rem 0.45rem', borderRadius: '2px' }}>
+                    <span style={{ color: '#ADC0D6', background: '#1B1B1B', border: '1px solid #292929', padding: '0.15rem 0.45rem', borderRadius: '2px' }}>
                       🧠 Thinking Tokens Telemetry
                     </span>
                   )}
