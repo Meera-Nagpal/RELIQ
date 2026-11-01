@@ -33,7 +33,6 @@ export const GROQ_SUPPORTED_MODELS = [
   'groq/compound',
   'groq/compound-mini',
   'qwen/qwen3.8-27b',
-  'qwen-2.5-32b',
   'allam-2-7b',
 ];
 

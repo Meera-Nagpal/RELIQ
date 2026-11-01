@@ -76,11 +76,7 @@ export class LLMJudgeEvaluator {
    */
   static async evaluate(params: JudgeEvaluationParams): Promise<LLMJudgeScore> {
     const { testCase, actualOutput, judgeConfig } = params;
-    let model = judgeConfig.modelIdentifier || 'qwen/qwen3.8-27b';
-    // Resolve Qwen aliases to live Groq Qwen deployment
-    if (model === 'qwen-2.5-32b' || model === 'qwen/qwen-2.5-32b') {
-      model = 'qwen/qwen3.8-27b';
-    }
+    const model = judgeConfig.modelIdentifier || 'qwen/qwen3.8-27b';
 
     const rawMeta = testCase.metadata as unknown;
     let parsedMeta: Record<string, any> | null = null;

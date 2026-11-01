@@ -66,22 +66,6 @@ export const GROQ_MODEL_REGISTRY: Record<string, GroqJudgeModelDescriptor> = {
     tier: 'reasoning',
     contextWindow: 131072,
   },
-  'qwen-2.5-32b': {
-    id: 'qwen-2.5-32b',
-    displayName: 'Qwen 2.5 32B (Groq / Tongyi Lab)',
-    description: 'High-capability instruction-tuned model for independent qualitative judging.',
-    isJudgeEligible: true,
-    tier: 'reasoning',
-    contextWindow: 131072,
-  },
-  'qwen/qwen-2.5-32b': {
-    id: 'qwen/qwen-2.5-32b',
-    displayName: 'Qwen 2.5 32B (128k Context)',
-    description: 'High-capability open-weights judge model for qualitative evaluations.',
-    isJudgeEligible: true,
-    tier: 'reasoning',
-    contextWindow: 131072,
-  },
   'openai/gpt-oss-120b': {
     id: 'openai/gpt-oss-120b',
     displayName: 'OpenAI GPT-OSS 120B (Groq High Capability)',

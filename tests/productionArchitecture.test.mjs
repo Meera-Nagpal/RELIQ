@@ -334,17 +334,18 @@ export async function runProductionArchitectureTests(harness, viteServer) {
     }
   });
 
-  // Test 14: Qwen models are eligible judges and 120b models are excluded
-  test('PROD-ARCH-14: Qwen models are eligible for judging and 120b models are excluded', () => {
+  // Test 14: Qwen 3.8B model is eligible for judging, and other Qwen variants and 120b models are removed/ineligible
+  test('PROD-ARCH-14: Only Qwen 3.8B is eligible for judging and other Qwen/120b models are excluded', () => {
     assert.strictEqual(GROQ_MODEL_REGISTRY['qwen/qwen3.8-27b']?.isJudgeEligible, true);
-    assert.strictEqual(GROQ_MODEL_REGISTRY['qwen-2.5-32b']?.isJudgeEligible, true);
+    assert.strictEqual(GROQ_MODEL_REGISTRY['qwen-2.5-32b'], undefined, 'qwen-2.5-32b must be removed');
+    assert.strictEqual(GROQ_MODEL_REGISTRY['qwen/qwen-2.5-32b'], undefined, 'qwen/qwen-2.5-32b must be removed');
     assert.strictEqual(GROQ_MODEL_REGISTRY['openai/gpt-oss-120b']?.isJudgeEligible, false);
     assert.strictEqual(GROQ_MODEL_REGISTRY['gpt-oss-120b']?.isJudgeEligible, false);
 
     // Even if 120B is neither baseline nor candidate, it must be excluded from eligible judge models
     const eligible = getEligibleJudgeModels('openai/gpt-oss-20b', 'allam-2-7b');
-    assert.ok(eligible.some((m) => m.id === 'qwen/qwen3.8-27b'), 'Qwen must be in eligible judges');
-    assert.ok(eligible.some((m) => m.id === 'qwen-2.5-32b'), 'Qwen 2.5 must be in eligible judges');
+    assert.ok(eligible.some((m) => m.id === 'qwen/qwen3.8-27b'), 'Qwen 3.8B must be in eligible judges');
+    assert.strictEqual(eligible.some((m) => m.id === 'qwen-2.5-32b'), false, 'qwen-2.5-32b must not be in eligible judges');
     assert.strictEqual(eligible.some((m) => m.id.includes('120b')), false, 'No 120B model may be in eligible judges');
   });
 
