@@ -404,5 +404,279 @@ export async function runProductionArchitectureTests(harness, viteServer) {
     assert.ok(baseIdx < candIdx, 'Baseline Output must appear before Candidate Output in the DOM order (Baseline on left, Candidate on right)');
   });
 
+  // Test 18: generateWithIntelligentRetries retries transient 429 rate limits with backoff
+  await asyncTest('PROD-ARCH-18: generateWithIntelligentRetries retries transient 429 rate limits with backoff', async () => {
+    const { generateWithIntelligentRetries } = await viteServer.ssrLoadModule('/src/evaluation/runner.ts');
+    let attempts = 0;
+    const transientProvider = {
+      id: 'mock',
+      name: 'Mock',
+      providerType: 'groq',
+      isConfigured: () => true,
+      getMetadata: () => ({ id: 'mock', name: 'Mock', supportedModels: ['m1'], configured: true }),
+      calculateCost: () => 0,
+      generate: async () => {
+        attempts++;
+        if (attempts <= 2) {
+          return {
+            output: '',
+            usage: {
+              latencyMs: 5,
+              provider: 'groq',
+              model: 'm1',
+              error: {
+                status: 429,
+                code: 'RATE_LIMIT_EXCEEDED',
+                message: 'Rate limit exceeded, try again in 5ms',
+              },
+            },
+            isDemoMode: false,
+          };
+        }
+        return {
+          output: 'Success after retry',
+          usage: {
+            latencyMs: 5,
+            provider: 'groq',
+            model: 'm1',
+            totalTokens: 50,
+          },
+          isDemoMode: false,
+        };
+      },
+    };
+
+    let retryEvents = 0;
+    const { response, retriesUsed } = await generateWithIntelligentRetries(
+      transientProvider,
+      { testCaseId: 'c1', input: 'test', modelIdentifier: 'm1' },
+      {
+        maxRetries: 3,
+        onRetry: () => { retryEvents++; },
+      }
+    );
+
+    assert.strictEqual(attempts, 3, 'Must attempt 3 times before succeeding');
+    assert.strictEqual(retriesUsed, 2, 'Must record 2 retries used');
+    assert.strictEqual(retryEvents, 2, 'Must fire 2 retry events');
+    assert.strictEqual(response.output, 'Success after retry', 'Must return successful output after transient retries');
+  });
+
+  // Test 19: generateWithIntelligentRetries never retries permanent 401 AUTH errors
+  await asyncTest('PROD-ARCH-19: generateWithIntelligentRetries never retries permanent 401 AUTH errors', async () => {
+    const { generateWithIntelligentRetries } = await viteServer.ssrLoadModule('/src/evaluation/runner.ts');
+    let attempts = 0;
+    const permanentErrorProvider = {
+      id: 'mock',
+      name: 'Mock',
+      providerType: 'groq',
+      isConfigured: () => true,
+      getMetadata: () => ({ id: 'mock', name: 'Mock', supportedModels: ['m1'], configured: true }),
+      calculateCost: () => 0,
+      generate: async () => {
+        attempts++;
+        return {
+          output: '',
+          usage: {
+            latencyMs: 10,
+            provider: 'groq',
+            model: 'm1',
+            error: {
+              status: 401,
+              code: 'AUTHENTICATION_ERROR',
+              message: 'Invalid API Key',
+            },
+          },
+          isDemoMode: false,
+        };
+      },
+    };
+
+    const { response, retriesUsed } = await generateWithIntelligentRetries(
+      permanentErrorProvider,
+      { testCaseId: 'c2', input: 'test', modelIdentifier: 'm1' },
+      { maxRetries: 5 }
+    );
+
+    assert.strictEqual(attempts, 1, 'Permanent error must never be retried (attempt count = 1)');
+    assert.strictEqual(retriesUsed, 0, 'Zero retries must be consumed');
+    assert.strictEqual(response.usage?.error?.status, 401, 'Must retain authentic 401 status');
+  });
+
+  // Test 20: EvaluationRunner resumes pre-existing completed results without re-calling providers
+  await asyncTest('PROD-ARCH-20: EvaluationRunner resumes pre-existing completed results without re-calling providers', async () => {
+    const { EvaluationRunner } = await viteServer.ssrLoadModule('/src/evaluation/runner.ts');
+    let providerCalls = 0;
+    const mockProvider = {
+      id: 'mock',
+      name: 'Mock',
+      providerType: 'cerebras',
+      isConfigured: () => true,
+      getMetadata: () => ({ id: 'mock', name: 'Mock', supportedModels: ['m1'], configured: true }),
+      calculateCost: () => 0,
+      generate: async (req) => {
+        providerCalls++;
+        return {
+          output: 'Live Generated Output',
+          usage: { latencyMs: 5, provider: 'cerebras', model: 'm1', totalTokens: 20 },
+          isDemoMode: false,
+        };
+      },
+    };
+
+    const runner = new EvaluationRunner();
+    const dataset = {
+      id: 'ds-test',
+      name: 'Resume Test Suite',
+      cases: [
+        { id: 'case-1', name: 'Case 1', input: 'hi', expectedOutput: 'hi', category: 'General', severity: 'low', evaluatorType: 'exact_match' },
+        { id: 'case-2', name: 'Case 2', input: 'hello', expectedOutput: 'hello', category: 'General', severity: 'low', evaluatorType: 'exact_match' },
+      ],
+    };
+
+    const preExistingResult = {
+      testCaseId: 'case-1',
+      testCaseName: 'Case 1',
+      category: 'General',
+      severity: 'low',
+      input: 'hi',
+      expectedOutput: 'hi',
+      baselineOutput: 'hi',
+      candidateOutput: 'hi',
+      baselineScore: 1.0,
+      candidateScore: 1.0,
+      passed: true,
+      isRegression: false,
+      baselineExecutionStatus: 'PASS',
+      candidateExecutionStatus: 'PASS',
+      baselineQualityEvaluated: true,
+      candidateQualityEvaluated: true,
+      evaluatorScores: [],
+    };
+
+    let latestTelemetry = null;
+    const runResult = await runner.run({
+      project: { id: 'p1', name: 'P1' },
+      dataset,
+      baselineVersion: { id: 'v1', name: 'V1', provider: 'cerebras', modelIdentifier: 'm1' },
+      candidateVersion: { id: 'v2', name: 'V2', provider: 'cerebras', modelIdentifier: 'm1' },
+      baselineProvider: mockProvider,
+      candidateProvider: mockProvider,
+      resumedResults: [preExistingResult],
+      onProgress: (_curr, _tot, _name, telemetry) => {
+        if (telemetry) latestTelemetry = telemetry;
+      },
+    });
+
+    assert.strictEqual(runResult.caseResults.length, 2, 'Both cases must be present in final results');
+    // Only case-2 should have called the provider (baseline + candidate = 2 calls)
+    assert.strictEqual(providerCalls, 2, 'Provider must only be called for the un-resumed case (case-2)');
+    assert.strictEqual(latestTelemetry?.resumedCount, 1, 'Telemetry must track 1 resumed case');
+  });
+
+  // Test 21: Progress telemetry calculates valid throughput, latency, and retries count
+  await asyncTest('PROD-ARCH-21: Progress telemetry calculates valid throughput, latency, and retries count', async () => {
+    const { EvaluationRunner } = await viteServer.ssrLoadModule('/src/evaluation/runner.ts');
+    const mockProvider = {
+      id: 'mock',
+      name: 'Mock',
+      providerType: 'cerebras',
+      isConfigured: () => true,
+      getMetadata: () => ({ id: 'mock', name: 'Mock', supportedModels: ['m1'], configured: true }),
+      calculateCost: () => 0,
+      generate: async () => ({
+        output: 'output',
+        usage: { latencyMs: 25, provider: 'cerebras', model: 'm1', totalTokens: 10 },
+        isDemoMode: false,
+      }),
+    };
+
+    const runner = new EvaluationRunner();
+    const dataset = {
+      id: 'ds-tel',
+      name: 'Telemetry Suite',
+      cases: [
+        { id: 'c1', name: 'C1', input: 'a', expectedOutput: 'output', category: 'General', severity: 'low', evaluatorType: 'exact_match' },
+        { id: 'c2', name: 'C2', input: 'b', expectedOutput: 'output', category: 'General', severity: 'low', evaluatorType: 'exact_match' },
+      ],
+    };
+
+    let finalTelemetry = null;
+    await runner.run({
+      project: { id: 'p1', name: 'P1' },
+      dataset,
+      baselineVersion: { id: 'v1', name: 'V1', provider: 'cerebras', modelIdentifier: 'm1' },
+      candidateVersion: { id: 'v2', name: 'V2', provider: 'cerebras', modelIdentifier: 'm1' },
+      baselineProvider: mockProvider,
+      candidateProvider: mockProvider,
+      onProgress: (_curr, _tot, _name, telemetry) => {
+        if (telemetry) finalTelemetry = telemetry;
+      },
+    });
+
+    assert.ok(finalTelemetry !== null, 'Telemetry must be emitted during progress');
+    assert.ok(typeof finalTelemetry.throughputCasesPerSec === 'number' && finalTelemetry.throughputCasesPerSec > 0, 'Throughput must be a positive number');
+    assert.ok(typeof finalTelemetry.averageLatencyMs === 'number', 'Average latency must be tracked');
+    assert.strictEqual(finalTelemetry.retriesCount, 0, 'Retries count must be tracked');
+  });
+
+  // Test 22: ComparisonReport pairs baseline and candidate by identical test-case IDs
+  await asyncTest('PROD-ARCH-22: ComparisonReport pairs baseline and candidate by identical test-case IDs', async () => {
+    const { generateComparisonReport } = await viteServer.ssrLoadModule('/src/evaluation/comparator.ts');
+    const caseResults = [
+      {
+        testCaseId: 'TC-101',
+        testCaseName: 'TC-101',
+        category: 'General',
+        severity: 'medium',
+        input: 'q1',
+        expectedOutput: 'ans',
+        baselineOutput: 'ans',
+        candidateOutput: 'ans',
+        baselineScore: 1.0,
+        candidateScore: 1.0,
+        passed: true,
+        isRegression: false,
+        baselineExecutionStatus: 'PASS',
+        candidateExecutionStatus: 'PASS',
+        baselineQualityEvaluated: true,
+        candidateQualityEvaluated: true,
+        evaluatorScores: [],
+      },
+      {
+        testCaseId: 'TC-102',
+        testCaseName: 'TC-102',
+        category: 'General',
+        severity: 'medium',
+        input: 'q2',
+        expectedOutput: 'ans',
+        baselineOutput: 'ans',
+        candidateOutput: 'wrong',
+        baselineScore: 1.0,
+        candidateScore: 0.0,
+        passed: false,
+        isRegression: true,
+        baselineExecutionStatus: 'PASS',
+        candidateExecutionStatus: 'QUALITY_FAILURE',
+        baselineQualityEvaluated: true,
+        candidateQualityEvaluated: true,
+        evaluatorScores: [],
+      },
+    ];
+
+    const report = generateComparisonReport({
+      baselineVersion: { id: 'v1', name: 'V1', provider: 'groq', modelIdentifier: 'm1' },
+      candidateVersion: { id: 'v2', name: 'V2', provider: 'groq', modelIdentifier: 'm2' },
+      caseResults,
+      datasetId: 'ds-pair',
+      datasetName: 'Pairing Suite',
+    });
+
+    assert.strictEqual(report.hasUnequalSampleSizes, false, 'Matching evaluated cases must not trigger unequal sample size warning');
+    assert.strictEqual(report.metrics.correctness.baselineValue, 100, 'Baseline correctness must match evaluated baseline set');
+    assert.strictEqual(report.metrics.correctness.candidateValue, 50, 'Candidate correctness must match evaluated candidate set');
+    assert.strictEqual(report.metrics.passRate.assessment, 'REGRESSION', 'Regression must be identified accurately on paired cases');
+  });
+
   console.log('--- All Production Architecture Verification Tests Completed Successfully ---');
 }

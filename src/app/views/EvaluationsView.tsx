@@ -165,6 +165,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   const [currentCaseName, setCurrentCaseName] = useState<string>('');
   const [currentPhase, setCurrentPhase] = useState<string>('Initializing');
   const [progressCounts, setProgressCounts] = useState<{ current: number; total: number } | null>(null);
+  const [throughput, setThroughput] = useState<number>(0);
+  const [avgLatency, setAvgLatency] = useState<number>(0);
+  const [retriesCount, setRetriesCount] = useState<number>(0);
   const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
   const [completedScenarios, setCompletedScenarios] = useState<string[]>([]);
@@ -329,6 +332,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     setCurrentRunId(null);
     setProgressPercent(0);
     setProgressCounts(null);
+    setThroughput(0);
+    setAvgLatency(0);
+    setRetriesCount(0);
     setCurrentCaseName('');
     setCompletedScenarios([]);
     setElapsedSeconds(0);
@@ -421,9 +427,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         if (statusRes.ok) {
           const statusData = await statusRes.json();
           if (statusData.progress) {
-            const { current, total, caseName, percent } = statusData.progress;
+            const { current, total, caseName, percent, throughputCasesPerSec, averageLatencyMs, retriesCount: rCount } = statusData.progress;
             setProgressPercent(percent);
             setProgressCounts({ current, total });
+            if (typeof throughputCasesPerSec === 'number') setThroughput(throughputCasesPerSec);
+            if (typeof averageLatencyMs === 'number') setAvgLatency(averageLatencyMs);
+            if (typeof rCount === 'number') setRetriesCount(rCount);
             if (caseName) {
               setCurrentCaseName((prev) => {
                 if (prev && prev !== caseName) {
@@ -1860,6 +1869,9 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         semanticStatus="ACTIVE"
         progressPercent={progressPercent}
         progressCounts={progressCounts}
+        throughputCasesPerSec={throughput}
+        averageLatencyMs={avgLatency}
+        retriesCount={retriesCount}
         currentStageText={currentProgressText}
         caseName={currentCaseName}
         phase={currentPhase}
@@ -1892,6 +1904,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         totalCount={progressCounts?.total || (maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 100))}
         caseName={currentCaseName}
         phase={currentPhase}
+        throughputCasesPerSec={throughput}
         onOpenModal={() => setIsProgressModalOpen(true)}
         onCancel={() => {
           isCancelledRef.current = true;

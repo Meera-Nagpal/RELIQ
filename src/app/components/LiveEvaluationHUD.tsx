@@ -25,6 +25,7 @@ export interface LiveEvaluationHUDProps {
   totalCount: number;
   caseName?: string;
   phase?: string;
+  throughputCasesPerSec?: number;
   onOpenModal: () => void;
   onCancel: () => void;
 }
@@ -40,6 +41,7 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
   totalCount,
   caseName,
   phase = 'RUNNING SCENARIOS',
+  throughputCasesPerSec,
   onOpenModal,
   onCancel,
 }) => {
@@ -152,6 +154,11 @@ export const LiveEvaluationHUD: React.FC<LiveEvaluationHUDProps> = ({
           <span style={{ fontSize: '0.75rem', color: '#8899AA', fontFamily: 'monospace' }}>
             <span style={{ color: '#4E9B6F', fontWeight: 700 }}>{currentCount}</span> completed •{' '}
             <span style={{ color: '#C68B45', fontWeight: 700 }}>{remaining}</span> remaining
+            {throughputCasesPerSec !== undefined && throughputCasesPerSec > 0 && (
+              <span style={{ color: '#5B82A6', marginLeft: '0.4rem' }}>
+                • <strong>{throughputCasesPerSec.toFixed(1)} c/s</strong>
+              </span>
+            )}
           </span>
 
           <span

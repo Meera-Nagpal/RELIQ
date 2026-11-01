@@ -62,6 +62,13 @@ export function calculateP95(arr: number[]): number {
   return s[idx];
 }
 
+export interface EvaluationProgressTelemetry {
+  throughputCasesPerSec: number;
+  averageLatencyMs: number;
+  retriesCount: number;
+  resumedCount: number;
+}
+
 export interface EvaluationOptions {
   project: Project;
   dataset: Dataset;
@@ -76,8 +83,19 @@ export interface EvaluationOptions {
   runId?: string;
   useCache?: boolean;
   bypassCache?: boolean;
-  onProgress?: (current: number, total: number, latestCaseName?: string) => void;
-  onCaseCompleted?: (result: TestCaseResult, current: number, total: number) => void | Promise<void>;
+  resumedResults?: TestCaseResult[];
+  onProgress?: (
+    current: number,
+    total: number,
+    latestCaseName?: string,
+    telemetry?: EvaluationProgressTelemetry
+  ) => void;
+  onCaseCompleted?: (
+    result: TestCaseResult,
+    current: number,
+    total: number,
+    telemetry?: EvaluationProgressTelemetry
+  ) => void | Promise<void>;
 }
 
 /**
@@ -315,6 +333,116 @@ export function classifyResponseStatus(
   };
 }
 
+/**
+ * Executes a model request with intelligent exponential backoff, rate-limit awareness,
+ * and retry-after header parsing to guarantee 100% case completion on transient hiccups.
+ * Permanent errors (400, 401, 403, etc.) are never retried and reported immediately.
+ */
+export async function generateWithIntelligentRetries(
+  provider: ModelProvider,
+  request: ModelRequest,
+  options: {
+    maxRetries?: number;
+    onRetry?: (attempt: number, waitMs: number, reason: string) => void;
+  } = {}
+): Promise<{ response: ModelResponse; retriesUsed: number }> {
+  const maxRetries = options.maxRetries ?? 5;
+  let retriesUsed = 0;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const resp = await provider.generate(request);
+    const err = resp.usage?.error;
+
+    if (!err) {
+      return { response: resp, retriesUsed };
+    }
+
+    const status = err.status;
+    const code = String(err.code || '');
+    const message = String(err.message || '');
+
+    // Permanent errors -> NEVER retry, return immediately for authentic reporting
+    const isPermanent =
+      status === 400 ||
+      status === 401 ||
+      status === 402 ||
+      status === 403 ||
+      status === 404 ||
+      code === 'AUTHENTICATION_ERROR' ||
+      code === 'AUTH_MISSING_KEY' ||
+      code === 'PROVIDER_FORBIDDEN' ||
+      code === 'INVALID_REQUEST';
+
+    if (isPermanent || attempt >= maxRetries) {
+      return { response: resp, retriesUsed };
+    }
+
+    // Determine if transient
+    const isRateLimit =
+      status === 429 ||
+      code === 'RATE_LIMIT_EXCEEDED' ||
+      code === 'PROVIDER_RATE_LIMIT' ||
+      message.toLowerCase().includes('rate limit') ||
+      message.toLowerCase().includes('too many requests');
+
+    const isServerError =
+      status === 500 ||
+      status === 502 ||
+      status === 503 ||
+      status === 504 ||
+      status === 529 ||
+      code === 'TIMEOUT' ||
+      code === 'PROVIDER_TIMEOUT' ||
+      code === 'NETWORK_ERROR' ||
+      code === 'ECONNRESET' ||
+      code === 'ETIMEDOUT' ||
+      message.toLowerCase().includes('timeout') ||
+      message.toLowerCase().includes('overloaded');
+
+    if (!isRateLimit && !isServerError) {
+      if (status && status < 500 && status !== 429) {
+        return { response: resp, retriesUsed };
+      }
+    }
+
+    // Calculate wait time with jitter
+    retriesUsed++;
+    let waitMs = 0;
+    const errDetails = (err as any).details;
+
+    if (errDetails?.retryAfter) {
+      waitMs = Math.ceil(Number(errDetails.retryAfter) * 1000) + 200;
+    } else if (errDetails?.retrySec) {
+      waitMs = Math.ceil(Number(errDetails.retrySec) * 1000) + 200;
+    } else {
+      const matchMs = message.match(/try again in ([\d\.]+)ms/i);
+      const matchSec = message.match(/try again in ([\d\.]+)s/i) || message.match(/retry after ([\d\.]+)s/i);
+      if (matchMs) {
+        waitMs = Math.ceil(parseFloat(matchMs[1])) + 150;
+      } else if (matchSec) {
+        waitMs = Math.ceil(parseFloat(matchSec[1]) * 1000) + 250;
+      }
+    }
+
+    if (!waitMs || waitMs <= 0) {
+      const base = 1000 * Math.pow(1.6, attempt);
+      const jitter = Math.floor(Math.random() * 400);
+      waitMs = Math.min(12000, Math.floor(base + jitter));
+    } else {
+      waitMs = Math.min(20000, waitMs);
+    }
+
+    if (options.onRetry) {
+      options.onRetry(attempt + 1, waitMs, code || message);
+    }
+
+    await new Promise((r) => setTimeout(r, waitMs));
+  }
+
+  const finalResp = await provider.generate(request);
+  return { response: finalResp, retriesUsed };
+}
+
 export class EvaluationRunner {
   private defaultProvider?: ModelProvider;
 
@@ -449,10 +577,25 @@ export class EvaluationRunner {
     let regressedCount = 0;
     let improvedCount = 0;
 
+    let accumulatedRetriesCount = 0;
+    let runningLatencySum = 0;
+    let runningLatencyCount = 0;
+
     // Bounded parallel worker pool concurrency:
     // ProviderScheduler enforces per-provider/per-model rate limits and concurrency semaphores.
-    const maxSafeConcurrency = 20;
-    const defaultConcurrency = 4;
+    const baselineProviderId = String(baselineVersion.provider || '').toLowerCase();
+    const candidateProviderId = String(candidateVersion.provider || '').toLowerCase();
+    const isDistinctProviders =
+      baselineProviderId !== candidateProviderId &&
+      baselineProviderId !== 'demo' &&
+      candidateProviderId !== 'demo';
+
+    // Provider-aware concurrency:
+    // When baseline and candidate use distinct providers, traffic splits across two separate provider quotas.
+    const maxSafeConcurrency = process.env.NODE_ENV === 'production'
+      ? (isDistinctProviders ? 8 : 6)
+      : (isDistinctProviders ? 16 : 8);
+    const defaultConcurrency = isDistinctProviders ? 6 : 4;
     const envConcurrency = typeof process !== 'undefined' && process.env?.EVALUATION_CONCURRENCY
       ? parseInt(process.env.EVALUATION_CONCURRENCY, 10)
       : undefined;
@@ -540,20 +683,22 @@ export class EvaluationRunner {
           baselineResp = await evaluationCache.get(baselineRequest, options.bypassCache);
         }
         if (!baselineResp) {
-          baselineResp = await baselineProvider.generate(baselineRequest);
-          // If baseline failed with transient rate limit (429) or transient error, retry once after backoff
-          if (baselineResp.usage?.error && (baselineResp.usage.error.status === 429 || baselineResp.usage.error.code === 'RATE_LIMIT_EXCEEDED')) {
-            const waitTime = Math.min(6000, 1500 + Math.floor(Math.random() * 500));
-            await new Promise((r) => setTimeout(r, waitTime));
-            baselineResp = await baselineProvider.generate(baselineRequest);
-          }
-          if (options.useCache === true && !baselineResp.usage.error) {
+          const res = await generateWithIntelligentRetries(
+            baselineProvider,
+            baselineRequest,
+            {
+              maxRetries: 5,
+              onRetry: () => { accumulatedRetriesCount++; },
+            }
+          );
+          baselineResp = res.response;
+          if (options.useCache === true && !baselineResp.usage?.error) {
             await evaluationCache.set(baselineRequest, baselineResp);
           }
         }
         let baselineEval: ReturnType<typeof runEvaluator> | undefined;
         let baselineScore: number | null = null;
-        if (!baselineResp.usage.error && baselineResp.output?.trim()) {
+        if (!baselineResp.usage?.error && baselineResp.output?.trim()) {
           baselineEval = runEvaluator(
             baselineResp.output,
             testCase,
@@ -574,14 +719,16 @@ export class EvaluationRunner {
           candidateResp = await evaluationCache.get(candidateRequest, options.bypassCache);
         }
         if (!candidateResp) {
-          candidateResp = await candidateProvider.generate(candidateRequest);
-          // If candidate failed with transient rate limit (429) or transient error, retry once after backoff
-          if (candidateResp.usage?.error && (candidateResp.usage.error.status === 429 || candidateResp.usage.error.code === 'RATE_LIMIT_EXCEEDED')) {
-            const waitTime = Math.min(6000, 1500 + Math.floor(Math.random() * 500));
-            await new Promise((r) => setTimeout(r, waitTime));
-            candidateResp = await candidateProvider.generate(candidateRequest);
-          }
-          if (options.useCache === true && !candidateResp.usage.error) {
+          const res = await generateWithIntelligentRetries(
+            candidateProvider,
+            candidateRequest,
+            {
+              maxRetries: 5,
+              onRetry: () => { accumulatedRetriesCount++; },
+            }
+          );
+          candidateResp = res.response;
+          if (options.useCache === true && !candidateResp.usage?.error) {
             await evaluationCache.set(candidateRequest, candidateResp);
           }
         }
@@ -593,7 +740,7 @@ export class EvaluationRunner {
         let groundednessResult: ReturnType<typeof evaluateGroundedness> | null = null;
         let caseSemanticEvaluated = false;
 
-        if (!candidateResp.usage.error && candidateResp.output?.trim()) {
+        if (!candidateResp.usage?.error && candidateResp.output?.trim()) {
           candidateEval = runEvaluator(
             candidateResp.output,
             testCase,
@@ -920,24 +1067,125 @@ export class EvaluationRunner {
       };
     };
 
-    // Execute cases using a bounded concurrent worker pool (no chunk barriers or artificial idle sleeps)
+    // Check for pre-existing completed results to resume without re-running
+    const resumedMap = new Map<string, TestCaseResult>();
+    if (Array.isArray(options.resumedResults)) {
+      for (const r of options.resumedResults) {
+        if (
+          r &&
+          r.testCaseId &&
+          r.baselineExecutionStatus !== 'PROVIDER_RATE_LIMIT' &&
+          r.candidateExecutionStatus !== 'PROVIDER_RATE_LIMIT' &&
+          (r.candidateOutput !== null || r.executionStatus === 'PASS' || r.executionStatus === 'QUALITY_FAILURE')
+        ) {
+          resumedMap.set(r.testCaseId, r);
+        }
+      }
+    }
+
+    let resumedCasesCount = 0;
     const orderedItems = new Array<Awaited<ReturnType<typeof evaluateSingleCase>>>(totalCases);
     let nextCaseIdx = 0;
     let completedCasesCount = 0;
+
+    // Pre-populate any already-evaluated cases from previous run attempts
+    for (let i = 0; i < totalCases; i++) {
+      const tc = cases[i];
+      if (resumedMap.has(tc.id)) {
+        const existing = resumedMap.get(tc.id)!;
+        orderedItems[i] = {
+          result: existing,
+          baselinePassed: existing.baselineExecutionStatus === 'PASS',
+          candidatePassed: existing.passed === true,
+          isRegression: existing.isRegression,
+          isImprovement: existing.candidateExecutionStatus === 'PASS' && existing.baselineExecutionStatus === 'QUALITY_FAILURE',
+          baselineClassification: {
+            status: (existing.baselineExecutionStatus as any) || (existing.baselineOutput ? 'PASS' : 'QUALITY_FAILURE'),
+            isEvaluated: existing.baselineQualityEvaluated ?? (existing.baselineOutput !== null),
+            qualityEvaluated: existing.baselineQualityEvaluated ?? (existing.baselineOutput !== null),
+            transportSuccess: true,
+            evaluationEligible: true,
+          },
+          candidateClassification: {
+            status: (existing.candidateExecutionStatus as any) || (existing.passed ? 'PASS' : 'QUALITY_FAILURE'),
+            isEvaluated: existing.candidateQualityEvaluated ?? (existing.candidateOutput !== null),
+            qualityEvaluated: existing.candidateQualityEvaluated ?? (existing.candidateOutput !== null),
+            transportSuccess: true,
+            evaluationEligible: true,
+          },
+          baselineResp: {
+            output: existing.baselineOutput || '',
+            usage: {
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              estimatedCostUsd: 0,
+              latencyMs: existing.baselineLatencyMs || 0,
+              provider: baselineVersion.provider,
+              model: baselineVersion.modelIdentifier,
+            },
+            isDemoMode: false,
+          },
+          candidateResp: {
+            output: existing.candidateOutput || '',
+            usage: {
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              estimatedCostUsd: 0,
+              latencyMs: existing.candidateLatencyMs || 0,
+              provider: candidateVersion.provider,
+              model: candidateVersion.modelIdentifier,
+            },
+            isDemoMode: false,
+          },
+          caseSemanticEvaluated: false,
+          judgeScore: existing.llmJudgeEvaluation || null,
+          groundednessResult: existing.groundednessEvaluation || null,
+        };
+        completedCasesCount++;
+        resumedCasesCount++;
+      }
+    }
+
+    // Execute remaining cases using a bounded concurrent worker pool
     const workerCount = Math.min(clampedConcurrency, totalCases);
 
     const workers = Array.from({ length: workerCount }, async () => {
       while (true) {
         const currentIdx = nextCaseIdx++;
         if (currentIdx >= totalCases) break;
+
+        // Skip cases that were already resumed from DB
+        if (orderedItems[currentIdx]) {
+          continue;
+        }
+
         const testCase = cases[currentIdx];
         const item = await evaluateSingleCase(testCase, currentIdx);
         orderedItems[currentIdx] = item;
         completedCasesCount++;
 
+        if (item.result.candidateLatencyMs) {
+          runningLatencySum += item.result.candidateLatencyMs;
+          runningLatencyCount++;
+        }
+
+        const elapsedSec = Math.max(0.001, (Date.now() - startTime) / 1000);
+        const newlyProcessed = Math.max(1, completedCasesCount - resumedCasesCount);
+        const runningThroughput = newlyProcessed / elapsedSec;
+        const runningAvgLatency = runningLatencyCount > 0 ? runningLatencySum / runningLatencyCount : 0;
+
+        const telemetry: EvaluationProgressTelemetry = {
+          throughputCasesPerSec: Number(runningThroughput.toFixed(1)),
+          averageLatencyMs: Math.round(runningAvgLatency),
+          retriesCount: accumulatedRetriesCount,
+          resumedCount: resumedCasesCount,
+        };
+
         if (options.onCaseCompleted) {
           try {
-            await options.onCaseCompleted(item.result, completedCasesCount, totalCases);
+            await options.onCaseCompleted(item.result, completedCasesCount, totalCases, telemetry);
           } catch (err: any) {
             if (err?.message?.includes('cancelled')) {
               throw err;
@@ -947,7 +1195,7 @@ export class EvaluationRunner {
         }
 
         if (onProgress) {
-          onProgress(completedCasesCount, totalCases, testCase.name);
+          onProgress(completedCasesCount, totalCases, testCase.name, telemetry);
         }
       }
     });

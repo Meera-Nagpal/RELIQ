@@ -23,6 +23,9 @@ export interface EvaluationProgressModalProps {
   semanticStatus?: string;
   progressPercent: number;
   progressCounts: { current: number; total: number } | null;
+  throughputCasesPerSec?: number;
+  averageLatencyMs?: number;
+  retriesCount?: number;
   currentStageText: string;
   caseName?: string;
   phase?: string;
@@ -43,6 +46,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
   semanticStatus = 'ACTIVE',
   progressPercent,
   progressCounts,
+  throughputCasesPerSec,
+  averageLatencyMs,
+  retriesCount,
   currentStageText,
   caseName,
   phase,
@@ -350,27 +356,53 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
 
             {/* Live Progress Telemetry Counters (Completed vs Remaining) */}
             {progressCounts && progressCounts.current > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  fontSize: '0.72rem',
-                  fontFamily: 'monospace',
-                }}
-              >
-                <div style={{ color: '#4E9B6F' }}>
-                  COMPLETED: <strong>{currentCaseNumber}</strong>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '6px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    fontSize: '0.72rem',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  <div style={{ color: '#4E9B6F' }}>
+                    COMPLETED: <strong>{currentCaseNumber}</strong>
+                  </div>
+                  <div style={{ color: '#8899AA' }}>
+                    REMAINING: <strong style={{ color: '#FFFFFF' }}>{Math.max(0, targetTotal - currentCaseNumber)}</strong>
+                  </div>
+                  <div style={{ color: 'var(--reliq-accent, #C86D51)' }}>
+                    TIME: <strong>{formattedTime}</strong>
+                  </div>
                 </div>
-                <div style={{ color: '#8899AA' }}>
-                  REMAINING: <strong style={{ color: '#FFFFFF' }}>{Math.max(0, targetTotal - currentCaseNumber)}</strong>
-                </div>
-                <div style={{ color: 'var(--reliq-accent, #C86D51)' }}>
-                  TIME: <strong>{formattedTime}</strong>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    fontSize: '0.70rem',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  <div style={{ color: '#5B82A6' }}>
+                    RATE: <strong>{throughputCasesPerSec ? `${throughputCasesPerSec.toFixed(1)} c/s` : '—'}</strong>
+                  </div>
+                  <div style={{ color: '#8899AA' }}>
+                    AVG LATENCY: <strong style={{ color: '#EAEFF5' }}>{averageLatencyMs ? `${Math.round(averageLatencyMs)}ms` : '—'}</strong>
+                  </div>
+                  <div style={{ color: retriesCount && retriesCount > 0 ? '#E5A93C' : '#4E9B6F' }}>
+                    RETRIES: <strong>{retriesCount ?? 0}</strong>
+                  </div>
                 </div>
               </div>
             )}

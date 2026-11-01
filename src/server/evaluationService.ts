@@ -48,6 +48,11 @@ export interface EvaluationJob {
     total: number;
     caseName?: string;
     percent: number;
+    throughputCasesPerSec?: number;
+    averageLatencyMs?: number;
+    retriesCount?: number;
+    resumedCount?: number;
+    statusText?: string;
   };
   startTime: number;
   endTime?: number;
@@ -442,8 +447,15 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     startedAt: new Date(job.startTime).toISOString(),
   });
 
-  // Determine safe concurrency: clamp to max 4 in production to prevent 512MB RAM exhaustion
-  const maxSafeConcurrency = process.env.NODE_ENV === 'production' ? 4 : 8;
+  // Determine safe concurrency with provider awareness:
+  // If baseline and candidate use distinct providers, outbound traffic is distributed across two separate quotas.
+  const baselineProv = String(options.baselineVersion.provider || '').toLowerCase();
+  const candProv = String(options.candidateVersion.provider || '').toLowerCase();
+  const isDistinct = baselineProv !== candProv && baselineProv !== 'demo' && candProv !== 'demo';
+  const maxSafeConcurrency = process.env.NODE_ENV === 'production'
+    ? (isDistinct ? 8 : 6)
+    : (isDistinct ? 16 : 8);
+  const defaultConcurrency = isDistinct ? 6 : 4;
   const envConcurrency = process.env.EVALUATION_CONCURRENCY
     ? parseInt(process.env.EVALUATION_CONCURRENCY, 10)
     : undefined;
@@ -457,7 +469,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       ? Number(effectiveOptionConcurrency)
       : !isNaN(Number(envConcurrency)) && Number(envConcurrency) > 0
       ? Number(envConcurrency)
-      : maxSafeConcurrency
+      : defaultConcurrency
   );
 
   console.log(`[RELIQ Server Service] Starting Evaluation Run ${runId}`);
@@ -498,7 +510,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     const candidateState = providerScheduler.getProviderStatus(options.candidateVersion.provider);
 
     const isExhaustedOrLimited = (_prov: string, state: any) => {
-      if (state.status === 'QUOTA_EXHAUSTED') return true;
+      if (state.status === 'QUOTA_EXHAUSTED' && (state.quotaMetric === 'PerDay' || state.coolingDownUntil > Date.now())) return true;
       return false;
     };
 
@@ -514,6 +526,18 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       console.warn(`[RELIQ Server Service] Pre-flight large-run rejection: ${errMsg}`);
       throw new Error(errMsg);
     }
+  }
+
+  // Check if there are pre-existing completed case results for this runId (Resumption support)
+  let resumedResults: any[] = [];
+  try {
+    const existing = await evaluationDbService.getRunResults(runId);
+    if (Array.isArray(existing) && existing.length > 0) {
+      resumedResults = existing;
+      console.log(`[RELIQ Server Service] Resuming run ${runId} with ${resumedResults.length} pre-existing case results.`);
+    }
+  } catch (err: any) {
+    console.warn(`[RELIQ Server Service] Resumption check: ${err.message}`);
   }
 
   // Acquire run lock to prevent concurrent runs from competing for provider quota
@@ -556,7 +580,8 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
       runId,
       useCache: options.useCache,
       bypassCache: options.bypassCache,
-      onProgress: (current, total, latestCaseName) => {
+      resumedResults,
+      onProgress: (current, total, latestCaseName, telemetry) => {
         const currentJob = jobs.get(runId);
         if (currentJob?.status === 'FAILED') {
           throw new Error(currentJob.error || 'Evaluation cancelled by user');
@@ -567,10 +592,15 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
             total,
             caseName: latestCaseName,
             percent: total > 0 ? Math.round((current / total) * 100) : 0,
+            throughputCasesPerSec: telemetry?.throughputCasesPerSec || 0,
+            averageLatencyMs: telemetry?.averageLatencyMs || 0,
+            retriesCount: telemetry?.retriesCount || 0,
+            resumedCount: telemetry?.resumedCount || 0,
+            statusText: `Evaluated ${current}/${total} scenarios (${total > 0 ? Math.round((current / total) * 100) : 0}%) • ${(telemetry?.throughputCasesPerSec || 0).toFixed(1)} c/s • avg ${Math.round(telemetry?.averageLatencyMs || 0)}ms${telemetry?.retriesCount ? ` • ${telemetry.retriesCount} retries` : ''}`,
           };
         }
       },
-      onCaseCompleted: (caseResult, current, total) => {
+      onCaseCompleted: (caseResult, current, total, telemetry) => {
         const currentJob = jobs.get(runId);
         if (currentJob?.status === 'FAILED') {
           throw new Error(currentJob.error || 'Evaluation cancelled by user');
@@ -581,11 +611,17 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
             total,
             caseName: caseResult?.testCaseName || (caseResult as any)?.caseName || currentJob.progress.caseName,
             percent: total > 0 ? Math.round((current / total) * 100) : 0,
+            throughputCasesPerSec: telemetry?.throughputCasesPerSec || currentJob.progress.throughputCasesPerSec || 0,
+            averageLatencyMs: telemetry?.averageLatencyMs || currentJob.progress.averageLatencyMs || 0,
+            retriesCount: telemetry?.retriesCount ?? currentJob.progress.retriesCount ?? 0,
+            resumedCount: telemetry?.resumedCount ?? currentJob.progress.resumedCount ?? 0,
+            statusText: `Evaluated ${current}/${total} scenarios (${total > 0 ? Math.round((current / total) * 100) : 0}%) • ${(telemetry?.throughputCasesPerSec || 0).toFixed(1)} c/s • avg ${Math.round(telemetry?.averageLatencyMs || 0)}ms${telemetry?.retriesCount ? ` • ${telemetry.retriesCount} retries` : ''}`,
           };
         }
-        // Buffer per-case persistence into SQLite evaluation_results table and flush in transactional batches
+        // Buffer per-case persistence into SQLite/Supabase evaluation_results table and flush in transactional batches
         pendingCaseBatch.push(caseResult);
-        if (pendingCaseBatch.length >= 10) {
+        const flushThreshold = isSupabaseDriverActive() ? 5 : 10;
+        if (pendingCaseBatch.length >= flushThreshold) {
           flushCaseBatch();
         }
       },
