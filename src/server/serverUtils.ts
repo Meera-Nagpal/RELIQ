@@ -262,8 +262,8 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
           response.headers.get('x-ratelimit-reset-tokens-minute');
         if (resetTokensHeader) {
           const parsedResetMs = parseDurationHeaderMs(resetTokensHeader);
-          if (parsedResetMs > 0 && parsedResetMs <= 15000) {
-            waitMs = Math.max(waitMs, Math.max(150, parsedResetMs + 100));
+          if (parsedResetMs > 0) {
+            waitMs = Math.max(waitMs, Math.min(65000, parsedResetMs + 200));
           }
         }
 
