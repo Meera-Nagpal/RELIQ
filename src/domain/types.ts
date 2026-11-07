@@ -24,6 +24,7 @@ export type EvidenceStrength = 'NONE' | 'LOW' | 'MODERATE' | 'GOOD' | 'STRONG';
 
 export type FailureCategory =
   | 'QUALITY_FAILURE'
+  | 'INFRASTRUCTURE_FAILURE'
   | 'PROVIDER_AUTHENTICATION'
   | 'PROVIDER_QUOTA'
   | 'PROVIDER_NETWORK'
@@ -409,6 +410,8 @@ export interface TestCaseResult {
   candidateQualityEvaluated?: boolean;
   safetyClassification?: SafetyFailureClassification;
   safetyDetails?: string;
+  evaluationRequirement?: 'objective' | 'qualitative';
+  judgeSkipped?: boolean;
   // Traceable Separate Evaluation Layers
   modelResponse?: string | null;
   deterministicEvaluation?: DeterministicEvaluationResult;
@@ -460,6 +463,7 @@ export interface LLMJudgeScore {
   };
   costUsd?: number;
   error?: string;
+  isCached?: boolean;
 }
 
 export interface FinalEvaluationResult {
@@ -617,6 +621,9 @@ export interface MetricSummary {
   // Judge Usage & Cost Telemetry (Strictly separate from benchmark models)
   judgeModel?: string;
   judgeEvaluatedCases?: number;
+  judgeApiCalls?: number;
+  judgeCacheHits?: number;
+  judgeSkippedCases?: number;
   judgeInputTokens?: number;
   judgeOutputTokens?: number;
   judgeTotalTokens?: number;
@@ -639,6 +646,9 @@ export interface RunProvenance {
   candidateEvaluated: number;
   baselineRateLimits: number;
   candidateRateLimits: number;
+  judgeApiCalls?: number;
+  judgeCacheHits?: number;
+  judgeSkippedCases?: number;
   hadOperationalErrors: boolean;
   isLiveExecution: boolean;
 }

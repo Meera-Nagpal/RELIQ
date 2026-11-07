@@ -44,6 +44,8 @@ export interface UsageRecord {
     code?: string;
     message: string;
     status?: number;
+    failureCategory?: string;
+    details?: any;
   };
 }
 
@@ -52,6 +54,7 @@ export interface UsageRecord {
  */
 export interface ModelRequest {
   testCaseId: string;
+  role?: 'baseline' | 'candidate' | 'judge' | string;
   input: string;
   systemPrompt?: string;
   modelIdentifier: string;
