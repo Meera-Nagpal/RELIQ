@@ -39,10 +39,10 @@ import {
   getEvidenceStrengthReason,
   classifySafetyResult,
 } from './releaseEngine';
-import { normalizeProviderError } from '../server/serverUtils';
+import { normalizeProviderError, parseDurationHeaderMs } from '../server/serverUtils';
 import { validateJudgeConfiguration } from './judgeRegistry';
 import { evaluateSemanticSimilarity } from './semanticEvaluator';
-import { LLMJudgeEvaluator } from './llmJudgeEvaluator';
+import { LLMJudgeEvaluator, categorizeEvaluationRequirement, EvaluationRequirement, judgeCache } from './llmJudgeEvaluator';
 import { evaluateGroundedness } from './groundednessEvaluator';
 import { evaluationCache } from './evaluationCache';
 
@@ -148,7 +148,7 @@ export function classifyResponseStatus(
         transportSuccess: false,
         evaluationEligible: false,
         qualityEvaluated: false,
-        failureCategory: 'PROVIDER_QUOTA',
+        failureCategory: (err as any)?.failureCategory || 'PROVIDER_QUOTA',
         errorDetail: {
           httpStatus: status || 429,
           provider,
@@ -248,7 +248,7 @@ export function classifyResponseStatus(
         transportSuccess: false,
         evaluationEligible: false,
         qualityEvaluated: false,
-        failureCategory: 'PROVIDER_NETWORK',
+        failureCategory: (err as any)?.failureCategory || 'PROVIDER_NETWORK',
         errorDetail: {
           httpStatus: status || 504,
           provider,
@@ -274,7 +274,7 @@ export function classifyResponseStatus(
         transportSuccess: false,
         evaluationEligible: false,
         qualityEvaluated: false,
-        failureCategory: 'PROVIDER_NETWORK',
+        failureCategory: (err as any)?.failureCategory || 'PROVIDER_NETWORK',
         errorDetail: {
           httpStatus: status,
           provider,
@@ -291,7 +291,7 @@ export function classifyResponseStatus(
       transportSuccess: false,
       evaluationEligible: false,
       qualityEvaluated: false,
-      failureCategory: 'PROVIDER_SERVER_ERROR',
+      failureCategory: (err as any)?.failureCategory || 'PROVIDER_SERVER_ERROR',
       errorDetail: {
         httpStatus: status || 500,
         provider,
@@ -405,16 +405,31 @@ export async function generateWithIntelligentRetries(
       }
     }
 
-    // Calculate wait time with jitter
+    // Calculate wait time with jitter respecting provider reset times
     retriesUsed++;
     let waitMs = 0;
     const errDetails = (err as any).details;
+    const rateLimit = resp.usage?.rateLimit;
 
-    if (errDetails?.retryAfter) {
-      waitMs = Math.ceil(Number(errDetails.retryAfter) * 1000) + 200;
-    } else if (errDetails?.retrySec) {
-      waitMs = Math.ceil(Number(errDetails.retrySec) * 1000) + 200;
-    } else {
+    const resetTokensHeader = errDetails?.resetTokens || rateLimit?.resetTokens;
+    const retryAfterHeader = errDetails?.retryAfter || rateLimit?.retryAfter;
+
+    if (resetTokensHeader) {
+      const parsed = parseDurationHeaderMs(resetTokensHeader);
+      if (parsed > 0) {
+        waitMs = Math.max(waitMs, parsed + Math.floor(Math.random() * 300 + 150));
+      }
+    }
+    if (retryAfterHeader) {
+      const parsed = parseDurationHeaderMs(retryAfterHeader);
+      if (parsed > 0) {
+        waitMs = Math.max(waitMs, parsed + Math.floor(Math.random() * 300 + 200));
+      }
+    }
+    if (!waitMs && errDetails?.retrySec) {
+      waitMs = Math.ceil(Number(errDetails.retrySec) * 1000) + Math.floor(Math.random() * 300 + 150);
+    }
+    if (!waitMs) {
       const matchMs = message.match(/try again in ([\d\.]+)ms/i);
       const matchSec = message.match(/try again in ([\d\.]+)s/i) || message.match(/retry after ([\d\.]+)s/i);
       if (matchMs) {
@@ -427,9 +442,9 @@ export async function generateWithIntelligentRetries(
     if (!waitMs || waitMs <= 0) {
       const base = 1000 * Math.pow(1.6, attempt);
       const jitter = Math.floor(Math.random() * 400);
-      waitMs = Math.min(12000, Math.floor(base + jitter));
+      waitMs = Math.min(15000, Math.floor(base + jitter));
     } else {
-      waitMs = Math.min(20000, waitMs);
+      waitMs = Math.min(30000, waitMs);
     }
 
     if (options.onRetry) {
