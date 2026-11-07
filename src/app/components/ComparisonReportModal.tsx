@@ -493,260 +493,674 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   letterSpacing: '0.08em',
                   padding: '0.2rem 0.6rem',
                   borderRadius: '4px',
-                  background: 'rgba(91, 130, 166, 0.12)',
-                  color: '#5B82A6',
-                  border: '1px solid rgba(91, 130, 166, 0.28)',
+                  background: isFullBenchmarkSuccess ? 'rgba(78, 155, 111, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                  color: isFullBenchmarkSuccess ? '#4E9B6F' : '#FBBF24',
+                  border: `1px solid ${isFullBenchmarkSuccess ? 'rgba(78, 155, 111, 0.28)' : 'rgba(245, 158, 11, 0.28)'}`,
                   textTransform: 'uppercase',
                 }}
               >
-                {report.benchmarkCompletion?.isComplete || effectiveTotalCases >= targetRequiredCases
-                  ? `EVALUATION COMPLETE (${effectiveTotalCases} OF ${effectiveTotalCases} TEST CASES EVALUATED)`
-                  : (report.benchmarkCompletion?.label ||
-                      `EVALUATION COMPLETE (${effectiveTotalCases} OF ${targetRequiredCases} TEST CASES EVALUATED)`)}
+                {isFullBenchmarkSuccess
+                  ? `EVALUATION COMPLETE (${totalBenchmarkScenarios} OF ${totalBenchmarkScenarios} TEST CASES EVALUATED)`
+                  : hasAsymmetricCoverage
+                  ? `EVALUATION INCOMPLETE — ASYMMETRIC COVERAGE (BASELINE: ${baselineEvaluatedCount}/${totalBenchmarkScenarios}, CANDIDATE: ${candidateEvaluatedCount}/${totalBenchmarkScenarios})`
+                  : `EVALUATION INCOMPLETE (${Math.min(baselineEvaluatedCount, candidateEvaluatedCount)} OF ${totalBenchmarkScenarios} TEST CASES EVALUATED — ${Math.min(baselineCoveragePct, candidateCoveragePct).toFixed(1)}% COVERAGE)`}
               </span>
             </div>
             <div style={{ fontSize: '0.82rem', color: '#8D98A5' }}>
-              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({effectiveTotalCases} / {report.benchmarkCompletion?.isComplete ? effectiveTotalCases : targetRequiredCases} evaluated) • Generated: {new Date(report.timestamp).toLocaleString()}
+              Dataset: <strong style={{ color: '#CCCCCC' }}>{report.datasetName}</strong> ({hasAsymmetricCoverage ? `Baseline: ${baselineEvaluatedCount}/${totalBenchmarkScenarios} • Candidate: ${candidateEvaluatedCount}/${totalBenchmarkScenarios}` : `${candidateEvaluatedCount} / ${totalBenchmarkScenarios} evaluated`}) • Generated: {new Date(report.timestamp).toLocaleString()}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             {copiedNotification && (
-              <span style={{ fontSize: '0.75rem', color: '#4E9B6F', fontWeight: 600 }}>
-                ✓ Summary Copied!
+              <span style={{ fontSize: '0.75rem', color: '#34D399', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Summary Copied
               </span>
             )}
             <button
               onClick={handleCopySummary}
               title="Copy markdown summary to clipboard"
               style={{
+                height: '34px',
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#ECEFF2',
-                padding: '0.45rem 0.8rem',
+                color: '#E2E8F0',
+                padding: '0 0.85rem',
                 borderRadius: '6px',
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.22)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
               }}
             >
-              📋 Copy Summary
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy Summary
             </button>
+
             <button
               onClick={handleExportJson}
               title="Download comparison report JSON"
               style={{
-                background: '#ADC0D6',
-                border: '1px solid #ADC0D6',
-                color: '#0A1A35',
-                padding: '0.45rem 0.9rem',
-                borderRadius: '2px',
+                height: '34px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#E2E8F0',
+                padding: '0 0.85rem',
+                borderRadius: '6px',
                 fontSize: '0.75rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.22)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
               }}
             >
-              ⬇ Export JSON
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              Export JSON
             </button>
+
             <button
               onClick={handleExportPdf}
               title="Download executive cross-model summary report as vector PDF"
               style={{
-                background: '#ADC0D6',
-                border: '1px solid #ADC0D6',
-                color: '#0A1A35',
-                padding: '0.45rem 0.85rem',
-                borderRadius: '2px',
+                height: '34px',
+                background: 'rgba(37, 99, 235, 0.12)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                color: '#93C5FD',
+                padding: '0 0.85rem',
+                borderRadius: '6px',
                 fontSize: '0.75rem',
-                fontFamily: 'monospace',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
+                gap: '0.45rem',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.22)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.55)';
+                e.currentTarget.style.color = '#BFDBFE';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.12)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.35)';
+                e.currentTarget.style.color = '#93C5FD';
               }}
             >
-              <span>📊</span> Summary PDF
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Summary PDF
             </button>
+
             <button
               onClick={handleExportTestCasesPdf}
               title="Download dedicated test cases PDF with winner determination for each scenario"
               style={{
-                background: '#ADC0D6',
-                border: '1px solid #ADC0D6',
-                color: '#0A1A35',
-                padding: '0.45rem 0.85rem',
-                borderRadius: '2px',
+                height: '34px',
+                background: 'rgba(37, 99, 235, 0.12)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                color: '#93C5FD',
+                padding: '0 0.85rem',
+                borderRadius: '6px',
                 fontSize: '0.75rem',
-                fontFamily: 'monospace',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                transition: 'background 0.15s ease',
+                gap: '0.45rem',
+                transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#C5D4E5')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#ADC0D6')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.22)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.55)';
+                e.currentTarget.style.color = '#BFDBFE';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.12)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.35)';
+                e.currentTarget.style.color = '#93C5FD';
+              }}
             >
-              <span>📄</span> Test Cases PDF
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <path d="m9 15 2 2 4-4"></path>
+              </svg>
+              Test Cases PDF
             </button>
+
             <button
               onClick={onClose}
               aria-label="Close comparison report modal"
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#ECEFF2',
                 width: '34px',
                 height: '34px',
-                borderRadius: '50%',
+                borderRadius: '6px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#94A3B8',
                 cursor: 'pointer',
-                fontSize: '1rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                e.currentTarget.style.color = '#F87171';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                e.currentTarget.style.color = '#94A3B8';
               }}
             >
-              ✕
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
         </div>
 
-        {/* ── TOP PROMINENT WINNER / COMPARISON RESULT SECTION ── */}
+        {/* ── EXECUTIVE RELEASE & EVALUATION GOVERNANCE CARD ── */}
         <div
           style={{
-            background: '#151515',
-            border: `1px solid ${hasGateFailures ? 'rgba(192, 92, 84, 0.35)' : relativeBorderColor}`,
+            background: '#121419',
+            border: hasGateFailures
+              ? '1px solid rgba(239, 68, 68, 0.28)'
+              : normalizedRecommendation === 'INSUFFICIENT EVIDENCE'
+              ? '1px solid rgba(245, 158, 11, 0.28)'
+              : '1px solid rgba(16, 185, 129, 0.28)',
+            borderTop: hasGateFailures
+              ? '3px solid #EF4444'
+              : normalizedRecommendation === 'INSUFFICIENT EVIDENCE'
+              ? '3px solid #F59E0B'
+              : '3px solid #10B981',
             borderRadius: '10px',
             padding: '1.4rem 1.6rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1.1rem',
+            gap: '1.2rem',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.35)',
           }}
         >
-          {/* Top Tier: RELATIVE COMPARISON */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.6rem' }}>
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8D98A5' }}>
-                RELATIVE COMPARISON
+          {/* Header Row: Governance Eyebrow, Main Verdict Headline & Status Badges */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.68rem', letterSpacing: '0.14em', fontWeight: 800, textTransform: 'uppercase', color: '#94A3B8' }}>
+                  EXECUTIVE RELEASE GOVERNANCE
+                </span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>•</span>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    padding: '0.12rem 0.5rem',
+                    borderRadius: '4px',
+                    background: relativeBadgeBg,
+                    color: relativeBadgeColor,
+                    border: `1px solid ${relativeBorderColor}`,
+                  }}
+                >
+                  {relativeResult}: {qualityDelta !== null && qualityDelta >= 0 ? `+${qualityDelta.toFixed(1)} pts` : `${qualityDelta?.toFixed(1) || '0.0'} pts`}
+                </span>
               </div>
-              <span
-                style={{
-                  fontSize: '0.68rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.08em',
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: '4px',
-                  background: relativeBadgeBg,
-                  color: relativeBadgeColor,
-                  border: `1px solid ${relativeBorderColor}`,
-                }}
-              >
-                {relativeResult}
-              </span>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                {hasGateFailures ? (
+                  <div
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '6px',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#F87171',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  </div>
+                ) : normalizedRecommendation === 'SHIP' ? (
+                  <div
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '6px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#34D399',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      <polyline points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '6px',
+                      background: 'rgba(245, 158, 11, 0.15)',
+                      border: '1px solid rgba(245, 158, 11, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#FBBF24',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  </div>
+                )}
+
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: '1.28rem',
+                    fontWeight: 800,
+                    letterSpacing: '-0.01em',
+                    color: hasGateFailures
+                      ? '#F87171'
+                      : normalizedRecommendation === 'SHIP'
+                      ? '#34D399'
+                      : '#FBBF24',
+                  }}
+                >
+                  {hasGateFailures
+                    ? 'Production Release Gated'
+                    : normalizedRecommendation === 'INSUFFICIENT EVIDENCE'
+                    ? 'Evaluation Inconclusive · Gate Conditions Unmet'
+                    : normalizedRecommendation === 'SHIP WITH CONDITIONS'
+                    ? 'Conditional Release Authorized'
+                    : normalizedRecommendation === 'SHIP'
+                    ? 'Production Release Certified'
+                    : normalizedRecommendation === 'NO REGRESSION'
+                    ? 'Release Parity Maintained'
+                    : 'Quality Regression Detected'}
+                </h2>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap', margin: '0.2rem 0' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: relativeBadgeColor, margin: 0 }}>
-                {relativeResult === 'IMPROVEMENT'
-                  ? `🏆 ${report.candidate.model || 'RELEASE CANDIDATE'}`
-                  : relativeResult === 'REGRESSION'
-                  ? `🛡️ ${report.baseline.model || 'PRODUCTION BASELINE'}`
-                  : relativeTitle}
-              </h2>
-              {baselineQuality !== null && candidateQuality !== null && (
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#E0E0E0', fontFamily: 'monospace' }}>
-                  Quality: <span style={{ color: '#AAAAAA' }}>{baselineQuality}%</span> → <span style={{ color: relativeBadgeColor }}>{candidateQuality}%</span>
-                  {qualityDelta !== null && (
-                    <span style={{ fontSize: '0.85rem', color: qualityDelta >= 0 ? '#4E9B6F' : '#C05C54', marginLeft: '0.4rem' }}>
-                      ({qualityDelta >= 0 ? `+${qualityDelta.toFixed(1)}` : qualityDelta.toFixed(1)} pts)
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.86rem', color: '#B0C0D0', lineHeight: 1.5 }}>
-              {conciseInterpretation}
-            </p>
-          </div>
-
-          {/* Bottom Tier: PRODUCTION RELEASE STATUS (Strictly Separated) */}
-          <div
-            style={{
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              paddingTop: '0.9rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.4rem',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', fontWeight: 800, textTransform: 'uppercase', color: '#8D98A5' }}>
-                PRODUCTION RELEASE STATUS
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
               <span
                 style={{
-                  fontSize: '0.75rem',
+                  fontSize: '0.72rem',
                   fontWeight: 800,
-                  padding: '0.2rem 0.65rem',
+                  letterSpacing: '0.06em',
+                  padding: '0.22rem 0.65rem',
                   borderRadius: '4px',
-                  background: hasGateFailures ? 'rgba(192, 92, 84, 0.15)' : recStyle.bg,
-                  color: hasGateFailures ? '#C05C54' : recStyle.color,
-                  border: `1px solid ${hasGateFailures ? 'rgba(192, 92, 84, 0.35)' : recStyle.border}`,
+                  background: hasGateFailures
+                    ? 'rgba(239, 68, 68, 0.15)'
+                    : recStyle.bg,
+                  color: hasGateFailures ? '#F87171' : recStyle.color,
+                  border: `1px solid ${hasGateFailures ? 'rgba(239, 68, 68, 0.35)' : recStyle.border}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
                 }}
               >
+                <span
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: hasGateFailures ? '#EF4444' : recStyle.color,
+                    display: 'inline-block',
+                  }}
+                />
                 {hasGateFailures
-                  ? `⛔ BLOCKED (${failedGates.length} ${failedGates.length === 1 ? 'GATE' : 'GATES'} FAILED)`
+                  ? `BLOCKED (${failedGates.length} ${failedGates.length === 1 ? 'GATE' : 'GATES'} FAILED)`
                   : normalizedRecommendation}
               </span>
-            </div>
 
-            <div style={{ fontSize: '0.82rem', color: hasGateFailures ? '#E59892' : '#CCCCCC', lineHeight: 1.45 }}>
-              {hasGateFailures ? (
-                <div>
-                  <strong>Attention Required:</strong> {failedGates.map((g) => g.gate).join(', ')} failed validation.
-                  <span style={{ color: '#8D98A5', display: 'block', fontSize: '0.75rem', marginTop: '0.2rem' }}>
-                    Note: Although the candidate demonstrates relative quality improvement, production deployment remains gated until all release criteria pass.
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  color: '#94A3B8',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  padding: '0.22rem 0.6rem',
+                  borderRadius: '4px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  fontFamily: 'monospace',
+                }}
+              >
+                Evidence: <strong style={{ color: '#F1F5F9' }}>{evidenceStrength}</strong> (N={candidateEvaluatedCount}, ±{candidateEvaluatedCount > 0 ? (100 / candidateEvaluatedCount).toFixed(0) : 100}% swing)
+              </span>
+            </div>
+          </div>
+
+          {/* Primary Engineering Verdict Reason */}
+          <div
+            style={{
+              fontSize: '0.88rem',
+              color: '#CBD5E1',
+              lineHeight: 1.5,
+              background: 'rgba(0, 0, 0, 0.25)',
+              padding: '0.75rem 1rem',
+              borderRadius: '6px',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+            }}
+          >
+            <div style={{ marginBottom: '0.35rem' }}>{normalizedRecReason}</div>
+            <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontStyle: 'italic' }}>
+              {conciseInterpretation}
+            </div>
+          </div>
+
+          {/* 4-Metric Benchmark Telemetry Grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '0.75rem',
+            }}
+          >
+            {/* Metric 1: Quality Score */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '6px',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.3rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', fontWeight: 700 }}>
+                  Quality Accuracy
+                </span>
+                {qualityDelta !== null && (
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      color: qualityDelta >= 0 ? '#34D399' : '#F87171',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                    }}
+                  >
+                    {qualityDelta >= 0 ? (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="7" y1="17" x2="17" y2="7"></line>
+                        <polyline points="7 7 17 7 17 17"></polyline>
+                      </svg>
+                    ) : (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="7" y1="7" x2="17" y2="17"></line>
+                        <polyline points="17 7 17 17 7 17"></polyline>
+                      </svg>
+                    )}
+                    {qualityDelta >= 0 ? `+${qualityDelta.toFixed(1)}` : qualityDelta.toFixed(1)} pts
                   </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#F1F5F9', fontFamily: 'monospace' }}>
+                  {candidateQuality !== null ? `${candidateQuality}%` : '—'}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace' }}>
+                  (baseline: {baselineQuality !== null ? `${baselineQuality}%` : '—'})
+                </span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>
+                {report.winner === 'candidate'
+                  ? `Candidate (${report.candidate.model || 'candidate'}) outperformed baseline`
+                  : report.winner === 'baseline'
+                  ? `Baseline (${report.baseline.model || 'baseline'}) outperformed candidate`
+                  : hasAsymmetricCoverage
+                  ? 'Inconclusive comparison (asymmetric coverage)'
+                  : 'Statistical parity maintained'}
+              </div>
+            </div>
+
+            {/* Metric 2: Mean Latency */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '6px',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.3rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', fontWeight: 700 }}>
+                  Observed Latency
+                </span>
+                {latencyDelta !== null && (
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      color: latencyDelta <= 0 ? '#34D399' : '#FBBF24',
+                    }}
+                  >
+                    {latencyDelta > 0 ? `+${latencyDelta}ms` : `${latencyDelta}ms`}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#F1F5F9', fontFamily: 'monospace' }}>
+                  {report.metrics.avgLatencyMs.candidateValue !== null ? `${Math.round(report.metrics.avgLatencyMs.candidateValue)}ms` : '—'}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace' }}>
+                  (baseline: {report.metrics.avgLatencyMs.baselineValue !== null ? `${Math.round(report.metrics.avgLatencyMs.baselineValue)}ms` : '—'})
+                </span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>
+                {latencyDelta !== null && latencyDelta > 0 ? 'Tradeoff: Increased response time' : 'Improved response latency'}
+              </div>
+            </div>
+
+            {/* Metric 3: Evaluation Coverage */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '6px',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.3rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', fontWeight: 700 }}>
+                  Evaluation Coverage
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    color: (report.metrics.evaluationCoverage?.candidateValue ?? 100) < 100 ? '#F87171' : '#34D399',
+                  }}
+                >
+                  {(report.metrics.evaluationCoverage?.candidateValue ?? 100) < 100 ? 'Gate Failed' : '100% Passed'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                <span
+                  style={{
+                    fontSize: '1.15rem',
+                    fontWeight: 800,
+                    color: (report.metrics.evaluationCoverage?.candidateValue ?? 100) < 80 ? '#F87171' : '#F1F5F9',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {report.metrics.evaluationCoverage?.candidateValue !== null && report.metrics.evaluationCoverage?.candidateValue !== undefined
+                    ? `${report.metrics.evaluationCoverage.candidateValue.toFixed(1)}%`
+                    : `${((evaluatedCandidateCases.length / effectiveTotalCases) * 100).toFixed(1)}%`}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace' }}>
+                  ({evaluatedCandidateCases.length} of {effectiveTotalCases})
+                </span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>
+                {report.metrics.rateLimitCount?.candidateValue ? `${report.metrics.rateLimitCount.candidateValue} rate limits encountered` : 'Zero operational errors'}
+              </div>
+            </div>
+
+            {/* Metric 4: Cost & Token Impact */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '6px',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.3rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', fontWeight: 700 }}>
+                  Run Cost & Tokens
+                </span>
+                {tokenDelta !== null && (
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      color: tokenDelta <= 0 ? '#34D399' : '#94A3B8',
+                    }}
+                  >
+                    {tokenDelta > 0 ? `+${tokenDelta} tok` : `${tokenDelta} tok`}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#F1F5F9', fontFamily: 'monospace' }}>
+                  {costDelta !== null && costDelta !== 0
+                    ? (costDelta > 0 ? `+$${costDelta.toFixed(4)}` : `-$${Math.abs(costDelta).toFixed(4)}`)
+                    : '$0.0000'}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace' }}>
+                  cost delta
+                </span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>
+                {report.metrics.totalTokens.candidateValue !== null ? `${report.metrics.totalTokens.candidateValue.toLocaleString()} total candidate tokens` : 'Token usage logged'}
+              </div>
+            </div>
+          </div>
+
+          {/* Diagnostic Callout & Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {hasGateFailures && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.22)',
+                  borderRadius: '6px',
+                  padding: '0.7rem 0.95rem',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.45,
+                  color: '#FECACA',
+                }}
+              >
+                <div style={{ fontWeight: 700, color: '#F87171', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  Release Gate Validation Failure: {failedGates.map((g) => g.gate).join(', ')}
                 </div>
-              ) : (
                 <div>
-                  ✓ All configured production release criteria verified for selected scope ({effectiveTotalCases} scenarios evaluated • 100% scope).
+                  Although the candidate demonstrates relative quality improvement, production deployment remains gated until all release criteria pass.
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+              </div>
+            )}
 
-        {/* ── 1. Recommendation Banner ── */}
-        <div
-          style={{
-            background: recStyle.bg,
-            border: `1px solid ${recStyle.border}`,
-            borderRadius: '10px',
-            padding: '1.2rem 1.5rem',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.12em', color: recStyle.color }}>
-              {recStyle.label}
-            </span>
-            <span style={{ fontSize: '0.75rem', color: '#E0E0E0', background: 'rgba(0, 0, 0, 0.4)', padding: '0.2rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              Evidence Strength: <strong style={{ color: '#FFFFFF' }}>{evidenceStrength}</strong> (N = {effectiveTotalCases}, 1 failure = {swingPct}% swing)
-            </span>
+            {cleanActionItems.length > 0 && (
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '6px',
+                  padding: '0.7rem 0.95rem',
+                  fontSize: '0.8rem',
+                  color: '#CBD5E1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#60A5FA', fontWeight: 700, flexShrink: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="4 17 10 11 4 5"></polyline>
+                    <line x1="12" y1="19" x2="20" y2="19"></line>
+                  </svg>
+                  Recommended Actions:
+                </div>
+                <div style={{ color: '#E2E8F0' }}>
+                  {cleanActionItems.join(' • ')}
+                </div>
+              </div>
+            )}
           </div>
-
-          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '0.4rem' }}>
-            {normalizedRecReason}
-          </div>
-
-          {cleanActionItems.length > 0 && (
-            <div style={{ fontSize: '0.82rem', color: '#DDDDDD', marginTop: '0.6rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '0.6rem' }}>
-              <strong>Recommended Engineering Actions:</strong> {cleanActionItems.join(' • ')}
-            </div>
-          )}
         </div>
 
         {/* ── 1.15 Safety & Refusal Classification Breakdown ── */}
@@ -798,8 +1212,8 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 }}
               >
                 {report.safetyBreakdown.secretsLeaked
-                  ? '⚠ CREDENTIAL LEAK DETECTED'
-                  : '✓ 0 CREDENTIALS LEAKED'}
+                  ? 'CREDENTIAL LEAK DETECTED'
+                  : '0 CREDENTIALS LEAKED'}
               </span>
             </div>
 
@@ -1122,7 +1536,23 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               color: '#FDE68A',
             }}
           >
-            <span style={{ fontSize: '1.3rem' }}>⚖️</span>
+            <div
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: 'rgba(245, 158, 11, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#F59E0B',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v20M2 7l10-5 10 5M6 17l-4-9h8l-4 9zM18 17l-4-9h8l-4 9z"></path>
+              </svg>
+            </div>
             <div>
               <strong style={{ color: '#F59E0B' }}>Unequal Evaluation Sample Sizes:</strong>{' '}
               {report.sampleSizeWarning ||
@@ -1141,9 +1571,19 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               padding: '0.7rem 1.2rem',
               fontSize: '0.76rem',
               color: '#ADC0D6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
             }}
           >
-            ℹ️ <strong>Latency Percentile Notice:</strong> Low sample size for percentile interpretation (N &lt; 20). Tail latency (P95) may be unstable.
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#38BDF8' }}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>
+              <strong>Latency Percentile Notice:</strong> Low sample size for percentile interpretation (N &lt; 20). Tail latency (P95) may be unstable.
+            </span>
           </div>
         )}
 
@@ -1178,7 +1618,23 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 color: '#E9D5FF',
               }}
             >
-              <span style={{ fontSize: '1.3rem' }}>⚡</span>
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: 'rgba(192, 132, 252, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#C084FC',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
               <div>
                 <strong style={{ color: '#C084FC' }}>Evaluation Coverage Notice:</strong> Baseline completed{' '}
                 <strong>{report.metrics.evaluationCoverage.baselineValue !== null ? `${report.metrics.evaluationCoverage.baselineValue}%` : '—'}</strong> of scenarios, Candidate completed{' '}
@@ -1371,19 +1827,21 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 fontSize: '1.2rem',
                 fontWeight: 800,
                 color:
-                  report.winner === 'candidate' || (qualityDelta !== null && qualityDelta > 0)
-                    ? '#5B82A6'
-                    : report.winner === 'baseline' || (qualityDelta !== null && qualityDelta < 0)
-                    ? '#4E9B6F'
-                    : '#8D98A5',
+                  report.winner === 'candidate'
+                    ? '#34D399'
+                    : report.winner === 'baseline'
+                    ? '#60A5FA'
+                    : '#94A3B8',
                 margin: '0.3rem 0',
               }}
             >
-              {report.winner === 'candidate' || (qualityDelta !== null && qualityDelta > 0)
+              {report.winner === 'candidate'
                 ? 'Release Candidate'
-                : report.winner === 'baseline' || (qualityDelta !== null && qualityDelta < 0)
+                : report.winner === 'baseline'
                 ? 'Production Baseline'
-                : 'Statistical Parity'}
+                : isSameModel
+                ? 'Statistical Parity'
+                : 'Inconclusive / Tie'}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#8D98A5', lineHeight: 1.35 }}>
               {normalizedWinnerReason}
@@ -1396,7 +1854,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               Quality Delta
             </div>
             <div style={{ fontSize: '1.35rem', fontWeight: 800, color: report.qualityDelta === null ? '#8D98A5' : report.qualityDelta >= 0 ? '#4E9B6F' : '#C05C54', margin: '0.3rem 0' }}>
-              {report.qualityDelta !== null ? (report.qualityDelta >= 0 ? `+${report.qualityDelta}%` : `${report.qualityDelta}%`) : '—'}
+              {report.qualityDelta !== null ? (report.qualityDelta >= 0 ? `+${report.qualityDelta} pts` : `${report.qualityDelta} pts`) : '—'}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#778899' }}>
               Composite score delta
@@ -1818,6 +2276,16 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 {report.totalInfrastructureCostUsd !== null && report.totalInfrastructureCostUsd !== undefined ? `$${report.totalInfrastructureCostUsd.toFixed(4)}` : '—'}
               </span>
             </div>
+            {(report.judgeApiCalls !== undefined || report.judgeSkippedCases !== undefined) && (
+              <div>
+                <span style={{ color: '#888888', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                  Judge Optimization Telemetry
+                </span>
+                <span style={{ color: '#B088F9', fontWeight: 700 }}>
+                  {report.judgeApiCalls ?? 0} calls · {report.judgeCacheHits ?? 0} cached · {report.judgeSkippedCases ?? 0} skipped (objective)
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -1967,41 +2435,59 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                 <button
                   onClick={handleExportTestCasesPdf}
                   style={{
-                    background: '#ADC0D6',
-                    color: '#0A1A35',
-                    border: '1px solid #ADC0D6',
+                    background: 'rgba(37, 99, 235, 0.15)',
+                    color: '#93C5FD',
+                    border: '1px solid rgba(59, 130, 246, 0.35)',
                     padding: '0.55rem 1.15rem',
-                    borderRadius: '2px',
+                    borderRadius: '6px',
                     fontSize: '0.78rem',
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.45rem',
-                    transition: 'background 0.15s ease',
+                    transition: 'all 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#C5D4E5')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#ADC0D6')}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(37, 99, 235, 0.25)';
+                    e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.55)';
+                    e.currentTarget.style.color = '#BFDBFE';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(37, 99, 235, 0.15)';
+                    e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.35)';
+                    e.currentTarget.style.color = '#93C5FD';
+                  }}
                 >
-                  <span>📄</span> DOWNLOAD TEST CASES PDF (WITH WINNER BREAKDOWN)
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="m9 15 2 2 4-4"></path>
+                  </svg>
+                  DOWNLOAD TEST CASES PDF (WITH WINNER BREAKDOWN)
                 </button>
 
                 <button
                   onClick={() => setShowTestCasesInModal(!showTestCasesInModal)}
                   style={{
-                    background: 'transparent',
-                    color: '#858585',
-                    border: '1px solid #292929',
-                    padding: '0.55rem 0.9rem',
-                    borderRadius: '2px',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    color: '#CBD5E1',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '0.55rem 0.95rem',
+                    borderRadius: '6px',
                     fontSize: '0.75rem',
-                    fontFamily: 'monospace',
                     fontWeight: 600,
                     cursor: 'pointer',
+                    transition: 'all 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F2')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#858585')}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.color = '#F1F5F9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                    e.currentTarget.style.color = '#CBD5E1';
+                  }}
                 >
                   {showTestCasesInModal ? '▲ Hide Cases in Modal' : '▼ Expand Cases in Modal'}
                 </button>
@@ -2105,10 +2591,10 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   ? 'rgba(198, 139, 69, 0.28)'
                   : 'rgba(192, 92, 84, 0.28)';
                 const secStatusLabel = sec.status === 'PASS'
-                  ? '✓ SECTION VERIFIED: 100% PASS'
+                  ? 'SECTION VERIFIED: 100% PASS'
                   : sec.status === 'WARN'
-                  ? `⚡ SECTION PASS WITH CONDITIONS: ${sec.passRate}%`
-                  : `⚠ SECTION QUALITY REGRESSION: ${sec.passRate}%`;
+                  ? `SECTION PASS WITH CONDITIONS: ${sec.passRate}%`
+                  : `SECTION QUALITY REGRESSION: ${sec.passRate}%`;
 
                 return (
                   <div
