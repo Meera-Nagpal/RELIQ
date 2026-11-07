@@ -179,51 +179,51 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
     switch (verdict) {
       case 'SHIP':
         return {
-          bg: 'rgba(78, 155, 111, 0.12)',
-          border: 'rgba(78, 155, 111, 0.4)',
-          color: '#4E9B6F',
-          label: '✓ RECOMMENDATION: SHIP TO PRODUCTION',
+          bg: 'rgba(16, 185, 129, 0.12)',
+          border: 'rgba(16, 185, 129, 0.4)',
+          color: '#34D399',
+          label: 'RECOMMENDATION: SHIP TO PRODUCTION',
         };
       case 'SHIP WITH CONDITIONS':
       case 'SHIP_WITH_CONDITIONS':
         return {
-          bg: 'rgba(198, 139, 69, 0.12)',
-          border: 'rgba(198, 139, 69, 0.4)',
-          color: '#C68B45',
-          label: '⚡ RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
+          bg: 'rgba(245, 158, 11, 0.12)',
+          border: 'rgba(245, 158, 11, 0.4)',
+          color: '#FBBF24',
+          label: 'RECOMMENDATION: SHIP WITH MONITORING CONDITIONS',
         };
       case 'NO REGRESSION':
       case 'NO_REGRESSION':
         return {
-          bg: 'rgba(91, 130, 166, 0.12)',
-          border: 'rgba(91, 130, 166, 0.4)',
-          color: '#5B82A6',
-          label: '✓ RECOMMENDATION: NO REGRESSION (PARITY MAINTAINED)',
+          bg: 'rgba(96, 165, 250, 0.12)',
+          border: 'rgba(96, 165, 250, 0.4)',
+          color: '#60A5FA',
+          label: 'RECOMMENDATION: NO REGRESSION (PARITY MAINTAINED)',
         };
       case 'REGRESSION DETECTED':
       case 'REGRESSION_DETECTED':
         return {
-          bg: 'rgba(192, 92, 84, 0.12)',
-          border: 'rgba(192, 92, 84, 0.4)',
-          color: '#C05C54',
-          label: '⚠ RECOMMENDATION: REGRESSION DETECTED',
+          bg: 'rgba(239, 68, 68, 0.12)',
+          border: 'rgba(239, 68, 68, 0.4)',
+          color: '#F87171',
+          label: 'RECOMMENDATION: REGRESSION DETECTED',
         };
       case 'BLOCK RELEASE':
       case 'BLOCK':
         return {
-          bg: 'rgba(192, 92, 84, 0.16)',
-          border: 'rgba(192, 92, 84, 0.45)',
-          color: '#C05C54',
-          label: '⛔ RECOMMENDATION: BLOCK RELEASE (CRITICAL VIOLATION)',
+          bg: 'rgba(239, 68, 68, 0.16)',
+          border: 'rgba(239, 68, 68, 0.45)',
+          color: '#F87171',
+          label: 'RECOMMENDATION: BLOCK RELEASE (CRITICAL VIOLATION)',
         };
       case 'INSUFFICIENT EVIDENCE':
       case 'INSUFFICIENT_EVIDENCE':
       default:
         return {
-          bg: 'rgba(141, 152, 165, 0.12)',
-          border: 'rgba(141, 152, 165, 0.35)',
-          color: '#8D98A5',
-          label: '❓ RECOMMENDATION: INSUFFICIENT EVIDENCE',
+          bg: 'rgba(148, 163, 184, 0.12)',
+          border: 'rgba(148, 163, 184, 0.35)',
+          color: '#94A3B8',
+          label: 'RECOMMENDATION: INSUFFICIENT EVIDENCE',
         };
     }
   };
@@ -288,6 +288,53 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   const swingPct = effectiveTotalCases > 0 ? (100 / effectiveTotalCases).toFixed(0) : 100;
 
   // ── Authoritative Relative & Release Gate Comparison Logic ──
+  const isSameModel =
+    report.baseline.model === report.candidate.model &&
+    report.baseline.provider === report.candidate.provider &&
+    (report.baseline.promptVersion === report.candidate.promptVersion ||
+      (!report.baseline.promptVersion && !report.candidate.promptVersion));
+
+  const totalBenchmarkScenarios =
+    report.provenance?.totalAttempted ??
+    report.benchmarkCompletion?.totalCases ??
+    report.totalCases ??
+    (validCaseResults.length > 0 ? validCaseResults.length : 1);
+  const candidateEvaluatedCount =
+    report.provenance?.candidateEvaluated ??
+    (typeof report.metrics.qualityScore?.candidateValue === 'number' && typeof (report.metrics as any).candidateEvaluatedCases === 'number'
+      ? (report.metrics as any).candidateEvaluatedCases
+      : evaluatedCandidateCases.length);
+  const candidateCoveragePct =
+    report.metrics.evaluationCoverage?.candidateValue ??
+    (totalBenchmarkScenarios > 0 ? Number(((candidateEvaluatedCount / totalBenchmarkScenarios) * 100).toFixed(1)) : 100);
+  const baselineEvaluatedCount =
+    report.provenance?.baselineEvaluated ??
+    (typeof report.metrics.qualityScore?.baselineValue === 'number' && typeof (report.metrics as any).baselineEvaluatedCases === 'number'
+      ? (report.metrics as any).baselineEvaluatedCases
+      : (validCaseResults.filter((c) => c && (c.baselineQualityEvaluated === true || (c.baselineQualityEvaluated === undefined && c.baselineScore !== null && c.baselineScore !== undefined))).length));
+  const baselineCoveragePct =
+    report.metrics.evaluationCoverage?.baselineValue ??
+    (totalBenchmarkScenarios > 0 ? Number(((baselineEvaluatedCount / totalBenchmarkScenarios) * 100).toFixed(1)) : 100);
+
+  const hasAsymmetricCoverage =
+    report.hasUnequalSampleSizes ||
+    (report.provenance && report.provenance.baselineEvaluated !== report.provenance.candidateEvaluated) ||
+    baselineEvaluatedCount !== candidateEvaluatedCount;
+
+  const isPreliminary = Boolean(
+    report.isPreliminary ||
+    report.benchmarkCompletion?.status === 'PRELIMINARY_SUBSET' ||
+    (candidateEvaluatedCount < targetRequiredCases && targetRequiredCases >= 27)
+  );
+
+  const isFullBenchmarkSuccess =
+    totalBenchmarkScenarios > 0 &&
+    candidateEvaluatedCount === totalBenchmarkScenarios &&
+    baselineEvaluatedCount === totalBenchmarkScenarios &&
+    !report.provenance?.hadOperationalErrors &&
+    candidateCoveragePct >= 99.9 &&
+    baselineCoveragePct >= 99.9;
+
   const baselineQuality = report.metrics.qualityScore?.baselineValue ?? null;
   const candidateQuality = report.metrics.qualityScore?.candidateValue ?? null;
   const qualityDelta = report.qualityDelta;
@@ -295,73 +342,65 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
   const costDelta = report.costDelta;
   const tokenDelta = report.tokenDelta;
 
-  // Relative outcome strictly based on quality delta & existing comparison
+  // Relative outcome strictly based on comparator winner
   let relativeResult: 'IMPROVEMENT' | 'REGRESSION' | 'PARITY' = 'PARITY';
   let relativeTitle = 'Statistical Parity';
   let relativeBadgeColor = '#8D98A5';
   let relativeBadgeBg = 'rgba(141, 152, 165, 0.12)';
   let relativeBorderColor = 'rgba(141, 152, 165, 0.3)';
 
-  if (qualityDelta !== null && qualityDelta > 0) {
-    relativeResult = 'IMPROVEMENT';
-    relativeTitle = 'Candidate Outperformed Baseline';
-    relativeBadgeColor = '#4E9B6F';
-    relativeBadgeBg = 'rgba(78, 155, 111, 0.12)';
-    relativeBorderColor = 'rgba(78, 155, 111, 0.3)';
-  } else if (qualityDelta !== null && qualityDelta < 0) {
-    relativeResult = 'REGRESSION';
-    relativeTitle = 'Candidate Quality Regression';
-    relativeBadgeColor = '#C05C54';
-    relativeBadgeBg = 'rgba(192, 92, 84, 0.12)';
-    relativeBorderColor = 'rgba(192, 92, 84, 0.3)';
-  } else {
+  if (isSameModel) {
     relativeResult = 'PARITY';
-    relativeTitle = 'Statistical Parity';
+    relativeTitle = 'Same-Model Comparison: Statistical Parity';
     relativeBadgeColor = '#8D98A5';
     relativeBadgeBg = 'rgba(141, 152, 165, 0.12)';
     relativeBorderColor = 'rgba(141, 152, 165, 0.3)';
+  } else if (report.winner === 'candidate') {
+    relativeResult = 'IMPROVEMENT';
+    relativeTitle = 'Candidate Outperformed Baseline';
+    relativeBadgeColor = '#34D399';
+    relativeBadgeBg = 'rgba(16, 185, 129, 0.12)';
+    relativeBorderColor = 'rgba(16, 185, 129, 0.3)';
+  } else if (report.winner === 'baseline') {
+    relativeResult = 'REGRESSION';
+    relativeTitle = 'Baseline Outperformed Candidate';
+    relativeBadgeColor = '#F87171';
+    relativeBadgeBg = 'rgba(239, 68, 68, 0.12)';
+    relativeBorderColor = 'rgba(239, 68, 68, 0.3)';
+  } else {
+    // report.winner === 'tie'
+    relativeResult = 'PARITY';
+    if (hasAsymmetricCoverage || hasGateFailures || normalizedRecommendation === 'INSUFFICIENT EVIDENCE' || isPreliminary) {
+      relativeTitle = 'Inconclusive Comparison';
+      relativeBadgeColor = '#FBBF24';
+      relativeBadgeBg = 'rgba(245, 158, 11, 0.12)';
+      relativeBorderColor = 'rgba(245, 158, 11, 0.3)';
+    } else {
+      relativeTitle = 'Statistical Parity';
+      relativeBadgeColor = '#94A3B8';
+      relativeBadgeBg = 'rgba(148, 163, 184, 0.12)';
+      relativeBorderColor = 'rgba(148, 163, 184, 0.3)';
+    }
   }
 
   // Concise 1-2 line comment generated from real metrics
   const getConciseInterpretation = (): string => {
-    if (qualityDelta !== null && qualityDelta > 0) {
-      const latWorse = latencyDelta !== null && latencyDelta > 0;
-      const latBetter = latencyDelta !== null && latencyDelta < 0;
-      const cstWorse = costDelta !== null && costDelta > 0;
-      const tokReduced = tokenDelta !== null && tokenDelta < 0;
-      if (latWorse && cstWorse) {
-        if (tokReduced) {
-          return `Candidate improved quality and reduced output tokens, but introduced higher latency (+${latencyDelta}ms) and evaluation cost.`;
-        }
-        return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points), but introduced higher latency (+${latencyDelta}ms) and evaluation cost.`;
-      }
-      if (latWorse) {
-        if (tokReduced) {
-          return `Candidate improved quality and reduced output tokens, but introduced higher latency (+${latencyDelta}ms).`;
-        }
-        return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points), but introduced higher latency (+${latencyDelta}ms).`;
-      }
-      if (cstWorse) {
-        if (latBetter && tokReduced) {
-          return `Candidate improved quality (+${qualityDelta.toFixed(1)} quality points), reduced output tokens, and reduced latency (${latencyDelta}ms), with higher evaluation cost.`;
-        }
-        if (latBetter) {
-          return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points) and reduced latency (${latencyDelta}ms), with higher evaluation cost.`;
-        }
-        if (tokReduced) {
-          return `Candidate improved quality (+${qualityDelta.toFixed(1)} quality points) and reduced output tokens, with higher evaluation cost.`;
-        }
-        return `Candidate achieved higher quality than baseline (+${qualityDelta.toFixed(1)} quality points), with higher evaluation cost.`;
-      }
-      return `Candidate achieved higher quality and correctness than the baseline, with +${qualityDelta.toFixed(1)} quality points.`;
+    if (isSameModel) {
+      const deltaStr = qualityDelta !== null ? `${qualityDelta > 0 ? '+' : ''}${qualityDelta.toFixed(1)} pts` : '0.0 pts';
+      return `Identical model configuration evaluated against itself. Observed variance (${deltaStr}) reflects stochastic sampling temperature. Statistical parity certified.`;
     }
-    if (qualityDelta !== null && qualityDelta < 0) {
-      return 'Baseline achieved higher quality under the configured evaluation criteria.';
+    if (report.winner === 'tie') {
+      return (
+        report.winnerReason ||
+        (hasAsymmetricCoverage
+          ? 'Inconclusive comparison: Unequal sample sizes due to upstream provider rate limits or errors. Definite winner cannot be certified on asymmetric evaluation sets.'
+          : 'Inconclusive comparison: Evidence is insufficient to certify a definite winner.')
+      );
     }
-    if (qualityDelta === 0) {
-      return 'Both models produced equivalent results under the configured comparison metrics.';
+    if (report.winner === 'baseline') {
+      return report.winnerReason || 'Baseline demonstrated superior overall quality or retained dominance due to candidate regressions.';
     }
-    return normalizedRecReason || `All ${effectiveTotalCases} required benchmark scenarios evaluated.`;
+    return report.winnerReason || `Candidate achieved superior overall quality (+${qualityDelta?.toFixed(1) || '0.0'} pts) and satisfied evaluation criteria.`;
   };
 
   const conciseInterpretation = getConciseInterpretation();
