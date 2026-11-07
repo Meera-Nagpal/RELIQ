@@ -9,6 +9,8 @@
    - Evaluation run lock to prevent concurrent runs from competing for provider quota
    ============================================================ */
 
+import { parseDurationHeaderMs } from './serverUtils';
+
 export type ProviderQuotaStatus = 'AVAILABLE' | 'COOLING_DOWN' | 'QUOTA_EXHAUSTED';
 
 export interface ProviderRateLimitState {
@@ -56,6 +58,10 @@ export class ProviderScheduler {
 
   // Per-bucket runtime state (keyed by provider or provider:model)
   private buckets = new Map<string, BucketRuntimeState>();
+
+  // Provider-level concurrency gate (controls total active requests across models sharing the same API key)
+  private providerWaiters = new Map<string, Array<() => void>>();
+  private providerActiveCounts = new Map<string, number>();
 
   // Mutex for evaluation runs to prevent concurrent runs from consuming quota simultaneously
   private activeRunLock: Promise<void> | null = null;
@@ -177,11 +183,16 @@ export class ProviderScheduler {
   }
 
   private getOrCreateBucket(bucketKey: string, maxConcurrency: number): BucketRuntimeState {
+    let effectiveMax = maxConcurrency;
+    // Strict concurrency limit for Qwen models on Groq to prevent exceeding the 1,000 OTPM rate limit
+    if (bucketKey.toLowerCase().includes('qwen')) {
+      effectiveMax = Math.min(2, maxConcurrency);
+    }
     let bucket = this.buckets.get(bucketKey);
     if (!bucket) {
       bucket = {
         activeCount: 0,
-        maxConcurrency,
+        maxConcurrency: effectiveMax,
         waiters: [],
         admissionQueue: Promise.resolve(),
         lastRequestTime: 0,
@@ -193,7 +204,7 @@ export class ProviderScheduler {
       };
       this.buckets.set(bucketKey, bucket);
     } else {
-      bucket.maxConcurrency = maxConcurrency;
+      bucket.maxConcurrency = effectiveMax;
     }
     return bucket;
   }
@@ -238,6 +249,7 @@ export class ProviderScheduler {
       limitTokens?: number | string;
       remainingTokens?: number | string;
       resetTokens?: string;
+      retryAfter?: string;
     }
   ): void {
     if (!rateLimit) return;
@@ -246,16 +258,29 @@ export class ProviderScheduler {
     const bucketKey = this.getBucketKey(norm, modelId);
     const bucket = this.getOrCreateBucket(bucketKey, state?.maxConcurrency || 8);
 
+    const isQwen = bucketKey.toLowerCase().includes('qwen');
     const remTokens = rateLimit.remainingTokens !== undefined ? Number(rateLimit.remainingTokens) : NaN;
+    const parsedResetMs = rateLimit.resetTokens ? parseDurationHeaderMs(rateLimit.resetTokens) : 0;
+    const parsedRetryAfterMs = rateLimit.retryAfter ? parseDurationHeaderMs(rateLimit.retryAfter) : 0;
+    const effectiveResetMs = Math.max(parsedResetMs, parsedRetryAfterMs);
+
     if (!isNaN(remTokens)) {
       bucket.remainingTokens = remTokens;
-      // Only apply adaptive wait when remaining tokens drop below 1,000 (~3-4 requests remaining)
-      if (remTokens < 1000) {
-        const waitMs = remTokens < 500
-          ? Math.min(1800, Math.max(350, Math.ceil(((650 - remTokens) / 133) * 1000)))
-          : 200;
+      // Stricter token buffer for Qwen (strict 1,000 OTPM limit on Groq)
+      const tokenThreshold = isQwen ? 1200 : 1000;
+      if (remTokens < tokenThreshold) {
+        let waitMs = 0;
+        if (effectiveResetMs > 0) {
+          waitMs = effectiveResetMs + Math.floor(Math.random() * 300 + 100);
+        } else {
+          waitMs = isQwen
+            ? 1500
+            : (remTokens < 500 ? Math.min(1800, Math.max(350, Math.ceil(((650 - remTokens) / 133) * 1000))) : 200);
+        }
         bucket.adaptiveWaitUntil = Math.max(bucket.adaptiveWaitUntil, Date.now() + waitMs);
       }
+    } else if (effectiveResetMs > 0) {
+      bucket.adaptiveWaitUntil = Math.max(bucket.adaptiveWaitUntil, Date.now() + effectiveResetMs + Math.floor(Math.random() * 300 + 100));
     }
   }
 
@@ -308,7 +333,9 @@ export class ProviderScheduler {
     const state = this.states.get(norm)!;
 
     const safeSec = Math.max(1, Math.min(180, cooldownSec || 60));
-    const cooldownUntil = Date.now() + safeSec * 1000;
+    // Apply controlled jitter to backoff so parallel workers do not collide upon waking
+    const jitterMs = Math.floor(Math.random() * 400 + 100);
+    const cooldownUntil = Date.now() + safeSec * 1000 + jitterMs;
 
     if (details?.modelId) {
       const bucketKey = this.getBucketKey(norm, details.modelId);
@@ -415,6 +442,48 @@ export class ProviderScheduler {
     return result;
   }
 
+  private resolveProviderMaxConcurrency(norm: string): number {
+    if (norm === 'groq') {
+      const custom = process.env.GROQ_GLOBAL_MAX_CONCURRENCY || process.env.GROQ_MAX_CONCURRENCY;
+      if (custom) {
+        const parsed = parseInt(custom, 10);
+        if (!isNaN(parsed) && parsed >= 1) return parsed;
+      }
+      return 2; // Safe global concurrency cap across all Groq buckets to avoid quota exhaustion on shared API key
+    }
+    const state = this.states.get(norm);
+    return state?.maxConcurrency || 8;
+  }
+
+  private async acquireProviderSlot(norm: string): Promise<void> {
+    const max = this.resolveProviderMaxConcurrency(norm);
+    const active = this.providerActiveCounts.get(norm) || 0;
+    if (active < max) {
+      this.providerActiveCounts.set(norm, active + 1);
+      return;
+    }
+    let waiters = this.providerWaiters.get(norm);
+    if (!waiters) {
+      waiters = [];
+      this.providerWaiters.set(norm, waiters);
+    }
+    await new Promise<void>((resolve) => {
+      waiters!.push(resolve);
+    });
+    this.providerActiveCounts.set(norm, (this.providerActiveCounts.get(norm) || 0) + 1);
+  }
+
+  private releaseProviderSlot(norm: string): void {
+    const cur = this.providerActiveCounts.get(norm) || 1;
+    this.providerActiveCounts.set(norm, Math.max(0, cur - 1));
+    const max = this.resolveProviderMaxConcurrency(norm);
+    const waiters = this.providerWaiters.get(norm);
+    if (waiters && waiters.length > 0 && (this.providerActiveCounts.get(norm) || 0) < max) {
+      const next = waiters.shift()!;
+      next();
+    }
+  }
+
   private async acquireConcurrencySlot(bucket: BucketRuntimeState): Promise<void> {
     if (bucket.activeCount < bucket.maxConcurrency) {
       bucket.activeCount++;
@@ -447,89 +516,106 @@ export class ProviderScheduler {
     const bucketKey = this.getBucketKey(norm, modelId);
     const bucket = this.getOrCreateBucket(bucketKey, state.maxConcurrency || 8);
 
-    // 1. Acquire concurrency slot for this provider/model bucket
-    await this.acquireConcurrencySlot(bucket);
+    // 1. Acquire provider-wide concurrency slot (prevents shared API key quota exhaustion across models)
+    await this.acquireProviderSlot(norm);
 
     try {
-      // 2. Pass through the bucket's admission gate to respect cooldowns, adaptive pacing, and minDelayMs
-      let releaseAdmission: () => void = () => {};
-      const prevAdmission = bucket.admissionQueue;
-      bucket.admissionQueue = new Promise<void>((resolve) => {
-        releaseAdmission = resolve;
-      });
+      // 2. Acquire concurrency slot for this specific provider/model bucket
+      await this.acquireConcurrencySlot(bucket);
 
-      await prevAdmission;
       try {
-        // Wait for provider-wide or model-specific cooldown
-        const now = Date.now();
-        const cooldownTarget = Math.max(state.coolingDownUntil, bucket.adaptiveWaitUntil);
-        if (cooldownTarget > now) {
-          const waitMs = cooldownTarget - now;
-          await new Promise((r) => setTimeout(r, waitMs));
-        }
+        // 3. Pass through the bucket's admission gate to respect cooldowns, adaptive pacing, and minDelayMs
+        let releaseAdmission: () => void = () => {};
+        const prevAdmission = bucket.admissionQueue;
+        bucket.admissionQueue = new Promise<void>((resolve) => {
+          releaseAdmission = resolve;
+        });
 
-        // Continuous-time virtual 30-RPM token bucket for per-model Groq buckets:
-        // Groq's 30 RPM bucket starts with 30 tokens and refills continuously at 0.5 tokens/sec (1 per 2,000ms).
-        // This allows 27-case evaluations to burst through the available 30-RPM capacity in seconds
-        // while smoothly transitioning to 2,020ms GCRA steady-state spacing on larger (e.g. 100-case) runs.
-        if (norm === 'groq' && modelId && state.minDelayMs === 0) {
-          const nowBeforeWait = Date.now();
-          const winCutoff = nowBeforeWait - 60000;
-          bucket.recentAdmissions = bucket.recentAdmissions.filter((ts) => ts > winCutoff);
-
-          const elapsedRefillSec = Math.max(0, (nowBeforeWait - bucket.lastRpmRefillTime) / 1000);
-          bucket.rpmTokens = Math.min(30, bucket.rpmTokens + elapsedRefillSec * 0.5);
-          bucket.lastRpmRefillTime = nowBeforeWait;
-
-          let targetSpacingMs = 0;
-          if (bucket.rpmTokens > 12) {
-            targetSpacingMs = 60;
-          } else if (bucket.rpmTokens > 5) {
-            targetSpacingMs = 200;
-          } else if (bucket.rpmTokens > 3) {
-            targetSpacingMs = 500;
-          } else {
-            targetSpacingMs = 2020;
+        await prevAdmission;
+        try {
+          // Wait for provider-wide or model-specific cooldown
+          const now = Date.now();
+          const cooldownTarget = Math.max(state.coolingDownUntil, bucket.adaptiveWaitUntil);
+          if (cooldownTarget > now) {
+            const waitMs = cooldownTarget - now;
+            await new Promise((r) => setTimeout(r, waitMs));
           }
 
-          if (bucket.lastRequestTime > 0 && targetSpacingMs > 0) {
-            const sinceLastBucketMs = Date.now() - bucket.lastRequestTime;
-            if (sinceLastBucketMs < targetSpacingMs) {
-              await new Promise((r) => setTimeout(r, targetSpacingMs - sinceLastBucketMs));
+          // Model-specific pacing for Qwen on Groq: strict 1,000 OTPM rate limit protection
+          const isQwen = bucketKey.toLowerCase().includes('qwen');
+          if (norm === 'groq' && isQwen) {
+            const qwenElapsed = Date.now() - bucket.lastRequestTime;
+            if (bucket.lastRequestTime > 0 && qwenElapsed < 2500) {
+              const qwenWait = 2500 - qwenElapsed + Math.floor(Math.random() * 200);
+              await new Promise((r) => setTimeout(r, qwenWait));
             }
           }
 
-          const nowAfterWait = Date.now();
-          const waitRefillSec = Math.max(0, (nowAfterWait - bucket.lastRpmRefillTime) / 1000);
-          bucket.rpmTokens = Math.max(0, Math.min(30, bucket.rpmTokens + waitRefillSec * 0.5) - 1);
-          bucket.lastRpmRefillTime = nowAfterWait;
+          // Continuous-time virtual 30-RPM token bucket for per-model Groq buckets:
+          // Groq's 30 RPM bucket starts with 30 tokens and refills continuously at 0.5 tokens/sec (1 per 2,000ms).
+          // This allows 27-case evaluations to burst through the available 30-RPM capacity in seconds
+          // while smoothly transitioning to 2,020ms GCRA steady-state spacing on larger (e.g. 100-case) runs.
+          if (norm === 'groq' && modelId && state.minDelayMs === 0) {
+            const nowBeforeWait = Date.now();
+            const winCutoff = nowBeforeWait - 60000;
+            bucket.recentAdmissions = bucket.recentAdmissions.filter((ts) => ts > winCutoff);
+
+            const elapsedRefillSec = Math.max(0, (nowBeforeWait - bucket.lastRpmRefillTime) / 1000);
+            bucket.rpmTokens = Math.min(30, bucket.rpmTokens + elapsedRefillSec * 0.5);
+            bucket.lastRpmRefillTime = nowBeforeWait;
+
+            let targetSpacingMs = 0;
+            if (bucket.rpmTokens > 12) {
+              targetSpacingMs = 60;
+            } else if (bucket.rpmTokens > 5) {
+              targetSpacingMs = 200;
+            } else if (bucket.rpmTokens > 3) {
+              targetSpacingMs = 500;
+            } else {
+              targetSpacingMs = 2020;
+            }
+
+            if (bucket.lastRequestTime > 0 && targetSpacingMs > 0) {
+              const sinceLastBucketMs = Date.now() - bucket.lastRequestTime;
+              if (sinceLastBucketMs < targetSpacingMs) {
+                await new Promise((r) => setTimeout(r, targetSpacingMs - sinceLastBucketMs));
+              }
+            }
+
+            const nowAfterWait = Date.now();
+            const waitRefillSec = Math.max(0, (nowAfterWait - bucket.lastRpmRefillTime) / 1000);
+            bucket.rpmTokens = Math.max(0, Math.min(30, bucket.rpmTokens + waitRefillSec * 0.5) - 1);
+            bucket.lastRpmRefillTime = nowAfterWait;
+          }
+
+          // Enforce minimum inter-request delay since last request in this bucket/provider
+          const refLastTime = Math.max(state.lastRequestTime, bucket.lastRequestTime);
+          const elapsedSinceLast = Date.now() - refLastTime;
+          if (state.minDelayMs > 0 && elapsedSinceLast < state.minDelayMs) {
+            const pacingWait = state.minDelayMs - elapsedSinceLast;
+            await new Promise((r) => setTimeout(r, pacingWait));
+          }
+
+          const admitTs = Date.now();
+          state.lastRequestTime = admitTs;
+          bucket.lastRequestTime = admitTs;
+          bucket.recentAdmissions.push(admitTs);
+          state.totalRequests++;
+          state.activeRequests = (state.activeRequests || 0) + 1;
+        } finally {
+          releaseAdmission();
         }
 
-        // Enforce minimum inter-request delay since last request in this bucket/provider
-        const refLastTime = Math.max(state.lastRequestTime, bucket.lastRequestTime);
-        const elapsedSinceLast = Date.now() - refLastTime;
-        if (state.minDelayMs > 0 && elapsedSinceLast < state.minDelayMs) {
-          const pacingWait = state.minDelayMs - elapsedSinceLast;
-          await new Promise((r) => setTimeout(r, pacingWait));
-        }
-
-        const admitTs = Date.now();
-        state.lastRequestTime = admitTs;
-        bucket.lastRequestTime = admitTs;
-        bucket.recentAdmissions.push(admitTs);
-        state.totalRequests++;
-        state.activeRequests = (state.activeRequests || 0) + 1;
+        // 4. Execute task concurrently outside the admission lock
+        const result = await taskFn();
+        this.recordSuccess(norm);
+        return result;
       } finally {
-        releaseAdmission();
+        state.activeRequests = Math.max(0, (state.activeRequests || 1) - 1);
+        this.releaseConcurrencySlot(bucket);
       }
-
-      // 3. Execute task concurrently outside the admission lock
-      const result = await taskFn();
-      this.recordSuccess(norm);
-      return result;
     } finally {
-      state.activeRequests = Math.max(0, (state.activeRequests || 1) - 1);
-      this.releaseConcurrencySlot(bucket);
+      this.releaseProviderSlot(norm);
     }
   }
 
