@@ -33,6 +33,24 @@ RELIQ is an enterprise-grade AI reliability, regression detection, and model eva
 
 ---
 
+## 🔬 Algorithmic Specifications & Mathematical Foundations
+
+For in-depth mathematical formulations, rate-limiting token bucket models, position-bias neutralization proofs, and the correctness-first winner pipeline, see the dedicated specification:
+
+👉 **[EVALUATION_ALGORITHMS.md](./EVALUATION_ALGORITHMS.md)**
+
+Key covered algorithms:
+1. **Pre-Execution Hybrid Categorization:** Deterministic ground-truth routing vs. LLM judging.
+2. **Deterministic & Lexical Matching:** RFC 8259 JSON validation, Levenshtein distance, and punctuation normalization.
+3. **Surface Semantic Similarity:** In-engine TF-IDF tokenization and Cosine vector mathematics.
+4. **Intelligent LLM Judging:** Randomized blind pairwise evaluation, multi-dimensional rubrics, and SHA-256 result caching.
+5. **Provider Scheduling & Rate Limiting:** Virtual 30-RPM continuous-time token buckets, Qwen 2,500ms OTPM pacing, and reset-header exponential backoff.
+6. **Authoritative Correctness-First Winner Determination:** Binary pass rate primacy, continuous quality score delta gating, and operational efficiency tie-breakers.
+7. **Canonical 10-Gate Production Release Engine:** Sample size calibration, swing margin calculation ($\pm 100/N\%$), and deterministic release verdicts.
+8. **Root Cause Analysis:** Telemetry-grounded diagnostic clustering into observed, confirmed, and heuristic findings.
+
+---
+
 ## 🏛️ System Architecture
 
 ```
