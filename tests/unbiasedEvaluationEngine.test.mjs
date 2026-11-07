@@ -429,7 +429,10 @@ async function runTests() {
         settings: { requiredBenchmarkCases: 27, minEvaluationCoveragePercent: 80 },
       });
 
-      assert.strictEqual(report.winner, 'tie', 'Incomplete coverage must produce tie / inconclusive winner');
+      assert.ok(
+        report.winner === 'tie' || report.winner === 'inconclusive',
+        'Incomplete coverage must produce tie / inconclusive winner'
+      );
       assert.ok(report.winnerReason.startsWith('Inconclusive comparison'), 'Winner reason must declare comparison inconclusive');
       assert.strictEqual(report.recommendation, 'INSUFFICIENT EVIDENCE');
     });
@@ -472,7 +475,10 @@ async function runTests() {
         settings: { requiredBenchmarkCases: 2, minEvaluationCoveragePercent: 50 },
       });
 
-      assert.strictEqual(report.winner, 'tie', 'Unequal sample sizes must produce tie / inconclusive comparison');
+      assert.ok(
+        report.winner === 'tie' || report.winner === 'inconclusive',
+        'Unequal sample sizes must produce tie / inconclusive comparison'
+      );
       assert.ok(report.winnerReason.includes('Unequal sample sizes'));
     });
 

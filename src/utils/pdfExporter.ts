@@ -364,26 +364,23 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   if (isSameModel) {
     winnerLabel = 'SAME-MODEL COMPARISON: STATISTICAL PARITY (TIE)';
   } else if (report.winner === 'candidate') {
-    winnerLabel = `CANDIDATE WIN (+${report.qualityDelta?.toFixed(1) ?? '0.0'} Quality Pts)`;
+    winnerLabel = `CANDIDATE WIN (${report.v3Scoring ? `+${report.v3Scoring.overallDelta} Overall Pts` : `+${report.qualityDelta?.toFixed(1) ?? '0.0'} Quality Pts`})`;
   } else if (report.winner === 'baseline') {
-    winnerLabel = `BASELINE WIN (${report.qualityDelta?.toFixed(1) ?? '0.0'} Quality Pts)`;
-  } else if (hasGateFailures || report.hasUnequalSampleSizes || report.regressionStatus === 'INSUFFICIENT_EVIDENCE' || report.recommendation === 'INSUFFICIENT EVIDENCE') {
-    winnerLabel = 'INCONCLUSIVE COMPARISON (TIE)';
+    winnerLabel = `BASELINE WIN (${report.v3Scoring ? `${report.v3Scoring.overallDelta} Overall Pts` : `${report.qualityDelta?.toFixed(1) ?? '0.0'} Quality Pts`})`;
+  } else if (report.winner === 'inconclusive' || report.hasUnequalSampleSizes || report.regressionStatus === 'INSUFFICIENT_EVIDENCE' || report.recommendation === 'INSUFFICIENT EVIDENCE') {
+    winnerLabel = 'INCONCLUSIVE COMPARISON';
   } else {
     winnerLabel = 'STATISTICAL PARITY (TIE)';
   }
   doc.setFillColor(0.08, 0.1, 0.15);
   doc.drawText(winnerLabel, left + 16, cardY + 44, 11.5, 'Helvetica-Bold');
 
-  // Quality progression numbers
-  const baseQual = report.metrics.qualityScore?.baselineValue !== null && report.metrics.qualityScore?.baselineValue !== undefined
-    ? `${report.metrics.qualityScore.baselineValue}%`
-    : 'N/A';
-  const candQual = report.metrics.qualityScore?.candidateValue !== null && report.metrics.qualityScore?.candidateValue !== undefined
-    ? `${report.metrics.qualityScore.candidateValue}%`
-    : 'N/A';
+  // Quality / V3 Overall progression numbers
+  const scoreLine = report.v3Scoring
+    ? `V3 Overall Score (100-Pt): Baseline ${report.v3Scoring.baseline.compositeScore100}  ->  Candidate ${report.v3Scoring.candidate.compositeScore100}  (Δ ${report.v3Scoring.overallDelta >= 0 ? '+' : ''}${report.v3Scoring.overallDelta} pts)`
+    : `Baseline Quality: ${report.metrics.qualityScore?.baselineValue ?? 'N/A'}%  ->  Candidate Quality: ${report.metrics.qualityScore?.candidateValue ?? 'N/A'}%`;
   doc.setFillColor(0.3, 0.35, 0.42);
-  doc.drawText(`Baseline Quality: ${baseQual}  ->  Candidate Quality: ${candQual}`, left + 16, cardY + 31, 8, 'Helvetica');
+  doc.drawText(scoreLine, left + 16, cardY + 31, 8, 'Helvetica');
 
   // 1-2 line concise metrics-grounded interpretation
   const commentText = report.winnerReason || (report.winner === 'candidate'

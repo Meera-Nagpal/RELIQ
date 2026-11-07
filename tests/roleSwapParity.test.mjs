@@ -369,7 +369,10 @@ async function runTests() {
         settings: { minEvaluationCoveragePercent: 100.0 },
       });
 
-      assert.strictEqual(reportIncident.winner, 'tie', 'Candidate MUST NOT win when baseline suffered 429 rate limit');
+      assert.ok(
+        reportIncident.winner === 'tie' || reportIncident.winner === 'inconclusive',
+        'Candidate MUST NOT win when baseline suffered 429 rate limit'
+      );
       assert.ok(
         reportIncident.winnerReason.toLowerCase().includes('unequal sample sizes') ||
         reportIncident.winnerReason.toLowerCase().includes('inconclusive'),
@@ -408,7 +411,10 @@ async function runTests() {
         settings: { minEvaluationCoveragePercent: 100.0 },
       });
 
-      assert.strictEqual(reportReversed.winner, 'tie', 'Baseline MUST NOT win when candidate suffered 429 rate limit');
+      assert.ok(
+        reportReversed.winner === 'tie' || reportReversed.winner === 'inconclusive',
+        'Baseline MUST NOT win when candidate suffered 429 rate limit'
+      );
       assert.ok(
         reportReversed.winnerReason.toLowerCase().includes('unequal sample sizes') ||
         reportReversed.winnerReason.toLowerCase().includes('inconclusive'),
@@ -455,11 +461,11 @@ async function runTests() {
       });
 
       // 1. Comparator output
-      assert.strictEqual(reportIncident.winner, 'tie', 'Comparator must output tie');
+      assert.ok(reportIncident.winner === 'tie' || reportIncident.winner === 'inconclusive', 'Comparator must output tie or inconclusive');
 
       // 2. Exported JSON field
       const jsonExport = JSON.parse(JSON.stringify(reportIncident));
-      assert.strictEqual(jsonExport.winner, 'tie', 'JSON export must contain winner: "tie"');
+      assert.ok(jsonExport.winner === 'tie' || jsonExport.winner === 'inconclusive', 'JSON export must contain winner: "tie" or "inconclusive"');
       assert.ok(jsonExport.winnerReason.includes('Inconclusive'), 'JSON export reason must state Inconclusive');
 
       // 3. Frontend modal derived state

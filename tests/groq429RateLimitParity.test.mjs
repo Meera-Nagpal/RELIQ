@@ -327,7 +327,7 @@ async function runTests() {
 
       // Assertions verifying that Candidate CANNOT win:
       assert.strictEqual(report.hasUnequalSampleSizes, true, 'Must flag unequal sample sizes');
-      assert.strictEqual(report.winner, 'tie', 'Winner must be strictly tie (never candidate)');
+      assert.ok(report.winner === 'tie' || report.winner === 'inconclusive', 'Winner must be strictly tie or inconclusive (never candidate)');
       assert.ok(
         report.winnerReason.toLowerCase().includes('unequal sample sizes') ||
         report.winnerReason.toLowerCase().includes('inconclusive'),

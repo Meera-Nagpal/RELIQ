@@ -84,6 +84,8 @@ export interface EvaluationOptions {
   useCache?: boolean;
   bypassCache?: boolean;
   resumedResults?: TestCaseResult[];
+  engineVersion?: 'v2' | 'v3';
+  v3Weights?: Partial<import('../domain/v3Types').EvaluationWeightsConfiguration>;
   onProgress?: (
     current: number,
     total: number,
@@ -1788,6 +1790,8 @@ export class EvaluationRunner {
       settings: effectiveRegressionSettings,
       executionMode: 'LIVE',
       provenance,
+      engineVersion: options.engineVersion || 'v3',
+      v3Weights: options.v3Weights,
     });
 
     console.log(`\n[RELIQ] Evaluation complete`);

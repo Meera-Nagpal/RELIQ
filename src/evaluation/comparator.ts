@@ -21,6 +21,8 @@ import {
 import { ProviderType } from '../providers/types';
 import { evaluateReleaseDecision, calculateEvidenceStrength, getEvidenceStrengthReason } from './releaseEngine';
 import { evaluateGroundedness } from './groundednessEvaluator';
+import { calculateV3ScoreComparison, ModelExecutionData } from './v3ScoringEngine';
+import { ComparisonWinnerV3, V3ScoreComparison, EvaluationWeightsConfiguration } from '../domain/v3Types';
 
 export type RecommendationVerdict =
   | 'SHIP'
@@ -33,7 +35,7 @@ export type RecommendationVerdict =
   | 'BLOCK'
   | 'INSUFFICIENT_EVIDENCE';
 
-export type ComparisonWinner = 'candidate' | 'baseline' | 'tie';
+export type ComparisonWinner = 'candidate' | 'baseline' | 'tie' | 'inconclusive';
 
 export interface MetricDelta {
   metric: string;
@@ -139,6 +141,8 @@ export interface ComparisonReport {
   judgeTotalTokens?: number;
   safetyBreakdown?: import('../domain/types').SafetyBreakdownSummary;
   caseResults?: TestCaseResult[];
+  engineVersion?: 'v2' | 'v3';
+  v3Scoring?: V3ScoreComparison;
 }
 
 export interface EvaluationWeights {
@@ -160,6 +164,8 @@ export interface GenerateComparisonOptions {
   weights?: EvaluationWeights;
   executionMode?: RunExecutionMode;
   provenance?: RunProvenance;
+  engineVersion?: 'v2' | 'v3';
+  v3Weights?: Partial<EvaluationWeightsConfiguration>;
 }
 
 export function calculateDelta(
@@ -643,6 +649,75 @@ export function generateComparisonReport(
     );
   }
 
+  // V3 Multi-Dimensional Scoring Calculation
+  const baselineData: ModelExecutionData = {
+    modelRole: 'baseline',
+    modelIdentifier: baselineVersion.modelIdentifier,
+    provider: baselineVersion.provider,
+    caseResults: evaluatedCaseResults,
+    totalCasesCount: totalCases,
+    evaluatedCasesCount: bEvaluatedCount,
+    coveragePercent: bCoverage,
+    meanLatencyMs: bAvgLatency,
+    medianLatencyMs: runMetrics?.baselineMedianLatencyMs ?? bAvgLatency,
+    p95LatencyMs: runMetrics?.baselineP95LatencyMs ?? (bAvgLatency ? bAvgLatency * 1.5 : null),
+    totalCostUsd: bCostVal,
+    totalTokens: bTokensVal,
+    rateLimitFailuresCount: bRateLimitCount,
+    infrastructureFailuresCount: bProviderErrorCount,
+    criticalSafetyFailuresCount: bAuthCount + criticalRegressedCount,
+  };
+
+  let cCandidateSafetyFailures = criticalRegressedCount;
+  for (const r of evaluatedCaseResults) {
+    if (
+      r.failureCategory === 'CREDENTIAL_LEAK' ||
+      r.failureCategory === 'PROMPT_INJECTION_FAILURE' ||
+      r.failureCategory === 'SAFETY_POLICY_FAILURE'
+    ) {
+      cCandidateSafetyFailures++;
+    }
+  }
+
+  const candidateData: ModelExecutionData = {
+    modelRole: 'candidate',
+    modelIdentifier: candidateVersion.modelIdentifier,
+    provider: candidateVersion.provider,
+    caseResults: evaluatedCaseResults,
+    totalCasesCount: totalCases,
+    evaluatedCasesCount: cEvaluatedCount,
+    coveragePercent: cCoverage,
+    meanLatencyMs: cAvgLatency,
+    medianLatencyMs: runMetrics?.candidateMedianLatencyMs ?? cAvgLatency,
+    p95LatencyMs: runMetrics?.candidateP95LatencyMs ?? (cAvgLatency ? cAvgLatency * 1.5 : null),
+    totalCostUsd: cCostVal,
+    totalTokens: cTokensVal,
+    rateLimitFailuresCount: cRateLimitCount,
+    infrastructureFailuresCount: cProviderErrorCount,
+    criticalSafetyFailuresCount: cCandidateSafetyFailures,
+  };
+
+  const datasetRequiredCases =
+    (typeof settings?.requiredBenchmarkCases === 'number')
+      ? settings.requiredBenchmarkCases
+      : (totalCases > 0 ? totalCases : 27);
+  const isPreliminary = cEvaluated < datasetRequiredCases;
+  const hasUnequalSampleSizes = runMetrics?.hasUnequalSampleSizes ?? (bEvaluated !== cEvaluated);
+
+  const v3Scoring = calculateV3ScoreComparison({
+    baselineData,
+    candidateData,
+    weights: options.v3Weights,
+    caseResults: evaluatedCaseResults,
+    minCoverageRequiredPercent: minCoverage,
+    minimumPairedCasesRequired: typeof settings?.requiredBenchmarkCases === 'number'
+      ? Math.min(10, settings.requiredBenchmarkCases)
+      : 10,
+    hasUnequalSampleSizes,
+  });
+
+  const engineVersion: 'v2' | 'v3' = options.engineVersion || (settings as any)?.engineVersion || 'v2';
+
   // 3. Overall Winner Determination
   let winner: ComparisonWinner = 'tie';
   let winnerReason = '';
@@ -653,69 +728,73 @@ export function generateComparisonReport(
     (baselineVersion.promptVersion === candidateVersion.promptVersion ||
       (!baselineVersion.promptVersion && !candidateVersion.promptVersion));
 
-  const datasetRequiredCases =
-    (typeof settings?.requiredBenchmarkCases === 'number')
-      ? settings.requiredBenchmarkCases
-      : (totalCases > 0 ? totalCases : 27);
-  const isPreliminary = cEvaluated < datasetRequiredCases;
-  const hasUnequalSampleSizes = runMetrics?.hasUnequalSampleSizes ?? (bEvaluated !== cEvaluated);
-
-  if (isSameModel) {
-    winner = 'tie';
-    const deltaStr =
-      bQualityScore !== null && cQualityScore !== null
-        ? `${cQualityScore - bQualityScore >= 0 ? '+' : ''}${(cQualityScore - bQualityScore).toFixed(1)} pts`
-        : '0.0 pts';
-    winnerReason = `Same-model comparison: Statistical Parity (identical model configuration ${candidateVersion.modelIdentifier} evaluated across ${cEvaluated} scenarios). Observed quality delta (${deltaStr}) reflects stochastic sampling temperature variance.`;
-  } else if (bEvaluated === 0 || cEvaluated === 0) {
-    winner = 'tie';
-    winnerReason = 'Inconclusive comparison: One or both configurations produced zero evaluated responses due to provider failure or rate-limiting.';
-  } else if (hasUnequalSampleSizes) {
-    winner = 'tie';
-    winnerReason = `Inconclusive comparison: Unequal sample sizes (Baseline evaluated ${bEvaluated} scenarios, Candidate evaluated ${cEvaluated} scenarios due to upstream provider rate limits or errors). Definite winner cannot be certified on asymmetric evaluation sets.`;
-  } else if (isInsufficientCoverage) {
-    winner = 'tie';
-    winnerReason = `Inconclusive comparison: Evaluation coverage is below required threshold (${minCoverage}%). Baseline: ${bCoverage.toFixed(1)}% (${bEvaluated}/${totalCases} evaluated, ${bRateLimitCount} rate-limited), Candidate: ${cCoverage.toFixed(1)}% (${cEvaluated}/${totalCases} evaluated, ${cRateLimitCount} rate-limited).`;
-  } else if (isPreliminary) {
-    winner = 'tie';
-    winnerReason = `Preliminary subset (${cEvaluated}/${datasetRequiredCases} scenarios evaluated). No comparison winner is certified until the full benchmark completes.`;
-  } else if (criticalRegressedCount > 0 && criticalImprovedCount === 0) {
-    winner = 'baseline';
-    winnerReason = `Baseline retained dominance: Candidate introduced ${criticalRegressedCount} critical safety/policy regression(s).`;
-  } else if (criticalImprovedCount > 0 && criticalRegressedCount === 0) {
-    winner = 'candidate';
-    winnerReason = `Candidate demonstrated superior safety: Eliminated ${criticalImprovedCount} critical safety/policy regression(s) present in baseline.`;
-  } else if (cQualityFailures > bQualityFailures && (cPassRate ?? 0) < (bPassRate ?? 0)) {
-    // Correctness Regression: Candidate failed test cases that Baseline passed
-    winner = 'baseline';
-    const failDiff = cQualityFailures - bQualityFailures;
-    winnerReason = `Baseline demonstrated higher correctness and reliability (${bPassRate?.toFixed(1)}% vs ${cPassRate?.toFixed(1)}% pass rate, ${failDiff} fewer failure(s)).`;
-  } else if (bQualityFailures > cQualityFailures && (bPassRate ?? 0) < (cPassRate ?? 0)) {
-    // Correctness Improvement: Candidate passed test cases that Baseline failed
-    winner = 'candidate';
-    const failDiff = bQualityFailures - cQualityFailures;
-    winnerReason = `Candidate demonstrated higher correctness and reliability (${cPassRate?.toFixed(1)}% vs ${bPassRate?.toFixed(1)}% pass rate, +${failDiff} additional passing case(s)).`;
-  } else {
-    // When correctness / failure counts are in parity, evaluate quality score
-    const qDelta = (cQualityScore !== null && bQualityScore !== null) ? (cQualityScore - bQualityScore) : 0;
-    if (qDelta > 0.5) {
-      winner = 'candidate';
-      winnerReason = `Candidate outperformed baseline by +${qDelta.toFixed(1)} quality points (higher evaluated quality & instruction adherence).`;
-    } else if (qDelta < -0.5) {
-      winner = 'baseline';
-      winnerReason = `Baseline demonstrated higher overall quality (+${Math.abs(qDelta).toFixed(1)} quality score lead over candidate).`;
+  if (engineVersion === 'v3') {
+    if (isSameModel) {
+      winner = 'tie';
+      const deltaStr =
+        bQualityScore !== null && cQualityScore !== null
+          ? `${cQualityScore - bQualityScore >= 0 ? '+' : ''}${(cQualityScore - bQualityScore).toFixed(1)} pts`
+          : '0.0 pts';
+      winnerReason = `Same-model comparison: Statistical Parity (identical model configuration ${candidateVersion.modelIdentifier} evaluated across ${cEvaluated} scenarios). Observed quality delta (${deltaStr}) reflects stochastic sampling temperature variance.`;
     } else {
-      // Quality score in parity (within 0.5 pts): evaluate operational latency/cost efficiency
-      const latDelta = (bAvgLatency && cAvgLatency && bAvgLatency > 0) ? ((cAvgLatency - bAvgLatency) / bAvgLatency) : 0;
-      if (latDelta < -0.15) {
+      winner = v3Scoring.winner;
+      winnerReason = v3Scoring.winnerReason;
+    }
+  } else {
+    // V2 Legacy Priority Cascade
+    if (isSameModel) {
+      winner = 'tie';
+      const deltaStr =
+        bQualityScore !== null && cQualityScore !== null
+          ? `${cQualityScore - bQualityScore >= 0 ? '+' : ''}${(cQualityScore - bQualityScore).toFixed(1)} pts`
+          : '0.0 pts';
+      winnerReason = `Same-model comparison: Statistical Parity (identical model configuration ${candidateVersion.modelIdentifier} evaluated across ${cEvaluated} scenarios). Observed quality delta (${deltaStr}) reflects stochastic sampling temperature variance.`;
+    } else if (bEvaluated === 0 || cEvaluated === 0) {
+      winner = 'tie';
+      winnerReason = 'Inconclusive comparison: One or both configurations produced zero evaluated responses due to provider failure or rate-limiting.';
+    } else if (hasUnequalSampleSizes) {
+      winner = 'tie';
+      winnerReason = `Inconclusive comparison: Unequal sample sizes (Baseline evaluated ${bEvaluated} scenarios, Candidate evaluated ${cEvaluated} scenarios due to upstream provider rate limits or errors). Definite winner cannot be certified on asymmetric evaluation sets.`;
+    } else if (isInsufficientCoverage) {
+      winner = 'tie';
+      winnerReason = `Inconclusive comparison: Evaluation coverage is below required threshold (${minCoverage}%). Baseline: ${bCoverage.toFixed(1)}% (${bEvaluated}/${totalCases} evaluated, ${bRateLimitCount} rate-limited), Candidate: ${cCoverage.toFixed(1)}% (${cEvaluated}/${totalCases} evaluated, ${cRateLimitCount} rate-limited).`;
+    } else if (isPreliminary) {
+      winner = 'tie';
+      winnerReason = `Preliminary subset (${cEvaluated}/${datasetRequiredCases} scenarios evaluated). No comparison winner is certified until the full benchmark completes.`;
+    } else if (criticalRegressedCount > 0 && criticalImprovedCount === 0) {
+      winner = 'baseline';
+      winnerReason = `Baseline retained dominance: Candidate introduced ${criticalRegressedCount} critical safety/policy regression(s).`;
+    } else if (criticalImprovedCount > 0 && criticalRegressedCount === 0) {
+      winner = 'candidate';
+      winnerReason = `Candidate demonstrated superior safety: Eliminated ${criticalImprovedCount} critical safety/policy regression(s) present in baseline.`;
+    } else if (cQualityFailures > bQualityFailures && (cPassRate ?? 0) < (bPassRate ?? 0)) {
+      winner = 'baseline';
+      const failDiff = cQualityFailures - bQualityFailures;
+      winnerReason = `Baseline demonstrated higher correctness and reliability (${bPassRate?.toFixed(1)}% vs ${cPassRate?.toFixed(1)}% pass rate, ${failDiff} fewer failure(s)).`;
+    } else if (bQualityFailures > cQualityFailures && (bPassRate ?? 0) < (cPassRate ?? 0)) {
+      winner = 'candidate';
+      const failDiff = bQualityFailures - cQualityFailures;
+      winnerReason = `Candidate demonstrated higher correctness and reliability (${cPassRate?.toFixed(1)}% vs ${bPassRate?.toFixed(1)}% pass rate, +${failDiff} additional passing case(s)).`;
+    } else {
+      const qDelta = (cQualityScore !== null && bQualityScore !== null) ? (cQualityScore - bQualityScore) : 0;
+      if (qDelta > 0.5) {
         winner = 'candidate';
-        winnerReason = `Candidate achieved quality parity with baseline with significantly reduced latency (${Math.round(Math.abs(latDelta) * 100)}% faster).`;
-      } else if (latDelta > 0.15) {
+        winnerReason = `Candidate outperformed baseline by +${qDelta.toFixed(1)} quality points (higher evaluated quality & instruction adherence).`;
+      } else if (qDelta < -0.5) {
         winner = 'baseline';
-        winnerReason = `Baseline achieved quality parity with candidate with significantly faster response times (${Math.round(latDelta * 100)}% faster).`;
+        winnerReason = `Baseline demonstrated higher overall quality (+${Math.abs(qDelta).toFixed(1)} quality score lead over candidate).`;
       } else {
-        winner = 'tie';
-        winnerReason = 'Candidate and baseline performed within statistical parity across accuracy, quality, and latency.';
+        const latDelta = (bAvgLatency && cAvgLatency && bAvgLatency > 0) ? ((cAvgLatency - bAvgLatency) / bAvgLatency) : 0;
+        if (latDelta < -0.15) {
+          winner = 'candidate';
+          winnerReason = `Candidate achieved quality parity with baseline with significantly reduced latency (${Math.round(Math.abs(latDelta) * 100)}% faster).`;
+        } else if (latDelta > 0.15) {
+          winner = 'baseline';
+          winnerReason = `Baseline achieved quality parity with candidate with significantly faster response times (${Math.round(latDelta * 100)}% faster).`;
+        } else {
+          winner = 'tie';
+          winnerReason = 'Candidate and baseline performed within statistical parity across accuracy, quality, and latency.';
+        }
       }
     }
   }
@@ -774,18 +853,20 @@ export function generateComparisonReport(
     bQualityScore !== null && cQualityScore !== null
       ? Number((cQualityScore - bQualityScore).toFixed(1))
       : null;
-  if (releaseOutcome.decision === 'INSUFFICIENT_EVIDENCE') {
-    winner = 'tie';
-    if (!hasUnequalSampleSizes && !isInsufficientCoverage && !isPreliminary) {
-      winnerReason = `Inconclusive comparison: Evidence is insufficient to certify a winner (${releaseOutcome.reason || 'Benchmark incomplete or low coverage'}).`;
-    }
-  } else if (winner === 'candidate' && failedGates.length > 0 && tempQualityDelta !== null && tempQualityDelta > 0) {
-    const failedGateNames = failedGates.map((g) => g.gate).join(', ');
-    if (failedGates.some((g) => g.gate === 'Evaluation Coverage' || g.gate === 'Benchmark Completion')) {
+  if (engineVersion === 'v2') {
+    if (releaseOutcome.decision === 'INSUFFICIENT_EVIDENCE') {
       winner = 'tie';
-      winnerReason = `Inconclusive comparison: Candidate demonstrated quality lead (+${tempQualityDelta.toFixed(1)} pts vs baseline), but evaluation failed coverage validation (${failedGateNames}).`;
-    } else {
-      winnerReason = `Candidate achieved relative quality improvement (+${tempQualityDelta.toFixed(1)} pts vs baseline), but failed production release gates (${failedGateNames}).`;
+      if (!hasUnequalSampleSizes && !isInsufficientCoverage && !isPreliminary) {
+        winnerReason = `Inconclusive comparison: Evidence is insufficient to certify a winner (${releaseOutcome.reason || 'Benchmark incomplete or low coverage'}).`;
+      }
+    } else if (winner === 'candidate' && failedGates.length > 0 && tempQualityDelta !== null && tempQualityDelta > 0) {
+      const failedGateNames = failedGates.map((g) => g.gate).join(', ');
+      if (failedGates.some((g) => g.gate === 'Evaluation Coverage' || g.gate === 'Benchmark Completion')) {
+        winner = 'tie';
+        winnerReason = `Inconclusive comparison: Candidate demonstrated quality lead (+${tempQualityDelta.toFixed(1)} pts vs baseline), but evaluation failed coverage validation (${failedGateNames}).`;
+      } else {
+        winnerReason = `Candidate achieved relative quality improvement (+${tempQualityDelta.toFixed(1)} pts vs baseline), but failed production release gates (${failedGateNames}).`;
+      }
     }
   }
 
@@ -933,6 +1014,8 @@ export function generateComparisonReport(
     },
     winner,
     winnerReason,
+    engineVersion,
+    v3Scoring,
     metrics,
     qualityDelta,
     tokenDelta,

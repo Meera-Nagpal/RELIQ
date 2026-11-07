@@ -61,7 +61,8 @@ async function runTests() {
   }
 
   try {
-    const { generateComparisonReport } = await server.ssrLoadModule('/src/evaluation/comparator.ts');
+    const { generateComparisonReport: rawGenerateReport } = await server.ssrLoadModule('/src/evaluation/comparator.ts');
+    const generateComparisonReport = (opts) => rawGenerateReport({ engineVersion: 'v2', ...opts });
     const { providerScheduler } = await server.ssrLoadModule('/src/server/providerScheduler.ts');
     const { parseDurationHeaderMs } = await server.ssrLoadModule('/src/server/serverUtils.ts');
 
