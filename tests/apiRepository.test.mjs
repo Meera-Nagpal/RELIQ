@@ -62,8 +62,8 @@ export async function runApiRepositoryTests(testRunner, existingVite) {
     });
   });
 
-  const TEST_PORT = 3096;
-  await new Promise((resolve) => server.listen(TEST_PORT, '127.0.0.1', resolve));
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const TEST_PORT = server.address().port;
 
   const client = new ApiClient(`http://127.0.0.1:${TEST_PORT}`);
   const repo = new ApiRepository(client);
