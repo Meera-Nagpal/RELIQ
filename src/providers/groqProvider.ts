@@ -119,13 +119,14 @@ export class GroqProvider implements ModelProvider {
       messages.push({ role: 'user', content: request.input });
 
       const isGptOss = model === 'openai/gpt-oss-20b' || model === 'openai/gpt-oss-120b';
+      const isQwen = model.toLowerCase().includes('qwen');
       const reasoningEffort = isGptOss ? (request.reasoningEffort || 'medium') : undefined;
 
       const groqPayload: any = {
         model,
         messages,
         temperature: request.temperature ?? 0.0,
-        max_tokens: request.maxTokens ?? 2048,
+        max_tokens: request.maxTokens ?? (isQwen ? 256 : (isGptOss ? 512 : 1024)),
         metadata: {
           testCaseId: request.testCaseId,
           promptVersion: request.promptVersion,
