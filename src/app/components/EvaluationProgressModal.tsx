@@ -85,13 +85,14 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
         position: 'fixed',
         inset: 0,
         zIndex: 9998,
-        background: 'rgba(0, 0, 0, 0.82)',
+        background: 'rgba(0, 0, 0, 0.85)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1.5rem',
+        padding: '1.25rem 1rem',
+        overflowY: 'auto',
       }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -99,21 +100,24 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
         className="evaluation-modal-card"
         style={{
           position: 'relative',
-          overflow: 'hidden',
+          margin: 'auto',
+          maxHeight: 'min(92vh, 700px)',
+          overflowY: 'auto',
+          overflowX: 'hidden',
           isolation: 'isolate',
-          background: '#151515',
-          border: isFailed ? '1px solid rgba(192, 92, 84, 0.4)' : '1px solid #292929',
+          background: '#14161A',
+          border: isFailed ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid #292929',
           borderRadius: '16px',
           width: '100%',
           maxWidth: '560px',
           boxShadow: isFailed
-            ? '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 20px rgba(192, 92, 84, 0.15)'
-            : '0 20px 60px rgba(0, 0, 0, 0.8)',
-          padding: '2rem',
+            ? '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 20px rgba(239, 68, 68, 0.15)'
+            : '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+          padding: '1.5rem 1.6rem',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '1.4rem',
+          gap: '1.1rem',
           boxSizing: 'border-box',
           animation: 'reliqModalIn 0.25s cubic-bezier(0.22, 0.61, 0.36, 1)',
         }}
@@ -137,21 +141,35 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               transform: translateX(300%);
             }
           }
+          .evaluation-modal-card::-webkit-scrollbar {
+            width: 6px;
+          }
+          .evaluation-modal-card::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 4px;
+          }
+          .evaluation-modal-card::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 4px;
+          }
+          .evaluation-modal-card::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.32);
+          }
         `}</style>
 
         {/* ── Circular Frame with Concentric Expanding Ripple Rings ── */}
         <div
           className="evaluation-modal-ripple-container"
           style={{
-            margin: '0.2rem auto 0.6rem auto',
+            margin: '0.1rem auto 0.4rem auto',
             position: 'relative',
             overflow: 'hidden',
             isolation: 'isolate',
             borderRadius: '50%',
-            width: '136px',
-            height: '136px',
-            minWidth: '136px',
-            minHeight: '136px',
+            width: '120px',
+            height: '120px',
+            minWidth: '120px',
+            minHeight: '120px',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -159,27 +177,31 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
               ? 'rgba(192, 92, 84, 0.08)'
               : 'rgba(200, 109, 81, 0.06)',
             border: isFailed ? '1.5px solid rgba(192, 92, 84, 0.35)' : '1.5px solid rgba(200, 109, 81, 0.28)',
+            flexShrink: 0,
           }}
         >
           {isFailed ? (
             <div
               style={{
-                width: '74px',
-                height: '74px',
+                width: '68px',
+                height: '68px',
                 borderRadius: '50%',
-                background: 'rgba(192, 92, 84, 0.12)',
-                border: '2px solid #C05C54',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '2px solid #EF4444',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '2.2rem',
-                color: '#C05C54',
+                color: '#EF4444',
               }}
             >
-              ⚠
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
             </div>
           ) : (
-            <RippleLoader size={136} mode="continuous" />
+            <RippleLoader size={120} mode="continuous" />
           )}
         </div>
 
@@ -478,37 +500,76 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
           </div>
         )}
 
-        {/* ── Footer Actions ── */}
-        <div style={{ display: 'flex', gap: '0.8rem', width: '100%', justifyContent: 'flex-end', marginTop: '0.4rem' }}>
+        {/* ── Footer Actions (Sticky to ensure full visibility even when zoomed in or scrolling) ── */}
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            background: 'linear-gradient(to top, #14161A 85%, rgba(20, 22, 26, 0))',
+            paddingTop: '0.8rem',
+            paddingBottom: '0.2rem',
+            display: 'flex',
+            gap: '0.8rem',
+            width: '100%',
+            justifyContent: 'flex-end',
+            marginTop: 'auto',
+            zIndex: 10,
+          }}
+        >
           {isFailed && onRetry && (
             <button
               onClick={onRetry}
               style={{
-                background: '#ADC0D6',
-                color: '#0A1A35',
-                border: '1px solid #ADC0D6',
+                background: 'rgba(59, 130, 246, 0.15)',
+                color: '#93C5FD',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
                 padding: '0.55rem 1.2rem',
-                borderRadius: '2px',
+                borderRadius: '6px',
                 fontSize: '0.8rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.35)';
               }}
             >
-              ↺ Retry Evaluation
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Retry Evaluation
             </button>
           )}
 
           <button
             onClick={onCancel}
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: '#CCCCCC',
-              padding: '0.55rem 1.2rem',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.14)',
+              color: '#ECEFF2',
+              padding: '0.55rem 1.25rem',
               borderRadius: '6px',
               fontSize: '0.8rem',
               fontWeight: 600,
               cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.14)';
             }}
           >
             {isFailed ? 'Close' : 'Cancel Evaluation'}
