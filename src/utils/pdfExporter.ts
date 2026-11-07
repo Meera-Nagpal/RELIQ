@@ -339,8 +339,10 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.drawRect(left, cardY, width, cardHeight, true, true);
 
   // Left accent bar
-  if (isImprovement && !hasGateFailures) {
+  if (report.winner === 'candidate' && !hasGateFailures) {
     doc.setFillColor(0.18, 0.8, 0.44); // Green
+  } else if (report.winner === 'baseline') {
+    doc.setFillColor(0.24, 0.55, 0.89); // Blue / Baseline Win
   } else if (hasGateFailures || isRegression) {
     doc.setFillColor(0.94, 0.27, 0.27); // Red
   } else {
@@ -352,11 +354,23 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.setFillColor(0.4, 0.45, 0.52);
   doc.drawText('RELATIVE COMPARISON RESULT', left + 16, cardY + 58, 7.5, 'Helvetica-Bold');
 
-  let winnerLabel = 'STATISTICAL PARITY';
-  if (report.winner === 'candidate' || isImprovement) {
-    winnerLabel = `CANDIDATE IMPROVEMENT (+${report.qualityDelta?.toFixed(1) ?? '0.0'} Quality Pts)`;
-  } else if (report.winner === 'baseline' || isRegression) {
-    winnerLabel = `BASELINE SUPERIOR / REGRESSION (${report.qualityDelta?.toFixed(1) ?? '0.0'} Pts)`;
+  const isSameModel =
+    report.baseline.model === report.candidate.model &&
+    report.baseline.provider === report.candidate.provider &&
+    (report.baseline.promptVersion === report.candidate.promptVersion ||
+      (!report.baseline.promptVersion && !report.candidate.promptVersion));
+
+  let winnerLabel = 'STATISTICAL PARITY (TIE)';
+  if (isSameModel) {
+    winnerLabel = 'SAME-MODEL COMPARISON: STATISTICAL PARITY (TIE)';
+  } else if (report.winner === 'candidate') {
+    winnerLabel = `CANDIDATE WIN (+${report.qualityDelta?.toFixed(1) ?? '0.0'} Quality Pts)`;
+  } else if (report.winner === 'baseline') {
+    winnerLabel = `BASELINE WIN (${report.qualityDelta?.toFixed(1) ?? '0.0'} Quality Pts)`;
+  } else if (hasGateFailures || report.hasUnequalSampleSizes || report.regressionStatus === 'INSUFFICIENT_EVIDENCE' || report.recommendation === 'INSUFFICIENT EVIDENCE') {
+    winnerLabel = 'INCONCLUSIVE COMPARISON (TIE)';
+  } else {
+    winnerLabel = 'STATISTICAL PARITY (TIE)';
   }
   doc.setFillColor(0.08, 0.1, 0.15);
   doc.drawText(winnerLabel, left + 16, cardY + 44, 11.5, 'Helvetica-Bold');
@@ -372,11 +386,11 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.drawText(`Baseline Quality: ${baseQual}  ->  Candidate Quality: ${candQual}`, left + 16, cardY + 31, 8, 'Helvetica');
 
   // 1-2 line concise metrics-grounded interpretation
-  const commentText = report.winnerReason || (isImprovement
+  const commentText = report.winnerReason || (report.winner === 'candidate'
     ? `Candidate achieved higher quality than baseline across the ${report.totalCases}-case evaluation suite.`
-    : isRegression
-    ? `Candidate exhibited quality regression relative to the production baseline.`
-    : `Both models produced equivalent results under the configured comparison metrics.`);
+    : report.winner === 'baseline'
+    ? `Baseline maintained superior performance over candidate across the evaluation suite.`
+    : `Inconclusive comparison: Definite winner cannot be certified.`);
   doc.setFillColor(0.38, 0.42, 0.48);
   doc.drawText(commentText.slice(0, 110), left + 16, cardY + 18, 7.5, 'Helvetica');
 
@@ -649,7 +663,14 @@ export function generateReportPdf(report: ComparisonReport): Uint8Array {
   doc.setFillColor(0.12, 0.65, 0.3);
   doc.drawText(totCostStr, left + (costColW * 2) + 12, costBoxY + 8, 10, 'Helvetica-Bold');
 
-  doc.y = costBoxY - 14;
+  if (report.judgeApiCalls !== undefined || report.judgeSkippedCases !== undefined) {
+    const optSummary = `Intelligent Judge: ${report.judgeApiCalls ?? 0} API calls, ${report.judgeCacheHits ?? 0} cache hits, ${report.judgeSkippedCases ?? 0} objective cases bypassed (deterministic ground truth).`;
+    doc.setFillColor(0.4, 0.45, 0.5);
+    doc.drawText(optSummary, left + 12, costBoxY - 8, 7, 'Helvetica');
+    doc.y = costBoxY - 22;
+  } else {
+    doc.y = costBoxY - 14;
+  }
 
   // ─────────────────────────────────────────────────────────────
   // 7. INDIVIDUAL SCENARIO EVALUATION REPORTS (DETERMINISTIC SUITE)
