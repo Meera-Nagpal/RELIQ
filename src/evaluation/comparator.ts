@@ -290,15 +290,20 @@ export function generateComparisonReport(
         (c.candidateOutput && c.candidateOutput.trim().length > 0) ||
         (c.baselineOutput && c.baselineOutput.trim().length > 0) ||
         c.executionStatus === 'PASS' ||
-        c.executionStatus === 'QUALITY_FAILURE'
+        c.executionStatus === 'QUALITY_FAILURE' ||
+        c.executionStatus === 'PROVIDER_RATE_LIMIT' ||
+        c.executionStatus === 'AUTHENTICATION_ERROR' ||
+        c.executionStatus === 'TIMEOUT' ||
+        c.candidateExecutionStatus === 'PROVIDER_RATE_LIMIT' ||
+        c.baselineExecutionStatus === 'PROVIDER_RATE_LIMIT'
       )
     );
   });
 
-  const activeCaseResults = evaluatedCaseResults.length > 0 ? evaluatedCaseResults : (rawCaseResults || []);
-  const totalCases = activeCaseResults.length;
+  const activeCaseResults = (rawCaseResults && rawCaseResults.length > 0) ? rawCaseResults : evaluatedCaseResults;
+  const totalCases = options.runMetrics?.totalCases ?? (activeCaseResults.length > 0 ? activeCaseResults.length : 1);
 
-  if (totalCases === 0) {
+  if (activeCaseResults.length === 0) {
     return createEmptyReport(datasetId, datasetName, baselineVersion, candidateVersion);
   }
 
@@ -769,9 +774,19 @@ export function generateComparisonReport(
     bQualityScore !== null && cQualityScore !== null
       ? Number((cQualityScore - bQualityScore).toFixed(1))
       : null;
-  if (winner === 'candidate' && failedGates.length > 0 && tempQualityDelta !== null && tempQualityDelta > 0) {
+  if (releaseOutcome.decision === 'INSUFFICIENT_EVIDENCE') {
+    winner = 'tie';
+    if (!hasUnequalSampleSizes && !isInsufficientCoverage && !isPreliminary) {
+      winnerReason = `Inconclusive comparison: Evidence is insufficient to certify a winner (${releaseOutcome.reason || 'Benchmark incomplete or low coverage'}).`;
+    }
+  } else if (winner === 'candidate' && failedGates.length > 0 && tempQualityDelta !== null && tempQualityDelta > 0) {
     const failedGateNames = failedGates.map((g) => g.gate).join(', ');
-    winnerReason = `Candidate achieved relative quality improvement (+${tempQualityDelta.toFixed(1)} pts vs baseline), but failed production release gates (${failedGateNames}).`;
+    if (failedGates.some((g) => g.gate === 'Evaluation Coverage' || g.gate === 'Benchmark Completion')) {
+      winner = 'tie';
+      winnerReason = `Inconclusive comparison: Candidate demonstrated quality lead (+${tempQualityDelta.toFixed(1)} pts vs baseline), but evaluation failed coverage validation (${failedGateNames}).`;
+    } else {
+      winnerReason = `Candidate achieved relative quality improvement (+${tempQualityDelta.toFixed(1)} pts vs baseline), but failed production release gates (${failedGateNames}).`;
+    }
   }
 
   // Map recommendation directly from canonical release decision outcome
@@ -842,7 +857,7 @@ export function generateComparisonReport(
     evidence.push(`Evidence Strength: STRONG — ${releaseOutcome.evidenceStrengthReason}`);
   }
 
-  const penalty = isInsufficientCoverage ? 0 : cErrorRate * 0.8;
+  const penalty = isInsufficientCoverage ? 0 : Math.max(bErrorRate, cErrorRate) * 0.8;
   const confidenceScore = Math.max(10, Math.min(99, Math.round(sampleConfidence - penalty)));
 
   const qualityDelta =
@@ -957,6 +972,12 @@ export function generateComparisonReport(
     totalInfrastructureCostUsd: options.runMetrics?.totalInfrastructureCost ?? null,
     judgeModel: options.runMetrics?.judgeModel || caseResults.find((r) => r.llmJudgeEvaluation)?.llmJudgeEvaluation?.judgeModel,
     judgeEvaluatedCases: options.runMetrics?.judgeEvaluatedCases ?? caseResults.filter((r) => r.llmJudgeEvaluation && !r.llmJudgeEvaluation.error).length,
+    judgeApiCalls: options.runMetrics?.judgeApiCalls,
+    judgeCacheHits: options.runMetrics?.judgeCacheHits,
+    judgeSkippedCases: options.runMetrics?.judgeSkippedCases,
+    judgeInputTokens: options.runMetrics?.judgeInputTokens,
+    judgeOutputTokens: options.runMetrics?.judgeOutputTokens,
+    judgeTotalTokens: options.runMetrics?.judgeTotalTokens,
     safetyBreakdown: releaseOutcome.safetyBreakdown,
     caseResults,
   };
