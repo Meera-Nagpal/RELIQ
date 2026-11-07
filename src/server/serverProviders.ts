@@ -26,7 +26,7 @@ import {
 } from '../providers/types';
 import { calculateTokenCost } from '../providers/pricing';
 import { defaultModelProvider } from '../providers/demoProvider';
-import { fetchWithRetry, getApiKey } from './serverUtils';
+import { fetchWithRetry, getApiKey, parseDurationHeaderMs } from './serverUtils';
 import { providerScheduler } from './providerScheduler';
 import { ServerCerebrasProvider } from './providers/cerebrasProvider';
 
@@ -414,11 +414,12 @@ export class ServerGroqProvider implements ModelProvider {
       const isGptOss = model === 'openai/gpt-oss-20b' || model === 'openai/gpt-oss-120b';
       const reasoningEffort = isGptOss ? (request.reasoningEffort || 'medium') : undefined;
 
+      const isQwen = model.toLowerCase().includes('qwen');
       const groqPayload: any = {
         model,
         messages,
         temperature: request.temperature ?? 0.0,
-        max_tokens: request.maxTokens ?? 2048,
+        max_tokens: request.maxTokens ?? (isQwen ? 256 : (isGptOss ? 512 : 1024)),
       };
 
       if (reasoningEffort) {
@@ -543,9 +544,21 @@ export class ServerGroqProvider implements ModelProvider {
         const isQuota = response.status === 429;
         const isAuth = response.status === 401 || response.status === 403;
 
+        const role = request.role || (request.metadata as any)?.role || 'unspecified';
+        const caseId = request.testCaseId || 'unspecified';
+
+        let effectiveCooldownSec = 2;
         if (isQuota) {
-          const retrySec = rateLimit.retryAfter ? parseInt(rateLimit.retryAfter, 10) : 2;
-          providerScheduler.recordRateLimit('groq', retrySec || 2, errMsg, { modelId: model });
+          const parsedRetryAfter = rateLimit.retryAfter ? parseInt(rateLimit.retryAfter, 10) : 0;
+          const parsedResetTokens = rateLimit.resetTokens ? parseDurationHeaderMs(rateLimit.resetTokens) : 0;
+          effectiveCooldownSec = Math.max(parsedRetryAfter, Math.ceil(parsedResetTokens / 1000), 2);
+
+          // Structured audit log identifying exact model, role, test case, status, and rate limit headers
+          console.warn(
+            `[GROQ 429 AUDIT] Role: ${role} | Model: ${model} | Case: ${caseId} | Status: 429 | Error: ${errMsg} | Retry-After: ${rateLimit.retryAfter || 'N/A'} | Reset-Tokens: ${rateLimit.resetTokens || 'N/A'} | Reset-Requests: ${rateLimit.resetRequests || 'N/A'} | Cooldown: ${effectiveCooldownSec}s`
+          );
+
+          providerScheduler.recordRateLimit('groq', effectiveCooldownSec, errMsg, { modelId: model });
         }
 
         return {
@@ -565,6 +578,15 @@ export class ServerGroqProvider implements ModelProvider {
               status: response.status,
               code: isQuota ? 'RATE_LIMIT_EXCEEDED' : isAuth ? 'AUTH_FAILED' : 'PROVIDER_ERROR',
               message: errMsg,
+              failureCategory: isQuota ? 'INFRASTRUCTURE_FAILURE' : undefined,
+              details: {
+                role,
+                testCaseId: caseId,
+                retryAfter: rateLimit.retryAfter,
+                resetTokens: rateLimit.resetTokens,
+                resetRequests: rateLimit.resetRequests,
+                retrySec: effectiveCooldownSec,
+              },
             },
           },
           isDemoMode: false,
@@ -681,9 +703,15 @@ export class ServerGroqProvider implements ModelProvider {
           error: {
             status: isTimeout ? 504 : 500,
             code: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+            failureCategory: 'INFRASTRUCTURE_FAILURE',
             message: isTimeout
               ? 'Request timed out waiting for Groq API'
               : `Network connection error: ${err.message}`,
+            details: {
+              role: request.role || (request.metadata as any)?.role || 'unspecified',
+              testCaseId: request.testCaseId || 'unspecified',
+              isTimeout,
+            },
           },
         },
         isDemoMode: false,
