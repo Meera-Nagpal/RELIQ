@@ -376,7 +376,7 @@ export function calculateV3ScoreComparison(params: {
     candidateCoveragePercent: params.candidateData.coveragePercent,
     minCoverageRequiredPercent: params.minCoverageRequiredPercent ?? 80.0,
     minimumPairedCasesRequired: params.minimumPairedCasesRequired ?? 10,
-    equivalenceMarginPoints: 1.0,
+    equivalenceMarginPoints: 0.3,
     hasUnequalSampleSizes:
       params.hasUnequalSampleSizes ||
       params.baselineData.evaluatedCasesCount !== params.candidateData.evaluatedCasesCount,

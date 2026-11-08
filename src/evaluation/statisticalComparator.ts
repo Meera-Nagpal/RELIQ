@@ -242,7 +242,7 @@ export function determineV3Winner(params: DetermineV3WinnerParams): {
 
   const minCoverage = params.minCoverageRequiredPercent ?? 80.0;
   const minCases = params.minimumPairedCasesRequired ?? 10;
-  const equivMargin = params.equivalenceMarginPoints ?? 1.0;
+  const equivMargin = params.equivalenceMarginPoints ?? 0.3;
 
   const stats = evaluateStatisticalSignificance(pairedDeltas);
   const deltaOverall = Number((overallScoreCand - overallScoreBase).toFixed(2));
@@ -300,26 +300,27 @@ export function determineV3Winner(params: DetermineV3WinnerParams): {
     };
   }
 
-  // 3. Statistical Superiority Evaluation
-  const candidateSignificantlyBetter =
-    deltaOverall > equivMargin && (ciLower > 0 || (stats.pValue < 0.05 && deltaOverall > 2.0));
-  const baselineSignificantlyBetter =
-    deltaOverall < -equivMargin && (ciUpper < 0 || (stats.pValue < 0.05 && deltaOverall < -2.0));
+  // 3. Clear Overall Performance Winner Determination
+  const isCandidateWin = deltaOverall > equivMargin;
+  const isBaselineWin = deltaOverall < -equivMargin;
+  const ciText = `95% CI: [${ciLower >= 0 ? '+' : ''}${ciLower.toFixed(1)}, ${ciUpper >= 0 ? '+' : ''}${ciUpper.toFixed(1)}]`;
 
-  if (candidateSignificantlyBetter) {
-    const ciText = `95% CI: [${ciLower >= 0 ? '+' : ''}${ciLower.toFixed(1)}, ${ciUpper >= 0 ? '+' : ''}${ciUpper.toFixed(1)}]`;
+  if (isCandidateWin) {
+    const isCertSig = ciLower > 0 || stats.pValue < 0.05;
+    const certLabel = isCertSig ? 'Statistically certified victory' : 'Superior overall capability';
     return {
       winner: 'candidate',
-      winnerReason: `Candidate outperformed baseline overall (+${deltaOverall.toFixed(1)} pts on 100-pt framework, ${ciText}, p=${stats.pValue.toFixed(3)}).`,
+      winnerReason: `Candidate outperformed baseline overall (${certLabel}: +${deltaOverall.toFixed(1)} pts on 100-pt framework, ${ciText}, p=${stats.pValue.toFixed(3)}).`,
       stats,
     };
   }
 
-  if (baselineSignificantlyBetter) {
-    const ciText = `95% CI: [${ciLower >= 0 ? '+' : ''}${ciLower.toFixed(1)}, ${ciUpper >= 0 ? '+' : ''}${ciUpper.toFixed(1)}]`;
+  if (isBaselineWin) {
+    const isCertSig = ciUpper < 0 || stats.pValue < 0.05;
+    const certLabel = isCertSig ? 'Statistically certified dominance' : 'Higher overall capability';
     return {
       winner: 'baseline',
-      winnerReason: `Baseline demonstrated higher overall capability (+${Math.abs(deltaOverall).toFixed(1)} pts lead on 100-pt framework, ${ciText}, p=${stats.pValue.toFixed(3)}).`,
+      winnerReason: `Baseline outperformed candidate overall (${certLabel}: +${Math.abs(deltaOverall).toFixed(1)} pts lead on 100-pt framework, ${ciText}, p=${stats.pValue.toFixed(3)}).`,
       stats,
     };
   }
@@ -327,7 +328,7 @@ export function determineV3Winner(params: DetermineV3WinnerParams): {
   // 4. Statistical Parity / Equivalence
   return {
     winner: 'tie',
-    winnerReason: `Statistical parity: Overall score difference is within the margin of error (Δ=${deltaOverall >= 0 ? '+' : ''}${deltaOverall.toFixed(1)} pts, 95% CI: [${ciLower >= 0 ? '+' : ''}${ciLower.toFixed(1)}, ${ciUpper >= 0 ? '+' : ''}${ciUpper.toFixed(1)}], p=${stats.pValue.toFixed(3)}).`,
+    winnerReason: `Statistical parity: Overall score difference is within equivalence margin (Δ=${deltaOverall >= 0 ? '+' : ''}${deltaOverall.toFixed(1)} pts, ${ciText}, p=${stats.pValue.toFixed(3)}).`,
     stats,
   };
 }

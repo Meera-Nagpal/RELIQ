@@ -707,6 +707,259 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
           </div>
         </div>
 
+        {/* ── 🏆 DEDICATED COMPARISON WINNER HERO BANNER ── */}
+        <div
+          style={{
+            background:
+              report.winner === 'candidate'
+                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(18, 20, 25, 0.96) 100%)'
+                : report.winner === 'baseline'
+                ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.14) 0%, rgba(18, 20, 25, 0.96) 100%)'
+                : report.winner === 'inconclusive'
+                ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(18, 20, 25, 0.96) 100%)'
+                : 'linear-gradient(135deg, rgba(148, 163, 184, 0.14) 0%, rgba(18, 20, 25, 0.96) 100%)',
+            border:
+              report.winner === 'candidate'
+                ? '1px solid rgba(16, 185, 129, 0.45)'
+                : report.winner === 'baseline'
+                ? '1px solid rgba(59, 130, 246, 0.45)'
+                : report.winner === 'inconclusive'
+                ? '1px solid rgba(245, 158, 11, 0.45)'
+                : '1px solid rgba(148, 163, 184, 0.35)',
+            borderLeft:
+              report.winner === 'candidate'
+                ? '4px solid #10B981'
+                : report.winner === 'baseline'
+                ? '4px solid #3B82F6'
+                : report.winner === 'inconclusive'
+                ? '4px solid #F59E0B'
+                : '4px solid #94A3B8',
+            borderRadius: '10px',
+            padding: '1.25rem 1.6rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.85rem',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  background:
+                    report.winner === 'candidate'
+                      ? 'rgba(16, 185, 129, 0.22)'
+                      : report.winner === 'baseline'
+                      ? 'rgba(59, 130, 246, 0.22)'
+                      : report.winner === 'inconclusive'
+                      ? 'rgba(245, 158, 11, 0.22)'
+                      : 'rgba(148, 163, 184, 0.22)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.4rem',
+                }}
+              >
+                {report.winner === 'candidate' ? '🏆' : report.winner === 'baseline' ? '🛡️' : report.winner === 'inconclusive' ? '⚠️' : '⚖️'}
+              </div>
+              <div>
+                <div style={{ fontSize: '0.68rem', letterSpacing: '0.14em', fontWeight: 800, textTransform: 'uppercase', color: '#94A3B8' }}>
+                  HEAD-TO-HEAD BENCHMARK OUTCOME
+                </div>
+                <div
+                  style={{
+                    fontSize: '1.35rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                    color:
+                      report.winner === 'candidate'
+                        ? '#34D399'
+                        : report.winner === 'baseline'
+                        ? '#60A5FA'
+                        : report.winner === 'inconclusive'
+                        ? '#FBBF24'
+                        : '#E2E8F0',
+                  }}
+                >
+                  {report.winner === 'candidate'
+                    ? 'WINNER: RELEASE CANDIDATE'
+                    : report.winner === 'baseline'
+                    ? 'WINNER: PRODUCTION BASELINE'
+                    : report.winner === 'inconclusive'
+                    ? 'COMPARISON INCONCLUSIVE'
+                    : isSameModel
+                    ? 'STATISTICAL PARITY (SAME MODEL)'
+                    : 'STATISTICAL PARITY (TIE)'}
+                </div>
+              </div>
+            </div>
+
+            {/* Overall Score progression badge */}
+            {report.v3Scoring && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', background: 'rgba(0,0,0,0.3)', padding: '0.5rem 0.9rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700 }}>Baseline</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#93C5FD', fontFamily: 'monospace' }}>
+                    {report.v3Scoring.baseline.compositeScore100} <span style={{ fontSize: '0.68rem', color: '#64748B' }}>pts</span>
+                  </div>
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 700, fontSize: '0.9rem' }}>vs</div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700 }}>Candidate</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#6EE7B7', fontFamily: 'monospace' }}>
+                    {report.v3Scoring.candidate.compositeScore100} <span style={{ fontSize: '0.68rem', color: '#64748B' }}>pts</span>
+                  </div>
+                </div>
+                <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 0.2rem' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700 }}>Overall Δ</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: report.v3Scoring.overallDelta >= 0 ? '#34D399' : '#F87171', fontFamily: 'monospace' }}>
+                    {report.v3Scoring.overallDelta >= 0 ? `+${report.v3Scoring.overallDelta}` : `${report.v3Scoring.overallDelta}`} <span style={{ fontSize: '0.68rem', color: '#64748B' }}>pts</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ fontSize: '0.82rem', color: '#CBD5E1', lineHeight: 1.45, background: 'rgba(0,0,0,0.2)', padding: '0.6rem 0.8rem', borderRadius: '6px' }}>
+            {normalizedWinnerReason}
+          </div>
+        </div>
+
+        {/* ── RELIQ V3 BALANCED SCORECARD (100-POINT FRAMEWORK) ── */}
+        {report.v3Scoring && (
+          <div
+            style={{
+              background: '#121419',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              borderRadius: '8px',
+              padding: '1.2rem 1.4rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            {/* Header: Title, 100-pt Scores, Delta, Confidence Interval */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.68rem', letterSpacing: '0.12em', fontWeight: 800, textTransform: 'uppercase', color: '#60A5FA' }}>
+                  RELIQ V3 BALANCED OVERALL PERFORMANCE SCORECARD (100-PT FRAMEWORK)
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.2rem' }}>
+                  Non-disqualifying multi-dimensional evaluation: 70 pts Quality & Behavior • 30 pts Operational Performance
+                </div>
+              </div>
+
+              {/* Total Score Badges */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Baseline Score</div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#60A5FA', fontFamily: 'monospace' }}>
+                    {report.v3Scoring.baseline.compositeScore100} <span style={{ fontSize: '0.72rem', color: '#64748B' }}>/ 100</span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Candidate Score</div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#34D399', fontFamily: 'monospace' }}>
+                    {report.v3Scoring.candidate.compositeScore100} <span style={{ fontSize: '0.72rem', color: '#64748B' }}>/ 100</span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Overall Delta</div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: report.v3Scoring.overallDelta >= 0 ? '#34D399' : '#F87171', fontFamily: 'monospace' }}>
+                    {report.v3Scoring.overallDelta >= 0 ? `+${report.v3Scoring.overallDelta}` : report.v3Scoring.overallDelta} pts
+                  </div>
+                </div>
+
+                {report.v3Scoring.statisticalSignificance && (
+                  <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)', fontFamily: 'monospace' }}>
+                    <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Bootstrap 95% CI</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E2E8F0' }}>
+                      [{report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[0] >= 0 ? '+' : ''}{report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[0]}, {report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[1] >= 0 ? '+' : ''}{report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[1]}]
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 10-Dimension Breakdown Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              {/* Quality & Behavior Panel (70 pts) */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.9rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: '#ECEFF2' }}>Quality & Model Behavior</span>
+                  <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontFamily: 'monospace' }}>
+                    B: {report.v3Scoring.baseline.quality.totalQualityScore} / C: {report.v3Scoring.candidate.quality.totalQualityScore} (max 70)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem' }}>
+                  {[
+                    { label: 'Reasoning & Clarity', b: report.v3Scoring.baseline.quality.reasoningQuality, c: report.v3Scoring.candidate.quality.reasoningQuality, max: report.v3Scoring.weights.reasoningQuality },
+                    { label: 'Factual Correctness', b: report.v3Scoring.baseline.quality.factualCorrectness, c: report.v3Scoring.candidate.quality.factualCorrectness, max: report.v3Scoring.weights.factualCorrectness },
+                    { label: 'Instruction Adherence', b: report.v3Scoring.baseline.quality.instructionAdherence, c: report.v3Scoring.candidate.quality.instructionAdherence, max: report.v3Scoring.weights.instructionAdherence },
+                    { label: 'Relevance & Completeness', b: report.v3Scoring.baseline.quality.relevanceCompleteness, c: report.v3Scoring.candidate.quality.relevanceCompleteness, max: report.v3Scoring.weights.relevanceCompleteness },
+                    { label: 'Safety Compliance', b: report.v3Scoring.baseline.quality.safetyCompliance, c: report.v3Scoring.candidate.quality.safetyCompliance, max: report.v3Scoring.weights.safetyCompliance },
+                    { label: 'Behavioral Consistency', b: report.v3Scoring.baseline.quality.behavioralConsistency, c: report.v3Scoring.candidate.quality.behavioralConsistency, max: report.v3Scoring.weights.behavioralConsistency },
+                  ].map((dim, idx) => {
+                    const delta = Number((dim.c - dim.b).toFixed(2));
+                    return (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                        <span style={{ color: '#CBD5E1' }}>{dim.label} <span style={{ color: '#64748B', fontSize: '0.68rem' }}>({dim.max} pts)</span></span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontFamily: 'monospace' }}>
+                          <span style={{ color: '#60A5FA' }}>{dim.b}</span>
+                          <span style={{ color: '#64748B' }}>→</span>
+                          <span style={{ color: '#34D399' }}>{dim.c}</span>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: delta > 0 ? '#34D399' : delta < 0 ? '#F87171' : '#94A3B8' }}>
+                            ({delta >= 0 ? `+${delta}` : delta})
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Operational Performance Panel (30 pts) */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.9rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: '#ECEFF2' }}>Operational Performance</span>
+                  <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontFamily: 'monospace' }}>
+                    B: {report.v3Scoring.baseline.operational.totalOperationalScore} / C: {report.v3Scoring.candidate.operational.totalOperationalScore} (max 30)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem' }}>
+                  {[
+                    { label: 'Latency Performance', b: report.v3Scoring.baseline.operational.latencyScore, c: report.v3Scoring.candidate.operational.latencyScore, max: report.v3Scoring.weights.latency },
+                    { label: 'Provider Reliability', b: report.v3Scoring.baseline.operational.providerReliabilityScore, c: report.v3Scoring.candidate.operational.providerReliabilityScore, max: report.v3Scoring.weights.providerReliability },
+                    { label: 'Cost Efficiency', b: report.v3Scoring.baseline.operational.costEfficiencyScore, c: report.v3Scoring.candidate.operational.costEfficiencyScore, max: report.v3Scoring.weights.costEfficiency },
+                    { label: 'Token Efficiency', b: report.v3Scoring.baseline.operational.tokenEfficiencyScore, c: report.v3Scoring.candidate.operational.tokenEfficiencyScore, max: report.v3Scoring.weights.tokenEfficiency },
+                  ].map((dim, idx) => {
+                    const delta = Number((dim.c - dim.b).toFixed(2));
+                    return (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                        <span style={{ color: '#CBD5E1' }}>{dim.label} <span style={{ color: '#64748B', fontSize: '0.68rem' }}>({dim.max} pts)</span></span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontFamily: 'monospace' }}>
+                          <span style={{ color: '#60A5FA' }}>{dim.b}</span>
+                          <span style={{ color: '#64748B' }}>→</span>
+                          <span style={{ color: '#34D399' }}>{dim.c}</span>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: delta > 0 ? '#34D399' : delta < 0 ? '#F87171' : '#94A3B8' }}>
+                            ({delta >= 0 ? `+${delta}` : delta})
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── EXECUTIVE RELEASE & EVALUATION GOVERNANCE CARD ── */}
         <div
           style={{
@@ -749,7 +1002,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                     border: `1px solid ${relativeBorderColor}`,
                   }}
                 >
-                  {relativeResult}: {qualityDelta !== null && qualityDelta >= 0 ? `+${qualityDelta.toFixed(1)} pts` : `${qualityDelta?.toFixed(1) || '0.0'} pts`}
+                  {report.v3Scoring
+                    ? (report.winner === 'candidate' ? `CANDIDATE WIN: +${report.v3Scoring.overallDelta} pts` : report.winner === 'baseline' ? `BASELINE WIN: ${report.v3Scoring.overallDelta} pts` : report.winner === 'inconclusive' ? 'INCONCLUSIVE EVIDENCE' : 'STATISTICAL PARITY')
+                    : `${relativeResult}: ${qualityDelta !== null && qualityDelta >= 0 ? `+${qualityDelta.toFixed(1)} pts` : `${qualityDelta?.toFixed(1) || '0.0'} pts`}`}
                 </span>
               </div>
 
@@ -1913,137 +2168,6 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             </div>
           </div>
         </div>
-
-        {/* ── RELIQ V3 BALANCED SCORECARD (100-POINT FRAMEWORK) ── */}
-        {report.v3Scoring && (
-          <div
-            style={{
-              background: '#121419',
-              border: '1px solid rgba(59, 130, 246, 0.25)',
-              borderRadius: '8px',
-              padding: '1.2rem 1.4rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            {/* Header: Title, 100-pt Scores, Delta, Confidence Interval */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <div style={{ fontSize: '0.68rem', letterSpacing: '0.12em', fontWeight: 800, textTransform: 'uppercase', color: '#60A5FA' }}>
-                  RELIQ V3 BALANCED OVERALL PERFORMANCE SCORECARD (100-PT FRAMEWORK)
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.2rem' }}>
-                  Non-disqualifying multi-dimensional evaluation: 70 pts Quality & Behavior • 30 pts Operational Performance
-                </div>
-              </div>
-
-              {/* Total Score Badges */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Baseline Score</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#60A5FA', fontFamily: 'monospace' }}>
-                    {report.v3Scoring.baseline.compositeScore100} <span style={{ fontSize: '0.72rem', color: '#64748B' }}>/ 100</span>
-                  </div>
-                </div>
-
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Candidate Score</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#34D399', fontFamily: 'monospace' }}>
-                    {report.v3Scoring.candidate.compositeScore100} <span style={{ fontSize: '0.72rem', color: '#64748B' }}>/ 100</span>
-                  </div>
-                </div>
-
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Overall Delta</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: report.v3Scoring.overallDelta >= 0 ? '#34D399' : '#F87171', fontFamily: 'monospace' }}>
-                    {report.v3Scoring.overallDelta >= 0 ? `+${report.v3Scoring.overallDelta}` : report.v3Scoring.overallDelta} pts
-                  </div>
-                </div>
-
-                {report.v3Scoring.statisticalSignificance && (
-                  <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)', fontFamily: 'monospace' }}>
-                    <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#94A3B8' }}>Bootstrap 95% CI</div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E2E8F0' }}>
-                      [{report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[0] >= 0 ? '+' : ''}{report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[0]}, {report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[1] >= 0 ? '+' : ''}{report.v3Scoring.statisticalSignificance.bootstrapConfidenceInterval95[1]}]
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 10-Dimension Breakdown Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              {/* Quality & Behavior Panel (70 pts) */}
-              <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.9rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: '#ECEFF2' }}>Quality & Model Behavior</span>
-                  <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontFamily: 'monospace' }}>
-                    B: {report.v3Scoring.baseline.quality.totalQualityScore} / C: {report.v3Scoring.candidate.quality.totalQualityScore} (max 70)
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem' }}>
-                  {[
-                    { label: 'Reasoning & Clarity', b: report.v3Scoring.baseline.quality.reasoningQuality, c: report.v3Scoring.candidate.quality.reasoningQuality, max: report.v3Scoring.weights.reasoningQuality },
-                    { label: 'Factual Correctness', b: report.v3Scoring.baseline.quality.factualCorrectness, c: report.v3Scoring.candidate.quality.factualCorrectness, max: report.v3Scoring.weights.factualCorrectness },
-                    { label: 'Instruction Adherence', b: report.v3Scoring.baseline.quality.instructionAdherence, c: report.v3Scoring.candidate.quality.instructionAdherence, max: report.v3Scoring.weights.instructionAdherence },
-                    { label: 'Relevance & Completeness', b: report.v3Scoring.baseline.quality.relevanceCompleteness, c: report.v3Scoring.candidate.quality.relevanceCompleteness, max: report.v3Scoring.weights.relevanceCompleteness },
-                    { label: 'Safety Compliance', b: report.v3Scoring.baseline.quality.safetyCompliance, c: report.v3Scoring.candidate.quality.safetyCompliance, max: report.v3Scoring.weights.safetyCompliance },
-                    { label: 'Behavioral Consistency', b: report.v3Scoring.baseline.quality.behavioralConsistency, c: report.v3Scoring.candidate.quality.behavioralConsistency, max: report.v3Scoring.weights.behavioralConsistency },
-                  ].map((dim, idx) => {
-                    const delta = Number((dim.c - dim.b).toFixed(2));
-                    return (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
-                        <span style={{ color: '#CBD5E1' }}>{dim.label} <span style={{ color: '#64748B', fontSize: '0.68rem' }}>({dim.max} pts)</span></span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontFamily: 'monospace' }}>
-                          <span style={{ color: '#60A5FA' }}>{dim.b}</span>
-                          <span style={{ color: '#64748B' }}>→</span>
-                          <span style={{ color: '#34D399' }}>{dim.c}</span>
-                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: delta > 0 ? '#34D399' : delta < 0 ? '#F87171' : '#94A3B8' }}>
-                            ({delta >= 0 ? `+${delta}` : delta})
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Operational Performance Panel (30 pts) */}
-              <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.9rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: '#ECEFF2' }}>Operational Performance</span>
-                  <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontFamily: 'monospace' }}>
-                    B: {report.v3Scoring.baseline.operational.totalOperationalScore} / C: {report.v3Scoring.candidate.operational.totalOperationalScore} (max 30)
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem' }}>
-                  {[
-                    { label: 'Latency Performance', b: report.v3Scoring.baseline.operational.latencyScore, c: report.v3Scoring.candidate.operational.latencyScore, max: report.v3Scoring.weights.latency },
-                    { label: 'Provider Reliability', b: report.v3Scoring.baseline.operational.providerReliabilityScore, c: report.v3Scoring.candidate.operational.providerReliabilityScore, max: report.v3Scoring.weights.providerReliability },
-                    { label: 'Cost Efficiency', b: report.v3Scoring.baseline.operational.costEfficiencyScore, c: report.v3Scoring.candidate.operational.costEfficiencyScore, max: report.v3Scoring.weights.costEfficiency },
-                    { label: 'Token Efficiency', b: report.v3Scoring.baseline.operational.tokenEfficiencyScore, c: report.v3Scoring.candidate.operational.tokenEfficiencyScore, max: report.v3Scoring.weights.tokenEfficiency },
-                  ].map((dim, idx) => {
-                    const delta = Number((dim.c - dim.b).toFixed(2));
-                    return (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
-                        <span style={{ color: '#CBD5E1' }}>{dim.label} <span style={{ color: '#64748B', fontSize: '0.68rem' }}>({dim.max} pts)</span></span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontFamily: 'monospace' }}>
-                          <span style={{ color: '#60A5FA' }}>{dim.b}</span>
-                          <span style={{ color: '#64748B' }}>→</span>
-                          <span style={{ color: '#34D399' }}>{dim.c}</span>
-                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: delta > 0 ? '#34D399' : delta < 0 ? '#F87171' : '#94A3B8' }}>
-                            ({delta >= 0 ? `+${delta}` : delta})
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ── Dimensional Tradeoffs (Decoupled Audit) ── */}
         {report.dimensions && (

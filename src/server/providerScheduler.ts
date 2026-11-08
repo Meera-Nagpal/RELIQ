@@ -541,38 +541,38 @@ export class ProviderScheduler {
             await new Promise((r) => setTimeout(r, waitMs));
           }
 
-          // Model-specific pacing for Qwen on Groq: strict 1,000 OTPM rate limit protection
+          // Model-specific pacing for Qwen on Groq: adaptive token-headroom protection
           const isQwen = bucketKey.toLowerCase().includes('qwen');
           if (norm === 'groq' && isQwen) {
             const qwenElapsed = Date.now() - bucket.lastRequestTime;
-            if (bucket.lastRequestTime > 0 && qwenElapsed < 2500) {
-              const qwenWait = 2500 - qwenElapsed + Math.floor(Math.random() * 200);
+            // Only apply extended spacing if remaining tokens are critically low (<800)
+            const minQwenSpacing = (bucket.remainingTokens !== undefined && bucket.remainingTokens < 800) ? 1200 : 350;
+            if (bucket.lastRequestTime > 0 && qwenElapsed < minQwenSpacing) {
+              const qwenWait = minQwenSpacing - qwenElapsed + Math.floor(Math.random() * 50);
               await new Promise((r) => setTimeout(r, qwenWait));
             }
           }
 
-          // Continuous-time virtual 30-RPM token bucket for per-model Groq buckets:
-          // Groq's 30 RPM bucket starts with 30 tokens and refills continuously at 0.5 tokens/sec (1 per 2,000ms).
-          // This allows 27-case evaluations to burst through the available 30-RPM capacity in seconds
-          // while smoothly transitioning to 2,020ms GCRA steady-state spacing on larger (e.g. 100-case) runs.
+          // Continuous-time virtual token bucket for per-model Groq requests:
+          // Allows burst throughput for 27-case suites while maintaining steady-state pacing
           if (norm === 'groq' && modelId && state.minDelayMs === 0) {
             const nowBeforeWait = Date.now();
             const winCutoff = nowBeforeWait - 60000;
             bucket.recentAdmissions = bucket.recentAdmissions.filter((ts) => ts > winCutoff);
 
             const elapsedRefillSec = Math.max(0, (nowBeforeWait - bucket.lastRpmRefillTime) / 1000);
-            bucket.rpmTokens = Math.min(30, bucket.rpmTokens + elapsedRefillSec * 0.5);
+            bucket.rpmTokens = Math.min(30, bucket.rpmTokens + elapsedRefillSec * 1.0);
             bucket.lastRpmRefillTime = nowBeforeWait;
 
             let targetSpacingMs = 0;
             if (bucket.rpmTokens > 12) {
-              targetSpacingMs = 60;
+              targetSpacingMs = 20;
             } else if (bucket.rpmTokens > 5) {
-              targetSpacingMs = 200;
-            } else if (bucket.rpmTokens > 3) {
-              targetSpacingMs = 500;
+              targetSpacingMs = 80;
+            } else if (bucket.rpmTokens > 2) {
+              targetSpacingMs = 180;
             } else {
-              targetSpacingMs = 2020;
+              targetSpacingMs = 350;
             }
 
             if (bucket.lastRequestTime > 0 && targetSpacingMs > 0) {
@@ -584,7 +584,7 @@ export class ProviderScheduler {
 
             const nowAfterWait = Date.now();
             const waitRefillSec = Math.max(0, (nowAfterWait - bucket.lastRpmRefillTime) / 1000);
-            bucket.rpmTokens = Math.max(0, Math.min(30, bucket.rpmTokens + waitRefillSec * 0.5) - 1);
+            bucket.rpmTokens = Math.max(0, Math.min(30, bucket.rpmTokens + waitRefillSec * 1.0) - 1);
             bucket.lastRpmRefillTime = nowAfterWait;
           }
 

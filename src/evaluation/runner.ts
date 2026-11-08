@@ -889,22 +889,11 @@ export class EvaluationRunner {
         return candidateResp;
       };
 
-      const isSharedRateLimitedProvider =
-        baselineProviderId === candidateProviderId &&
-        (baselineProviderId === 'groq' || baselineProviderId === 'google');
-
-      let baselineResp: ModelResponse;
-      let candidateResp: ModelResponse;
-
-      if (isSharedRateLimitedProvider) {
-        baselineResp = await fetchBaselineBranch();
-        candidateResp = await fetchCandidateBranch();
-      } else {
-        [baselineResp, candidateResp] = await Promise.all([
-          fetchBaselineBranch(),
-          fetchCandidateBranch(),
-        ]);
-      }
+      // Execute Baseline and Candidate branches concurrently; providerScheduler enforces rate limits, token buckets, and semaphores
+      const [baselineResp, candidateResp] = await Promise.all([
+        fetchBaselineBranch(),
+        fetchCandidateBranch(),
+      ]);
 
       // Categorize evaluation requirement prior to judge invocation
       const evalReq = categorizeEvaluationRequirement(testCase);
