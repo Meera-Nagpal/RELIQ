@@ -169,6 +169,30 @@ export const ReliqApp: React.FC = () => {
     };
   }, [activeRun?.id, activeRun?.caseResults?.length]);
 
+  // Hydrate active dataset test cases in background without blocking initial render
+  useEffect(() => {
+    if (!activeDatasetId) return;
+    const current = datasets.find((d) => d.id === activeDatasetId);
+    if (!current || (current.cases && current.cases.length > 0)) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const cases = await repository.getTestCases(activeDatasetId);
+        if (!cancelled && Array.isArray(cases) && cases.length > 0) {
+          setDatasets((prev) =>
+            prev.map((d) => (d.id === activeDatasetId ? { ...d, cases, caseCount: cases.length } : d))
+          );
+        }
+      } catch {
+        // silent fallback
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDatasetId, datasets.length]);
+
   // Project Switch
   const handleSelectProject = async (projectId: string) => {
     repository.setActiveProjectId(projectId);

@@ -587,7 +587,7 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                   {isBuiltin ? 'BUILT-IN' : 'UPLOAD'}
                 </span>
                 <span style={{ fontSize: '0.7rem', color: '#555555' }}>
-                  ({d.cases.length})
+                  ({d.cases?.length || d.caseCount || 0})
                 </span>
               </button>
             );
@@ -862,10 +862,10 @@ export const DatasetsView: React.FC<DatasetsViewProps> = ({
                 </div>
               ) : !activeDataset ? (
                 'Select a test suite from the tabs above.'
-              ) : activeDataset.cases.length === 0 ? (
+              ) : (!activeDataset.cases || activeDataset.cases.length === 0) ? (
                 <div>
                   <p style={{ color: '#CCCCCC', fontSize: '1rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>
-                    This test suite is currently empty.
+                    {activeDataset.caseCount && activeDataset.caseCount > 0 ? `Loading test scenarios (${activeDataset.caseCount} total)...` : 'This test suite is currently empty.'}
                   </p>
                   <p style={{ margin: '0 0 1.2rem 0', color: '#8899AA' }}>
                     Add your first test case manually or import a dataset file.

@@ -138,6 +138,7 @@ function mapBackendSettings(s: any): RegressionSettings {
 export class ApiRepository implements StorageRepository {
   private client: ApiClient;
   private casesCache = new Map<string, TestCase[]>();
+  private settingsCache = new Map<string, RegressionSettings>();
 
   constructor(client: ApiClient = apiClient) {
     this.client = client;
@@ -152,31 +153,29 @@ export class ApiRepository implements StorageRepository {
     const res = await this.client.get<{ projects: any[] }>('/api/projects');
     const rawProjects = Array.isArray(res?.projects) ? res.projects : [];
 
-    const mappedProjects = await Promise.all(
-      rawProjects.map(async (p) => {
-        let settings: RegressionSettings = { ...DEFAULT_REGRESSION_SETTINGS };
-        try {
-          const sRes = await this.client.get<any>(`/api/projects/${encodeURIComponent(p.id)}/settings`);
-          if (sRes) {
-            settings = mapBackendSettings(sRes);
-          }
-        } catch {}
+    return rawProjects.map((p) => {
+      let settings = this.settingsCache.get(p.id);
+      if (!settings) {
+        if (p.settings || p.regression_settings) {
+          settings = mapBackendSettings(p.settings || p.regression_settings);
+          this.settingsCache.set(p.id, settings);
+        } else {
+          settings = { ...DEFAULT_REGRESSION_SETTINGS };
+        }
+      }
 
-        return {
-          id: p.id,
-          name: p.name,
-          description: p.description || '',
-          defaultDatasetId: p.default_dataset_id || undefined,
-          baselineVersionId: p.baseline_version_id || 'ver-v1-4',
-          candidateVersionId: p.candidate_version_id || 'ver-v1-5',
-          regressionSettings: settings,
-          createdAt: p.created_at || p.createdAt || new Date().toISOString(),
-          updatedAt: p.updated_at || p.updatedAt || new Date().toISOString(),
-        };
-      })
-    );
-
-    return mappedProjects;
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description || '',
+        defaultDatasetId: p.default_dataset_id || undefined,
+        baselineVersionId: p.baseline_version_id || 'ver-v1-4',
+        candidateVersionId: p.candidate_version_id || 'ver-v1-5',
+        regressionSettings: settings,
+        createdAt: p.created_at || p.createdAt || new Date().toISOString(),
+        updatedAt: p.updated_at || p.updatedAt || new Date().toISOString(),
+      };
+    });
   }
 
   async getProjectById(id: string): Promise<Project | null> {
@@ -257,23 +256,10 @@ export class ApiRepository implements StorageRepository {
     const res = await this.client.get<{ datasets: any[] }>('/api/datasets', params);
     const rawDatasets = Array.isArray(res?.datasets) ? res.datasets : [];
 
-    const datasetsWithCases = await Promise.all(
-      rawDatasets.map(async (d) => {
-        let cases: TestCase[] = this.casesCache.get(d.id) || [];
-        if (cases.length === 0) {
-          try {
-            const caseRes = await this.client.get<{ cases: any[] }>(`/api/datasets/${encodeURIComponent(d.id)}/cases`);
-            if (Array.isArray(caseRes?.cases)) {
-              cases = caseRes.cases.map(mapBackendTestCase);
-              this.casesCache.set(d.id, cases);
-            }
-          } catch {}
-        }
-        return mapBackendDataset(d, cases);
-      })
-    );
-
-    return datasetsWithCases;
+    return rawDatasets.map((d) => {
+      const cases = this.casesCache.get(d.id) || [];
+      return mapBackendDataset(d, cases);
+    });
   }
 
   async getDatasetById(id: string): Promise<Dataset | null> {
@@ -567,9 +553,13 @@ export class ApiRepository implements StorageRepository {
 
   // ── Project Settings ──────────────────────────────────────
   async getProjectSettings(projectId: string): Promise<RegressionSettings | null> {
+    const cached = this.settingsCache.get(projectId);
+    if (cached) return cached;
     try {
       const res = await this.client.get<any>(`/api/projects/${encodeURIComponent(projectId)}/settings`);
-      return mapBackendSettings(res);
+      const mapped = mapBackendSettings(res);
+      this.settingsCache.set(projectId, mapped);
+      return mapped;
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 404) {
         return null;
@@ -579,6 +569,7 @@ export class ApiRepository implements StorageRepository {
   }
 
   async saveProjectSettings(projectId: string, settings: RegressionSettings): Promise<void> {
+    this.settingsCache.set(projectId, settings);
     await this.client.put(`/api/projects/${encodeURIComponent(projectId)}/settings`, {
       minAccuracy: settings.minAccuracyPercent,
       maxDegradation: settings.maxAccuracyDegradationPercent,

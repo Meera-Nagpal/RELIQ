@@ -32,6 +32,7 @@ import { ProviderType } from '../../providers/types';
 import { useRouter } from '../../router/useRouter';
 import { apiRepository } from '../../services/apiRepository';
 import { getEligibleJudgeModels, getDefaultJudgeModel, GROQ_MODEL_REGISTRY } from '../../evaluation/judgeRegistry';
+import { fetchWithAuth } from '../../services/apiClient';
 
 interface EvaluationsViewProps {
   project: Project;
@@ -241,9 +242,22 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     }
 
     return [...builtins, ...Array.from(uploadMap.values())].sort(
-      (a, b) => (a.cases?.length || 0) - (b.cases?.length || 0)
+      (a, b) => (a.cases?.length || a.caseCount || 0) - (b.cases?.length || b.caseCount || 0)
     );
   }, [datasets]);
+
+  // Preload test cases for selected dataset in the background if not yet cached
+  useEffect(() => {
+    if (!selectedDatasetId) return;
+    const current = datasets.find((d) => d.id === selectedDatasetId);
+    if (current && (!current.cases || current.cases.length === 0)) {
+      apiRepository.getTestCases(selectedDatasetId).then((cases) => {
+        if (cases && cases.length > 0) {
+          current.cases = cases;
+        }
+      }).catch(() => {});
+    }
+  }, [selectedDatasetId, datasets]);
 
   // Judge selection states (Disabled by default — ZERO judge API calls on standard runs)
   const [judgeEnabled, setJudgeEnabled] = useState<boolean>(false);
@@ -266,7 +280,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     setJudgeStatus('CHECKING');
     setJudgeStatusDetails('');
     try {
-      const res = await fetch(`/api/judge/test?model=${encodeURIComponent(modelId)}`);
+      const res = await fetchWithAuth(`/api/judge/test?model=${encodeURIComponent(modelId)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'AVAILABLE' || data.available) {
@@ -345,8 +359,25 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       return;
     }
 
+    if (!selectedDataset) {
+      setEvaluationError('Cannot run evaluation: no dataset selected.');
+      return;
+    }
+
+    // Ensure test cases are loaded into memory if not pre-cached
+    let activeCases = selectedDataset.cases || [];
+    if (activeCases.length === 0) {
+      try {
+        activeCases = await apiRepository.getTestCases(selectedDataset.id);
+        selectedDataset.cases = activeCases;
+      } catch (err: any) {
+        setEvaluationError(`Failed to load dataset test cases: ${err.message}`);
+        return;
+      }
+    }
+
     // Validation for datasets with 0 test cases
-    if (!selectedDataset || !selectedDataset.cases || selectedDataset.cases.length === 0) {
+    if (!activeCases || activeCases.length === 0) {
       setEvaluationError('Cannot run evaluation: selected dataset contains 0 test cases.');
       return;
     }
@@ -414,7 +445,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       };
 
       console.log('[RELIQ UI] POST /api/evaluations/run');
-      const response = await fetch('/api/evaluations/run', {
+      const response = await fetchWithAuth('/api/evaluations/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -452,7 +483,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           return;
         }
 
-        const statusRes = await fetch(`/api/evaluations/status/${runId}`);
+        const statusRes = await fetchWithAuth(`/api/evaluations/status/${runId}`);
         if (statusRes.ok) {
           const statusData = await statusRes.json();
           if (statusData.progress) {
@@ -1039,9 +1070,10 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             >
               {selectableDatasets.map((d) => {
                 const badge = d.sourceType === 'upload' ? '[USER UPLOAD' : '[BUILT-IN';
+                const count = d.cases?.length || d.caseCount || 0;
                 return (
                   <option key={d.id} value={d.id}>
-                    {badge} v{d.version || '1.0.0'}] {d.name} ({d.cases?.length || 0} scenarios) — {d.description}
+                    {badge} v{d.version || '1.0.0'}] {d.name} ({count} scenarios) — {d.description}
                   </option>
                 );
               })}
@@ -2012,7 +2044,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
       <EvaluationProgressModal
         isOpen={isProgressModalOpen}
         datasetName={selectedDataset?.name || 'Benchmark Dataset'}
-        totalScenarios={maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 100)}
+        totalScenarios={maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || selectedDataset?.caseCount || 100)}
         baselineModel={`${effectiveBaselineModel} (${configMode === 'custom_benchmark' ? customBaselineProvider : baselineVersion?.provider || 'default'})`}
         candidateModel={`${effectiveCandidateModel} (${configMode === 'custom_benchmark' ? customCandidateProvider : candidateVersion?.provider || 'default'})`}
         judgeModel={selectedJudgeModel}
@@ -2031,7 +2063,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         onCancel={() => {
           isCancelledRef.current = true;
           if (currentRunId) {
-            fetch(`/api/evaluations/cancel/${currentRunId}`, { method: 'POST' }).catch(() => {});
+            fetchWithAuth(`/api/evaluations/cancel/${currentRunId}`, { method: 'POST' }).catch(() => {});
           }
           setIsRunning(false);
           setIsProgressModalOpen(false);
@@ -2052,7 +2084,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         candidateModel={`${effectiveCandidateModel} (${configMode === 'custom_benchmark' ? customCandidateProvider : candidateVersion?.provider || 'default'})`}
         progressPercent={progressPercent}
         currentCount={progressCounts?.current || 0}
-        totalCount={progressCounts?.total || (maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || 100))}
+        totalCount={progressCounts?.total || (maxCasesToRun > 0 ? maxCasesToRun : (selectedDataset?.cases?.length || selectedDataset?.caseCount || 100))}
         caseName={currentCaseName}
         phase={currentPhase}
         throughputCasesPerSec={throughput}
@@ -2060,7 +2092,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         onCancel={() => {
           isCancelledRef.current = true;
           if (currentRunId) {
-            fetch(`/api/evaluations/cancel/${currentRunId}`, { method: 'POST' }).catch(() => {});
+            fetchWithAuth(`/api/evaluations/cancel/${currentRunId}`, { method: 'POST' }).catch(() => {});
           }
           setIsRunning(false);
           setIsProgressModalOpen(false);
