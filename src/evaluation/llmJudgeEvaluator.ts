@@ -48,7 +48,7 @@ export function categorizeEvaluationRequirement(
   }
 
   // 2. Direct LLM Judge evaluator or Preference pair always qualitative
-  if (testCase.evaluatorType === 'llm_judge' || isPreferenceTestCase(testCase)) {
+  if (testCase.evaluatorType === 'llm_judge' || testCase.evaluatorType === 'preference_rubric' || isPreferenceTestCase(testCase)) {
     return 'qualitative';
   }
 
