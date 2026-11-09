@@ -9,13 +9,15 @@
    - Evaluation run lock to prevent concurrent runs from competing for provider quota
    ============================================================ */
 
-import { parseDurationHeaderMs } from './serverUtils';
+import { parseDurationHeaderMs, getApiKey } from './serverUtils';
 
 export type ProviderQuotaStatus = 'AVAILABLE' | 'COOLING_DOWN' | 'QUOTA_EXHAUSTED';
 
 export interface ProviderRateLimitState {
   providerId: string;
   status: ProviderQuotaStatus;
+  configured?: boolean;
+  isConfigured?: boolean;
   coolingDownUntil: number; // Unix timestamp ms
   cooldownRemainingMs: number;
   lastRequestTime: number;
@@ -405,6 +407,22 @@ export class ProviderScheduler {
   }
 
   /**
+   * Checks whether the given provider has an API key configured in the environment.
+   */
+  public isProviderConfigured(providerId: string): boolean {
+    const norm = this.normalizeProvider(providerId);
+    if (norm === 'google' || norm === 'gemini') {
+      return Boolean(getApiKey('GEMINI_API_KEY') || getApiKey('GOOGLE_API_KEY'));
+    }
+    if (norm === 'groq') return Boolean(getApiKey('GROQ_API_KEY'));
+    if (norm === 'cerebras') return Boolean(getApiKey('CEREBRAS_API_KEY'));
+    if (norm === 'openai') return Boolean(getApiKey('OPENAI_API_KEY'));
+    if (norm === 'anthropic') return Boolean(getApiKey('ANTHROPIC_API_KEY'));
+    if (norm === 'demo' || norm === 'test') return true;
+    return false;
+  }
+
+  /**
    * Returns current status snapshot for a single provider.
    */
   public getProviderStatus(providerId: string): ProviderRateLimitState {
@@ -413,6 +431,8 @@ export class ProviderScheduler {
       this.initProvider(norm, this.resolveMinDelay(norm, norm === 'google' ? 4000 : 0));
     }
     const state = this.states.get(norm)!;
+    const isConfigured = this.isProviderConfigured(norm);
+
     const now = Date.now();
     const remainingMs = Math.max(0, state.coolingDownUntil - now);
 
@@ -427,6 +447,8 @@ export class ProviderScheduler {
     return {
       ...state,
       status,
+      configured: isConfigured,
+      isConfigured,
       cooldownRemainingMs: remainingMs,
     };
   }
@@ -439,6 +461,7 @@ export class ProviderScheduler {
     for (const key of ['google', 'groq', 'cerebras', 'openai', 'anthropic']) {
       result[key] = this.getProviderStatus(key);
     }
+    result['gemini'] = result['google'];
     return result;
   }
 
@@ -546,9 +569,9 @@ export class ProviderScheduler {
           if (norm === 'groq' && isQwen) {
             const qwenElapsed = Date.now() - bucket.lastRequestTime;
             // Only apply extended spacing if remaining tokens are critically low (<800)
-            const minQwenSpacing = (bucket.remainingTokens !== undefined && bucket.remainingTokens < 800) ? 1200 : 350;
+            const minQwenSpacing = (bucket.remainingTokens !== undefined && bucket.remainingTokens < 800) ? 800 : 180;
             if (bucket.lastRequestTime > 0 && qwenElapsed < minQwenSpacing) {
-              const qwenWait = minQwenSpacing - qwenElapsed + Math.floor(Math.random() * 50);
+              const qwenWait = minQwenSpacing - qwenElapsed + Math.floor(Math.random() * 20);
               await new Promise((r) => setTimeout(r, qwenWait));
             }
           }
@@ -566,13 +589,13 @@ export class ProviderScheduler {
 
             let targetSpacingMs = 0;
             if (bucket.rpmTokens > 12) {
-              targetSpacingMs = 20;
+              targetSpacingMs = 0;
             } else if (bucket.rpmTokens > 5) {
-              targetSpacingMs = 80;
+              targetSpacingMs = 30;
             } else if (bucket.rpmTokens > 2) {
-              targetSpacingMs = 180;
+              targetSpacingMs = 90;
             } else {
-              targetSpacingMs = 350;
+              targetSpacingMs = 200;
             }
 
             if (bucket.lastRequestTime > 0 && targetSpacingMs > 0) {
