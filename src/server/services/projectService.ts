@@ -18,6 +18,7 @@ export interface ProjectRecord {
   default_dataset_id?: string | null;
   baseline_version_id?: string | null;
   candidate_version_id?: string | null;
+  user_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,8 +33,13 @@ export class ProjectService {
       return supabaseRepository.getAllProjects(userId);
     }
     const db = getDatabase();
+    if (userId) {
+      return db
+        .prepare('SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, user_id, created_at, updated_at FROM projects WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC')
+        .all(userId) as ProjectRecord[];
+    }
     return db
-      .prepare('SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at FROM projects ORDER BY created_at DESC')
+      .prepare('SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, user_id, created_at, updated_at FROM projects WHERE user_id IS NULL ORDER BY created_at DESC')
       .all() as ProjectRecord[];
   }
 
@@ -46,7 +52,7 @@ export class ProjectService {
     }
     const db = getDatabase();
     const row = db
-      .prepare('SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at FROM projects WHERE id = ?')
+      .prepare('SELECT id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, user_id, created_at, updated_at FROM projects WHERE id = ?')
       .get(id) as ProjectRecord | undefined;
     return row || null;
   }
@@ -86,9 +92,9 @@ export class ProjectService {
 
     const db = getDatabase();
     db.prepare(`
-      INSERT INTO projects (id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, data.name.trim(), description, defaultDatasetId, baselineVersionId, candidateVersionId, now, now);
+      INSERT INTO projects (id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, user_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.name.trim(), description, defaultDatasetId, baselineVersionId, candidateVersionId, data.userId || null, now, now);
 
     return {
       id,
@@ -97,6 +103,7 @@ export class ProjectService {
       default_dataset_id: defaultDatasetId,
       baseline_version_id: baselineVersionId,
       candidate_version_id: candidateVersionId,
+      user_id: data.userId || null,
       created_at: now,
       updated_at: now,
     };

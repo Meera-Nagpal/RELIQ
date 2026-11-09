@@ -10,6 +10,8 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { evaluationDbService } from '../services/evaluationDbService';
 import { getJsonBody, sendError, sendJson } from './httpUtils';
+import { getAuthenticatedUser } from './authRoutes';
+import { canUserAccessRun } from './authUtils';
 
 export async function handleEvaluationDbRoutes(
   req: IncomingMessage,
@@ -23,6 +25,13 @@ export async function handleEvaluationDbRoutes(
   if (decisionMatch) {
     if (method === 'PATCH') {
       const runId = decodeURIComponent(decisionMatch[1]);
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserAccessRun(runId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to update release decision for run '${runId}'`);
+        return true;
+      }
+
       const body = await getJsonBody(req, res);
       if (!body) return true;
 
@@ -61,6 +70,13 @@ export async function handleEvaluationDbRoutes(
     if (method === 'GET') {
       const runId = decodeURIComponent(resultsMatch[1]);
       try {
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserAccessRun(runId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have access to results for run '${runId}'`);
+          return true;
+        }
+
         const run = await evaluationDbService.getEvaluationRunById(runId);
         if (!run) {
           sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run with ID '${runId}' not found`);
@@ -96,6 +112,13 @@ export async function handleEvaluationDbRoutes(
     if (method === 'GET') {
       const runId = decodeURIComponent(failuresMatch[1]);
       try {
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserAccessRun(runId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have access to failures for run '${runId}'`);
+          return true;
+        }
+
         const run = await evaluationDbService.getEvaluationRunById(runId);
         if (!run) {
           sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run with ID '${runId}' not found`);
