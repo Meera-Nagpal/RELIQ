@@ -93,6 +93,18 @@ export async function handleDatasetRoutes(
           : typeof body.content === 'string'
           ? body.content
           : '';
+
+      if (rawContent && Buffer.byteLength(rawContent, 'utf8') > 10 * 1024 * 1024) {
+        sendError(res, 413, 'FILE_TOO_LARGE', 'File size exceeds maximum allowed upload limit of 10MB');
+        return true;
+      }
+
+      const format = typeof body.format === 'string' ? body.format.toLowerCase().trim() : undefined;
+      if (format && !['json', 'jsonl', 'csv'].includes(format)) {
+        sendError(res, 400, 'INVALID_FILE_FORMAT', "Invalid file format. Supported formats are 'json', 'jsonl', and 'csv'");
+        return true;
+      }
+
       const selectedEvaluators = Array.isArray(body.selectedEvaluators)
         ? body.selectedEvaluators
         : Array.isArray(body.selected_evaluators)
@@ -115,7 +127,7 @@ export async function handleDatasetRoutes(
             : typeof body.source_filename === 'string'
             ? body.source_filename
             : undefined,
-        format: typeof body.format === 'string' ? (body.format as any) : undefined,
+        format: format as any,
         fieldMapping:
           body.fieldMapping && typeof body.fieldMapping === 'object'
             ? body.fieldMapping
@@ -162,6 +174,18 @@ export async function handleDatasetRoutes(
         : typeof body.content === 'string'
         ? body.content
         : '';
+
+    if (rawContent && Buffer.byteLength(rawContent, 'utf8') > 10 * 1024 * 1024) {
+      sendError(res, 413, 'FILE_TOO_LARGE', 'File size exceeds maximum allowed upload limit of 10MB');
+      return true;
+    }
+
+    const format = typeof body.format === 'string' ? body.format.toLowerCase().trim() : undefined;
+    if (format && !['json', 'jsonl', 'csv'].includes(format)) {
+      sendError(res, 400, 'INVALID_FILE_FORMAT', "Invalid file format. Supported formats are 'json', 'jsonl', and 'csv'");
+      return true;
+    }
+
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
       sendError(res, 400, 'VALIDATION_ERROR', "Dataset 'name' is required for import");
       return true;
