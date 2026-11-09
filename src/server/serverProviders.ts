@@ -412,7 +412,7 @@ export class ServerGroqProvider implements ModelProvider {
 
     try {
       const isGptOss = model === 'openai/gpt-oss-20b' || model === 'openai/gpt-oss-120b';
-      const reasoningEffort = isGptOss ? (request.reasoningEffort || 'medium') : undefined;
+      const reasoningEffort = isGptOss ? (request.reasoningEffort || 'low') : undefined;
 
       const isQwen = model.toLowerCase().includes('qwen');
       const groqPayload: any = {

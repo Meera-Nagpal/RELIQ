@@ -23,6 +23,10 @@ function reliqServerPlugin(env: Record<string, string>): Plugin {
   assignIfMissing('SUPABASE_SERVICE_ROLE_KEY', env.SUPABASE_SERVICE_ROLE_KEY);
   assignIfMissing('SUPABASE_ANON_KEY', env.SUPABASE_ANON_KEY);
   assignIfMissing('RELIQ_DB_DRIVER', env.RELIQ_DB_DRIVER);
+  assignIfMissing('GROQ_MAX_CONCURRENCY', env.GROQ_MAX_CONCURRENCY);
+  assignIfMissing('GROQ_GLOBAL_MAX_CONCURRENCY', env.GROQ_GLOBAL_MAX_CONCURRENCY);
+  assignIfMissing('PROVIDER_REQUEST_DELAY_MS', env.PROVIDER_REQUEST_DELAY_MS);
+  assignIfMissing('EVALUATION_CONCURRENCY', env.EVALUATION_CONCURRENCY);
 
   const middleware = createReliqProxyMiddleware();
 

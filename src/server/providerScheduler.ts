@@ -472,7 +472,7 @@ export class ProviderScheduler {
         const parsed = parseInt(custom, 10);
         if (!isNaN(parsed) && parsed >= 1) return parsed;
       }
-      return 2; // Safe global concurrency cap across all Groq buckets to avoid quota exhaustion on shared API key
+      return 6; // High throughput concurrency for Groq (fast tier inference)
     }
     const state = this.states.get(norm);
     return state?.maxConcurrency || 8;
