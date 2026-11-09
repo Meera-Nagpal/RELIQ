@@ -624,6 +624,7 @@ export interface MetricSummary {
   judgeApiCalls?: number;
   judgeCacheHits?: number;
   judgeSkippedCases?: number;
+  judgeErrorCases?: number;
   judgeInputTokens?: number;
   judgeOutputTokens?: number;
   judgeTotalTokens?: number;
@@ -649,6 +650,7 @@ export interface RunProvenance {
   judgeApiCalls?: number;
   judgeCacheHits?: number;
   judgeSkippedCases?: number;
+  judgeErrorCases?: number;
   hadOperationalErrors: boolean;
   isLiveExecution: boolean;
 }
