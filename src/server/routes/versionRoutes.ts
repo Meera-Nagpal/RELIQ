@@ -11,6 +11,8 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { versionService } from '../services/versionService';
 import { getJsonBody, sendError, sendJson } from './httpUtils';
+import { getAuthenticatedUser } from './authRoutes';
+import { canUserAccessProject, canUserModifyProject } from './authUtils';
 
 export async function handleVersionRoutes(
   req: IncomingMessage,
@@ -23,7 +25,15 @@ export async function handleVersionRoutes(
   // 1. GET /api/versions (optional ?projectId=<id>)
   if (method === 'GET' && parsedUrl === '/api/versions') {
     try {
+      const user = await getAuthenticatedUser(req);
       const projectId = query.get('projectId') || undefined;
+      if (projectId) {
+        const allowed = await canUserAccessProject(projectId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have access to versions in project '${projectId}'`);
+          return true;
+        }
+      }
       const versions = await versionService.getVersions(projectId);
       sendJson(res, 200, { versions });
     } catch (err: any) {
@@ -55,6 +65,13 @@ export async function handleVersionRoutes(
     }
 
     try {
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserModifyProject(body.projectId.trim(), user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to add versions to project '${body.projectId}'`);
+        return true;
+      }
+
       const created = await versionService.createVersion({
         id: typeof body.id === 'string' ? body.id : undefined,
         projectId: body.projectId.trim(),
@@ -86,11 +103,21 @@ export async function handleVersionRoutes(
     // 3. GET /api/versions/:id
     if (method === 'GET') {
       try {
+        const user = await getAuthenticatedUser(req);
         const version = await versionService.getVersionById(id);
         if (!version) {
           sendError(res, 404, 'MODEL_VERSION_NOT_FOUND', `Model version with ID '${id}' not found`);
           return true;
         }
+
+        if (version.project_id) {
+          const allowed = await canUserAccessProject(version.project_id, user?.id);
+          if (!allowed) {
+            sendError(res, 403, 'FORBIDDEN', `You do not have access to version '${id}'`);
+            return true;
+          }
+        }
+
         sendJson(res, 200, version);
       } catch (err: any) {
         sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve model version');
@@ -100,6 +127,21 @@ export async function handleVersionRoutes(
 
     // 4. PUT /api/versions/:id
     if (method === 'PUT') {
+      const user = await getAuthenticatedUser(req);
+      const existing = await versionService.getVersionById(id);
+      if (!existing) {
+        sendError(res, 404, 'MODEL_VERSION_NOT_FOUND', `Model version with ID '${id}' not found`);
+        return true;
+      }
+
+      if (existing.project_id) {
+        const allowed = await canUserModifyProject(existing.project_id, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have permission to modify version '${id}'`);
+          return true;
+        }
+      }
+
       const body = await getJsonBody(req, res);
       if (!body) return true;
 
@@ -130,6 +172,21 @@ export async function handleVersionRoutes(
     // 5. DELETE /api/versions/:id
     if (method === 'DELETE') {
       try {
+        const user = await getAuthenticatedUser(req);
+        const existing = await versionService.getVersionById(id);
+        if (!existing) {
+          sendError(res, 404, 'MODEL_VERSION_NOT_FOUND', `Model version with ID '${id}' not found`);
+          return true;
+        }
+
+        if (existing.project_id) {
+          const allowed = await canUserModifyProject(existing.project_id, user?.id);
+          if (!allowed) {
+            sendError(res, 403, 'FORBIDDEN', `You do not have permission to delete version '${id}'`);
+            return true;
+          }
+        }
+
         const deleted = await versionService.deleteVersion(id);
         if (!deleted) {
           sendError(res, 404, 'MODEL_VERSION_NOT_FOUND', `Model version with ID '${id}' not found`);
