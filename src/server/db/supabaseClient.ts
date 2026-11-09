@@ -51,12 +51,29 @@ export function isSupabaseConfigured(): boolean {
  * unless RELIQ_DB_DRIVER is explicitly set to 'sqlite' (local development & automated tests).
  */
 export function isSupabaseDriverActive(): boolean {
-  if (process.env.RELIQ_DB_DRIVER === 'sqlite') {
+  const driver = process.env.RELIQ_DB_DRIVER?.trim();
+
+  // Explicit SQLite driver (automated tests & local development)
+  if (driver === 'sqlite') {
     return false;
   }
-  if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+
+  // Explicit Supabase driver
+  if (driver === 'supabase_postgresql' || driver === 'supabase') {
     return true;
   }
+
+  // Reject unsupported drivers explicitly
+  if (driver && driver !== 'sqlite' && driver !== 'supabase_postgresql' && driver !== 'supabase') {
+    throw new Error(`[RELIQ DB] Unsupported RELIQ_DB_DRIVER: '${driver}'. Valid options are 'supabase_postgresql' or 'sqlite'.`);
+  }
+
+  // In production (Render), default strictly to Supabase PostgreSQL; never silently run SQLite
+  if (process.env.NODE_ENV === 'production') {
+    return true;
+  }
+
+  // In development, activate Supabase if credentials are present
   return isSupabaseConfigured();
 }
 
