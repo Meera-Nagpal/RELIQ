@@ -729,6 +729,9 @@ export class EvaluationDbService {
     const reason = 'Worker heartbeat expired: evaluation process interrupted or restarted by host.';
 
     if (isSupabaseDriverActive()) {
+      if (!isSupabaseConfigured()) {
+        return 0;
+      }
       try {
         const supabase = getSupabaseAdmin();
         const { data, error } = await supabase
@@ -742,6 +745,24 @@ export class EvaluationDbService {
           .or(`last_heartbeat_at.lt.${thresholdIso},and(last_heartbeat_at.is.null,started_at.lt.${thresholdIso})`)
           .select('id');
         if (error) {
+          if (error.message.includes('last_heartbeat_at')) {
+            // Supabase schema doesn't have last_heartbeat_at column; fall back to started_at
+            const fallback = await supabase
+              .from('evaluation_runs')
+              .update({
+                status: 'FAILED',
+                completed_at: now,
+                release_reason: reason,
+              })
+              .eq('status', 'RUNNING')
+              .lt('started_at', thresholdIso)
+              .select('id');
+            if (fallback.error) {
+              console.error('[RELIQ Supabase] Error recovering stale runs:', fallback.error.message);
+              return 0;
+            }
+            return fallback.data?.length || 0;
+          }
           console.error('[RELIQ Supabase] Error recovering stale runs:', error.message);
           return 0;
         }
