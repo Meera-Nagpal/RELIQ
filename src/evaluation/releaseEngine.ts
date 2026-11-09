@@ -844,12 +844,16 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     }
     actionItems.push('Block candidate deployment until safety policies and API credentials are verified.');
   }
-  // Precedence 2: INSUFFICIENT EVIDENCE (Low coverage or massive operational error rate)
-  else if (isCoverageInsufficient || candidateErrorRate >= 40.0) {
+  // Precedence 2: INSUFFICIENT EVIDENCE (Low coverage, low sample size, or massive operational error rate)
+  else if (isCoverageInsufficient || candidateErrorRate >= 40.0 || evidenceStrength === 'NONE' || candidateEvaluated === 0) {
     decision = 'INSUFFICIENT_EVIDENCE';
     isRegression = false;
-    summary = `Evaluation inconclusive: Insufficient coverage (${Math.min(baselineCoverage, candidateCoverage).toFixed(1)}% < ${minCoverage}%) due to provider rate limits or operational errors.`;
-    reason = `Cannot certify release quality because only ${Math.min(baselineCoverage, candidateCoverage).toFixed(1)}% of test cases completed successfully. Upstream rate limits must be resolved before gating.`;
+    summary = candidateEvaluated === 0
+      ? 'Evaluation inconclusive: Zero candidate scenarios completed successfully.'
+      : `Evaluation inconclusive: Insufficient coverage (${Math.min(baselineCoverage, candidateCoverage).toFixed(1)}% < ${minCoverage}%) or insufficient sample size (N = ${candidateEvaluated}).`;
+    reason = candidateEvaluated === 0
+      ? 'Cannot certify release quality: No scenarios completed.'
+      : `Cannot certify release quality because benchmark evidence is insufficient (coverage ${Math.min(baselineCoverage, candidateCoverage).toFixed(1)}%, sample size N = ${candidateEvaluated}). Upstream rate limits and coverage must be resolved before gating.`;
     actionItems.push('Increase upstream API quota / rate limits or pace evaluation requests, then re-run the benchmark.');
   }
   // Precedence 2B: Incomplete Benchmark Subset (e.g. interrupted run or unfulfilled explicit benchmark target)
@@ -963,11 +967,18 @@ export function evaluateReleaseDecision(input: ReleaseEngineInput): ReleaseDecis
     actionItems.push('Verify that latency, cost, or sample size conditions are acceptable before promoting to production.');
   }
   // Precedence 5: SHIP (Clean benchmark complete with parity or improvement)
-  else {
+  else if (evidenceStrength !== 'LOW') {
     decision = 'SHIP';
     isRegression = false;
     summary = `Full ${requiredCases}-case benchmark completed. All release criteria and quality thresholds satisfied with zero regressions.`;
     reason = `Full ${requiredCases}-case benchmark completed. Results are based on the configured benchmark suite (${candidateQuality?.toFixed(1)}% vs baseline ${baselineQuality?.toFixed(1)}%). Larger samples may provide additional statistical stability.`;
+  } else {
+    // Insufficient actual benchmark evidence (< 10 cases) cannot approve an unconditioned release
+    decision = 'INSUFFICIENT_EVIDENCE';
+    isRegression = false;
+    summary = `Preliminary sample (N = ${candidateEvaluated} < 10): Insufficient benchmark evidence to approve production release.`;
+    reason = `Sample size (N = ${candidateEvaluated}) provides LOW evidence strength. A larger benchmark suite is required before approving release.`;
+    actionItems.push('Expand benchmark to a representative test suite (>= 10 scenarios) before release sign-off.');
   }
 
   const safetyBreakdown: SafetyBreakdownSummary = {
