@@ -179,8 +179,8 @@ async function startServer() {
     console.log(`[BACKEND] ${method} ${url}`);
 
     reliqMiddleware(req, res, () => {
-      // 1. If this is an unhandled /api/* route, return JSON 404
-      if (url.startsWith('/api')) {
+      // 1. If this is an unhandled /api/* or /health route, return JSON 404
+      if (url.startsWith('/api') || url === '/health') {
         res.statusCode = 404;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ error: `Cannot ${method} ${url}` }));
@@ -236,6 +236,7 @@ async function startServer() {
     console.log('Status: READY');
     console.log('==================================================\n');
     console.log('API endpoints:');
+    console.log('GET  /health');
     console.log('GET  /api/health');
     console.log('GET  /api/providers/status');
     console.log('GET  /api/providers/quota-status');

@@ -57,21 +57,37 @@ export function getStoredAuthToken(): string | null {
   return null;
 }
 
+export interface RetryConfig {
+  maxRetries?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+}
+
 /**
  * Executes a fetch request with automatic exponential backoff and jitter for transient
  * network failures and server 502/503/504 gateway/availability errors.
+ * Configured specifically to bridge Render production cold starts (15-30s).
  */
-async function fetchWithRetryTransient(
+export async function fetchWithRetryTransient(
   fetchFn: () => Promise<Response>,
-  maxRetries = 2
+  options: number | RetryConfig = 4
 ): Promise<Response> {
+  const config: RetryConfig = typeof options === 'number' ? { maxRetries: options } : options;
+  const maxRetries = config.maxRetries ?? 4;
+  const initialDelayMs = config.initialDelayMs ?? 400;
+  const maxDelayMs = config.maxDelayMs ?? 8000;
+
   let attempt = 0;
   while (true) {
     try {
       const res = await fetchFn();
-      if ((res.status === 502 || res.status === 503 || res.status === 504) && attempt < maxRetries) {
+      const isUnavailable = res.status === 502 || res.status === 503 || res.status === 504;
+      if (isUnavailable && attempt < maxRetries) {
         attempt++;
-        const backoffMs = Math.round(300 * Math.pow(2, attempt) + Math.random() * 100);
+        const backoffMs = Math.min(
+          maxDelayMs,
+          Math.round(initialDelayMs * Math.pow(2, attempt) + Math.random() * 150)
+        );
         await new Promise((r) => setTimeout(r, backoffMs));
         continue;
       }
@@ -79,7 +95,10 @@ async function fetchWithRetryTransient(
     } catch (err: any) {
       if (attempt < maxRetries) {
         attempt++;
-        const backoffMs = Math.round(300 * Math.pow(2, attempt) + Math.random() * 100);
+        const backoffMs = Math.min(
+          maxDelayMs,
+          Math.round(initialDelayMs * Math.pow(2, attempt) + Math.random() * 150)
+        );
         await new Promise((r) => setTimeout(r, backoffMs));
         continue;
       }
@@ -99,7 +118,7 @@ export async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit
     headers.set('Authorization', `Bearer ${token}`);
   }
   const isIdempotent = !init?.method || init.method === 'GET' || init.method === 'HEAD' || init.method === 'OPTIONS';
-  const maxRetries = isIdempotent ? 2 : 1;
+  const maxRetries = isIdempotent ? 4 : 1;
   return fetchWithRetryTransient(
     () => fetch(input, { ...init, headers }),
     maxRetries
@@ -158,7 +177,7 @@ export class ApiClient {
       const isIdempotent = !rest.method || rest.method === 'GET' || rest.method === 'HEAD' || rest.method === 'OPTIONS';
       response = await fetchWithRetryTransient(
         () => fetch(url, { ...rest, headers: mergedHeaders }),
-        isIdempotent ? 2 : 1
+        isIdempotent ? 4 : 1
       );
     } catch (err: any) {
       throw new ApiError(
@@ -249,6 +268,71 @@ export class ApiClient {
 
   delete<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+  }
+
+  async checkHealth(): Promise<HealthReport> {
+    return checkBackendHealth(this.baseUrl);
+  }
+}
+
+export interface HealthReport {
+  status: 'NOMINAL' | 'DEGRADED' | 'OFFLINE';
+  latencyMs: number;
+  database?: string;
+  databaseType?: string;
+  uptimeSec?: number;
+  service?: string;
+  version?: string;
+  timestamp?: string;
+  error?: string;
+}
+
+/**
+ * Directly checks backend API availability and database connectivity.
+ * Accurately determines if the service is NOMINAL (200 + connected), DEGRADED (200 + reconnecting),
+ * or OFFLINE (502/503/504 or network unreachable).
+ */
+export async function checkBackendHealth(baseUrl?: string): Promise<HealthReport> {
+  const start = Date.now();
+  const base = baseUrl !== undefined ? baseUrl : apiClient.getBaseUrl();
+  const healthUrl = base ? `${base.replace(/\/+$/, '')}/api/health` : '/api/health';
+
+  try {
+    const res = await fetch(healthUrl, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    const latencyMs = Date.now() - start;
+
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      const isDegraded =
+        data?.status === 'degraded' ||
+        (typeof data?.database === 'string' && !data.database.includes('connected'));
+
+      return {
+        status: isDegraded ? 'DEGRADED' : 'NOMINAL',
+        latencyMs,
+        database: typeof data?.database === 'string' ? data.database : data?.database?.status,
+        databaseType: data?.databaseType || data?.database?.type,
+        uptimeSec: data?.uptimeSec,
+        service: data?.service,
+        version: data?.version,
+        timestamp: data?.timestamp || new Date().toISOString(),
+      };
+    }
+
+    return {
+      status: 'OFFLINE',
+      latencyMs,
+      error: `HTTP ${res.status} ${res.statusText}`,
+    };
+  } catch (err: any) {
+    return {
+      status: 'OFFLINE',
+      latencyMs: Date.now() - start,
+      error: err?.message || 'Backend service unreachable',
+    };
   }
 }
 

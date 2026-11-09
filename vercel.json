@@ -5,11 +5,15 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/health",
+      "destination": "https://reliq-backend.onrender.com/health"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "https://reliq-backend.onrender.com/api/$1"
     },
     {
-      "source": "/((?!api).*)",
+      "source": "/((?!api|health).*)",
       "destination": "/index.html"
     }
   ]

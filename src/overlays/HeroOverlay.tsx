@@ -2,6 +2,7 @@ import React from 'react';
 import { useExperienceStore } from '../store/experienceStore';
 import { mapRangeClamped } from '../utils/math';
 import { useRouter } from '../router/useRouter';
+import { useCoreHealth } from '../hooks/useCoreHealth';
 
 /**
  * Hero HUD overlay for State 01 (SYSTEM)
@@ -11,6 +12,39 @@ import { useRouter } from '../router/useRouter';
 export function HeroOverlay() {
   const scrollProgress = useExperienceStore((state) => state.scrollProgress);
   const { navigate } = useRouter();
+  const { status: coreStatus, latencyMs } = useCoreHealth(20000);
+
+  const getStatusDisplay = () => {
+    switch (coreStatus) {
+      case 'NOMINAL':
+        return {
+          label: 'CORE: NOMINAL',
+          color: '#2ECC71',
+          shadow: '0 0 8px #2ECC71',
+        };
+      case 'DEGRADED':
+        return {
+          label: 'CORE: DEGRADED',
+          color: '#F59E0B',
+          shadow: '0 0 8px #F59E0B',
+        };
+      case 'OFFLINE':
+        return {
+          label: 'CORE: OFFLINE',
+          color: '#EF4444',
+          shadow: '0 0 8px #EF4444',
+        };
+      case 'CHECKING':
+      default:
+        return {
+          label: 'CORE: CHECKING',
+          color: '#60A5FA',
+          shadow: '0 0 8px #60A5FA',
+        };
+    }
+  };
+
+  const statusDisplay = getStatusDisplay();
 
   const opacity = mapRangeClamped(scrollProgress, 0, 0.12, 1, 0);
   const translateY = mapRangeClamped(scrollProgress, 0, 0.12, 0, -30);
@@ -76,6 +110,7 @@ export function HeroOverlay() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <div
+            title={`Backend Service: ${statusDisplay.label}${latencyMs ? ` (${latencyMs}ms)` : ''}`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -90,11 +125,11 @@ export function HeroOverlay() {
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
-                background: '#2ECC71',
-                boxShadow: '0 0 8px #2ECC71',
+                background: statusDisplay.color,
+                boxShadow: statusDisplay.shadow,
               }}
             />
-            CORE: NOMINAL
+            {statusDisplay.label}
           </div>
 
           <button

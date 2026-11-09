@@ -132,9 +132,7 @@ export const ReliqApp: React.FC = () => {
       } catch {}
     } catch (err: any) {
       console.error('Failed to load RELIQ repository data:', err);
-      if (projects.length === 0) {
-        setLoadError(err.message || 'Failed to connect to backend service');
-      }
+      setLoadError(err.message || 'Failed to connect to backend service (HTTP 503)');
       setIsLoading(false);
     }
   };
@@ -294,48 +292,132 @@ export const ReliqApp: React.FC = () => {
     await loadData();
   };
 
-  if (loadError) {
+  if (loadError && projects.length === 0) {
     return (
       <div
         style={{
           width: '100vw',
           height: '100vh',
-          background: 'var(--bg, #0F0F0F)',
+          background: 'var(--bg, #0B0E14)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'var(--blue-light, #60A5FA)',
-          fontFamily: "var(--font-sans, 'Geist Sans', sans-serif)",
-          gap: '1rem',
+          fontFamily: "var(--font-sans, 'Geist Sans', -apple-system, BlinkMacSystemFont, sans-serif)",
           padding: '2rem',
           textAlign: 'center',
+          boxSizing: 'border-box',
         }}
       >
-        <div style={{ fontSize: '2.5rem' }}>⚠️</div>
-        <h2 style={{ color: '#FFFFFF', margin: 0 }}>Backend Service Unavailable</h2>
-        <p style={{ color: '#8899AA', maxWidth: '480px', margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>
-          {loadError}. Please ensure the RELIQ backend service is running on port 3001.
-        </p>
-        <button
-          onClick={() => {
-            setIsLoading(true);
-            loadData();
-          }}
+        <div
           style={{
-            background: 'rgba(255, 255, 255, 0.06)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            color: '#FFFFFF',
-            padding: '0.6rem 1.4rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            marginTop: '0.5rem',
+            maxWidth: '560px',
+            background: 'rgba(15, 23, 42, 0.85)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '8px',
+            padding: '2.5rem 2rem',
+            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(239, 68, 68, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.25rem',
           }}
         >
-          Retry Connection
-        </button>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.3rem 0.75rem',
+              borderRadius: '999px',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              color: '#EF4444',
+              fontSize: '0.72rem',
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+            }}
+          >
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: '#EF4444',
+                boxShadow: '0 0 6px #EF4444',
+              }}
+            />
+            BACKEND SERVICE INITIALIZING (HTTP 503 / RECONNECTING)
+          </div>
+
+          <h2
+            style={{
+              color: '#FFFFFF',
+              margin: 0,
+              fontSize: '1.35rem',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Connecting to RELIQ Engine
+          </h2>
+
+          <p
+            style={{
+              color: '#94A3B8',
+              fontSize: '0.88rem',
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            The Render production backend is currently waking up from idle or recovering database connectivity.
+            Render free-tier instances sleep when idle and take 20–40 seconds to spin up.
+            Automatic connection retries with exponential backoff are running.
+          </p>
+
+          {loadError && (
+            <div
+              style={{
+                width: '100%',
+                background: 'rgba(0, 0, 0, 0.45)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '4px',
+                padding: '0.65rem 0.85rem',
+                fontSize: '0.76rem',
+                fontFamily: 'monospace',
+                color: '#F87171',
+                textAlign: 'left',
+                wordBreak: 'break-all',
+              }}
+            >
+              <strong>Diagnostic:</strong> {loadError}
+            </div>
+          )}
+
+          <button
+            disabled={isLoading}
+            onClick={() => {
+              setIsLoading(true);
+              loadData();
+            }}
+            style={{
+              background: isLoading ? 'rgba(59, 130, 246, 0.5)' : '#3B82F6',
+              border: '1px solid rgba(59, 130, 246, 0.4)',
+              color: '#FFFFFF',
+              padding: '0.65rem 1.6rem',
+              borderRadius: '4px',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              letterSpacing: '0.02em',
+              transition: 'all 0.2s',
+              marginTop: '0.5rem',
+            }}
+          >
+            {isLoading ? 'Connecting to Backend...' : 'Retry Connection Now'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -360,6 +442,48 @@ export const ReliqApp: React.FC = () => {
 
       {/* Main Workspace Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        {/* Offline / Backend Reconnecting Alert Banner */}
+        {loadError && projects.length > 0 && (
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              borderBottom: '1px solid rgba(239, 68, 68, 0.35)',
+              color: '#FCA5A5',
+              padding: '0.45rem 1rem',
+              fontSize: '0.78rem',
+              fontFamily: 'monospace',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              zIndex: 9999,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ color: '#EF4444', fontWeight: 'bold' }}>⚠️ BACKEND DEGRADED (HTTP 503)</span>
+              <span>— Displaying cached repository data. Backend may be waking up from idle.</span>
+            </div>
+            <button
+              onClick={() => {
+                setIsLoading(true);
+                loadData();
+              }}
+              style={{
+                background: 'rgba(239, 68, 68, 0.25)',
+                border: '1px solid rgba(239, 68, 68, 0.5)',
+                color: '#FFFFFF',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontSize: '0.72rem',
+                fontFamily: 'monospace',
+                fontWeight: 600,
+              }}
+            >
+              Retry Sync
+            </button>
+          </div>
+        )}
+
         {/* Top Header */}
         <AppHeader
           projects={projects}

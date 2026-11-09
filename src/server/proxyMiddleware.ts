@@ -49,6 +49,16 @@ import { canUserAccessProject, canUserAccessRun } from './routes/authUtils';
 
 export { getApiKey, fetchWithRetry, parseJsonBody, sendJson };
 
+// ── Module-scoped Health Check Cache to prevent rapid DB probe churn ──
+interface CachedHealthState {
+  databaseStatus: string;
+  databaseType: string;
+  latencyMs: number;
+  timestamp: number;
+}
+let cachedHealthState: CachedHealthState | null = null;
+const HEALTH_CACHE_TTL_MS = 20000; // 20 seconds TTL
+
 export function createReliqProxyMiddleware() {
   return async function reliqProxyMiddleware(
     req: IncomingMessage,
@@ -58,16 +68,16 @@ export function createReliqProxyMiddleware() {
     const [parsedUrl, rawQuery] = (req.url || '').split('?');
     const query = new URLSearchParams(rawQuery || '');
 
-    // Safe local development CORS headers
+    // Safe CORS headers for local development and production Vercel frontend
     const origin = req.headers.origin;
-    if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+    if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Reliq-Provider');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Reliq-Provider, Accept');
 
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;
@@ -142,42 +152,62 @@ export function createReliqProxyMiddleware() {
       return;
     }
 
-    // ── Platform Health Endpoint: GET /api/health ───────────────
-    if (req.method === 'GET' && parsedUrl === '/api/health') {
+    // ── Platform Health Endpoint: GET /api/health or GET /health ──
+    if (req.method === 'GET' && (parsedUrl === '/api/health' || parsedUrl === '/health')) {
       let databaseStatus = 'disconnected';
       let databaseType = 'none';
       let latencyMs = 0;
 
-      if (isSupabaseDriverActive()) {
-        const check = await testSupabaseConnection();
-        databaseType = 'supabase_postgresql';
-        databaseStatus = check.connected ? 'connected' : 'error: database connection failed';
-        latencyMs = check.latencyMs;
+      const now = Date.now();
+      if (cachedHealthState && now - cachedHealthState.timestamp < HEALTH_CACHE_TTL_MS) {
+        databaseStatus = cachedHealthState.databaseStatus;
+        databaseType = cachedHealthState.databaseType;
+        latencyMs = cachedHealthState.latencyMs;
       } else {
-        if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+        if (isSupabaseDriverActive()) {
+          const check = await testSupabaseConnection();
           databaseType = 'supabase_postgresql';
-          databaseStatus = 'error: database connection failed';
+          databaseStatus = check.connected ? 'connected' : 'error: database connection failed';
+          latencyMs = check.latencyMs;
         } else {
-          try {
-            const start = Date.now();
-            const db = getDatabase();
-            const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
-            if (row && row.alive === 1) {
-              databaseStatus = 'connected';
-              databaseType = 'sqlite';
-              latencyMs = Date.now() - start;
-            }
-          } catch {
+          if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
+            databaseType = 'supabase_postgresql';
             databaseStatus = 'error: database connection failed';
-            databaseType = 'sqlite';
+          } else {
+            try {
+              const start = Date.now();
+              const db = getDatabase();
+              const row = db.prepare('SELECT 1 as alive').get() as { alive?: number };
+              if (row && row.alive === 1) {
+                databaseStatus = 'connected';
+                databaseType = 'sqlite';
+                latencyMs = Date.now() - start;
+              }
+            } catch {
+              databaseStatus = 'error: database connection failed';
+              databaseType = 'sqlite';
+            }
           }
         }
+
+        cachedHealthState = {
+          databaseStatus,
+          databaseType,
+          latencyMs,
+          timestamp: now,
+        };
       }
 
-      const isHealthy = databaseStatus === 'connected';
+      const isDbConnected = databaseStatus === 'connected';
+      const statusLabel = isDbConnected ? 'healthy' : 'degraded';
       const mem = process.memoryUsage();
-      sendJson(res, isHealthy ? 200 : 503, {
-        status: isHealthy ? 'healthy' : 'unhealthy',
+
+      // Return 200 OK for process liveness so Render / Vercel do not kill the container
+      // or block routing during temporary database reconnects. The JSON payload indicates degraded state.
+      sendJson(res, 200, {
+        status: statusLabel,
+        uptimeSec: Math.round(process.uptime()),
+        timestamp: new Date().toISOString(),
         database: databaseStatus,
         databaseType,
         latencyMs,

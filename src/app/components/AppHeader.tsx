@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { EvaluationRun, Project } from '../../domain/types';
 import { AppView, useRouter } from '../../router/useRouter';
+import { useCoreHealth } from '../../hooks/useCoreHealth';
 
 interface AppHeaderProps {
   projects: Project[];
@@ -27,6 +28,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const { appView, navigate } = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { status: coreStatus, latencyMs, databaseType } = useCoreHealth(25000);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -227,8 +229,56 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         )}
       </div>
 
-      {/* Right: Release Gate Indicator & Primary Action */}
+      {/* Right: Core Health & Release Gate Indicator & Primary Action */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Live Core Health Indicator Pill */}
+        {(() => {
+          const isNominal = coreStatus === 'NOMINAL';
+          const isDegraded = coreStatus === 'DEGRADED';
+          const isOffline = coreStatus === 'OFFLINE';
+
+          const color = isNominal ? '#22C55E' : isDegraded ? '#F59E0B' : isOffline ? '#EF4444' : '#60A5FA';
+          const bg = isNominal ? '#13241A' : isDegraded ? '#261D10' : isOffline ? '#261414' : '#101B2B';
+          const border = isNominal
+            ? 'rgba(34, 197, 94, 0.3)'
+            : isDegraded
+            ? 'rgba(245, 158, 11, 0.3)'
+            : isOffline
+            ? 'rgba(239, 68, 68, 0.3)'
+            : 'rgba(96, 165, 250, 0.3)';
+
+          return (
+            <div
+              title={`API Health: CORE ${coreStatus}${latencyMs ? ` (${latencyMs}ms)` : ''}${databaseType ? ` | DB: ${databaseType}` : ''}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '2px',
+                fontSize: '0.68rem',
+                fontFamily: 'monospace',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                background: bg,
+                color: color,
+                border: `1px solid ${border}`,
+              }}
+            >
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: color,
+                  boxShadow: `0 0 6px ${color}`,
+                }}
+              />
+              <span>CORE: {coreStatus}</span>
+            </div>
+          );
+        })()}
+
         {/* Release Gate Indicator Pill (if active run exists) */}
         {activeRun && (() => {
           const status = activeRun.releaseDecision?.status;
