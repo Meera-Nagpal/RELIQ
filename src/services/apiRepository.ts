@@ -137,6 +137,7 @@ function mapBackendSettings(s: any): RegressionSettings {
 
 export class ApiRepository implements StorageRepository {
   private client: ApiClient;
+  private casesCache = new Map<string, TestCase[]>();
 
   constructor(client: ApiClient = apiClient) {
     this.client = client;
@@ -151,28 +152,29 @@ export class ApiRepository implements StorageRepository {
     const res = await this.client.get<{ projects: any[] }>('/api/projects');
     const rawProjects = Array.isArray(res?.projects) ? res.projects : [];
 
-    const mappedProjects: Project[] = [];
-    for (const p of rawProjects) {
-      let settings: RegressionSettings = { ...DEFAULT_REGRESSION_SETTINGS };
-      try {
-        const sRes = await this.client.get<any>(`/api/projects/${encodeURIComponent(p.id)}/settings`);
-        if (sRes) {
-          settings = mapBackendSettings(sRes);
-        }
-      } catch {}
+    const mappedProjects = await Promise.all(
+      rawProjects.map(async (p) => {
+        let settings: RegressionSettings = { ...DEFAULT_REGRESSION_SETTINGS };
+        try {
+          const sRes = await this.client.get<any>(`/api/projects/${encodeURIComponent(p.id)}/settings`);
+          if (sRes) {
+            settings = mapBackendSettings(sRes);
+          }
+        } catch {}
 
-      mappedProjects.push({
-        id: p.id,
-        name: p.name,
-        description: p.description || '',
-        defaultDatasetId: p.default_dataset_id || undefined,
-        baselineVersionId: p.baseline_version_id || 'ver-v1-4',
-        candidateVersionId: p.candidate_version_id || 'ver-v1-5',
-        regressionSettings: settings,
-        createdAt: p.created_at || p.createdAt || new Date().toISOString(),
-        updatedAt: p.updated_at || p.updatedAt || new Date().toISOString(),
-      });
-    }
+        return {
+          id: p.id,
+          name: p.name,
+          description: p.description || '',
+          defaultDatasetId: p.default_dataset_id || undefined,
+          baselineVersionId: p.baseline_version_id || 'ver-v1-4',
+          candidateVersionId: p.candidate_version_id || 'ver-v1-5',
+          regressionSettings: settings,
+          createdAt: p.created_at || p.createdAt || new Date().toISOString(),
+          updatedAt: p.updated_at || p.updatedAt || new Date().toISOString(),
+        };
+      })
+    );
 
     return mappedProjects;
   }
@@ -257,13 +259,16 @@ export class ApiRepository implements StorageRepository {
 
     const datasetsWithCases = await Promise.all(
       rawDatasets.map(async (d) => {
-        let cases: TestCase[] = [];
-        try {
-          const caseRes = await this.client.get<{ cases: any[] }>(`/api/datasets/${encodeURIComponent(d.id)}/cases`);
-          if (Array.isArray(caseRes?.cases)) {
-            cases = caseRes.cases.map(mapBackendTestCase);
-          }
-        } catch {}
+        let cases: TestCase[] = this.casesCache.get(d.id) || [];
+        if (cases.length === 0) {
+          try {
+            const caseRes = await this.client.get<{ cases: any[] }>(`/api/datasets/${encodeURIComponent(d.id)}/cases`);
+            if (Array.isArray(caseRes?.cases)) {
+              cases = caseRes.cases.map(mapBackendTestCase);
+              this.casesCache.set(d.id, cases);
+            }
+          } catch {}
+        }
         return mapBackendDataset(d, cases);
       })
     );
@@ -277,13 +282,16 @@ export class ApiRepository implements StorageRepository {
       const d = res?.dataset || res;
       if (!d || !d.id) return null;
 
-      let cases: TestCase[] = [];
-      try {
-        const caseRes = await this.client.get<{ cases: any[] }>(`/api/datasets/${encodeURIComponent(id)}/cases`);
-        if (Array.isArray(caseRes?.cases)) {
-          cases = caseRes.cases.map(mapBackendTestCase);
-        }
-      } catch {}
+      let cases: TestCase[] = this.casesCache.get(id) || [];
+      if (cases.length === 0) {
+        try {
+          const caseRes = await this.client.get<{ cases: any[] }>(`/api/datasets/${encodeURIComponent(id)}/cases`);
+          if (Array.isArray(caseRes?.cases)) {
+            cases = caseRes.cases.map(mapBackendTestCase);
+            this.casesCache.set(id, cases);
+          }
+        } catch {}
+      }
 
       return mapBackendDataset(d, cases);
     } catch (err: any) {
@@ -414,6 +422,9 @@ export class ApiRepository implements StorageRepository {
     const res = await this.client.post<any>('/api/datasets/import', request);
     const d = res?.dataset || res;
     const cases = Array.isArray(d?.cases) ? d.cases.map(mapBackendTestCase) : [];
+    if (d?.id && cases.length > 0) {
+      this.casesCache.set(d.id, cases);
+    }
     return {
       dataset: mapBackendDataset(d, cases),
       preview: res?.preview,
@@ -431,16 +442,22 @@ export class ApiRepository implements StorageRepository {
   }
 
   async deleteDataset(id: string): Promise<void> {
+    this.casesCache.delete(id);
     await this.client.delete(`/api/datasets/${encodeURIComponent(id)}`);
   }
 
   // ── Test Cases ────────────────────────────────────────────
   async getTestCases(datasetId: string): Promise<TestCase[]> {
+    const cached = this.casesCache.get(datasetId);
+    if (cached && cached.length > 0) return cached;
     const res = await this.client.get<{ cases: any[] }>(`/api/datasets/${encodeURIComponent(datasetId)}/cases`);
-    return Array.isArray(res?.cases) ? res.cases.map(mapBackendTestCase) : [];
+    const mapped = Array.isArray(res?.cases) ? res.cases.map(mapBackendTestCase) : [];
+    if (mapped.length > 0) this.casesCache.set(datasetId, mapped);
+    return mapped;
   }
 
   async saveTestCase(datasetId: string, testCase: TestCase): Promise<void> {
+    this.casesCache.delete(datasetId);
     let exists = false;
     try {
       await this.client.put(
@@ -488,6 +505,7 @@ export class ApiRepository implements StorageRepository {
   }
 
   async deleteTestCase(datasetId: string, caseId: string): Promise<void> {
+    this.casesCache.delete(datasetId);
     await this.client.delete(
       `/api/datasets/${encodeURIComponent(datasetId)}/cases/${encodeURIComponent(caseId)}`
     );
