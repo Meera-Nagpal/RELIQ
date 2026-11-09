@@ -38,45 +38,102 @@ import { SettingsView } from './views/SettingsView';
 export const ReliqApp: React.FC = () => {
   const { appView, navigate } = useRouter();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProjectId, setActiveProjectId] = useState<string>('');
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [activeDatasetId, setActiveDatasetId] = useState<string>('');
-  const [versions, setVersions] = useState<ModelVersion[]>([]);
-  const [evaluationRuns, setEvaluationRuns] = useState<EvaluationRun[]>([]);
-  const [activeRunId, setActiveRunId] = useState<string>('');
+  // Optimistic SWR state initialization from localStorage cache for 0ms initial render
+  const [projects, setProjects] = useState<Project[]>(() => {
+    try {
+      const c = localStorage.getItem('reliq_cache_projects');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [activeProjectId, setActiveProjectId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('reliq_active_project_id_v2') || '';
+    } catch { return ''; }
+  });
+  const [datasets, setDatasets] = useState<Dataset[]>(() => {
+    try {
+      const c = localStorage.getItem('reliq_cache_datasets');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [activeDatasetId, setActiveDatasetId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('reliq_cache_active_dataset_id') || '';
+    } catch { return ''; }
+  });
+  const [versions, setVersions] = useState<ModelVersion[]>(() => {
+    try {
+      const c = localStorage.getItem('reliq_cache_versions');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [evaluationRuns, setEvaluationRuns] = useState<EvaluationRun[]>(() => {
+    try {
+      const c = localStorage.getItem('reliq_cache_runs');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [activeRunId, setActiveRunId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('reliq_cache_active_run_id') || '';
+    } catch { return ''; }
+  });
 
-  // Initial load from storage
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('reliq_cache_projects');
+    } catch { return true; }
+  });
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Parallel background sync with storage/database
   const loadData = async () => {
     try {
       setLoadError(null);
-      const projs = await repository.getProjects();
       const storedActiveId = repository.getActiveProjectId();
+
+      // Parallel fetch across all resources (eliminates sequential N+1 network delay)
+      const [projs, dsets, vers, runs] = await Promise.all([
+        repository.getProjects(),
+        repository.getDatasets(storedActiveId || undefined),
+        repository.getVersions(),
+        repository.getEvaluationRuns(storedActiveId || undefined),
+      ]);
+
       const validActiveProject = projs.find((p) => p.id === storedActiveId);
       const currentActiveId = validActiveProject ? validActiveProject.id : (projs[0]?.id || '');
       if (currentActiveId) {
         repository.setActiveProjectId(currentActiveId);
       }
-      const dsets = await repository.getDatasets(currentActiveId);
-      const vers = await repository.getVersions();
-      const runs = await repository.getEvaluationRuns(currentActiveId);
 
       setProjects(projs);
       setActiveProjectId(currentActiveId);
       setDatasets(dsets);
       const preferredInitialDataset = dsets.find((d) => d.id === 'ds-checkout-golden')
-        || dsets.find((d) => (d.cases?.length || 0) > 0)
+        || dsets.find((d) => (d.cases?.length || 0) > 0 || (d.caseCount || 0) > 0)
         || dsets[0];
-      setActiveDatasetId(preferredInitialDataset?.id || '');
+      const newActiveDsId = preferredInitialDataset?.id || '';
+      setActiveDatasetId(newActiveDsId);
       setVersions(vers);
       setEvaluationRuns(runs);
-      setActiveRunId(runs[0]?.id || '');
+      const newActiveRunId = runs[0]?.id || '';
+      setActiveRunId(newActiveRunId);
       setIsLoading(false);
+
+      // Persist warm cache to localStorage for instantaneous next reload
+      try {
+        localStorage.setItem('reliq_cache_projects', JSON.stringify(projs));
+        localStorage.setItem('reliq_cache_datasets', JSON.stringify(dsets));
+        localStorage.setItem('reliq_cache_versions', JSON.stringify(vers));
+        localStorage.setItem('reliq_cache_runs', JSON.stringify(runs));
+        if (newActiveDsId) localStorage.setItem('reliq_cache_active_dataset_id', newActiveDsId);
+        if (newActiveRunId) localStorage.setItem('reliq_cache_active_run_id', newActiveRunId);
+      } catch {}
     } catch (err: any) {
       console.error('Failed to load RELIQ repository data:', err);
-      setLoadError(err.message || 'Failed to connect to backend service');
+      if (projects.length === 0) {
+        setLoadError(err.message || 'Failed to connect to backend service');
+      }
       setIsLoading(false);
     }
   };
