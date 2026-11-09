@@ -295,9 +295,9 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
           </div>
           <div style={{ gridColumn: 'span 2', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <span style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Judge: </span>
+              <span style={{ color: '#8899AA', fontSize: '0.68rem', textTransform: 'uppercase' }}>Judge Analysis: </span>
               <span style={{ color: judgeEnabled ? '#4E9B6F' : '#888888', fontWeight: 600, fontSize: '0.75rem' }}>
-                {judgeEnabled ? (judgeModel || 'Qwen 3.8 27B') : 'Disabled (Deterministic)'}
+                {judgeEnabled ? `${judgeModel || 'Groq Judge'} (Optional Analysis)` : 'OFF (0 API Calls • Deterministic Benchmark)'}
               </span>
             </div>
             {runId && (
@@ -455,7 +455,7 @@ export const EvaluationProgressModal: React.FC<EvaluationProgressModalProps> = (
                   border: judgeEnabled ? '1px solid rgba(91, 130, 166, 0.28)' : '1px solid rgba(255, 255, 255, 0.1)',
                 }}
               >
-                LLM Judge: {judgeEnabled ? 'ACTIVE' : 'OFF'}
+                Judge Analysis: {judgeEnabled ? 'ACTIVE' : 'OFF (0 Calls)'}
               </span>
               {phase && (
                 <span
