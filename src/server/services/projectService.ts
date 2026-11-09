@@ -25,10 +25,11 @@ export interface ProjectRecord {
 export class ProjectService {
   /**
    * Retrieves all projects, ordered by creation date descending.
+   * If userId is provided, filters to projects owned by that user or shared (user_id IS NULL).
    */
-  getAllProjects(): ProjectRecord[] | Promise<ProjectRecord[]> {
+  getAllProjects(userId?: string): ProjectRecord[] | Promise<ProjectRecord[]> {
     if (isSupabaseDriverActive()) {
-      return supabaseRepository.getAllProjects();
+      return supabaseRepository.getAllProjects(userId);
     }
     const db = getDatabase();
     return db
@@ -60,6 +61,7 @@ export class ProjectService {
     defaultDatasetId?: string;
     baselineVersionId?: string;
     candidateVersionId?: string;
+    userId?: string;
   }): ProjectRecord | Promise<ProjectRecord> {
     const id = data.id?.trim() || `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
@@ -76,6 +78,7 @@ export class ProjectService {
         default_dataset_id: defaultDatasetId,
         baseline_version_id: baselineVersionId,
         candidate_version_id: candidateVersionId,
+        user_id: data.userId || null,
         created_at: now,
         updated_at: now,
       });
