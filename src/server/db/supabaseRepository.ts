@@ -20,10 +20,10 @@ export class SupabaseRepository {
     const supabase = getSupabaseAdmin();
     let query = supabase
       .from('projects')
-      .select('id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at')
+      .select('id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, user_id, created_at, updated_at')
       .order('created_at', { ascending: false });
 
-    if (userId) {
+    if (userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
       query = query.or(`user_id.eq.${userId},user_id.is.null`);
     }
 
@@ -36,7 +36,7 @@ export class SupabaseRepository {
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('projects')
-      .select('id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at')
+      .select('id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, user_id, created_at, updated_at')
       .eq('id', id)
       .maybeSingle();
 
@@ -56,10 +56,14 @@ export class SupabaseRepository {
     updated_at: string;
   }): Promise<ProjectRecord> {
     const supabase = getSupabaseAdmin();
+    const payload = { ...project };
+    if (payload.user_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.user_id)) {
+      payload.user_id = null;
+    }
     const { data, error } = await supabase
       .from('projects')
-      .insert(project)
-      .select('id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, created_at, updated_at')
+      .insert(payload)
+      .select('id, name, description, default_dataset_id, baseline_version_id, candidate_version_id, user_id, created_at, updated_at')
       .single();
 
     if (error) throw new Error(`[Supabase] createProject failed: ${error.message}`);
@@ -262,7 +266,7 @@ export class SupabaseRepository {
   }
 
   // ── 6. Evaluation Runs ────────────────────────────────────
-  async getAllEvaluationRuns(projectId?: string): Promise<any[]> {
+  async getAllEvaluationRuns(projectId?: string, userId?: string): Promise<any[]> {
     const supabase = getSupabaseAdmin();
     // Select summary columns only to prevent buffer bloat and heap exhaustion in Render's 512MB RAM
     const summaryColumns =
@@ -270,6 +274,9 @@ export class SupabaseRepository {
     let query = supabase.from('evaluation_runs').select(summaryColumns).order('started_at', { ascending: false });
     if (projectId) {
       query = query.eq('project_id', projectId);
+    }
+    if (userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+      query = query.or(`user_id.eq.${userId},user_id.is.null`);
     }
     const { data, error } = await query;
     if (error) throw new Error(`[Supabase] getAllEvaluationRuns failed: ${error.message}`);
@@ -285,17 +292,56 @@ export class SupabaseRepository {
 
   async saveEvaluationRun(runRecord: any, resultsRecords: any[] = []): Promise<void> {
     const supabase = getSupabaseAdmin();
-    const { error: runError } = await supabase.from('evaluation_runs').upsert(runRecord, { onConflict: 'id' });
-    if (runError) throw new Error(`[Supabase] saveEvaluationRun failed: ${runError.message}`);
+    const hasRunFields = runRecord && Object.keys(runRecord).filter((k) => k !== 'id').length > 0;
+    if (hasRunFields) {
+      const payload = { ...runRecord };
+      if (payload.user_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.user_id)) {
+        payload.user_id = null;
+      }
+      let { error: runError } = await supabase.from('evaluation_runs').upsert(payload, { onConflict: 'id' });
+      if (runError && runError.message.includes('last_heartbeat_at')) {
+        delete payload.last_heartbeat_at;
+        const retry = await supabase.from('evaluation_runs').upsert(payload, { onConflict: 'id' });
+        runError = retry.error;
+      }
+      if (runError && runError.message.includes('user_id')) {
+        delete payload.user_id;
+        const retry = await supabase.from('evaluation_runs').upsert(payload, { onConflict: 'id' });
+        runError = retry.error;
+      }
+      if (runError) throw new Error(`[Supabase] saveEvaluationRun failed: ${runError.message}`);
+    }
 
     if (resultsRecords.length > 0) {
-      const CHUNK_SIZE = 100;
-      for (let i = 0; i < resultsRecords.length; i += CHUNK_SIZE) {
-        const chunk = resultsRecords.slice(i, i + CHUNK_SIZE);
-        const { error: resError } = await supabase.from('evaluation_results').upsert(chunk, { onConflict: 'id' });
-        if (resError) throw new Error(`[Supabase] saveEvaluationResults chunk failed: ${resError.message}`);
+      await this.saveEvaluationResults(resultsRecords);
+    }
+  }
+
+  async saveEvaluationResults(resultsRecords: any[]): Promise<void> {
+    if (!resultsRecords || resultsRecords.length === 0) return;
+    const supabase = getSupabaseAdmin();
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < resultsRecords.length; i += CHUNK_SIZE) {
+      const chunk = resultsRecords.slice(i, i + CHUNK_SIZE);
+      const { error: resError } = await supabase.from('evaluation_results').upsert(chunk, { onConflict: 'id' });
+      if (resError) throw new Error(`[Supabase] saveEvaluationResults chunk failed: ${resError.message}`);
+    }
+  }
+
+  async updateEvaluationRunProgress(runId: string, updates: Record<string, any>): Promise<void> {
+    const supabase = getSupabaseAdmin();
+    const payload = { ...updates };
+    let { error } = await supabase.from('evaluation_runs').update(payload).eq('id', runId);
+    if (error && error.message.includes('last_heartbeat_at')) {
+      delete payload.last_heartbeat_at;
+      if (Object.keys(payload).length > 0) {
+        const retry = await supabase.from('evaluation_runs').update(payload).eq('id', runId);
+        error = retry.error;
+      } else {
+        error = null;
       }
     }
+    if (error) throw new Error(`[Supabase] updateEvaluationRunProgress failed: ${error.message}`);
   }
 
   async deleteEvaluationRun(id: string): Promise<boolean> {

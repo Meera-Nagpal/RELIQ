@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS projects (
   default_dataset_id TEXT,
   baseline_version_id TEXT,
   candidate_version_id TEXT,
+  user_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -104,6 +105,8 @@ CREATE TABLE IF NOT EXISTS evaluation_runs (
   quality_score REAL,
   started_at TEXT NOT NULL,
   completed_at TEXT,
+  last_heartbeat_at TEXT,
+  user_id TEXT,
   release_decision TEXT,
   release_reason TEXT,
   run_json TEXT,
@@ -198,6 +201,7 @@ export function initSchema(db: Database.Database): void {
     ['default_dataset_id', 'TEXT'],
     ['baseline_version_id', 'TEXT'],
     ['candidate_version_id', 'TEXT'],
+    ['user_id', 'TEXT'],
   ]);
 
   ensureColumns('datasets', [
@@ -239,6 +243,8 @@ export function initSchema(db: Database.Database): void {
     ['selected_case_count', 'INTEGER'],
     ['skipped_cases', 'INTEGER DEFAULT 0'],
     ['cancelled_cases', 'INTEGER DEFAULT 0'],
+    ['last_heartbeat_at', 'TEXT'],
+    ['user_id', 'TEXT'],
   ]);
 }
 
