@@ -38,6 +38,7 @@ export interface ServerEvaluationOptions {
   runId?: string;
   useCache?: boolean;
   bypassCache?: boolean;
+  userId?: string;
 }
 
 export interface EvaluationJob {
@@ -272,67 +273,82 @@ export async function getJobStatus(runId: string): Promise<EvaluationJob | undef
   const inMemory = jobs.get(runId);
   if (inMemory) return inMemory;
 
-  // Supabase PostgreSQL mode
-  if (isSupabaseDriverActive()) {
-    try {
-      const dbRun = await evaluationDbService.getEvaluationRunById(runId);
-      if (dbRun) {
-        return {
-          runId,
-          status: dbRun.status === 'COMPLETED' ? 'COMPLETED' : dbRun.status === 'FAILED' ? 'FAILED' : 'RUNNING',
-          progress: {
-            current: dbRun.metrics?.totalCases ?? dbRun.metrics?.evaluatedCases ?? 0,
-            total: dbRun.metrics?.totalCases ?? 0,
-            percent: dbRun.status === 'COMPLETED' ? 100 : 0,
-          },
-          startTime: new Date(dbRun.timestamp || dbRun.started_at || Date.now()).getTime(),
-          endTime: dbRun.completed_at ? new Date(dbRun.completed_at).getTime() : undefined,
-          run: dbRun,
-          error: dbRun.status === 'FAILED' ? (dbRun.release_reason || dbRun.releaseDecision?.reason || 'Evaluation run failed') : undefined,
-        };
-      }
-    } catch {}
-    return undefined;
-  }
-
-  // If not in active memory, check if already persisted on disk (local/test mode)
-  const diskRun = getRunFromDisk(runId);
-  if (diskRun) {
-    return {
-      runId,
-      status: 'COMPLETED',
-      progress: {
-        current: diskRun.metrics?.totalCases ?? 0,
-        total: diskRun.metrics?.totalCases ?? 0,
-        percent: 100,
-      },
-      startTime: new Date(diskRun.timestamp).getTime(),
-      endTime: new Date(diskRun.timestamp).getTime() + (diskRun.durationMs || 0),
-      run: diskRun,
-    };
-  }
-
-  // Check authoritative SQLite store (local/test mode)
+  // DB-backed retrieval (for surviving container restarts or worker cache evictions)
   try {
-    const dbRun = evaluationDbService.getEvaluationRunById(runId) as any;
-    if (dbRun && typeof dbRun.then !== 'function') {
+    const dbRun = await evaluationDbService.getEvaluationRunById(runId);
+    if (dbRun) {
+      let status: 'RUNNING' | 'COMPLETED' | 'FAILED' =
+        dbRun.status === 'COMPLETED' ? 'COMPLETED' : dbRun.status === 'FAILED' ? 'FAILED' : 'RUNNING';
+      let error = dbRun.status === 'FAILED'
+        ? (dbRun.release_reason || dbRun.releaseDecision?.reason || (dbRun.releaseDecision as any)?.justification || 'Evaluation run failed')
+        : undefined;
+
+      // Heartbeat staleness detection: If marked RUNNING in DB but no active in-memory job exists and heartbeat is dead
+      if (status === 'RUNNING') {
+        const lastHeartbeat = dbRun.last_heartbeat_at || dbRun.lastHeartbeatAt || dbRun.started_at || dbRun.timestamp;
+        const heartbeatAge = Date.now() - new Date(lastHeartbeat || Date.now()).getTime();
+        if (heartbeatAge > 60000) {
+          status = 'FAILED';
+          error = 'Worker heartbeat expired: evaluation process interrupted or restarted by host.';
+          // Mark run failed in DB asynchronously so it does not stay a zombie
+          try {
+            evaluationDbService.failEvaluationRun(runId, error);
+          } catch {}
+        }
+      }
+
+      const total = dbRun.metrics?.totalCases ?? dbRun.totalScenarioCount ?? 0;
+      const evaluated = dbRun.metrics?.evaluatedCases ?? (dbRun as any).evaluated_cases ?? 0;
+      const percent = status === 'COMPLETED' ? 100 : (total > 0 ? Math.min(100, Math.round((evaluated / total) * 100)) : 0);
+
       return {
         runId,
-        status: dbRun.status === 'COMPLETED' ? 'COMPLETED' : dbRun.status === 'FAILED' ? 'FAILED' : 'RUNNING',
+        status,
         progress: {
-          current: dbRun.metrics?.totalCases ?? 0,
-          total: dbRun.metrics?.totalCases ?? 0,
-          percent: dbRun.status === 'COMPLETED' ? 100 : 0,
+          current: status === 'COMPLETED' ? total : evaluated,
+          total,
+          percent,
+          statusText: status === 'RUNNING'
+            ? `Evaluating scenario ${evaluated}/${total} (${percent}%)`
+            : status === 'COMPLETED'
+            ? `Evaluation completed (${total}/${total} scenarios)`
+            : `Evaluation terminated: ${error || 'Failed'}`,
         },
-        startTime: new Date(dbRun.timestamp).getTime(),
-        endTime: new Date(dbRun.timestamp).getTime() + (dbRun.durationMs || 0),
+        startTime: new Date(dbRun.timestamp || dbRun.started_at || Date.now()).getTime(),
+        endTime: dbRun.completed_at ? new Date(dbRun.completed_at).getTime() : undefined,
         run: dbRun,
-        error: dbRun.status === 'FAILED' ? ((dbRun.releaseDecision as any)?.justification || dbRun.releaseDecision?.reason || 'Evaluation run failed') : undefined,
+        error,
       };
     }
   } catch {}
 
+  // Fallback to disk run if present (local/test mode)
+  const diskRun = getRunFromDisk(runId);
+  if (diskRun) {
+    const total = diskRun.metrics?.totalCases ?? diskRun.caseResults?.length ?? 0;
+    return {
+      runId,
+      status: diskRun.status === 'COMPLETED' ? 'COMPLETED' : diskRun.status === 'FAILED' ? 'FAILED' : 'RUNNING',
+      progress: {
+        current: total,
+        total,
+        percent: 100,
+      },
+      startTime: new Date(diskRun.timestamp).getTime(),
+      endTime: diskRun.completed_at ? new Date(diskRun.completed_at).getTime() : (new Date(diskRun.timestamp).getTime() + (diskRun.durationMs || 0)),
+      run: diskRun,
+      error: diskRun.status === 'FAILED' ? (diskRun.releaseDecision?.reason || 'Evaluation run failed') : undefined,
+    };
+  }
+
   return undefined;
+}
+
+/**
+ * Recovers zombie/stale evaluation runs left in 'RUNNING' status across server restarts.
+ */
+export async function recoverStaleEvaluationRuns(maxHeartbeatAgeMs = 60000): Promise<number> {
+  return evaluationDbService.recoverStaleRuns(maxHeartbeatAgeMs);
 }
 
 /**
@@ -459,6 +475,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     totalCases,
     selectedCaseCount: totalCases,
     startedAt: new Date(job.startTime).toISOString(),
+    userId: options.userId,
   });
 
   // Determine safe concurrency with provider awareness:
@@ -557,6 +574,11 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
   // Acquire run lock to prevent concurrent runs from competing for provider quota
   const releaseLock = await providerScheduler.acquireRunLock(runId);
 
+  // Periodic heartbeat timer to prevent runs from becoming zombies
+  const heartbeatInterval = setInterval(() => {
+    evaluationDbService.updateRunHeartbeat(runId).catch(() => {});
+  }, 10000);
+
   const pendingCaseBatch: any[] = [];
   const flushCaseBatch = () => {
     if (pendingCaseBatch.length > 0) {
@@ -632,12 +654,9 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
             statusText: `Evaluated ${current}/${total} scenarios (${total > 0 ? Math.round((current / total) * 100) : 0}%) • ${(telemetry?.throughputCasesPerSec || 0).toFixed(1)} c/s • avg ${Math.round(telemetry?.averageLatencyMs || 0)}ms${telemetry?.retriesCount ? ` • ${telemetry.retriesCount} retries` : ''}`,
           };
         }
-        // Buffer per-case persistence into SQLite/Supabase evaluation_results table and flush in transactional batches
+        // Immediately persist each completed case to evaluation_results and refresh heartbeat
         pendingCaseBatch.push(caseResult);
-        const flushThreshold = isSupabaseDriverActive() ? 5 : 10;
-        if (pendingCaseBatch.length >= flushThreshold) {
-          flushCaseBatch();
-        }
+        flushCaseBatch();
       },
     });
 
@@ -677,6 +696,7 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     console.error(`[RELIQ Server Service] Evaluation Run ${runId} FAILED:`, err.message);
     throw err;
   } finally {
+    clearInterval(heartbeatInterval);
     releaseLock();
     activeEvaluationCount = Math.max(0, activeEvaluationCount - 1);
     pruneOldJobs();

@@ -18,7 +18,7 @@ import path from 'node:path';
 import { createReliqProxyMiddleware } from './proxyMiddleware';
 import { isSupabaseDriverActive, testSupabaseConnection, getSupabaseUrl } from './db/supabaseClient';
 import { evaluationCache } from '../evaluation/evaluationCache';
-import { pruneOldJobs } from './evaluationService';
+import { pruneOldJobs, recoverStaleEvaluationRuns } from './evaluationService';
 
 // Safely populate process.env from .env.local for local development only without logging values
 function loadLocalEnv() {
@@ -132,6 +132,16 @@ async function startServer() {
   } catch (err: any) {
     console.error(`[RELIQ DB] Fatal: Failed to initialize database:`, err.message);
     process.exit(1);
+  }
+
+  // Recover any stale/zombie evaluation runs left from previous container instance
+  try {
+    const recovered = await recoverStaleEvaluationRuns();
+    if (recovered > 0) {
+      console.log(`[RELIQ Startup] Recovered ${recovered} stale evaluation run(s) from prior session.`);
+    }
+  } catch (recoveryErr: any) {
+    console.warn(`[RELIQ Startup] Warning during stale run recovery:`, recoveryErr.message);
   }
 
   // Create RELIQ Proxy & Evaluation HTTP Middleware

@@ -44,6 +44,8 @@ import { sendError } from './routes/httpUtils';
 import { getDatabase } from './db/database';
 import { seedDatabase } from './db/seed';
 import { GROQ_MODEL_REGISTRY } from '../evaluation/judgeRegistry';
+import { getAuthenticatedUser } from './routes/authRoutes';
+import { canUserAccessProject, canUserAccessRun } from './routes/authUtils';
 
 export { getApiKey, fetchWithRetry, parseJsonBody, sendJson };
 
@@ -211,8 +213,17 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: POST /api/evaluations/run ──────────────
     if (req.method === 'POST' && parsedUrl === '/api/evaluations/run') {
       try {
+        const user = await getAuthenticatedUser(req);
         const body = await parseJsonBody(req);
         const isAsync = body.async !== false; // Default to asynchronous execution
+
+        const targetProjectId = body.project?.id || body.projectId || 'proj-checkout-agent';
+        const allowed = await canUserAccessProject(targetProjectId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have access to run evaluations on project '${targetProjectId}'`);
+          return;
+        }
+        body.userId = user?.id;
 
         // If datasetId was passed without an inline dataset (or with empty cases), resolve from SQLite
         const targetDatasetId = body.datasetId || body.dataset?.id;
@@ -296,6 +307,13 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: GET /api/evaluations/status/:runId ─────
     if (req.method === 'GET' && parsedUrl.startsWith('/api/evaluations/status/')) {
       const runId = parsedUrl.replace('/api/evaluations/status/', '').trim();
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserAccessRun(runId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have access to evaluation run '${runId}'`);
+        return;
+      }
+
       const job = await getJobStatus(runId);
 
       if (!job) {
@@ -321,6 +339,13 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: POST /api/evaluations/cancel/:runId ────
     if (req.method === 'POST' && parsedUrl.startsWith('/api/evaluations/cancel/')) {
       const runId = parsedUrl.replace('/api/evaluations/cancel/', '').trim();
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserAccessRun(runId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to cancel evaluation run '${runId}'`);
+        return;
+      }
+
       const cancelled = cancelEvaluationJob(runId);
       sendJson(res, 200, {
         success: true,
@@ -334,13 +359,15 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: GET /api/evaluations/runs ──────────────
     if (req.method === 'GET' && parsedUrl === '/api/evaluations/runs') {
       try {
+        const user = await getAuthenticatedUser(req);
         const urlObj = new URL(req.url || '', 'http://localhost');
         const limitParam = urlObj.searchParams.get('limit');
         const offsetParam = urlObj.searchParams.get('offset');
+        const projectIdParam = urlObj.searchParams.get('projectId') || undefined;
         const limit = limitParam ? Math.max(1, Math.min(1000, parseInt(limitParam, 10) || 50)) : undefined;
         const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
 
-        const allRuns = await evaluationDbService.getEvaluationRuns();
+        const allRuns = await evaluationDbService.getEvaluationRuns(projectIdParam, user?.id);
         const paginatedRuns = limit !== undefined ? allRuns.slice(offset, offset + limit) : (offset > 0 ? allRuns.slice(offset) : allRuns);
         sendJson(res, 200, {
           runs: paginatedRuns,
@@ -359,6 +386,13 @@ export function createReliqProxyMiddleware() {
     const runIdGetMatch = req.method === 'GET' ? parsedUrl.match(/^\/api\/evaluations\/runs\/([^/]+)$/) : null;
     if (runIdGetMatch) {
       const runId = runIdGetMatch[1].trim();
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserAccessRun(runId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have access to evaluation run '${runId}'`);
+        return;
+      }
+
       const run = await evaluationDbService.getEvaluationRunById(runId);
       if (!run) {
         sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run '${runId}' not found`);
@@ -372,6 +406,13 @@ export function createReliqProxyMiddleware() {
     const runIdDelMatch = req.method === 'DELETE' ? parsedUrl.match(/^\/api\/evaluations\/runs\/([^/]+)$/) : null;
     if (runIdDelMatch) {
       const runId = runIdDelMatch[1].trim();
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserAccessRun(runId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to delete evaluation run '${runId}'`);
+        return;
+      }
+
       let deletedFromDb = false;
       if (isSupabaseDriverActive()) {
         try {
