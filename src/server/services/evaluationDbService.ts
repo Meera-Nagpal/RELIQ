@@ -9,7 +9,7 @@
 
 import { getDatabase } from '../db/database';
 import { getRunFromDisk, getRunsFromDisk, saveRunToDisk } from '../evaluationService';
-import { isSupabaseConfigured, isSupabaseDriverActive } from '../db/supabaseClient';
+import { isSupabaseConfigured, isSupabaseDriverActive, getSupabaseAdmin } from '../db/supabaseClient';
 import { supabaseRepository } from '../db/supabaseRepository';
 
 export const ALLOWED_RELEASE_DECISIONS = new Set([
@@ -120,6 +120,7 @@ export class EvaluationDbService {
     totalCases: number;
     selectedCaseCount?: number;
     startedAt?: string;
+    userId?: string;
   }): void {
     if (isSupabaseDriverActive()) {
       const now = data.startedAt || new Date().toISOString();
@@ -142,6 +143,8 @@ export class EvaluationDbService {
         skipped_cases: 0,
         cancelled_cases: 0,
         started_at: now,
+        last_heartbeat_at: now,
+        user_id: data.userId || null,
       };
 
       supabaseRepository.saveEvaluationRun(runRecord).catch((err) => {
@@ -157,9 +160,9 @@ export class EvaluationDbService {
     const proj = db.prepare('SELECT id FROM projects WHERE id = ?').get(data.projectId);
     if (!proj) {
       db.prepare(`
-        INSERT OR IGNORE INTO projects (id, name, description, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(data.projectId, data.projectId, 'Auto-created project for evaluation run', now, now);
+        INSERT OR IGNORE INTO projects (id, name, description, user_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(data.projectId, data.projectId, 'Auto-created project for evaluation run', data.userId || null, now, now);
     }
 
     // Ensure referenced dataset exists
@@ -189,9 +192,9 @@ export class EvaluationDbService {
         id, project_id, dataset_id, dataset_version, dataset_source_type,
         status, total_cases, selected_case_count, evaluated_cases,
         passed_cases, failed_cases, skipped_cases, cancelled_cases,
-        pass_rate, quality_score, started_at,
+        pass_rate, quality_score, started_at, last_heartbeat_at, user_id,
         completed_at, release_decision, release_reason
-      ) VALUES (?, ?, ?, ?, ?, 'RUNNING', ?, ?, 0, 0, 0, 0, 0, NULL, NULL, ?, NULL, NULL, NULL)
+      ) VALUES (?, ?, ?, ?, ?, 'RUNNING', ?, ?, 0, 0, 0, 0, 0, NULL, NULL, ?, ?, ?, NULL, NULL, NULL)
     `).run(
       data.id,
       data.projectId,
@@ -200,8 +203,76 @@ export class EvaluationDbService {
       resolvedSourceType,
       data.totalCases,
       selectedCaseCount,
-      now
+      now,
+      now,
+      data.userId || null
     );
+  }
+
+  /**
+   * Updates the heartbeat timestamp and progress counts of an active evaluation run.
+   */
+  async updateRunHeartbeat(
+    runId: string,
+    telemetry?: {
+      evaluatedIncrement?: number;
+      passedIncrement?: number;
+      failedIncrement?: number;
+      evaluatedCases?: number;
+      passedCases?: number;
+      failedCases?: number;
+    }
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    if (isSupabaseDriverActive()) {
+      try {
+        const updates: Record<string, any> = {
+          last_heartbeat_at: now,
+        };
+        if (telemetry?.evaluatedCases !== undefined) {
+          updates.evaluated_cases = telemetry.evaluatedCases;
+        }
+        if (telemetry?.passedCases !== undefined) {
+          updates.passed_cases = telemetry.passedCases;
+        }
+        if (telemetry?.failedCases !== undefined) {
+          updates.failed_cases = telemetry.failedCases;
+        }
+        await supabaseRepository.updateEvaluationRunProgress(runId, updates);
+      } catch (err: any) {
+        console.error(`[RELIQ Supabase] updateRunHeartbeat error: ${err.message}`);
+      }
+      return;
+    }
+
+    try {
+      const db = getDatabase();
+      if (telemetry?.evaluatedCases !== undefined) {
+        db.prepare(`
+          UPDATE evaluation_runs
+          SET last_heartbeat_at = ?,
+              evaluated_cases = ?,
+              passed_cases = COALESCE(?, passed_cases),
+              failed_cases = COALESCE(?, failed_cases)
+          WHERE id = ?
+        `).run(now, telemetry.evaluatedCases, telemetry.passedCases ?? null, telemetry.failedCases ?? null, runId);
+      } else if (telemetry?.evaluatedIncrement) {
+        db.prepare(`
+          UPDATE evaluation_runs
+          SET last_heartbeat_at = ?,
+              evaluated_cases = evaluated_cases + ?,
+              passed_cases = passed_cases + ?,
+              failed_cases = failed_cases + ?
+          WHERE id = ?
+        `).run(now, telemetry.evaluatedIncrement, telemetry.passedIncrement || 0, telemetry.failedIncrement || 0, runId);
+      } else {
+        db.prepare(`
+          UPDATE evaluation_runs
+          SET last_heartbeat_at = ?
+          WHERE id = ?
+        `).run(now, runId);
+      }
+    } catch {}
   }
 
   /**
@@ -230,10 +301,14 @@ export class EvaluationDbService {
     if (isSupabaseDriverActive()) {
       const now = new Date().toISOString();
       const records: any[] = [];
+      let passedCount = 0;
+      let failedCount = 0;
       for (const result of caseResults) {
         const caseId = result.testCaseId || result.caseKey || result.id;
         const resId = `res-${runId}-${caseId}`;
         const isPass = result.passed !== undefined ? (result.passed ? 1 : 0) : null;
+        if (isPass === 1) passedCount++;
+        else if (isPass === 0) failedCount++;
 
         records.push({
           id: resId,
@@ -257,8 +332,18 @@ export class EvaluationDbService {
         });
       }
 
-      supabaseRepository.saveEvaluationRun({ id: runId }, records).catch((err) => {
+      // Persist results directly into evaluation_results table
+      supabaseRepository.saveEvaluationResults(records).catch((err) => {
         console.error('[RELIQ Supabase] Error saving case results batch:', err.message);
+      });
+
+      // Update evaluation_runs heartbeat and progress
+      this.updateRunHeartbeat(runId, {
+        evaluatedIncrement: records.length,
+        passedIncrement: passedCount,
+        failedIncrement: failedCount,
+      }).catch((err) => {
+        console.error('[RELIQ Supabase] Error updating heartbeat on batch:', err.message);
       });
       return;
     }
@@ -285,6 +370,13 @@ export class EvaluationDbService {
         failure_type, failure_category, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+
+    let passedCount = 0;
+    let failedCount = 0;
+    for (const c of caseResults) {
+      if (c.passed === true) passedCount++;
+      else if (c.passed === false) failedCount++;
+    }
 
     const tx = db.transaction((items: any[]) => {
       if (candidateVersion?.id) {
@@ -397,6 +489,13 @@ export class EvaluationDbService {
     });
 
     tx(caseResults);
+
+    // Update heartbeat and live case counts in SQLite evaluation_runs table
+    this.updateRunHeartbeat(runId, {
+      evaluatedIncrement: caseResults.length,
+      passedIncrement: passedCount,
+      failedIncrement: failedCount,
+    });
   }
 
   /**
@@ -620,13 +719,72 @@ export class EvaluationDbService {
   }
 
   /**
+   * Recovers zombie/stale evaluation runs left in 'RUNNING' status across server restarts.
+   * If a run was running but its last heartbeat is older than maxHeartbeatAgeMs (default 60s),
+   * marks it as FAILED with a clear operational reason.
+   */
+  async recoverStaleRuns(maxHeartbeatAgeMs = 60000): Promise<number> {
+    const thresholdIso = new Date(Date.now() - maxHeartbeatAgeMs).toISOString();
+    const now = new Date().toISOString();
+    const reason = 'Worker heartbeat expired: evaluation process interrupted or restarted by host.';
+
+    if (isSupabaseDriverActive()) {
+      try {
+        const supabase = getSupabaseAdmin();
+        const { data, error } = await supabase
+          .from('evaluation_runs')
+          .update({
+            status: 'FAILED',
+            completed_at: now,
+            release_reason: reason,
+          })
+          .eq('status', 'RUNNING')
+          .or(`last_heartbeat_at.lt.${thresholdIso},and(last_heartbeat_at.is.null,started_at.lt.${thresholdIso})`)
+          .select('id');
+        if (error) {
+          console.error('[RELIQ Supabase] Error recovering stale runs:', error.message);
+          return 0;
+        }
+        return data?.length || 0;
+      } catch (err: any) {
+        console.error('[RELIQ Supabase] Stale run recovery error:', err.message);
+        return 0;
+      }
+    }
+
+    try {
+      const db = getDatabase();
+      const res = db.prepare(`
+        UPDATE evaluation_runs
+        SET status = 'FAILED',
+            completed_at = ?,
+            release_reason = ?
+        WHERE status = 'RUNNING'
+          AND (
+            (last_heartbeat_at IS NOT NULL AND last_heartbeat_at < ?)
+            OR (last_heartbeat_at IS NULL AND started_at < ?)
+          )
+      `).run(now, reason, thresholdIso, thresholdIso);
+      return res.changes;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
    * Retrieves all evaluation runs. Merges SQLite runs with disk runs, avoiding duplicates.
    */
-  getEvaluationRuns(): any[] | Promise<any[]> {
+  getEvaluationRuns(projectId?: string, userId?: string): any[] | Promise<any[]> {
     if (isSupabaseDriverActive()) {
       return (async () => {
-        const rows = await supabaseRepository.getAllEvaluationRuns();
-        const diskRuns = getRunsFromDisk();
+        const rows = await supabaseRepository.getAllEvaluationRuns(projectId, userId);
+        let diskRuns = getRunsFromDisk();
+        if (projectId) {
+          diskRuns = diskRuns.filter((r) => r.projectId === projectId);
+        }
+        if (userId) {
+          diskRuns = diskRuns.filter((r) => !r.userId || r.userId === userId);
+        }
         const diskMap = new Map<string, any>(diskRuns.map((r) => [r.id, r]));
 
         return rows.map((sRun) => {
@@ -639,6 +797,7 @@ export class EvaluationDbService {
           const diskRun = diskMap.get(sRun.id);
           const base = diskRun || parsed;
           if (base) {
+            const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
             return {
               ...base,
               status: sRun.status || base.status,
@@ -648,6 +807,7 @@ export class EvaluationDbService {
               selectedScenarioCount: sRun.selected_case_count ?? base.selectedScenarioCount ?? sRun.total_cases,
               skippedScenarioCount: sRun.skipped_cases ?? base.skippedScenarioCount ?? 0,
               cancelledScenarioCount: sRun.cancelled_cases ?? base.cancelledScenarioCount ?? 0,
+              durationMs: base.durationMs ?? (sRun.completed_at ? new Date(sRun.completed_at).getTime() - new Date(sRun.started_at).getTime() : 0),
               metrics: {
                 ...base.metrics,
                 totalCases: sRun.total_cases,
@@ -658,6 +818,25 @@ export class EvaluationDbService {
                 candidateQualityScore: sRun.quality_score,
                 skippedCases: sRun.skipped_cases ?? base.metrics?.skippedCases ?? 0,
                 cancelledCases: sRun.cancelled_cases ?? base.metrics?.cancelledCases ?? 0,
+              },
+              regressionDecision: base.regressionDecision ? {
+                ...base.regressionDecision,
+                isRegression: sRun.release_decision ? isReg : base.regressionDecision.isRegression,
+                verdict: sRun.release_decision === 'INSUFFICIENT_EVIDENCE'
+                  ? 'INSUFFICIENT_EVIDENCE'
+                  : sRun.release_decision
+                  ? (isReg ? 'REGRESSION_DETECTED' : base.regressionDecision.verdict)
+                  : base.regressionDecision.verdict,
+                violatedRules: base.regressionDecision.violatedRules || [],
+                regressionCategories: base.regressionDecision.regressionCategories || [],
+              } : {
+                isRegression: isReg,
+                verdict: sRun.evaluated_cases === 0 || sRun.release_decision === 'INSUFFICIENT_EVIDENCE'
+                  ? 'INSUFFICIENT_EVIDENCE'
+                  : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+                summary: sRun.release_reason || '',
+                violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+                regressionCategories: [],
               },
               releaseDecision: {
                 ...base.releaseDecision,
@@ -711,14 +890,36 @@ export class EvaluationDbService {
     }
 
     const db = getDatabase();
-    const dbRuns = db
-      .prepare('SELECT * FROM evaluation_runs ORDER BY started_at DESC')
-      .all() as any[];
+    let query = 'SELECT * FROM evaluation_runs';
+    const conditions: string[] = [];
+    const params: any[] = [];
+    if (projectId) {
+      conditions.push('project_id = ?');
+      params.push(projectId);
+    }
+    if (userId) {
+      conditions.push('(user_id = ? OR user_id IS NULL)');
+      params.push(userId);
+    }
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+    query += ' ORDER BY started_at DESC';
+    const dbRuns = db.prepare(query).all(...params) as any[];
 
-    const diskRuns = getRunsFromDisk();
+    let diskRuns = getRunsFromDisk();
+    if (projectId) {
+      diskRuns = diskRuns.filter((r) => r.projectId === projectId);
+    }
+    if (userId) {
+      diskRuns = diskRuns.filter((r) => !r.userId || r.userId === userId);
+    }
     const runMap = new Map<string, any>();
 
     // Add disk runs first
+    for (const dRun of diskRuns) {
+      runMap.set(dRun.id, dRun);
+    }
     for (const dRun of diskRuns) {
       runMap.set(dRun.id, dRun);
     }
@@ -733,6 +934,7 @@ export class EvaluationDbService {
       }
       const existing = runMap.get(sRun.id) || parsedJsonRun;
       if (existing) {
+        const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
         runMap.set(sRun.id, {
           ...existing,
           status: sRun.status,
@@ -742,6 +944,7 @@ export class EvaluationDbService {
           selectedScenarioCount: sRun.selected_case_count ?? existing.selectedScenarioCount ?? sRun.total_cases,
           skippedScenarioCount: sRun.skipped_cases ?? existing.skippedScenarioCount ?? 0,
           cancelledScenarioCount: sRun.cancelled_cases ?? existing.cancelledScenarioCount ?? 0,
+          durationMs: existing.durationMs ?? (sRun.completed_at ? new Date(sRun.completed_at).getTime() - new Date(sRun.started_at).getTime() : 0),
           metrics: {
             ...existing.metrics,
             totalCases: sRun.total_cases,
@@ -752,6 +955,25 @@ export class EvaluationDbService {
             candidateQualityScore: sRun.quality_score,
             skippedCases: sRun.skipped_cases ?? existing.metrics?.skippedCases ?? 0,
             cancelledCases: sRun.cancelled_cases ?? existing.metrics?.cancelledCases ?? 0,
+          },
+          regressionDecision: existing.regressionDecision ? {
+            ...existing.regressionDecision,
+            isRegression: sRun.release_decision ? isReg : existing.regressionDecision.isRegression,
+            verdict: sRun.release_decision === 'INSUFFICIENT_EVIDENCE'
+              ? 'INSUFFICIENT_EVIDENCE'
+              : sRun.release_decision
+              ? (isReg ? 'REGRESSION_DETECTED' : existing.regressionDecision.verdict)
+              : existing.regressionDecision.verdict,
+            violatedRules: existing.regressionDecision.violatedRules || [],
+            regressionCategories: existing.regressionDecision.regressionCategories || [],
+          } : {
+            isRegression: isReg,
+            verdict: sRun.evaluated_cases === 0 || sRun.release_decision === 'INSUFFICIENT_EVIDENCE'
+              ? 'INSUFFICIENT_EVIDENCE'
+              : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+            summary: sRun.release_reason || '',
+            violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+            regressionCategories: [],
           },
           releaseDecision: {
             ...existing.releaseDecision,
@@ -830,6 +1052,16 @@ export class EvaluationDbService {
               parsed.releaseDecision.status = sRun.release_decision;
               parsed.releaseDecision.reason = sRun.release_reason || '';
             }
+            if (sRun.release_decision && parsed.regressionDecision) {
+              const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
+              parsed.regressionDecision.isRegression = isReg;
+              parsed.regressionDecision.verdict = sRun.release_decision === 'INSUFFICIENT_EVIDENCE'
+                ? 'INSUFFICIENT_EVIDENCE'
+                : isReg
+                ? 'REGRESSION_DETECTED'
+                : parsed.regressionDecision.verdict || 'NO_REGRESSION';
+            }
+            parsed.durationMs = parsed.durationMs ?? (sRun.completed_at ? new Date(sRun.completed_at).getTime() - new Date(sRun.started_at).getTime() : 0);
             return parsed;
           } catch {}
         }
@@ -853,6 +1085,10 @@ export class EvaluationDbService {
           datasetId: sRun.dataset_id,
           datasetVersion: sRun.dataset_version || '1.0.0',
           datasetSourceType: sRun.dataset_source_type || 'builtin',
+          user_id: sRun.user_id,
+          userId: sRun.user_id,
+          last_heartbeat_at: sRun.last_heartbeat_at,
+          lastHeartbeatAt: sRun.last_heartbeat_at,
           totalScenarioCount: sRun.total_cases + (sRun.skipped_cases ?? 0),
           selectedScenarioCount: sRun.selected_case_count ?? sRun.total_cases,
           skippedScenarioCount: sRun.skipped_cases ?? 0,
@@ -902,15 +1138,21 @@ export class EvaluationDbService {
 
     if (sRun && dRun) {
       const results = (this.getRunResults(id) as any[]) || [];
+      const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
       return {
         ...dRun,
         status: sRun.status,
+        user_id: sRun.user_id || dRun.userId,
+        userId: sRun.user_id || dRun.userId,
+        last_heartbeat_at: sRun.last_heartbeat_at || dRun.lastHeartbeatAt,
+        lastHeartbeatAt: sRun.last_heartbeat_at || dRun.lastHeartbeatAt,
         datasetVersion: sRun.dataset_version || dRun.datasetVersion || '1.0.0',
         datasetSourceType: sRun.dataset_source_type || dRun.datasetSourceType || 'builtin',
         totalScenarioCount: dRun.totalScenarioCount ?? (sRun.total_cases + (sRun.skipped_cases ?? 0)),
         selectedScenarioCount: sRun.selected_case_count ?? dRun.selectedScenarioCount ?? sRun.total_cases,
         skippedScenarioCount: sRun.skipped_cases ?? dRun.skippedScenarioCount ?? 0,
         cancelledScenarioCount: sRun.cancelled_cases ?? dRun.cancelledScenarioCount ?? 0,
+        durationMs: dRun.durationMs ?? (sRun.completed_at ? new Date(sRun.completed_at).getTime() - new Date(sRun.started_at).getTime() : 0),
         metrics: {
           ...dRun.metrics,
           totalCases: sRun.total_cases,
@@ -921,6 +1163,25 @@ export class EvaluationDbService {
           candidateQualityScore: sRun.quality_score,
           skippedCases: sRun.skipped_cases ?? dRun.metrics?.skippedCases ?? 0,
           cancelledCases: sRun.cancelled_cases ?? dRun.metrics?.cancelledCases ?? 0,
+        },
+        regressionDecision: dRun.regressionDecision ? {
+          ...dRun.regressionDecision,
+          isRegression: sRun.release_decision ? isReg : dRun.regressionDecision.isRegression,
+          verdict: sRun.release_decision === 'INSUFFICIENT_EVIDENCE'
+            ? 'INSUFFICIENT_EVIDENCE'
+            : sRun.release_decision
+            ? (isReg ? 'REGRESSION_DETECTED' : dRun.regressionDecision.verdict)
+            : dRun.regressionDecision.verdict,
+          violatedRules: dRun.regressionDecision.violatedRules || [],
+          regressionCategories: dRun.regressionDecision.regressionCategories || [],
+        } : {
+          isRegression: isReg,
+          verdict: sRun.evaluated_cases === 0 || sRun.release_decision === 'INSUFFICIENT_EVIDENCE'
+            ? 'INSUFFICIENT_EVIDENCE'
+            : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
+          summary: sRun.release_reason || '',
+          violatedRules: sRun.release_reason && isReg ? [sRun.release_reason] : [],
+          regressionCategories: [],
         },
         releaseDecision: {
           ...dRun.releaseDecision,
@@ -947,6 +1208,10 @@ export class EvaluationDbService {
         datasetId: sRun.dataset_id,
         datasetVersion: sRun.dataset_version || '1.0.0',
         datasetSourceType: sRun.dataset_source_type || 'builtin',
+        user_id: sRun.user_id,
+        userId: sRun.user_id,
+        last_heartbeat_at: sRun.last_heartbeat_at,
+        lastHeartbeatAt: sRun.last_heartbeat_at,
         totalScenarioCount: sRun.total_cases + (sRun.skipped_cases ?? 0),
         selectedScenarioCount: sRun.selected_case_count ?? sRun.total_cases,
         skippedScenarioCount: sRun.skipped_cases ?? 0,
