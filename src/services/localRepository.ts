@@ -19,6 +19,7 @@ import {
   SEED_PROJECT,
 } from '../data/seedData';
 import { StorageRepository } from './repository';
+import { fetchWithAuth } from './apiClient';
 
 const STORAGE_KEYS = {
   PROJECTS: 'reliq_projects_v2',
@@ -172,7 +173,7 @@ export class LocalStorageRepository implements StorageRepository {
       // Synchronize with server-persisted runs if available
       try {
         if (typeof fetch !== 'undefined') {
-          const res = await fetch('/api/evaluations/runs');
+          const res = await fetchWithAuth('/api/evaluations/runs');
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data.runs) && data.runs.length > 0) {
@@ -308,7 +309,7 @@ export class LocalStorageRepository implements StorageRepository {
   async getEvaluationRunById(id: string): Promise<EvaluationRun | null> {
     try {
       if (typeof fetch !== 'undefined') {
-        const res = await fetch(`/api/evaluations/runs/${encodeURIComponent(id)}`);
+        const res = await fetchWithAuth(`/api/evaluations/runs/${encodeURIComponent(id)}`);
         if (res.ok) {
           const serverRun = await res.json();
           if (serverRun && serverRun.id) {
