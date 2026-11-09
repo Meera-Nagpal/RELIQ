@@ -256,10 +256,29 @@ export class ApiRepository implements StorageRepository {
     const res = await this.client.get<{ datasets: any[] }>('/api/datasets', params);
     const rawDatasets = Array.isArray(res?.datasets) ? res.datasets : [];
 
-    return rawDatasets.map((d) => {
-      const cases = this.casesCache.get(d.id) || [];
-      return mapBackendDataset(d, cases);
-    });
+    const mapped = await Promise.all(
+      rawDatasets.map(async (d) => {
+        let cases = this.casesCache.get(d.id);
+        if ((!cases || cases.length === 0) && Array.isArray(d.cases) && d.cases.length > 0) {
+          const mappedCases = d.cases.map(mapBackendTestCase);
+          cases = mappedCases;
+          this.casesCache.set(d.id, mappedCases);
+        }
+        if ((!cases || cases.length === 0) && (d.case_count > 0 || d.caseCount > 0)) {
+          try {
+            const caseRes = await this.client.get<{ cases: any[] }>(`/api/datasets/${encodeURIComponent(d.id)}/cases`);
+            if (Array.isArray(caseRes?.cases) && caseRes.cases.length > 0) {
+              const fetchedCases = caseRes.cases.map(mapBackendTestCase);
+              cases = fetchedCases;
+              this.casesCache.set(d.id, fetchedCases);
+            }
+          } catch {}
+        }
+        return mapBackendDataset(d, cases || []);
+      })
+    );
+
+    return mapped;
   }
 
   async getDatasetById(id: string): Promise<Dataset | null> {

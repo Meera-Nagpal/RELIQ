@@ -159,7 +159,12 @@ export function createReliqProxyMiddleware() {
       let latencyMs = 0;
 
       const now = Date.now();
-      if (cachedHealthState && now - cachedHealthState.timestamp < HEALTH_CACHE_TTL_MS) {
+      const currentDriver = isSupabaseDriverActive() ? 'supabase_postgresql' : 'sqlite';
+      if (
+        cachedHealthState &&
+        cachedHealthState.databaseType === currentDriver &&
+        now - cachedHealthState.timestamp < HEALTH_CACHE_TTL_MS
+      ) {
         databaseStatus = cachedHealthState.databaseStatus;
         databaseType = cachedHealthState.databaseType;
         latencyMs = cachedHealthState.latencyMs;
