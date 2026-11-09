@@ -12,6 +12,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { projectService } from '../services/projectService';
 import { getJsonBody, sendError, sendJson } from './httpUtils';
+import { getAuthenticatedUser } from './authRoutes';
 
 export async function handleProjectRoutes(
   req: IncomingMessage,
@@ -23,7 +24,8 @@ export async function handleProjectRoutes(
   // 1. GET /api/projects
   if (method === 'GET' && parsedUrl === '/api/projects') {
     try {
-      const projects = await projectService.getAllProjects();
+      const user = await getAuthenticatedUser(req);
+      const projects = await projectService.getAllProjects(user?.id);
       sendJson(res, 200, { projects });
     } catch (err: any) {
       sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve projects');
@@ -42,6 +44,7 @@ export async function handleProjectRoutes(
     }
 
     try {
+      const user = await getAuthenticatedUser(req);
       const created = await projectService.createProject({
         id: typeof body.id === 'string' ? body.id : undefined,
         name: body.name,
@@ -49,6 +52,7 @@ export async function handleProjectRoutes(
         defaultDatasetId: typeof body.defaultDatasetId === 'string' ? body.defaultDatasetId : undefined,
         baselineVersionId: typeof body.baselineVersionId === 'string' ? body.baselineVersionId : undefined,
         candidateVersionId: typeof body.candidateVersionId === 'string' ? body.candidateVersionId : undefined,
+        userId: user?.id,
       });
       sendJson(res, 201, created);
     } catch (err: any) {
