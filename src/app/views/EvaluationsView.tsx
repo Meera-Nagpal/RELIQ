@@ -245,8 +245,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
     );
   }, [datasets]);
 
-  // Judge selection states
-  const [judgeEnabled, setJudgeEnabled] = useState<boolean>(true);
+  // Judge selection states (Disabled by default — ZERO judge API calls on standard runs)
+  const [judgeEnabled, setJudgeEnabled] = useState<boolean>(false);
   const [selectedJudgeModel, setSelectedJudgeModel] = useState<string>('qwen/qwen3.8-27b');
   const [judgeStatus, setJudgeStatus] = useState<string>('CHECKING');
   const [judgeStatusDetails, setJudgeStatusDetails] = useState<string>('');
@@ -409,6 +409,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         },
         maxCases: maxCasesToRun > 0 ? maxCasesToRun : undefined,
         concurrency: 8,
+        useCache: true,
         async: true,
       };
 
@@ -1427,12 +1428,12 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#F2F2F2', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'monospace' }}>
-                <span>[INDEPENDENT ARBITRATION] LLM Judge Configuration</span>
+                <span>[OPTIONAL ANALYSIS] LLM Judge Configuration (Default: OFF)</span>
               </h3>
               <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.74rem', fontFamily: 'monospace', color: isJudgeConflicting ? '#EF4444' : '#858585' }}>
                 {isJudgeConflicting
                   ? 'Configuration Conflict: Judge model cannot match either benchmark model.'
-                  : 'Independent evaluation duty using Qwen 3.8B. Eliminates provider self-bias.'}
+                  : 'Disabling saves API calls and avoids provider rate limits. Official winner selection is determined exclusively by independent deterministic & semantic evaluation.'}
               </p>
             </div>
 
@@ -1445,7 +1446,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   disabled={isRunning}
                   style={{ accentColor: '#ADC0D6' }}
                 />
-                <span>Enable Independent Judge</span>
+                <span>Enable Optional Judge Analysis</span>
               </label>
             </div>
           </div>
@@ -1480,7 +1481,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <div style={{ background: '#0F0F0F', borderRadius: '2px', padding: '0.85rem', border: '1px solid #292929' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.72rem', color: '#858585', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, fontFamily: 'monospace' }}>
-                  Independent LLM Judge
+                  Optional LLM Judge Analysis
                 </span>
                 <span
                   style={{
@@ -1490,33 +1491,36 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                     borderRadius: '2px',
                     fontFamily: 'monospace',
                     border: '1px solid',
-                    background:
-                      judgeStatus === 'AVAILABLE'
-                        ? 'rgba(34, 197, 94, 0.12)'
-                        : judgeStatus === 'CHECKING'
-                        ? 'rgba(173, 192, 214, 0.12)'
-                        : judgeStatus === 'API KEY MISSING'
-                        ? 'rgba(239, 68, 68, 0.12)'
-                        : 'rgba(234, 179, 8, 0.12)',
-                    borderColor:
-                      judgeStatus === 'AVAILABLE'
-                        ? 'rgba(34, 197, 94, 0.25)'
-                        : judgeStatus === 'CHECKING'
-                        ? 'rgba(173, 192, 214, 0.25)'
-                        : judgeStatus === 'API KEY MISSING'
-                        ? 'rgba(239, 68, 68, 0.25)'
-                        : 'rgba(234, 179, 8, 0.25)',
-                    color:
-                      judgeStatus === 'AVAILABLE'
-                        ? '#22C55E'
-                        : judgeStatus === 'CHECKING'
-                        ? '#ADC0D6'
-                        : judgeStatus === 'API KEY MISSING'
-                        ? '#EF4444'
-                        : '#EAB308',
+                    background: !judgeEnabled
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : judgeStatus === 'AVAILABLE'
+                      ? 'rgba(34, 197, 94, 0.12)'
+                      : judgeStatus === 'CHECKING'
+                      ? 'rgba(173, 192, 214, 0.12)'
+                      : judgeStatus === 'API KEY MISSING'
+                      ? 'rgba(239, 68, 68, 0.12)'
+                      : 'rgba(234, 179, 8, 0.12)',
+                    borderColor: !judgeEnabled
+                      ? 'rgba(255, 255, 255, 0.15)'
+                      : judgeStatus === 'AVAILABLE'
+                      ? 'rgba(34, 197, 94, 0.25)'
+                      : judgeStatus === 'CHECKING'
+                      ? 'rgba(173, 192, 214, 0.25)'
+                      : judgeStatus === 'API KEY MISSING'
+                      ? 'rgba(239, 68, 68, 0.25)'
+                      : 'rgba(234, 179, 8, 0.25)',
+                    color: !judgeEnabled
+                      ? '#888888'
+                      : judgeStatus === 'AVAILABLE'
+                      ? '#22C55E'
+                      : judgeStatus === 'CHECKING'
+                      ? '#ADC0D6'
+                      : judgeStatus === 'API KEY MISSING'
+                      ? '#EF4444'
+                      : '#EAB308',
                   }}
                 >
-                  {judgeStatus}
+                  {!judgeEnabled ? 'DISABLED (0 API CALLS)' : judgeStatus}
                 </span>
               </div>
 
@@ -1559,8 +1563,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
                   </div>
                 </div>
               ) : (
-                <div style={{ fontSize: '0.8rem', color: '#858585', fontStyle: 'italic', padding: '0.5rem 0' }}>
-                  LLM Judge is currently disabled. Evaluation will use deterministic criteria.
+                <div style={{ fontSize: '0.78rem', color: '#858585', lineHeight: 1.4, padding: '0.4rem 0' }}>
+                  LLM Judge analysis is disabled (0 API calls). Benchmark scored strictly via independent deterministic criteria, local semantic similarity, and behavioral safety.
                 </div>
               )}
             </div>
