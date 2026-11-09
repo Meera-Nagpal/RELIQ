@@ -268,20 +268,21 @@ export class ProviderScheduler {
 
     if (!isNaN(remTokens)) {
       bucket.remainingTokens = remTokens;
-      // Stricter token buffer for Qwen (only pause if critically low, e.g. < 250 tokens remaining)
-      const tokenThreshold = isQwen ? 250 : 200;
+      // Stricter token buffer for Qwen (strict 1,000 OTPM limit on Groq)
+      const tokenThreshold = isQwen ? 1200 : 1000;
       if (remTokens < tokenThreshold) {
         let waitMs = 0;
         if (effectiveResetMs > 0) {
-          // Cap waitMs to the minimum necessary for token refill rather than forcing full multi-second window
-          waitMs = Math.min(effectiveResetMs, isQwen ? 1200 : 800) + Math.floor(Math.random() * 100 + 50);
+          waitMs = effectiveResetMs + Math.floor(Math.random() * 300 + 100);
         } else {
-          waitMs = isQwen ? 800 : (remTokens < 100 ? 500 : 150);
+          waitMs = isQwen
+            ? 1500
+            : (remTokens < 500 ? Math.min(1800, Math.max(350, Math.ceil(((650 - remTokens) / 133) * 1000))) : 200);
         }
         bucket.adaptiveWaitUntil = Math.max(bucket.adaptiveWaitUntil, Date.now() + waitMs);
       }
-    } else if (effectiveResetMs > 0 && effectiveResetMs < 3000) {
-      bucket.adaptiveWaitUntil = Math.max(bucket.adaptiveWaitUntil, Date.now() + effectiveResetMs + Math.floor(Math.random() * 100 + 50));
+    } else if (effectiveResetMs > 0) {
+      bucket.adaptiveWaitUntil = Math.max(bucket.adaptiveWaitUntil, Date.now() + effectiveResetMs + Math.floor(Math.random() * 300 + 100));
     }
   }
 
@@ -469,9 +470,9 @@ export class ProviderScheduler {
       const custom = process.env.GROQ_GLOBAL_MAX_CONCURRENCY || process.env.GROQ_MAX_CONCURRENCY;
       if (custom) {
         const parsed = parseInt(custom, 10);
-        if (!isNaN(parsed) && parsed >= 1) return parsed;
+        if (!isNaN(parsed) && parsed >= 1) return Math.min(4, parsed);
       }
-      return 6; // High throughput concurrency for Groq (fast tier inference)
+      return 4; // Capped at 4 on shared API key to protect 30 RPM quota
     }
     const state = this.states.get(norm);
     return state?.maxConcurrency || 8;
