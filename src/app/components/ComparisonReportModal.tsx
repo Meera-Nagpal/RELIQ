@@ -1721,11 +1721,11 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
             </div>
           </div>
 
-          {/* LLM-as-a-Judge */}
+          {/* Optional LLM Judge Analysis */}
           <div style={{ background: '#151515', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '0.9rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8D98A5' }}>
-                LLM-AS-A-JUDGE
+                OPTIONAL LLM JUDGE ANALYSIS
               </span>
               <span
                 style={{
@@ -1748,7 +1748,7 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                       ? '#5B82A6'
                       : report.llmJudgeStatus === 'FAILED'
                       ? '#C05C54'
-                      : '#CCCCCC',
+                      : '#888888',
                   border: `1px solid ${
                     report.llmJudgeStatus === 'EXECUTED'
                       ? 'rgba(78, 155, 111, 0.3)'
@@ -1760,13 +1760,19 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                   }`,
                 }}
               >
-                {report.llmJudgeStatus || 'NOT CONFIGURED'}
+                {report.llmJudgeStatus === 'EXECUTED'
+                  ? 'COMPLETED'
+                  : report.llmJudgeStatus === 'FAILED'
+                  ? 'FAILED (FALLBACK ACTIVE)'
+                  : report.llmJudgeStatus === 'CONFIGURED'
+                  ? 'CONFIGURED'
+                  : 'DISABLED (0 API CALLS)'}
               </span>
             </div>
             <div style={{ fontSize: '0.76rem', color: '#A0B0C0', lineHeight: 1.45 }}>
               {report.llmJudgeStatus === 'EXECUTED' ? (
                 <div>
-                  <div>Active ({report.judgeModel || 'Independent Groq Model'}). Qualitative evaluation executed across correctness, adherence, relevance, completeness, and safety.</div>
+                  <div>Active ({report.judgeModel || 'Independent Groq Model'}). Qualitative evaluation recorded separately without altering official benchmark scores or winner selection.</div>
                   <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.8rem', fontSize: '0.72rem', color: '#5B82A6' }}>
                     <span>Cases Evaluated: <strong style={{ color: '#FFFFFF' }}>{report.judgeEvaluatedCases || 0}</strong></span>
                     {report.judgeCostUsd !== null && report.judgeCostUsd !== undefined && (
@@ -1777,9 +1783,9 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
               ) : report.llmJudgeStatus === 'CONFIGURED' ? (
                 `Configured with model ${report.judgeModel || 'Groq'}. Awaiting test scenarios for qualitative judging.`
               ) : report.llmJudgeStatus === 'FAILED' ? (
-                `Judge evaluation failed for model ${report.judgeModel || 'Groq'}. Execution safely fell back to deterministic scoring without masking provider errors.`
+                `Judge evaluation failed for model ${report.judgeModel || 'Groq'}. Execution safely fell back to deterministic scoring without failing official benchmark.`
               ) : (
-                'No independent secondary judge model is configured for qualitative scoring.'
+                'Optional LLM Judge Analysis Disabled (0 API calls used). Official benchmark scored strictly via independent deterministic ground truth, local semantic similarity, and behavioral safety.'
               )}
             </div>
           </div>
@@ -3076,6 +3082,20 @@ export const ComparisonReportModal: React.FC<ComparisonReportModalProps> = ({
                                 </div>
                               )}
                             </div>
+
+                            {/* Optional Qualitative LLM Judge Analysis (if executed for this case) */}
+                            {c.llmJudgeEvaluation && (
+                              <div style={{ marginTop: '0.2rem', padding: '0.45rem 0.65rem', borderRadius: '4px', background: c.llmJudgeEvaluation.error ? 'rgba(192, 92, 84, 0.08)' : 'rgba(91, 130, 166, 0.08)', border: c.llmJudgeEvaluation.error ? '1px solid rgba(192, 92, 84, 0.2)' : '1px solid rgba(91, 130, 166, 0.2)', fontSize: '0.74rem' }}>
+                                <span style={{ fontWeight: 700, color: c.llmJudgeEvaluation.error ? '#C05C54' : '#5B82A6' }}>
+                                  [Optional Judge Analysis - {c.llmJudgeEvaluation.judgeModel || 'Groq'}]:
+                                </span>{' '}
+                                <span style={{ color: '#B0C0D0' }}>
+                                  {c.llmJudgeEvaluation.error
+                                    ? `Analysis unavailable: ${c.llmJudgeEvaluation.error}`
+                                    : `Overall: ${c.llmJudgeEvaluation.overall}/5.0 • ${c.llmJudgeEvaluation.reason || 'Qualitative analysis recorded.'}`}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
