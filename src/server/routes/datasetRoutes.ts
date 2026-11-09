@@ -17,6 +17,13 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { getBuiltinBenchmarks, getDatasetTemplate } from '../../data/benchmarkRegistry';
 import { datasetService } from '../services/datasetService';
 import { getJsonBody, sendError, sendJson } from './httpUtils';
+import { getAuthenticatedUser } from './authRoutes';
+import {
+  canUserAccessProject,
+  canUserModifyProject,
+  canUserAccessDataset,
+  canUserModifyDataset,
+} from './authUtils';
 
 export async function handleDatasetRoutes(
   req: IncomingMessage,
@@ -29,7 +36,15 @@ export async function handleDatasetRoutes(
   // 1. GET /api/datasets (optional ?projectId=<id>)
   if (method === 'GET' && parsedUrl === '/api/datasets') {
     try {
+      const user = await getAuthenticatedUser(req);
       const projectId = query.get('projectId') || undefined;
+      if (projectId) {
+        const allowed = await canUserAccessProject(projectId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have access to datasets in project '${projectId}'`);
+          return true;
+        }
+      }
       const datasets = await datasetService.getDatasets(projectId);
       sendJson(res, 200, { datasets });
     } catch (err: any) {
@@ -192,12 +207,21 @@ export async function handleDatasetRoutes(
     }
 
     try {
+      const user = await getAuthenticatedUser(req);
       const projectId =
         typeof body.projectId === 'string'
           ? body.projectId
           : typeof body.project_id === 'string'
           ? body.project_id
           : undefined;
+
+      if (projectId) {
+        const allowed = await canUserModifyProject(projectId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have permission to import datasets into project '${projectId}'`);
+          return true;
+        }
+      }
       const sourceFilename =
         typeof body.sourceFilename === 'string'
           ? body.sourceFilename
@@ -310,6 +334,13 @@ export async function handleDatasetRoutes(
     }
 
     try {
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserModifyProject(body.projectId.trim(), user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to create datasets in project '${body.projectId}'`);
+        return true;
+      }
+
       const created = await datasetService.createDataset({
         id: typeof body.id === 'string' ? body.id : undefined,
         projectId: body.projectId.trim(),
@@ -339,6 +370,19 @@ export async function handleDatasetRoutes(
 
     // PUT /api/datasets/:datasetId/cases/:caseId
     if (method === 'PUT') {
+      const existingCase = await datasetService.getTestCase(datasetId, caseId);
+      if (!existingCase) {
+        sendError(res, 404, 'TEST_CASE_NOT_FOUND', `Test case '${caseId}' not found in dataset '${datasetId}'`);
+        return true;
+      }
+
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserModifyDataset(datasetId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to modify test cases in dataset '${datasetId}'`);
+        return true;
+      }
+
       const body = await getJsonBody(req, res);
       if (!body) return true;
 
@@ -373,6 +417,19 @@ export async function handleDatasetRoutes(
     // DELETE /api/datasets/:datasetId/cases/:caseId
     if (method === 'DELETE') {
       try {
+        const existingCase = await datasetService.getTestCase(datasetId, caseId);
+        if (!existingCase) {
+          sendError(res, 404, 'TEST_CASE_NOT_FOUND', `Test case '${caseId}' not found in dataset '${datasetId}'`);
+          return true;
+        }
+
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserModifyDataset(datasetId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have permission to delete test cases in dataset '${datasetId}'`);
+          return true;
+        }
+
         const deleted = await datasetService.deleteTestCase(datasetId, caseId);
         if (!deleted) {
           sendError(res, 404, 'TEST_CASE_NOT_FOUND', `Test case '${caseId}' not found in dataset '${datasetId}'`);
@@ -399,6 +456,14 @@ export async function handleDatasetRoutes(
           sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${datasetId}' not found`);
           return true;
         }
+
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserAccessDataset(datasetId, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have access to test cases in dataset '${datasetId}'`);
+          return true;
+        }
+
         const limitRaw = query.get('limit');
         const offsetRaw = query.get('offset');
         const limit = limitRaw !== null ? parseInt(limitRaw, 10) : undefined;
@@ -416,6 +481,13 @@ export async function handleDatasetRoutes(
 
     // POST /api/datasets/:datasetId/cases
     if (method === 'POST') {
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserModifyDataset(datasetId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to add test cases to dataset '${datasetId}'`);
+        return true;
+      }
+
       const body = await getJsonBody(req, res);
       if (!body) return true;
 
@@ -481,6 +553,14 @@ export async function handleDatasetRoutes(
           sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${id}' not found`);
           return true;
         }
+
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserAccessDataset(id, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have access to dataset '${id}'`);
+          return true;
+        }
+
         sendJson(res, 200, dataset);
       } catch (err: any) {
         sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve dataset');
@@ -490,6 +570,19 @@ export async function handleDatasetRoutes(
 
     // PUT /api/datasets/:id
     if (method === 'PUT') {
+      const dataset = await datasetService.getDatasetById(id);
+      if (!dataset) {
+        sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${id}' not found`);
+        return true;
+      }
+
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserModifyDataset(id, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to modify dataset '${id}'`);
+        return true;
+      }
+
       const body = await getJsonBody(req, res);
       if (!body) return true;
 
@@ -521,6 +614,19 @@ export async function handleDatasetRoutes(
     // DELETE /api/datasets/:id
     if (method === 'DELETE') {
       try {
+        const dataset = await datasetService.getDatasetById(id);
+        if (!dataset) {
+          sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${id}' not found`);
+          return true;
+        }
+
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserModifyDataset(id, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have permission to delete dataset '${id}'`);
+          return true;
+        }
+
         const deleted = await datasetService.deleteDataset(id);
         if (!deleted) {
           sendError(res, 404, 'DATASET_NOT_FOUND', `Dataset with ID '${id}' not found`);
