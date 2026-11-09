@@ -29,6 +29,49 @@ export interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
+/**
+ * Resolves the authenticated JWT/Bearer token from localStorage.
+ * Checks reliq_auth_token, supabase_auth_token, and standard Supabase session keys (sb-*-auth-token).
+ */
+export function getStoredAuthToken(): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  const directToken = localStorage.getItem('reliq_auth_token') || localStorage.getItem('supabase_auth_token');
+  if (directToken) return directToken;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (parsed && typeof parsed === 'object') {
+            if (typeof parsed.access_token === 'string') return parsed.access_token;
+            if (parsed.currentSession && typeof parsed.currentSession.access_token === 'string') {
+              return parsed.currentSession.access_token;
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Standard fetch wrapper that automatically forwards the user's Authorization Bearer token.
+ */
+export async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const token = getStoredAuthToken();
+  const headers = new Headers(init?.headers);
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return fetch(input, {
+    ...init,
+    headers,
+  });
+}
+
 export class ApiClient {
   private baseUrl: string;
 
@@ -64,9 +107,11 @@ export class ApiClient {
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { params, headers, ...rest } = options;
     const url = this.buildUrl(endpoint, params);
+    const token = getStoredAuthToken();
 
     const mergedHeaders: Record<string, string> = {
       Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...((headers as Record<string, string>) || {}),
     };
 
