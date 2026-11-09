@@ -125,7 +125,8 @@ export const ReliqApp: React.FC = () => {
         localStorage.setItem('reliq_cache_projects', JSON.stringify(projs));
         localStorage.setItem('reliq_cache_datasets', JSON.stringify(dsets));
         localStorage.setItem('reliq_cache_versions', JSON.stringify(vers));
-        localStorage.setItem('reliq_cache_runs', JSON.stringify(runs));
+        const strippedRuns = runs.map((r) => ({ ...r, caseResults: [] }));
+        localStorage.setItem('reliq_cache_runs', JSON.stringify(strippedRuns));
         if (newActiveDsId) localStorage.setItem('reliq_cache_active_dataset_id', newActiveDsId);
         if (newActiveRunId) localStorage.setItem('reliq_cache_active_run_id', newActiveRunId);
       } catch {}

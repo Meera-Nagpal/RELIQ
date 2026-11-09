@@ -129,11 +129,21 @@ export function getRunsDirectory(): string {
   return dir;
 }
 
+let cachedDiskRuns: EvaluationRun[] | null = null;
+let lastDiskScanTime = 0;
+const DISK_CACHE_TTL_MS = 10000;
+
+export function invalidateDiskRunsCache(): void {
+  cachedDiskRuns = null;
+  lastDiskScanTime = 0;
+}
+
 /**
  * Persists an evaluation run as JSON to data/runs/{runId}.json.
  */
 export function saveRunToDisk(run: EvaluationRun): void {
   try {
+    invalidateDiskRunsCache();
     const dir = getRunsDirectory();
     const filePath = path.join(dir, `${run.id}.json`);
     fs.writeFileSync(filePath, JSON.stringify(run, null, 2), 'utf8');
@@ -148,6 +158,10 @@ export function saveRunToDisk(run: EvaluationRun): void {
  * Retrieves all evaluation runs persisted on disk, sorted by timestamp descending.
  */
 export function getRunsFromDisk(): EvaluationRun[] {
+  if (cachedDiskRuns && Date.now() - lastDiskScanTime < DISK_CACHE_TTL_MS) {
+    return cachedDiskRuns;
+  }
+
   try {
     const activeDir = getRunsDirectory();
     const dirsToCheck = [activeDir];
@@ -177,7 +191,8 @@ export function getRunsFromDisk(): EvaluationRun[] {
               projectId: parsed.projectId || 'proj-checkout-agent',
               datasetId: parsed.datasetId || 'ds-checkout-golden',
               datasetName: parsed.datasetName || 'Checkout Reliability Suite',
-              caseResults: Array.isArray(parsed.caseResults) ? parsed.caseResults : Array.isArray(parsed.results) ? parsed.results : [],
+              // Keep caseResults empty in list-level summaries for fast I/O and low memory footprint
+              caseResults: [],
               regressionDecision: parsed.regressionDecision || {
                 isRegression: isReg,
                 verdict: !hasData ? 'INSUFFICIENT_EVIDENCE' : isReg ? 'REGRESSION_DETECTED' : 'NO_REGRESSION',
@@ -192,7 +207,7 @@ export function getRunsFromDisk(): EvaluationRun[] {
               },
               metrics: {
                 ...(parsed.metrics || {}),
-                totalCases: parsed.metrics?.totalCases ?? 0,
+                totalCases: parsed.metrics?.totalCases ?? totalCases,
                 candidateAccuracy: parsed.metrics?.candidateAccuracy ?? null,
                 accuracyDelta: parsed.metrics?.accuracyDelta ?? null,
                 candidateAvgLatencyMs: parsed.metrics?.candidateAvgLatencyMs ?? null,
@@ -216,9 +231,11 @@ export function getRunsFromDisk(): EvaluationRun[] {
       }
     }
 
-    return runs.sort(
+    cachedDiskRuns = runs.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
+    lastDiskScanTime = Date.now();
+    return cachedDiskRuns;
   } catch {
     return [];
   }
@@ -667,6 +684,8 @@ export async function runServerEvaluation(options: ServerEvaluationOptions): Pro
     const finalRun: EvaluationRun = {
       ...run,
       id: runId,
+      userId: options.userId,
+      datasetContentHash: safeDataset.contentHash || (run as any).datasetContentHash,
     };
 
     job.status = 'COMPLETED';

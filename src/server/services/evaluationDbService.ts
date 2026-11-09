@@ -800,6 +800,7 @@ export class EvaluationDbService {
             const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
             return {
               ...base,
+              caseResults: [], // Omit bulky case results in run list summaries for fast loading
               status: sRun.status || base.status,
               datasetVersion: sRun.dataset_version || base.datasetVersion || '1.0.0',
               datasetSourceType: sRun.dataset_source_type || base.datasetSourceType || 'builtin',
@@ -852,6 +853,7 @@ export class EvaluationDbService {
             datasetId: sRun.dataset_id,
             datasetVersion: sRun.dataset_version || '1.0.0',
             datasetSourceType: sRun.dataset_source_type || 'builtin',
+            caseResults: [], // Omit bulky case results in run list summaries for fast loading
             totalScenarioCount: sRun.total_cases + (sRun.skipped_cases ?? 0),
             selectedScenarioCount: sRun.selected_case_count ?? sRun.total_cases,
             skippedScenarioCount: sRun.skipped_cases ?? 0,
@@ -937,6 +939,7 @@ export class EvaluationDbService {
         const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
         runMap.set(sRun.id, {
           ...existing,
+          caseResults: [], // Omit bulky case results in run list summaries for fast loading
           status: sRun.status,
           datasetVersion: sRun.dataset_version || existing.datasetVersion || '1.0.0',
           datasetSourceType: sRun.dataset_source_type || existing.datasetSourceType || 'builtin',
@@ -1020,6 +1023,7 @@ export class EvaluationDbService {
             reason: sRun.release_reason,
             decidedAt: sRun.completed_at || sRun.started_at,
           },
+          caseResults: [], // Omit bulky case results in run list summaries for fast loading
           rootCauses: [],
         });
       }
@@ -1035,13 +1039,42 @@ export class EvaluationDbService {
 
   /**
    * Retrieves a single evaluation run by ID from SQLite or disk.
+   * Supports pagination and case inclusion filtering.
    */
-  getEvaluationRunById(id: string): (any | null) | Promise<any | null> {
+  getEvaluationRunById(
+    id: string,
+    options?: { limit?: number; offset?: number; includeCases?: boolean }
+  ): (any | null) | Promise<any | null> {
+    const applyPagination = (run: any) => {
+      if (!run) return run;
+      const allCases = Array.isArray(run.caseResults) ? run.caseResults : [];
+      const totalCases = allCases.length;
+      if (options?.includeCases === false) {
+        return {
+          ...run,
+          caseResults: [],
+          totalCases,
+          casesPagination: { limit: 0, offset: 0, total: totalCases },
+        };
+      }
+      if (options?.limit !== undefined && options.limit > 0) {
+        const offset = Math.max(0, options.offset || 0);
+        const paginated = allCases.slice(offset, offset + options.limit);
+        return {
+          ...run,
+          caseResults: paginated,
+          totalCases,
+          casesPagination: { limit: options.limit, offset, total: totalCases },
+        };
+      }
+      return run;
+    };
+
     if (isSupabaseDriverActive()) {
       return (async () => {
         const sRun = await supabaseRepository.getEvaluationRunById(id);
         const diskRun = getRunFromDisk(id);
-        if (!sRun) return diskRun || null;
+        if (!sRun) return applyPagination(diskRun) || null;
         if (sRun.run_json) {
           try {
             const parsed = typeof sRun.run_json === 'string' ? JSON.parse(sRun.run_json) : sRun.run_json;
@@ -1062,11 +1095,11 @@ export class EvaluationDbService {
                 : parsed.regressionDecision.verdict || 'NO_REGRESSION';
             }
             parsed.durationMs = parsed.durationMs ?? (sRun.completed_at ? new Date(sRun.completed_at).getTime() - new Date(sRun.started_at).getTime() : 0);
-            return parsed;
+            return applyPagination(parsed);
           } catch {}
         }
         if (diskRun && Array.isArray(diskRun.caseResults) && diskRun.caseResults.length > 0) {
-          return {
+          return applyPagination({
             ...diskRun,
             status: sRun.status || diskRun.status,
             releaseDecision: {
@@ -1074,12 +1107,12 @@ export class EvaluationDbService {
               status: sRun.release_decision || diskRun.releaseDecision?.status,
               reason: sRun.release_reason || diskRun.releaseDecision?.reason,
             },
-          };
+          });
         }
         const resultsRows = await supabaseRepository.getEvaluationResultsByRunId(id);
         const caseResults = resultsRows.map(mapDbResultToDomain);
         const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
-        return {
+        return applyPagination({
           id: sRun.id,
           projectId: sRun.project_id,
           datasetId: sRun.dataset_id,
@@ -1122,7 +1155,7 @@ export class EvaluationDbService {
             decidedAt: sRun.completed_at || sRun.started_at,
           },
           rootCauses: [],
-        };
+        });
       })();
     }
 
@@ -1139,7 +1172,7 @@ export class EvaluationDbService {
     if (sRun && dRun) {
       const results = (this.getRunResults(id) as any[]) || [];
       const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
-      return {
+      return applyPagination({
         ...dRun,
         status: sRun.status,
         user_id: sRun.user_id || dRun.userId,
@@ -1196,13 +1229,13 @@ export class EvaluationDbService {
             : results.length > 0
             ? results
             : dRun.caseResults,
-      };
+      });
     }
 
     if (sRun) {
       const results = (this.getRunResults(id) as any[]) || [];
       const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
-      return {
+      return applyPagination({
         id: sRun.id,
         projectId: sRun.project_id,
         datasetId: sRun.dataset_id,
@@ -1247,10 +1280,10 @@ export class EvaluationDbService {
         caseResults: results,
         results,
         ...sRun,
-      };
+      });
     }
 
-    return dRun || null;
+    return applyPagination(dRun) || null;
   }
 
   /**
