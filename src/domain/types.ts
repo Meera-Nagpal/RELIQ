@@ -10,6 +10,7 @@ export type EvaluatorType =
   | 'response_length'
   | 'latency'
   | 'behavioral_safety'
+  | 'preference_rubric'
   | 'llm_judge'
   | 'semantic_similarity';
 
@@ -686,6 +687,9 @@ export interface EvaluationRun {
   isScopedRun?: boolean;
   evaluationScope?: string;
   status?: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  userId?: string;
+  completed_at?: string;
+  lastHeartbeatAt?: string;
 }
 
 export interface Project {
@@ -696,6 +700,7 @@ export interface Project {
   baselineVersionId: string;
   candidateVersionId: string;
   regressionSettings: RegressionSettings;
+  userId?: string;
   createdAt: string;
   updatedAt: string;
 }
