@@ -31,7 +31,7 @@ import { providerRegistry, ServerProviderStatus } from '../../providers/registry
 import { ProviderType } from '../../providers/types';
 import { useRouter } from '../../router/useRouter';
 import { apiRepository } from '../../services/apiRepository';
-import { getEligibleJudgeModels, getDefaultJudgeModel, GROQ_MODEL_REGISTRY } from '../../evaluation/judgeRegistry';
+import { getEligibleJudgeModels, getDefaultJudgeModel, GROQ_MODEL_REGISTRY, modelsMatch } from '../../evaluation/judgeRegistry';
 import { fetchWithAuth } from '../../services/apiClient';
 
 interface EvaluationsViewProps {
@@ -308,8 +308,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   }, [judgeEnabled, selectedJudgeModel]);
 
   const isJudgeConflicting = judgeEnabled && (
-    selectedJudgeModel === effectiveBaselineModel ||
-    selectedJudgeModel === effectiveCandidateModel
+    modelsMatch(selectedJudgeModel, effectiveBaselineModel) ||
+    modelsMatch(selectedJudgeModel, effectiveCandidateModel)
   );
 
   const handleStartEvaluation = async () => {
@@ -325,7 +325,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         promptVersion: 'custom-baseline-prompt',
         systemPrompt: customBaselinePrompt,
         temperature: customBaselineTemp,
-        maxTokens: 1024,
+        maxTokens: customBaselineProvider === 'groq' ? ((customBaselineModel === 'openai/gpt-oss-20b' || customBaselineModel === 'openai/gpt-oss-120b') ? 384 : 256) : 1024,
         reasoningEffort: (customBaselineModel === 'openai/gpt-oss-20b' || customBaselineModel === 'openai/gpt-oss-120b') ? customBaselineReasoningEffort : undefined,
         isBaseline: true,
         createdAt: new Date().toISOString(),
@@ -339,7 +339,7 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         promptVersion: 'custom-candidate-prompt',
         systemPrompt: customCandidatePrompt,
         temperature: customCandidateTemp,
-        maxTokens: 1024,
+        maxTokens: customCandidateProvider === 'groq' ? ((customCandidateModel === 'openai/gpt-oss-20b' || customCandidateModel === 'openai/gpt-oss-120b') ? 384 : 256) : 1024,
         reasoningEffort: (customCandidateModel === 'openai/gpt-oss-20b' || customCandidateModel === 'openai/gpt-oss-120b') ? customCandidateReasoningEffort : undefined,
         isBaseline: false,
         createdAt: new Date().toISOString(),

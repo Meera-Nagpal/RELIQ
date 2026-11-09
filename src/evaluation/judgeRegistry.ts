@@ -120,6 +120,31 @@ export const GROQ_MODEL_REGISTRY: Record<string, GroqJudgeModelDescriptor> = {
 };
 
 /**
+ * Normalizes a model identifier for robust comparison, stripping provider prefixes (e.g. groq/, openai/, qwen/).
+ */
+export function normalizeModelName(name?: string): string {
+  if (!name) return '';
+  let cleaned = name.trim().toLowerCase();
+  while (/^(groq|openai|google|cerebras|anthropic|qwen|meta-llama)\//i.test(cleaned)) {
+    cleaned = cleaned.replace(/^(groq|openai|google|cerebras|anthropic|qwen|meta-llama)\//i, '').trim();
+  }
+  return cleaned;
+}
+
+/**
+ * Checks whether two model identifiers match (preventing self-judging across provider prefixes and format variants).
+ */
+export function modelsMatch(modelA?: string, modelB?: string): boolean {
+  if (!modelA || !modelB) return false;
+  const aRaw = modelA.trim().toLowerCase();
+  const bRaw = modelB.trim().toLowerCase();
+  if (aRaw === bRaw) return true;
+  const aNorm = normalizeModelName(aRaw);
+  const bNorm = normalizeModelName(bRaw);
+  return Boolean(aNorm && bNorm && aNorm === bNorm);
+}
+
+/**
  * Filter available Groq models to only those eligible to act as independent LLM judges.
  * 
  * Rules:
@@ -134,8 +159,6 @@ export function getEligibleJudgeModels(
   candidateModel?: string,
   availableModels?: string[]
 ): GroqJudgeModelDescriptor[] {
-  const normBase = baselineModel?.trim().toLowerCase();
-  const normCand = candidateModel?.trim().toLowerCase();
   const allowedSet = availableModels ? new Set(availableModels.map((m) => m.trim().toLowerCase())) : null;
 
   return Object.values(GROQ_MODEL_REGISTRY).filter((model) => {
@@ -148,10 +171,10 @@ export function getEligibleJudgeModels(
     if (normId.includes('120b')) return false;
 
     // Must not be the baseline model
-    if (normBase && normId === normBase) return false;
+    if (baselineModel && modelsMatch(model.id, baselineModel)) return false;
 
     // Must not be the candidate model
-    if (normCand && normId === normCand) return false;
+    if (candidateModel && modelsMatch(model.id, candidateModel)) return false;
 
     // If available models constraint is provided, must be in the set
     if (allowedSet && !allowedSet.has(normId)) return false;
@@ -216,25 +239,23 @@ export function validateJudgeConfiguration(
     };
   }
 
-  const normJudge = judgeId.toLowerCase();
-  const normBase = baselineModel?.trim().toLowerCase();
-  const normCand = candidateModel?.trim().toLowerCase();
-
   // Strict Independence Rule 1: Judge cannot be baseline
-  if (normBase && normJudge === normBase) {
+  if (baselineModel && modelsMatch(judgeId, baselineModel)) {
     return {
       valid: false,
-      error: `Configuration Error: Judge model ('${judgeId}') cannot be the baseline model being evaluated ('${baselineModel}').`,
+      error: `Configuration Error: Self-judging detected. Judge model ('${judgeId}') cannot match baseline model being evaluated ('${baselineModel}').`,
     };
   }
 
   // Strict Independence Rule 2: Judge cannot be candidate
-  if (normCand && normJudge === normCand) {
+  if (candidateModel && modelsMatch(judgeId, candidateModel)) {
     return {
       valid: false,
-      error: `Configuration Error: Judge model ('${judgeId}') cannot be the candidate model being evaluated ('${candidateModel}').`,
+      error: `Configuration Error: Self-judging detected. Judge model ('${judgeId}') cannot match candidate model being evaluated ('${candidateModel}').`,
     };
   }
+
+  const normJudge = judgeId.toLowerCase();
 
   // Strict Independence Rule 3: 120B models are benchmark models and cannot be judges
   if (normJudge.includes('120b')) {
