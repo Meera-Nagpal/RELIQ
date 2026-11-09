@@ -139,21 +139,129 @@ const FIELD_ALIASES: Record<keyof DatasetFieldMapping, string[]> = {
  * Deterministic cross-environment content hash (FNV-1a 64-bit hex representation).
  * Works identically in browser and Node.js without native crypto dependencies.
  */
-export function computeDatasetContentHash(content: string): string {
-  let h1 = 0xdeadbeef ^ content.length;
-  let h2 = 0x41c6ce57 ^ content.length;
-  for (let i = 0; i < content.length; i++) {
-    const ch = content.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
+/**
+ * Pure JavaScript standard SHA-256 implementation (FIPS 180-4).
+ * Runs universally in Node.js, browsers, and Web Workers without external dependencies.
+ */
+function sha256PureJs(ascii: string): string {
+  function rightRotate(value: number, amount: number): number {
+    return (value >>> amount) | (value << (32 - amount));
   }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (
-    'sha256-' +
-    (h2 >>> 0).toString(16).padStart(8, '0') +
-    (h1 >>> 0).toString(16).padStart(8, '0')
-  );
+
+  const mathPow = Math.pow;
+  const maxWord = mathPow(2, 32);
+  const lengthProperty = 'length';
+  let i = 0;
+  let j = 0;
+  let result = '';
+
+  const words: number[] = [];
+  const asciiBitLength = ascii[lengthProperty] * 8;
+
+  let hash = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+  ];
+
+  const k = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+  ];
+
+  let compositeClearHex = '';
+  for (let c = 0; c < ascii[lengthProperty]; c++) {
+    const code = ascii.charCodeAt(c);
+    if (code < 128) {
+      compositeClearHex += String.fromCharCode(code);
+    } else if (code < 2048) {
+      compositeClearHex += String.fromCharCode((code >> 6) | 192);
+      compositeClearHex += String.fromCharCode((code & 63) | 128);
+    } else {
+      compositeClearHex += String.fromCharCode((code >> 12) | 224);
+      compositeClearHex += String.fromCharCode(((code >> 6) & 63) | 128);
+      compositeClearHex += String.fromCharCode((code & 63) | 128);
+    }
+  }
+
+  const utf8Length = compositeClearHex[lengthProperty];
+  const utf8BitLength = utf8Length * 8;
+
+  for (i = 0; i < utf8Length; i++) {
+    words[i >> 2] |= (compositeClearHex.charCodeAt(i) & 255) << (24 - (i % 4) * 8);
+  }
+
+  words[utf8Length >> 2] |= 0x80 << (24 - (utf8Length % 4) * 8);
+  words[(((utf8Length + 8) >> 6) << 4) + 15] = utf8BitLength;
+
+  const w = new Array(64);
+  for (i = 0; i < words[lengthProperty]; i += 16) {
+    const oldHash = [...hash];
+
+    for (j = 0; j < 64; j++) {
+      if (j < 16) {
+        w[j] = words[i + j] | 0;
+      } else {
+        const gamma0 = rightRotate(w[j - 15], 7) ^ rightRotate(w[j - 15], 18) ^ (w[j - 15] >>> 3);
+        const gamma1 = rightRotate(w[j - 2], 17) ^ rightRotate(w[j - 2], 19) ^ (w[j - 2] >>> 10);
+        w[j] = (((w[j - 16] + gamma0) | 0) + ((w[j - 7] + gamma1) | 0)) | 0;
+      }
+
+      const s1 = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
+      const ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+      const temp1 = (((((hash[7] + s1) | 0) + ch) | 0) + ((k[j] + w[j]) | 0)) | 0;
+      const s0 = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
+      const maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+      const temp2 = (s0 + maj) | 0;
+
+      hash = [
+        (temp1 + temp2) | 0,
+        hash[0],
+        hash[1],
+        hash[2],
+        (hash[3] + temp1) | 0,
+        hash[4],
+        hash[5],
+        hash[6],
+      ];
+    }
+
+    for (j = 0; j < 8; j++) {
+      hash[j] = (hash[j] + oldHash[j]) | 0;
+    }
+  }
+
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j >= 0; j--) {
+      const b = (hash[i] >> (j * 8)) & 255;
+      result += (b < 16 ? '0' : '') + b.toString(16);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Computes a standard 64-character hexadecimal SHA-256 cryptographic digest
+ * of raw dataset content for historical reproducibility and provenance tracking.
+ * Uses native Node crypto when available, with pure-JS fallback for universal browser compatibility.
+ */
+export function computeDatasetContentHash(content: string): string {
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    try {
+      // Dynamic require or import to keep universal bundle clean
+      const nodeCrypto = (globalThis as any).require ? (globalThis as any).require('crypto') : null;
+      if (nodeCrypto && typeof nodeCrypto.createHash === 'function') {
+        return nodeCrypto.createHash('sha256').update(content || '', 'utf8').digest('hex');
+      }
+    } catch {}
+  }
+  return sha256PureJs(content || '');
 }
 
 /**

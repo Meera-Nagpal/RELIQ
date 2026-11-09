@@ -1776,6 +1776,7 @@ export class EvaluationRunner {
       judgeApiCalls: judgeApiCallsCount,
       judgeCacheHits: judgeCacheHitsCount,
       judgeSkippedCases: judgeSkippedCasesCount,
+      datasetContentHash: (dataset as any).contentHash || undefined,
       hadOperationalErrors:
         baselineRateLimitCount > 0 ||
         candidateRateLimitCount > 0 ||
@@ -1830,6 +1831,7 @@ export class EvaluationRunner {
       datasetName: dataset.name,
       datasetVersion: dataset.version || '1.0.0',
       datasetSourceType: dataset.sourceType || 'builtin',
+      datasetContentHash: (dataset as any).contentHash || undefined,
       totalScenarioCount: allCases.length,
       selectedScenarioCount: totalCases,
       completedScenarioCount: candidateEvaluatedCount,

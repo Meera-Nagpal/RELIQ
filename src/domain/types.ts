@@ -652,6 +652,7 @@ export interface RunProvenance {
   judgeCacheHits?: number;
   judgeSkippedCases?: number;
   judgeErrorCases?: number;
+  datasetContentHash?: string;
   hadOperationalErrors: boolean;
   isLiveExecution: boolean;
 }
@@ -663,6 +664,7 @@ export interface EvaluationRun {
   datasetName: string;
   datasetVersion?: string;
   datasetSourceType?: DatasetSourceType;
+  datasetContentHash?: string;
   baselineVersion: ModelVersion;
   candidateVersion: ModelVersion;
   judgeConfig?: JudgeConfig;
