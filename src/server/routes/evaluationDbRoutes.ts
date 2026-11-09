@@ -66,8 +66,23 @@ export async function handleEvaluationDbRoutes(
           sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run with ID '${runId}' not found`);
           return true;
         }
-        const results = await evaluationDbService.getRunResults(runId);
-        sendJson(res, 200, { runId, results, count: results.length });
+
+        const urlObj = new URL(req.url || '', 'http://localhost');
+        const limitParam = urlObj.searchParams.get('limit');
+        const offsetParam = urlObj.searchParams.get('offset');
+        const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 100) : undefined;
+        const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
+
+        const allResults = await evaluationDbService.getRunResults(runId);
+        const paginatedResults = limit !== undefined ? allResults.slice(offset, offset + limit) : (offset > 0 ? allResults.slice(offset) : allResults);
+        sendJson(res, 200, {
+          runId,
+          results: paginatedResults,
+          count: paginatedResults.length,
+          total: allResults.length,
+          limit: limit ?? allResults.length,
+          offset,
+        });
       } catch (err: any) {
         sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve run results');
       }
@@ -86,8 +101,23 @@ export async function handleEvaluationDbRoutes(
           sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run with ID '${runId}' not found`);
           return true;
         }
-        const failures = await evaluationDbService.getRunFailures(runId);
-        sendJson(res, 200, { runId, failures, count: failures.length });
+
+        const urlObj = new URL(req.url || '', 'http://localhost');
+        const limitParam = urlObj.searchParams.get('limit');
+        const offsetParam = urlObj.searchParams.get('offset');
+        const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 100) : undefined;
+        const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
+
+        const allFailures = await evaluationDbService.getRunFailures(runId);
+        const paginatedFailures = limit !== undefined ? allFailures.slice(offset, offset + limit) : (offset > 0 ? allFailures.slice(offset) : allFailures);
+        sendJson(res, 200, {
+          runId,
+          failures: paginatedFailures,
+          count: paginatedFailures.length,
+          total: allFailures.length,
+          limit: limit ?? allFailures.length,
+          offset,
+        });
       } catch (err: any) {
         sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve run failures');
       }
