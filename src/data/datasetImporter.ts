@@ -38,6 +38,7 @@ export const VALID_EVALUATOR_TYPES: EvaluatorType[] = [
   'latency',
   'behavioral_safety',
   'semantic_similarity',
+  'preference_rubric',
   'llm_judge',
 ];
 
@@ -52,6 +53,7 @@ export const REFERENCE_FREE_EVALUATORS: Set<EvaluatorType> = new Set([
   'response_length',
   'latency',
   'behavioral_safety',
+  'preference_rubric',
   'llm_judge',
 ]);
 
@@ -1308,7 +1310,7 @@ export function parseAndValidateDataset(options: ParseAndValidateOptions): Datas
 
     // 6. Evaluator Type Resolution & Validation
     let evaluatorType: EvaluatorType =
-      defaultEvaluatorType || (isPreferenceRecord ? 'llm_judge' : expectedStr ? 'normalized_text' : 'llm_judge');
+      defaultEvaluatorType || (isPreferenceRecord ? 'preference_rubric' : expectedStr ? 'normalized_text' : 'llm_judge');
 
     if (rawEvaluator !== undefined && rawEvaluator !== null && String(rawEvaluator).trim() !== '') {
       const candidateEval = String(rawEvaluator).trim().toLowerCase() as EvaluatorType;
