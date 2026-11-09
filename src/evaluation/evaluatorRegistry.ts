@@ -86,6 +86,14 @@ export const EVALUATOR_DESCRIPTORS: Record<EvaluatorType, EvaluatorDescriptor> =
     isDeterministic: true,
     requiresExternalService: false,
   },
+  preference_rubric: {
+    type: 'preference_rubric',
+    category: 'SEMANTIC',
+    name: 'Preference Rubric Evaluator',
+    description: 'Local deterministic rubric evaluating behavioral safety compliance, substantive response, and preference alignment against chosen vs rejected responses.',
+    isDeterministic: true,
+    requiresExternalService: false,
+  },
   llm_judge: {
     type: 'llm_judge',
     category: 'LLM_JUDGE',
