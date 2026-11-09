@@ -175,15 +175,37 @@ export function parseDurationHeaderMs(val?: string | null): number {
     return Math.ceil(parseFloat(str) * 1000);
   }
 
-  let totalMs = 0;
-  const minMatch = str.match(/(\d+(?:\.\d+)?)m(?!s)/i);
-  if (minMatch) totalMs += parseFloat(minMatch[1]) * 60000;
-  const secMatch = str.match(/(\d+(?:\.\d+)?)s/i);
-  if (secMatch) totalMs += parseFloat(secMatch[1]) * 1000;
-  const msMatch = str.match(/(\d+(?:\.\d+)?)ms/i);
-  if (msMatch) totalMs += parseFloat(msMatch[1]);
+  // Check HTTP-date format (RFC 7231)
+  const parsedDate = Date.parse(str);
+  if (!isNaN(parsedDate) && parsedDate > Date.now()) {
+    return Math.max(0, parsedDate - Date.now());
+  }
 
-  return Math.ceil(totalMs);
+  let totalMs = 0;
+  let matched = false;
+
+  const hrMatch = str.match(/(\d+(?:\.\d+)?)h/i);
+  if (hrMatch) {
+    totalMs += parseFloat(hrMatch[1]) * 3600000;
+    matched = true;
+  }
+  const minMatch = str.match(/(\d+(?:\.\d+)?)m(?!s)/i);
+  if (minMatch) {
+    totalMs += parseFloat(minMatch[1]) * 60000;
+    matched = true;
+  }
+  const secMatch = str.match(/(\d+(?:\.\d+)?)s/i);
+  if (secMatch) {
+    totalMs += parseFloat(secMatch[1]) * 1000;
+    matched = true;
+  }
+  const msMatch = str.match(/(\d+(?:\.\d+)?)ms/i);
+  if (msMatch) {
+    totalMs += parseFloat(msMatch[1]);
+    matched = true;
+  }
+
+  return matched ? Math.ceil(totalMs) : 0;
 }
 
 export const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504, 529]);
@@ -288,15 +310,13 @@ export async function fetchWithRetry(options: FetchWithRetryOptions): Promise<Fe
               }
             }
             if (!waitMs) {
-              const secMatch =
-                bodyCloned.match(/try again in ([\d\.]+)s/i) ||
-                bodyCloned.match(/retry in ([\d\.]+)s/i) ||
-                bodyCloned.match(/retry after ([\d\.]+)s/i);
-              if (secMatch) {
-                const seconds = parseFloat(secMatch[1]);
-                if (!isNaN(seconds) && seconds > 0) {
-                  waitMs = Math.min(65000, Math.ceil(seconds * 1000) + 150);
-                }
+              const minSecMatch =
+                bodyCloned.match(/try again in (?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?/i) ||
+                bodyCloned.match(/retry (?:after|in) (?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?/i);
+              if (minSecMatch && (minSecMatch[1] || minSecMatch[2])) {
+                const m = minSecMatch[1] ? parseFloat(minSecMatch[1]) : 0;
+                const s = minSecMatch[2] ? parseFloat(minSecMatch[2]) : 0;
+                waitMs = Math.min(65000, Math.ceil(m * 60000 + s * 1000) + 250);
               }
             }
             if (!waitMs) {
