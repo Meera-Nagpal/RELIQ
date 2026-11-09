@@ -123,6 +123,9 @@ export function initializeDatabase(options: InitializeDatabaseOptions = {}): Dat
     // Enforce foreign key constraints and enable WAL mode for high concurrency
     db.pragma('foreign_keys = ON');
     db.pragma('journal_mode = WAL');
+    db.pragma('busy_timeout = 5000');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('temp_store = MEMORY');
 
     // Run schema creation
     initSchema(db);

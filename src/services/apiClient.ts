@@ -58,7 +58,39 @@ export function getStoredAuthToken(): string | null {
 }
 
 /**
- * Standard fetch wrapper that automatically forwards the user's Authorization Bearer token.
+ * Executes a fetch request with automatic exponential backoff and jitter for transient
+ * network failures and server 502/503/504 gateway/availability errors.
+ */
+async function fetchWithRetryTransient(
+  fetchFn: () => Promise<Response>,
+  maxRetries = 2
+): Promise<Response> {
+  let attempt = 0;
+  while (true) {
+    try {
+      const res = await fetchFn();
+      if ((res.status === 502 || res.status === 503 || res.status === 504) && attempt < maxRetries) {
+        attempt++;
+        const backoffMs = Math.round(300 * Math.pow(2, attempt) + Math.random() * 100);
+        await new Promise((r) => setTimeout(r, backoffMs));
+        continue;
+      }
+      return res;
+    } catch (err: any) {
+      if (attempt < maxRetries) {
+        attempt++;
+        const backoffMs = Math.round(300 * Math.pow(2, attempt) + Math.random() * 100);
+        await new Promise((r) => setTimeout(r, backoffMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+/**
+ * Standard fetch wrapper that automatically forwards the user's Authorization Bearer token
+ * and retries transient gateway errors.
  */
 export async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const token = getStoredAuthToken();
@@ -66,10 +98,12 @@ export async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  return fetch(input, {
-    ...init,
-    headers,
-  });
+  const isIdempotent = !init?.method || init.method === 'GET' || init.method === 'HEAD' || init.method === 'OPTIONS';
+  const maxRetries = isIdempotent ? 2 : 1;
+  return fetchWithRetryTransient(
+    () => fetch(input, { ...init, headers }),
+    maxRetries
+  );
 }
 
 export class ApiClient {
@@ -121,10 +155,11 @@ export class ApiClient {
 
     let response: Response;
     try {
-      response = await fetch(url, {
-        ...rest,
-        headers: mergedHeaders,
-      });
+      const isIdempotent = !rest.method || rest.method === 'GET' || rest.method === 'HEAD' || rest.method === 'OPTIONS';
+      response = await fetchWithRetryTransient(
+        () => fetch(url, { ...rest, headers: mergedHeaders }),
+        isIdempotent ? 2 : 1
+      );
     } catch (err: any) {
       throw new ApiError(
         `Backend service unreachable (${err.message || 'Network request failed'})`,
