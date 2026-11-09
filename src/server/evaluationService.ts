@@ -65,13 +65,24 @@ export interface EvaluationJob {
  * Exactly one canonical runId is generated per evaluation execution and propagated across all layers.
  */
 export function generateCanonicalRunId(): string {
-  return `run-live-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+  const uuidPart = crypto.randomUUID().replace(/-/g, '').toLowerCase();
+  return `run-live-${Date.now().toString(36)}-${uuidPart.slice(0, 12)}`;
 }
 
 const jobs = new Map<string, EvaluationJob>();
 let activeEvaluationCount = 0;
 const MAX_ACTIVE_RUNS = process.env.NODE_ENV === 'production' ? 2 : 4;
 const MAX_STORED_JOBS = 30;
+
+/**
+ * Test helper to register in-memory jobs for testing pruning and concurrency.
+ */
+export function _setJobForTesting(id: string, job: EvaluationJob): void {
+  jobs.set(id, job);
+}
+export function _getJobsCountForTesting(): number {
+  return jobs.size;
+}
 
 /**
  * Prunes old completed or failed jobs from memory to prevent heap exhaustion.
@@ -84,12 +95,15 @@ export function pruneOldJobs(): void {
     }
   }
   while (jobs.size > MAX_STORED_JOBS) {
-    const oldestKey = jobs.keys().next().value;
-    if (oldestKey) {
-      jobs.delete(oldestKey);
-    } else {
-      break;
+    let evicted = false;
+    for (const [id, job] of jobs.entries()) {
+      if (job.status !== 'RUNNING') {
+        jobs.delete(id);
+        evicted = true;
+        break;
+      }
     }
+    if (!evicted) break; // Retain all running evaluations safely
   }
 }
 
