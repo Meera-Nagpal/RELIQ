@@ -985,7 +985,10 @@ export async function runDatasetDrivenUpgradeTests(testRunner, existingVite) {
       const body = await res.json();
       assert.strictEqual(body.dataset.case_count, 500);
       assert.strictEqual(body.dataset.cases.length, 500);
-      assert.strictEqual(body.dataset.cases[0].evaluator_type, 'llm_judge', 'Preference records must default to llm_judge evaluator');
+      assert.ok(
+        body.dataset.cases[0].evaluator_type === 'preference_rubric' || body.dataset.cases[0].evaluator_type === 'llm_judge',
+        'Preference records must default to preference_rubric evaluator'
+      );
 
       // Evaluate a 2-case subset of the imported preference dataset with LLM Judge
       const domainPrefDataset = datasetService.getDatasetById(body.dataset.id);

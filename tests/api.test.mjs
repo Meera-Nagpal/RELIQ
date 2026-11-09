@@ -703,6 +703,7 @@ export async function runApiTests(testRunner, existingVite) {
 
 // Standalone execution: node tests/api.test.mjs
 if (process.argv[1] && process.argv[1].endsWith('api.test.mjs')) {
+  process.env.RELIQ_DB_DRIVER = 'sqlite';
   let passed = 0;
   let failed = 0;
   runApiTests({

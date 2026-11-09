@@ -243,7 +243,7 @@ export function validateJudgeConfiguration(
   if (baselineModel && modelsMatch(judgeId, baselineModel)) {
     return {
       valid: false,
-      error: `Configuration Error: Self-judging detected. Judge model ('${judgeId}') cannot match baseline model being evaluated ('${baselineModel}').`,
+      error: `Configuration Error: Self-judging detected. Judge model ('${judgeId}') cannot be the baseline model being evaluated ('${baselineModel}').`,
     };
   }
 
@@ -251,7 +251,7 @@ export function validateJudgeConfiguration(
   if (candidateModel && modelsMatch(judgeId, candidateModel)) {
     return {
       valid: false,
-      error: `Configuration Error: Self-judging detected. Judge model ('${judgeId}') cannot match candidate model being evaluated ('${candidateModel}').`,
+      error: `Configuration Error: Self-judging detected. Judge model ('${judgeId}') cannot be the candidate model being evaluated ('${candidateModel}').`,
     };
   }
 
