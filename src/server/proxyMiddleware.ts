@@ -214,6 +214,10 @@ export function createReliqProxyMiddleware() {
     if (req.method === 'POST' && parsedUrl === '/api/evaluations/run') {
       try {
         const user = await getAuthenticatedUser(req);
+        if (isSupabaseConfigured() && !user) {
+          sendError(res, 401, 'UNAUTHORIZED', 'Authentication required to run evaluations');
+          return;
+        }
         const body = await parseJsonBody(req);
         const isAsync = body.async !== false; // Default to asynchronous execution
 
@@ -393,7 +397,16 @@ export function createReliqProxyMiddleware() {
         return;
       }
 
-      const run = await evaluationDbService.getEvaluationRunById(runId);
+      const urlObj = new URL(req.url || '', 'http://localhost');
+      const limitParam = urlObj.searchParams.get('limit');
+      const offsetParam = urlObj.searchParams.get('offset');
+      const includeCasesParam = urlObj.searchParams.get('includeCases');
+
+      const limit = limitParam ? Math.max(1, Math.min(1000, parseInt(limitParam, 10) || 50)) : undefined;
+      const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
+      const includeCases = includeCasesParam === 'false' ? false : true;
+
+      const run = await evaluationDbService.getEvaluationRunById(runId, { limit, offset, includeCases });
       if (!run) {
         sendError(res, 404, 'RUN_NOT_FOUND', `Evaluation run '${runId}' not found`);
         return;
@@ -694,6 +707,12 @@ export function createReliqProxyMiddleware() {
 
     // ── LLM Judge Model Availability Check: POST or GET /api/judge/test ──
     if ((req.method === 'POST' || req.method === 'GET') && parsedUrl.startsWith('/api/judge/test')) {
+      const user = await getAuthenticatedUser(req);
+      if (isSupabaseConfigured() && !user) {
+        sendError(res, 401, 'UNAUTHORIZED', 'Authentication required to test judge models');
+        return;
+      }
+
       const apiKey = getApiKey('GROQ_API_KEY');
       if (!apiKey) {
         sendJson(res, 200, {
@@ -834,7 +853,7 @@ export function createReliqProxyMiddleware() {
 
         const isGptOss = groqPayload.model === 'openai/gpt-oss-20b' || groqPayload.model === 'openai/gpt-oss-120b';
         if (isGptOss && !groqPayload.reasoning_effort) {
-          groqPayload.reasoning_effort = 'medium';
+          groqPayload.reasoning_effort = 'low';
         }
 
         console.log(`[RELIQ Proxy] -> GROQ POST model=${groqPayload.model} (case=${caseId}, reasoning=${groqPayload.reasoning_effort || 'none'})`);
