@@ -13,6 +13,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { projectService } from '../services/projectService';
 import { getJsonBody, sendError, sendJson } from './httpUtils';
 import { getAuthenticatedUser } from './authRoutes';
+import { canUserAccessProject, canUserModifyProject } from './authUtils';
 
 export async function handleProjectRoutes(
   req: IncomingMessage,
@@ -74,6 +75,14 @@ export async function handleProjectRoutes(
           sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${id}' not found`);
           return true;
         }
+
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserAccessProject(id, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have permission to access project '${id}'`);
+          return true;
+        }
+
         sendJson(res, 200, project);
       } catch (err: any) {
         sendError(res, 500, 'DATABASE_ERROR', err.message || 'Failed to retrieve project');
@@ -83,6 +92,19 @@ export async function handleProjectRoutes(
 
     // 4. PUT /api/projects/:id
     if (method === 'PUT') {
+      const project = await projectService.getProjectById(id);
+      if (!project) {
+        sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${id}' not found`);
+        return true;
+      }
+
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserModifyProject(id, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have permission to modify project '${id}'`);
+        return true;
+      }
+
       const body = await getJsonBody(req, res);
       if (!body) return true;
 
@@ -115,6 +137,19 @@ export async function handleProjectRoutes(
     // 5. DELETE /api/projects/:id
     if (method === 'DELETE') {
       try {
+        const project = await projectService.getProjectById(id);
+        if (!project) {
+          sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${id}' not found`);
+          return true;
+        }
+
+        const user = await getAuthenticatedUser(req);
+        const allowed = await canUserModifyProject(id, user?.id);
+        if (!allowed) {
+          sendError(res, 403, 'FORBIDDEN', `You do not have permission to delete project '${id}'`);
+          return true;
+        }
+
         const deleted = await projectService.deleteProject(id);
         if (!deleted) {
           sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${id}' not found`);

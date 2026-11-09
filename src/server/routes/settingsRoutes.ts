@@ -9,6 +9,8 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { settingsService } from '../services/settingsService';
 import { getJsonBody, sendError, sendJson } from './httpUtils';
+import { getAuthenticatedUser } from './authRoutes';
+import { canUserAccessProject, canUserModifyProject } from './authUtils';
 
 export async function handleSettingsRoutes(
   req: IncomingMessage,
@@ -25,6 +27,13 @@ export async function handleSettingsRoutes(
   // 1. GET /api/projects/:projectId/settings
   if (method === 'GET') {
     try {
+      const user = await getAuthenticatedUser(req);
+      const allowed = await canUserAccessProject(projectId, user?.id);
+      if (!allowed) {
+        sendError(res, 403, 'FORBIDDEN', `You do not have access to settings for project '${projectId}'`);
+        return true;
+      }
+
       const settings = await settingsService.getSettings(projectId);
       if (!settings) {
         sendError(res, 404, 'PROJECT_NOT_FOUND', `Project with ID '${projectId}' not found`);
@@ -39,6 +48,13 @@ export async function handleSettingsRoutes(
 
   // 2. PUT /api/projects/:projectId/settings
   if (method === 'PUT') {
+    const user = await getAuthenticatedUser(req);
+    const allowed = await canUserModifyProject(projectId, user?.id);
+    if (!allowed) {
+      sendError(res, 403, 'FORBIDDEN', `You do not have permission to modify settings for project '${projectId}'`);
+      return true;
+    }
+
     const body = await getJsonBody(req, res);
     if (!body) return true;
 
