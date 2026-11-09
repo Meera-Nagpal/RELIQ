@@ -149,12 +149,12 @@ export function createReliqProxyMiddleware() {
       if (isSupabaseDriverActive()) {
         const check = await testSupabaseConnection();
         databaseType = 'supabase_postgresql';
-        databaseStatus = check.connected ? 'connected' : `error: ${check.error}`;
+        databaseStatus = check.connected ? 'connected' : 'error: database connection failed';
         latencyMs = check.latencyMs;
       } else {
         if (process.env.RELIQ_DB_DRIVER === 'supabase_postgresql' || process.env.RELIQ_DB_DRIVER === 'supabase') {
           databaseType = 'supabase_postgresql';
-          databaseStatus = 'error: Supabase credentials missing (SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)';
+          databaseStatus = 'error: database connection failed';
         } else {
           try {
             const start = Date.now();
@@ -165,8 +165,8 @@ export function createReliqProxyMiddleware() {
               databaseType = 'sqlite';
               latencyMs = Date.now() - start;
             }
-          } catch (dbErr: any) {
-            databaseStatus = `error: ${dbErr.message}`;
+          } catch {
+            databaseStatus = 'error: database connection failed';
             databaseType = 'sqlite';
           }
         }
@@ -197,6 +197,7 @@ export function createReliqProxyMiddleware() {
         },
         providers: {
           gemini: getApiKey('GEMINI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
+          google: getApiKey('GEMINI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
           groq: getApiKey('GROQ_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
           cerebras: getApiKey('CEREBRAS_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
           openai: getApiKey('OPENAI_API_KEY') ? 'READY' : 'NOT_CONFIGURED',
@@ -333,8 +334,21 @@ export function createReliqProxyMiddleware() {
     // ── Evaluations API: GET /api/evaluations/runs ──────────────
     if (req.method === 'GET' && parsedUrl === '/api/evaluations/runs') {
       try {
-        const runs = await evaluationDbService.getEvaluationRuns();
-        sendJson(res, 200, { runs });
+        const urlObj = new URL(req.url || '', 'http://localhost');
+        const limitParam = urlObj.searchParams.get('limit');
+        const offsetParam = urlObj.searchParams.get('offset');
+        const limit = limitParam ? Math.max(1, Math.min(1000, parseInt(limitParam, 10) || 50)) : undefined;
+        const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
+
+        const allRuns = await evaluationDbService.getEvaluationRuns();
+        const paginatedRuns = limit !== undefined ? allRuns.slice(offset, offset + limit) : (offset > 0 ? allRuns.slice(offset) : allRuns);
+        sendJson(res, 200, {
+          runs: paginatedRuns,
+          count: paginatedRuns.length,
+          total: allRuns.length,
+          limit: limit ?? allRuns.length,
+          offset,
+        });
       } catch (err: any) {
         sendJson(res, 500, { error: err.message, runs: [] });
       }
