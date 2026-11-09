@@ -645,7 +645,12 @@ export class EvaluationRunner {
         return prompt;
       };
       const effectiveEvalType =
-        isPrefCase && testCase.evaluatorType === 'normalized_text' ? 'llm_judge' : testCase.evaluatorType;
+        isPrefCase &&
+        (testCase.evaluatorType === 'normalized_text' ||
+          testCase.evaluatorType === 'llm_judge' ||
+          !testCase.evaluatorType)
+          ? 'preference_rubric'
+          : testCase.evaluatorType;
 
       const resolveMaxTokens = (version: ModelVersion) => {
         if (version.maxTokens && version.maxTokens > 0) {
@@ -996,6 +1001,10 @@ export class EvaluationRunner {
             }
           }
         }
+      } else {
+        // When LLM Judge is disabled: standard benchmark run makes ZERO judge API calls and marks cases as skipped
+        judgeSkipped = true;
+        judgeSkippedCasesCount++;
       }
 
       const [baselineBranch, candidateBranch] = await Promise.all([
@@ -1164,7 +1173,7 @@ export class EvaluationRunner {
               score: candidateEval.primaryScore.score,
               passed: candidateEval.primaryScore.passed,
               details: candidateEval.primaryScore.details,
-              evaluatorType: testCase.evaluatorType,
+              evaluatorType: candidateEval.primaryScore.evaluatorType || testCase.evaluatorType,
             }
           : undefined,
         semanticEvaluation: semEval ?? null,
