@@ -10,8 +10,8 @@ export const coreShader = {
     uTime: { value: 0 },
     uHealthFactor: { value: 1.0 }, // 1.0 = healthy/calm, 0.0 = regression/distorted
     uScrollProgress: { value: 0 },
-    uAccentColor: { value: new THREE.Color('#FF6B35') },
-    uSecondaryColor: { value: new THREE.Color('#FFAA55') },
+    uAccentColor: { value: new THREE.Color('#2563EB') },
+    uSecondaryColor: { value: new THREE.Color('#60A5FA') },
     uDangerColor: { value: new THREE.Color('#FF2200') },
   },
   vertexShader: `
@@ -121,27 +121,27 @@ export const coreShader = {
       float fresnelPow = mix(3.0, 1.8, 1.0 - uHealthFactor);
       fresnel = pow(fresnel, fresnelPow);
       
-      // Deep crystalline base color
-      vec3 deepBase = vec3(0.02, 0.015, 0.012);
+      // Deep crystalline base color — charcoal / deep navy
+      vec3 deepBase = vec3(0.015, 0.02, 0.035);
       
       // Health color interpolation:
-      // Healthy (1.0) -> Warm Amber #FF6B35 & Warm Gold #FFAA55
-      // Warning (0.7) -> Intense Amber
-      // Regression (0.0 - 0.3) -> Pulsing Crimson #FF2200
-      vec3 healthyColor = mix(uAccentColor, uSecondaryColor, 0.25);
+      // Healthy (1.0) -> Workspace Blue #2563EB & Light Blue #60A5FA
+      // Warning (0.7) -> Cyan / Muted Blue
+      // Regression (0.0 - 0.3) -> Pulsing Crimson #FF2200 (preserved strictly for regression)
+      vec3 healthyColor = mix(uAccentColor, uSecondaryColor, 0.35);
       vec3 currentStatusColor = mix(uDangerColor, healthyColor, smoothstep(0.1, 0.8, uHealthFactor));
       
-      // High-frequency energy pulse
-      float pulse = sin(uTime * mix(2.0, 8.0, 1.0 - uHealthFactor) + vNoise * 4.0) * 0.5 + 0.5;
-      vec3 glowColor = mix(currentStatusColor, vec3(1.0, 0.9, 0.8), pulse * 0.35);
+      // Subtle energy pulse (minimal, non-generic)
+      float pulse = sin(uTime * mix(1.8, 6.0, 1.0 - uHealthFactor) + vNoise * 3.0) * 0.5 + 0.5;
+      vec3 glowColor = mix(currentStatusColor, vec3(0.85, 0.92, 1.0), pulse * 0.22);
       
-      // Combine base with radiant glow
-      float intensity = mix(1.2, 2.5, 1.0 - uHealthFactor);
+      // Combine base with refined subtle edge illumination
+      float intensity = mix(0.9, 1.8, 1.0 - uHealthFactor);
       vec3 finalColor = mix(deepBase, glowColor, fresnel * intensity);
       
       // Internal facet caustic highlights
       float caustic = pow(clamp(sin(vNoise * 6.0 + uTime * 2.0), 0.0, 1.0), 4.0);
-      finalColor += currentStatusColor * caustic * 0.4;
+      finalColor += currentStatusColor * caustic * 0.3;
       
       // Additive alpha falloff
       float alpha = clamp(fresnel * intensity + 0.15 + caustic * 0.2, 0.0, 0.95);

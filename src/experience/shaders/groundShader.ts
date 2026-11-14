@@ -106,9 +106,9 @@ export const groundShader = {
       // Crest specular caustics
       float crest = smoothstep(0.04, 0.12, vRipple);
       
-      // Accent tint based on system health
-      vec3 healthyAccent = vec3(1.0, 0.42, 0.21); // #FF6B35
-      vec3 dangerAccent  = vec3(1.0, 0.15, 0.05); // #FF2200
+      // Accent tint based on system health — workspace blue for healthy, red exclusively for regression
+      vec3 healthyAccent = vec3(0.145, 0.388, 0.922); // Workspace Blue #2563EB
+      vec3 dangerAccent  = vec3(1.0, 0.15, 0.05);     // Red #FF2200 (regression only)
       vec3 activeAccent  = mix(dangerAccent, healthyAccent, uHealthFactor);
       
       // Digital fluid color composition
