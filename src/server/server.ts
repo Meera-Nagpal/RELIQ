@@ -175,6 +175,15 @@ async function startServer() {
     const method = req.method || 'GET';
     const url = req.url?.split('?')[0] || '';
 
+    // Standard defensive HTTP security headers (SEC-06)
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+
     // Backend request logging
     console.log(`[BACKEND] ${method} ${url}`);
 
@@ -189,7 +198,9 @@ async function startServer() {
 
       // 2. For GET/HEAD requests, serve static assets or SPA index.html fallback
       if (method === 'GET' || method === 'HEAD') {
-        const distDir = path.resolve(process.cwd(), 'dist');
+        const rootDist = path.resolve(process.cwd(), 'dist');
+        const fallbackDist = path.resolve(__dirname, '../dist');
+        const distDir = fs.existsSync(rootDist) ? rootDist : fs.existsSync(fallbackDist) ? fallbackDist : rootDist;
         if (fs.existsSync(distDir)) {
           // Normalize requested path to prevent directory traversal
           const candidatePath = path.resolve(distDir, '.' + url);
