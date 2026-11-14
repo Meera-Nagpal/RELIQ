@@ -159,6 +159,14 @@ export function evaluateCaseQualityDimensions(
     reasoning = semScore;
   }
 
+  // Factor LLM Judge qualitative evaluation into reasoning and adherence when present (EVAL-01)
+  if (judgeScore && !judgeScore.error && typeof judgeScore.overall === 'number') {
+    const normalizedJudge = Math.max(0, Math.min(1, judgeScore.overall / 5.0));
+    if (!isExactOrJson) {
+      reasoning = Number((0.5 * reasoning + 0.5 * normalizedJudge).toFixed(3));
+    }
+  }
+
   // 2. Factual Correctness: Primary score combined with local factuality/groundedness verification
   const correctness = primaryScore * groundednessScore;
 
