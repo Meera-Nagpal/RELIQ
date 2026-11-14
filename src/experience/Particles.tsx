@@ -61,13 +61,13 @@ export function Particles({ count = 800 }: ParticlesProps) {
       targetColor.set('#ffffff');
       targetHealthFactor = 1.0;
     } else if (healthStatus === 'warning') {
-      targetColor.set('#FF6B35');
+      targetColor.set('#60A5FA');
       targetHealthFactor = 0.7;
     } else if (healthStatus === 'regression') {
       targetColor.set('#ff3300');
       targetHealthFactor = 0.3;
     } else if (healthStatus === 'recovered') {
-      targetColor.set('#FFAA55');
+      targetColor.set('#3B82F6');
       targetHealthFactor = 0.9;
     }
 
