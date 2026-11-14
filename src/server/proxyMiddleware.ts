@@ -59,6 +59,49 @@ interface CachedHealthState {
 let cachedHealthState: CachedHealthState | null = null;
 const HEALTH_CACHE_TTL_MS = 20000; // 20 seconds TTL
 
+// ── In-memory sliding window rate limiter for API endpoints (SEC-03) ──
+const ipRequestTimestamps = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 180; // 180 req/min for standard queries
+const MAX_INFERENCE_PER_WINDOW = 40; // 40 req/min for live inference/run endpoints
+
+function isOriginAllowed(origin: string): boolean {
+  if (process.env.NODE_ENV !== 'production') {
+    return true;
+  }
+  const configured = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (configured.length > 0) {
+    return configured.some((allowed) => allowed === origin || (allowed.startsWith('*.') && origin.endsWith(allowed.slice(1))));
+  }
+  // Default trusted origins for production
+  if (origin.endsWith('.vercel.app') || origin === 'https://reliq.ai' || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+    return true;
+  }
+  return false;
+}
+
+function checkRateLimit(clientIp: string, isExpensiveEndpoint: boolean): boolean {
+  if (process.env.NODE_ENV !== 'production') return true;
+  const now = Date.now();
+  const limit = isExpensiveEndpoint ? MAX_INFERENCE_PER_WINDOW : MAX_REQUESTS_PER_WINDOW;
+  let timestamps = ipRequestTimestamps.get(clientIp);
+  if (!timestamps) {
+    timestamps = [];
+    ipRequestTimestamps.set(clientIp, timestamps);
+  }
+  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= limit) {
+    ipRequestTimestamps.set(clientIp, recent);
+    return false;
+  }
+  recent.push(now);
+  ipRequestTimestamps.set(clientIp, recent);
+  return true;
+}
+
 export function createReliqProxyMiddleware() {
   return async function reliqProxyMiddleware(
     req: IncomingMessage,
@@ -68,11 +111,13 @@ export function createReliqProxyMiddleware() {
     const [parsedUrl, rawQuery] = (req.url || '').split('?');
     const query = new URLSearchParams(rawQuery || '');
 
-    // Safe CORS headers for local development and production Vercel frontend
+    // Safe CORS headers for local development and production Vercel frontend (SEC-02)
     const origin = req.headers.origin;
     if (origin) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      if (isOriginAllowed(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
@@ -83,6 +128,20 @@ export function createReliqProxyMiddleware() {
       res.statusCode = 204;
       res.end();
       return;
+    }
+
+    // Rate limiting check on all /api/* routes (SEC-03)
+    if (parsedUrl.startsWith('/api/')) {
+      const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+      const isExpensive = parsedUrl.startsWith('/api/evaluations/run') || parsedUrl.startsWith('/api/providers/health');
+      if (!checkRateLimit(clientIp, isExpensive)) {
+        sendJson(res, 429, {
+          error: 'Too Many Requests',
+          message: 'Rate limit exceeded. Please throttle your requests.',
+          retryAfterSeconds: 60,
+        });
+        return;
+      }
     }
 
     // ── Authentication REST Endpoints ───────────────────────────
