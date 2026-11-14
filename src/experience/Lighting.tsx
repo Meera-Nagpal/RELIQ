@@ -15,14 +15,15 @@ export function Lighting() {
   useFrame((state, delta) => {
     if (!pointLightRef.current) return;
 
-    let targetIntensity = 2.0;
-    const targetColor = new THREE.Color('#FF6B35');
+    let targetIntensity = 1.8;
+    const targetColor = new THREE.Color('#2563EB');
 
     if (healthStatus === 'warning') {
-      targetIntensity = 5.0;
+      targetIntensity = 3.5;
+      targetColor.set('#60A5FA');
     } else if (healthStatus === 'regression') {
-      // Flickering effect
-      targetIntensity = 8.0 + Math.sin(state.clock.elapsedTime * 10) * 4.0;
+      // Flickering effect preserved strictly for regression
+      targetIntensity = 6.0 + Math.sin(state.clock.elapsedTime * 10) * 3.0;
       targetColor.set('#ff2200');
     }
 
@@ -38,24 +39,24 @@ export function Lighting() {
 
   return (
     <>
-      <ambientLight intensity={0.15} color="#ffe6cc" />
+      <ambientLight intensity={0.12} color="#E2E8F0" />
       
       <pointLight 
         ref={pointLightRef}
         position={[0, 0, 0]}
         distance={10}
         decay={2}
-        color="#FF6B35"
+        color="#2563EB"
       />
       
       <directionalLight
         ref={directionalLightRef}
         position={[5, 10, 5]}
         intensity={0.5}
-        color="#FFF5EB"
+        color="#F8FAFC"
       />
       
-      <fog attach="fog" args={['#0A0A0A', 5, 20]} />
+      <fog attach="fog" args={['#090D16', 5, 20]} />
     </>
   );
 }
