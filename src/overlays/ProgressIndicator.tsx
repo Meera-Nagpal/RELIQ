@@ -104,10 +104,10 @@ export function ProgressIndicator() {
                   height: '4px',
                   borderRadius: '2px',
                   background: isActive
-                    ? '#FF6B35'
+                    ? (step.index === 3 ? '#EF4444' : '#2563EB')
                     : 'rgba(255, 255, 255, 0.2)',
                   transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                  boxShadow: isActive ? '0 0 10px rgba(255, 107, 53, 0.6)' : 'none',
+                  boxShadow: isActive ? (step.index === 3 ? '0 0 6px rgba(239, 68, 68, 0.4)' : '0 0 6px rgba(37, 99, 235, 0.35)') : 'none',
                 }}
               />
             </button>
@@ -130,7 +130,7 @@ export function ProgressIndicator() {
           style={{
             width: '100%',
             height: `${scrollProgress * 100}%`,
-            background: '#FF6B35',
+            background: currentStateIndex === 3 ? '#EF4444' : '#2563EB',
             transition: 'height 0.1s linear',
           }}
         />

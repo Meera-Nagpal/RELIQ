@@ -82,12 +82,11 @@ export function HeroOverlay() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
           <span
             style={{
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "var(--font-sans, 'Geist Sans', sans-serif)",
               fontSize: '1.55rem',
-              fontWeight: 900,
-              letterSpacing: '0.18em',
+              fontWeight: 800,
+              letterSpacing: '0.12em',
               color: '#FFFFFF',
-              textShadow: '0 0 25px rgba(255, 107, 53, 0.4)',
             }}
           >
             RELIQ
@@ -96,12 +95,13 @@ export function HeroOverlay() {
             style={{
               fontSize: '0.68rem',
               padding: '0.25rem 0.65rem',
-              borderRadius: '999px',
-              border: '1px solid rgba(255, 107, 53, 0.45)',
-              background: 'rgba(255, 107, 53, 0.12)',
-              color: 'var(--accent, #FF6B35)',
+              borderRadius: '2px',
+              border: '1px solid #292929',
+              background: '#151515',
+              color: '#ADC0D6',
               fontWeight: 700,
               letterSpacing: '0.12em',
+              fontFamily: 'monospace',
             }}
           >
             AI RELIABILITY SUITE
@@ -135,16 +135,17 @@ export function HeroOverlay() {
           <button
             onClick={() => navigate('#/app/dashboard')}
             style={{
-              background: '#FF6B35',
-              color: '#000000',
-              border: 'none',
+              background: 'var(--accent, #ADC0D6)',
+              color: '#0A1A35',
+              border: '1px solid var(--accent, #ADC0D6)',
               padding: '0.45rem 1.1rem',
-              borderRadius: '6px',
+              borderRadius: '2px',
               fontSize: '0.78rem',
               fontWeight: 700,
-              letterSpacing: '0.05em',
+              fontFamily: 'monospace',
+              letterSpacing: '0.04em',
               cursor: 'pointer',
-              boxShadow: '0 0 15px rgba(255, 107, 53, 0.35)',
+              transition: 'background 0.2s ease',
             }}
           >
             Open RELIQ Workspace →
@@ -165,10 +166,11 @@ export function HeroOverlay() {
           <div
             style={{
               fontSize: '0.72rem',
-              letterSpacing: '0.25em',
+              letterSpacing: '0.2em',
               textTransform: 'uppercase',
-              color: '#FF6B35',
+              color: 'var(--blue-light, #60A5FA)',
               fontWeight: 600,
+              fontFamily: 'monospace',
               marginBottom: '0.4rem',
             }}
           >
@@ -177,7 +179,7 @@ export function HeroOverlay() {
           <p
             style={{
               fontSize: 'clamp(1rem, 1.6vw, 1.35rem)',
-              color: '#E0E0E0',
+              color: 'var(--text, #F2F2F2)',
               fontWeight: 400,
               lineHeight: 1.45,
               margin: 0,
@@ -191,16 +193,18 @@ export function HeroOverlay() {
           <button
             onClick={() => navigate('#/app/dashboard')}
             style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              color: '#FFFFFF',
+              background: '#151515',
+              border: '1px solid #292929',
+              color: 'var(--text, #F2F2F2)',
               padding: '0.75rem 1.4rem',
-              borderRadius: '6px',
+              borderRadius: '2px',
               fontSize: '0.78rem',
-              letterSpacing: '0.1em',
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
+              fontFamily: 'monospace',
               fontWeight: 600,
               cursor: 'pointer',
+              transition: 'background 0.2s ease',
             }}
           >
             Direct to App
@@ -208,23 +212,26 @@ export function HeroOverlay() {
           <button
             onClick={scrollToStart}
             style={{
-              background: 'transparent',
-              border: '1px solid #FF6B35',
-              color: '#FF6B35',
+              background: '#1B1B1B',
+              border: '1px solid #3A3A3A',
+              color: '#ADC0D6',
               padding: '0.75rem 1.6rem',
-              borderRadius: '6px',
+              borderRadius: '2px',
               fontSize: '0.78rem',
-              letterSpacing: '0.12em',
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
+              fontFamily: 'monospace',
               fontWeight: 600,
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
+              transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 107, 53, 0.15)';
+              e.currentTarget.style.background = '#222222';
+              e.currentTarget.style.borderColor = '#ADC0D6';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.background = '#1B1B1B';
+              e.currentTarget.style.borderColor = '#3A3A3A';
             }}
           >
             Explore 3D Journey ↓
