@@ -23,7 +23,9 @@ export function parseJsonBody<T = any>(req: IncomingMessage): Promise<T> {
       receivedBytes += typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length;
       if (receivedBytes > MAX_BODY_BYTES) {
         aborted = true;
-        reject(new Error('Request body exceeds maximum allowed size (25 MB)'));
+        const err = new Error('Request body exceeds maximum allowed size (25 MB)');
+        req.destroy(err);
+        reject(err);
         return;
       }
       body += chunk;
