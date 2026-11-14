@@ -543,10 +543,13 @@ export class EvaluationDbService {
         run_json: finalRun,
       };
 
-      supabaseRepository.saveEvaluationRun(runRecord).catch((err) => {
-        console.error('[RELIQ Supabase] Error finalizing evaluation run:', err.message);
-      });
-      return;
+      return (async () => {
+        try {
+          await supabaseRepository.saveEvaluationRun(runRecord);
+        } catch (err: any) {
+          console.error('[RELIQ Supabase] Error finalizing evaluation run:', err.message);
+        }
+      })() as any;
     }
 
     const db = getDatabase();
@@ -799,13 +802,16 @@ export class EvaluationDbService {
     if (isSupabaseDriverActive()) {
       return (async () => {
         const rows = await supabaseRepository.getAllEvaluationRuns(projectId, userId);
-        let diskRuns = getRunsFromDisk();
-        if (projectId) {
-          diskRuns = diskRuns.filter((r) => r.projectId === projectId);
-        }
-        if (userId) {
-          diskRuns = diskRuns.filter((r) => !r.userId || r.userId === userId);
-        }
+        let diskRuns: any[] = [];
+        try {
+          diskRuns = getRunsFromDisk();
+          if (projectId) {
+            diskRuns = diskRuns.filter((r) => r.projectId === projectId);
+          }
+          if (userId) {
+            diskRuns = diskRuns.filter((r) => !r.userId || r.userId === userId);
+          }
+        } catch {}
         const diskMap = new Map<string, any>(diskRuns.map((r) => [r.id, r]));
 
         return rows.map((sRun) => {
@@ -815,8 +821,8 @@ export class EvaluationDbService {
               parsed = typeof sRun.run_json === 'string' ? JSON.parse(sRun.run_json) : sRun.run_json;
             } catch {}
           }
-          const diskRun = diskMap.get(sRun.id);
-          const base = diskRun || parsed;
+          // Authoritative Supabase JSON takes precedence over ephemeral disk files (PERF-04)
+          const base = parsed || diskMap.get(sRun.id);
           if (base) {
             const isReg = sRun.release_decision === 'BLOCK' || sRun.release_decision === 'REGRESSION_DETECTED';
             return {
