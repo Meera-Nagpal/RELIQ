@@ -1,13 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useExperienceStore } from '../store/experienceStore';
-import { mapRangeClamped } from '../utils/math';
 import { apiRepository } from '../services/apiRepository';
 import { useRouter } from '../router/useRouter';
 
 /**
- * Giant animated metric numbers overlay.
+ * Metric numbers HUD overlay.
  * Formats percentages vs counts correctly, and smoothly animates
- * the regression countdown: 96.8% -> 94.2% -> 91.7% -> 89.7%.
+ * with a cinematic blur-fade effect and clean inter-state buffers.
  */
 export function MetricOverlay() {
   const currentStateIndex = useExperienceStore((state) => state.currentStateIndex);
@@ -15,7 +14,7 @@ export function MetricOverlay() {
   const stateProgress = useExperienceStore((state) => state.stateProgress);
   const { isTransitioning } = useRouter();
 
-  const [activeCaseCount, setActiveCaseCount] = useState<number>(27);
+  const [activeCaseCount, setActiveCaseCount] = useState<number>(500);
 
   useEffect(() => {
     let mounted = true;
@@ -33,7 +32,7 @@ export function MetricOverlay() {
           }
         }
       } catch {
-        setActiveCaseCount(27);
+        setActiveCaseCount(500);
       }
     })();
     return () => {
@@ -41,17 +40,17 @@ export function MetricOverlay() {
     };
   }, []);
 
-  // During State 3 (REGRESSION) and State 4 (INVESTIGATION), VersionCards handles horizontal view,
-  // so we keep this overlay subtle or focused on the core metric pulse.
   const opacity = useMemo(() => {
     if (currentStateIndex === 0) return 0; // SYSTEM (Hero handles title)
-    if (currentStateIndex === 5) return 0; // CONFIDENCE / DashboardTransition handles final UI
+    if (currentStateIndex === 5 && stateProgress > 0.22) return 0; // Dissolves before DashboardTransition opens
 
-    // Fade in at start (0 to 0.15), fade out at end (0.85 to 1.0)
-    if (stateProgress < 0.15) {
-      return mapRangeClamped(stateProgress, 0, 0.15, 0, 1);
-    } else if (stateProgress > 0.85) {
-      return mapRangeClamped(stateProgress, 0.85, 1.0, 1, 0);
+    // Smooth Hermite fade in (0.05 to 0.22) and clean fade out (0.72 to 0.88)
+    if (stateProgress < 0.22) {
+      const t = Math.max(0, (stateProgress - 0.05) / 0.17);
+      return t * t * (3 - 2 * t);
+    } else if (stateProgress > 0.72) {
+      const t = Math.max(0, 1 - (stateProgress - 0.72) / 0.16);
+      return t * t * (3 - 2 * t);
     }
     return 1;
   }, [currentStateIndex, stateProgress]);
@@ -60,10 +59,10 @@ export function MetricOverlay() {
   const { displayValue, hasPercent, label } = useMemo(() => {
     if (!currentState) return { displayValue: '', hasPercent: false, label: '' };
 
-    // State 1: DATA (Dynamic test case count from active harness)
+    // State 1: DATA (Test case count from harness)
     if (currentStateIndex === 1) {
       return {
-        displayValue: String(activeCaseCount || 27),
+        displayValue: String(activeCaseCount || 500),
         hasPercent: false,
         label: 'TEST CASES IN HARNESS',
       };
@@ -106,14 +105,12 @@ export function MetricOverlay() {
       hasPercent: currentState.metricValue.includes('%'),
       label: currentState.metricLabel || '',
     };
-  }, [currentStateIndex, stateProgress, currentState]);
+  }, [currentStateIndex, stateProgress, currentState, activeCaseCount]);
 
   if (isTransitioning || currentStateIndex === 0 || currentStateIndex === 5 || opacity <= 0.01) return null;
 
   const isRegressionWarning = currentStateIndex === 3 && stateProgress > 0.7;
-  const driftX = (currentStateIndex === 1 || currentStateIndex === 4)
-    ? (stateProgress - 0.5) * 40
-    : 0;
+  const blurPx = Math.max(0, (1 - opacity) * 12);
 
   return (
     <div
@@ -121,15 +118,16 @@ export function MetricOverlay() {
         position: 'fixed',
         top: '25%',
         right: 'clamp(2rem, 8vw, 8rem)',
-        transform: `translate3d(${driftX}px, 0, 0)`,
-        willChange: 'transform',
+        transform: 'none',
+        willChange: 'opacity, filter',
         zIndex: 12,
         pointerEvents: 'none',
         opacity,
+        filter: `blur(${blurPx.toFixed(1)}px)`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
-        transition: 'opacity 0.2s ease-out',
+        transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), filter 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       <div
@@ -146,7 +144,7 @@ export function MetricOverlay() {
             fontWeight: 800,
             lineHeight: 0.95,
             letterSpacing: '-0.04em',
-            color: isRegressionWarning ? '#D7DBE0' : '#FFFFFF',
+            color: isRegressionWarning ? '#EF4444' : '#FFFFFF',
             transition: 'color 0.3s ease',
           }}
         >
@@ -157,7 +155,7 @@ export function MetricOverlay() {
             style={{
               fontSize: 'clamp(1.8rem, 3.5vw, 3.5rem)',
               fontWeight: 700,
-              color: isRegressionWarning ? '#E5673E' : '#FF6B35',
+              color: isRegressionWarning ? '#EF4444' : '#2563EB',
             }}
           >
             %
@@ -170,7 +168,7 @@ export function MetricOverlay() {
           fontSize: '0.75rem',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          color: isRegressionWarning ? '#D7DBE0' : 'var(--text-muted, #888888)',
+          color: isRegressionWarning ? '#EF4444' : 'var(--text-muted, #888888)',
           fontWeight: 600,
           marginTop: '0.6rem',
         }}
@@ -183,15 +181,14 @@ export function MetricOverlay() {
           style={{
             marginTop: '1rem',
             padding: '0.4rem 0.9rem',
-            background: 'rgba(229, 103, 62, 0.15)',
-            border: '1px solid rgba(229, 103, 62, 0.6)',
-            color: '#FF7A50',
-            borderRadius: '4px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            color: '#EF4444',
+            borderRadius: '2px',
             fontSize: '0.75rem',
             fontWeight: 700,
-            letterSpacing: '0.15em',
-            boxShadow: '0 0 20px rgba(229, 103, 62, 0.3)',
-            animation: 'pulse 1.2s infinite',
+            letterSpacing: '0.12em',
+            fontFamily: 'monospace',
           }}
         >
           CRITICAL REGRESSION DETECTED
