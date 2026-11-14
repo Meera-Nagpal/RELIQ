@@ -28,7 +28,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
-        background: 'rgba(8, 10, 14, 0.76)',
+        background: 'rgba(15, 15, 15, 0.88)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
@@ -105,14 +105,14 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ isVisible }) => 
             letterSpacing: '0.28em',
             textIndent: '0.28em', // optically center letter-spaced text
             color: '#F0F3F6',
-            textShadow: '0 0 24px rgba(255, 107, 53, 0.5), 0 0 48px rgba(255, 107, 53, 0.2)',
+            textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)',
             marginBottom: '0.6rem',
           }}
         >
           RELIQ
         </div>
 
-        {/* Subtle orange accent / dots row: ◯ ● ◯ */}
+        {/* Minimal workspace blue accent / dots row: ◯ ● ◯ */}
         <div
           style={{
             position: 'relative',

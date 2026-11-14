@@ -54,7 +54,7 @@ export const RippleLoader: React.FC<RippleLoaderProps> = ({
         @keyframes reliqPulseAnimation2 {
           0% { transform: scale(0.14); opacity: 0; border-color: ${secondaryColor}; }
           15% { opacity: 0.82; border-color: ${color}; }
-          55% { border-color: #C68B45; }
+          55% { border-color: ${secondaryColor}; }
           100% { transform: scale(2.70); opacity: 0; border-color: ${color}; }
         }
         @keyframes reliqPulseAnimation3 {

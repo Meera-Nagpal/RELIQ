@@ -475,7 +475,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
           return;
         }
 
-        await new Promise((res) => setTimeout(res, 250));
+        // Adaptive polling interval to prevent server/database connection saturation (PERF-01)
+        await new Promise((res) => setTimeout(res, 1500));
 
         if (isCancelledRef.current) {
           setIsRunning(false);
@@ -785,11 +786,11 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         {datasets.length === 0 && (
           <div
             style={{
-              background: 'rgba(255, 170, 68, 0.1)',
-              border: '1px solid rgba(255, 170, 68, 0.3)',
-              borderRadius: '8px',
+              background: '#151515',
+              border: '1px solid #292929',
+              borderRadius: '2px',
               padding: '1rem 1.2rem',
-              color: '#FFAA44',
+              color: 'var(--text-secondary, #858585)',
               fontSize: '0.85rem',
               display: 'flex',
               justifyContent: 'space-between',
@@ -800,13 +801,14 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             <button
               onClick={() => navigate('#/app/datasets')}
               style={{
-                background: '#FFAA44',
-                color: '#000000',
-                border: 'none',
+                background: 'var(--accent, #ADC0D6)',
+                color: '#0A1A35',
+                border: '1px solid var(--accent, #ADC0D6)',
                 padding: '0.45rem 0.9rem',
-                borderRadius: '4px',
+                borderRadius: '2px',
                 fontWeight: 700,
                 fontSize: '0.8rem',
+                fontFamily: 'monospace',
                 cursor: 'pointer',
               }}
             >
@@ -1399,8 +1401,8 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             style={{
               background: 'rgba(0, 0, 0, 0.4)',
               padding: '1.2rem',
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 107, 53, 0.3)',
+              borderRadius: '2px',
+              border: '1px solid rgba(37, 99, 235, 0.3)',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.6rem',

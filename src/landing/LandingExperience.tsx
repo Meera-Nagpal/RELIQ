@@ -24,7 +24,6 @@ import { MetricOverlay } from '../overlays/MetricOverlay';
 import { StateTypography } from '../overlays/StateTypography';
 import { ProgressIndicator } from '../overlays/ProgressIndicator';
 import { ScrollHint } from '../overlays/ScrollHint';
-import { VersionCards } from '../overlays/VersionCards';
 import { DashboardTransition } from '../overlays/DashboardTransition';
 
 export const LandingExperience: React.FC = () => {
@@ -74,7 +73,6 @@ export const LandingExperience: React.FC = () => {
       <MetricOverlay />
       <ProgressIndicator />
       <ScrollHint />
-      <VersionCards />
       <DashboardTransition />
     </div>
   );

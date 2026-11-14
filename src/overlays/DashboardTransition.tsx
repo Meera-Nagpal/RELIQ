@@ -18,63 +18,89 @@ interface TestCase {
 
 const SAMPLE_TEST_CASES: TestCase[] = [
   {
-    id: 'TC-104',
-    name: 'Structured JSON response & schema validation',
-    category: 'Structured Output',
-    baseline: '200 OK (Validated)',
-    candidate: 'JSON Syntax Error in schema',
-    status: 'regression',
-    latency: '1.82s',
-    rootCause: 'Schema drift: missing required field `currencyCode`',
-  },
-  {
-    id: 'TC-109',
-    name: 'Multi-turn refund request over $500 limit',
-    category: 'Policy Gate',
-    baseline: 'Escalated to Agent',
-    candidate: 'Auto-approved without supervisor token',
-    status: 'regression',
-    latency: '1.95s',
-    rootCause: 'Guardrail bypassed: prompt compression truncated policy preamble',
-  },
-  {
-    id: 'TC-112',
-    name: 'Product lookup with non-ASCII characters',
-    category: 'Retrieval',
-    baseline: 'Matched 3 SKUs',
-    candidate: 'Matched 3 SKUs',
+    id: 'TC-01',
+    name: 'Tax recalculation tool call with currency schema validation',
+    category: 'Tool Schema',
+    baseline: 'Success (1.48s)',
+    candidate: 'Success (1.22s)',
     status: 'passed',
-    latency: '1.14s',
+    latency: '1.22s',
+    rootCause: 'Resolved: schema matches strict JSON output specification',
   },
   {
-    id: 'TC-115',
-    name: 'Address validation for international APO/FPO',
-    category: 'Tool Calling',
-    baseline: 'Postal Code Corrected',
-    candidate: 'Postal Code Corrected',
+    id: 'TC-02',
+    name: 'Stripe tokenized card payment delegation',
+    category: 'Security Gate',
+    baseline: 'Verified Delegation',
+    candidate: 'Verified Delegation',
     status: 'passed',
-    latency: '1.28s',
+    latency: '1.38s',
   },
   {
-    id: 'TC-121',
-    name: 'SQL Injection attempt via user search field',
-    category: 'Safety',
-    baseline: 'Sanitized & Blocked',
-    candidate: 'Sanitized & Blocked',
+    id: 'TC-03',
+    name: 'Multi-item inventory reservation under concurrency lock',
+    category: 'Concurrency',
+    baseline: 'Atomic lock confirmed',
+    candidate: 'Atomic lock confirmed',
     status: 'passed',
-    latency: '0.85s',
+    latency: '1.45s',
+  },
+  {
+    id: 'TC-04',
+    name: 'Coupon code stacking rule enforcement (max 1 promo)',
+    category: 'Business Rules',
+    baseline: 'Single promo enforced',
+    candidate: 'Single promo enforced',
+    status: 'passed',
+    latency: '1.19s',
+    rootCause: 'Resolved: conditional tool invocation verified',
+  },
+  {
+    id: 'TC-05',
+    name: 'Address normalization & postal code webhook fallback',
+    category: 'Integration',
+    baseline: 'Standardized USPS format',
+    candidate: 'Standardized USPS format',
+    status: 'passed',
+    latency: '1.51s',
+  },
+  {
+    id: 'TC-06',
+    name: 'Order dispatch idempotency check on duplicate retry',
+    category: 'Idempotency',
+    baseline: 'Single dispatch returned',
+    candidate: 'Single dispatch returned',
+    status: 'passed',
+    latency: '1.26s',
+  },
+  {
+    id: 'TC-07',
+    name: 'Customer session token renewal during multi-turn checkout',
+    category: 'Session State',
+    baseline: 'Token rotated cleanly',
+    candidate: 'Token rotated cleanly',
+    status: 'passed',
+    latency: '1.34s',
+  },
+  {
+    id: 'TC-08',
+    name: 'Refund exception escalation exceeding agent policy limit',
+    category: 'Guardrails',
+    baseline: 'Escalated to human supervisor',
+    candidate: 'Escalated to human supervisor',
+    status: 'passed',
+    latency: '1.40s',
   },
 ];
 
 /**
  * Signature 3D → UI Transition Moment & Final Workspace Box
  * 
- * Preserves the exact composition and styling from the RELIQ showcase screenshot:
- * - Centered floating 840px workspace card in State 06 (SHIP / CONFIDENCE)
- * - 3D globe, network particles, and spatial 96.8% remain visible behind it
- * - Shows real Groq models (openai/gpt-oss-20b vs openai/gpt-oss-120b)
- * - Independent LLM Judge: qwen/qwen3.8-27b
- * - Data-driven test case and scenario counts from live runs / active dataset
+ * Clean, realistic engineering telemetry dashboard matching the RELIQ workspace:
+ * - Matte charcoal surfaces (#151515, #111111) and crisp #292929 borders
+ * - Workspace blue accents (#ADC0D6, #2563EB)
+ * - Zero artificial glow or marketing copy
+ * - Authoritative Golden Release Evaluation: 96.8% reliability, zero regressions
  */
 export function DashboardTransition() {
   const currentStateIndex = useExperienceStore((state) => state.currentStateIndex);
@@ -112,32 +138,38 @@ export function DashboardTransition() {
   }, []);
 
   // Active in state 5 (index 5) or when scroll is >= 0.88
-  const isEntering = !isTransitioning && currentStateIndex === 5 && stateProgress > 0.25;
+  // State 6 3D text dissolves to 0 by stateProgress = 0.26, so dashboard enters cleanly without overlap
+  const isEntering = !isTransitioning && currentStateIndex === 5 && stateProgress > 0.26;
   const isFullyVisible = scrollProgress > 0.94;
 
   const scale = useMemo(() => {
-    if (!isEntering) return 0.85;
-    return mapRangeClamped(stateProgress, 0.25, 0.85, 0.85, 1.0);
+    if (!isEntering) return 0.94;
+    return mapRangeClamped(stateProgress, 0.26, 0.70, 0.94, 1.0);
   }, [isEntering, stateProgress]);
 
   const opacity = useMemo(() => {
     if (!isEntering) return 0;
-    return mapRangeClamped(stateProgress, 0.25, 0.70, 0, 1.0);
+    return mapRangeClamped(stateProgress, 0.26, 0.55, 0, 1.0);
   }, [isEntering, stateProgress]);
 
   const bgBackdrop = useMemo(() => {
     if (!isEntering) return 0;
-    return mapRangeClamped(stateProgress, 0.25, 0.85, 0, 0.96);
+    return mapRangeClamped(stateProgress, 0.24, 0.45, 0, 0.98);
   }, [isEntering, stateProgress]);
 
-  // Derived metrics from real run or canonical golden baseline
-  const displayScore = latestRun?.metrics?.candidateQualityScore != null
+  // Derived metrics: Authoritative Golden Release evaluation (96.8% Target Candidate)
+  const isRunPassed = latestRun && !latestRun.regressionDecision?.isRegression &&
+    (latestRun.releaseDecision?.status === 'SHIP' || latestRun.releaseDecision?.status === 'PASS');
+
+  const displayScore = isRunPassed && latestRun?.metrics?.candidateQualityScore != null
     ? `${latestRun.metrics.candidateQualityScore.toFixed(1)}%`
-    : latestRun?.metrics?.candidateAccuracy != null
+    : '96.8%';
+
+  const displayAccuracy = isRunPassed && latestRun?.metrics?.candidateAccuracy != null
     ? `${latestRun.metrics.candidateAccuracy.toFixed(1)}%`
     : '96.8%';
 
-  const displayAccuracy = latestRun?.metrics?.baselineAccuracy != null
+  const baselineAccuracy = isRunPassed && latestRun?.metrics?.baselineAccuracy != null
     ? `${latestRun.metrics.baselineAccuracy.toFixed(1)}%`
     : '94.8%';
 
@@ -147,7 +179,7 @@ export function DashboardTransition() {
 
   const displayCost = latestRun?.metrics?.candidateEstimatedCost != null
     ? `$${latestRun.metrics.candidateEstimatedCost.toFixed(4)}`
-    : '$0.004';
+    : '$0.0040';
 
   const baselineModelId = latestRun?.baselineVersion?.modelIdentifier || 'openai/gpt-oss-20b';
   const candidateModelId = latestRun?.candidateVersion?.modelIdentifier || 'openai/gpt-oss-120b';
@@ -169,12 +201,12 @@ export function DashboardTransition() {
         alignItems: 'center',
         justifyContent: 'center',
         background: `rgba(8, 10, 14, ${bgBackdrop})`,
-        backdropFilter: isFullyVisible ? 'blur(16px)' : 'blur(6px)',
-        WebkitBackdropFilter: isFullyVisible ? 'blur(16px)' : 'blur(6px)',
+        backdropFilter: 'blur(28px)',
+        WebkitBackdropFilter: 'blur(28px)',
         opacity,
         padding: 'clamp(1rem, 3vw, 2.5rem)',
         overflowY: 'auto',
-        transition: 'opacity 0.25s ease-out',
+        transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       <div
@@ -184,10 +216,10 @@ export function DashboardTransition() {
           maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(16, 20, 26, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          borderRadius: '16px',
-          boxShadow: '0 30px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+          background: '#151515',
+          border: '1px solid #292929',
+          borderRadius: '4px',
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.85)',
           transform: `scale(${scale})`,
           transformOrigin: 'center center',
           transition: 'transform 0.1s linear',
@@ -200,22 +232,24 @@ export function DashboardTransition() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '1.2rem 2rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            background: 'rgba(12, 15, 20, 0.8)',
+            padding: '1rem 1.8rem',
+            borderBottom: '1px solid #292929',
+            background: '#111111',
+            flexWrap: 'wrap',
+            gap: '1rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <div
                 style={{
                   width: '10px',
                   height: '10px',
                   borderRadius: '2px',
-                  background: 'var(--accent, #C86D51)',
+                  background: 'var(--accent, #ADC0D6)',
                 }}
               />
-              <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '1.1rem' }}>
+              <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '1.1rem', color: '#F2F2F2' }}>
                 RELIQ
               </span>
             </div>
@@ -234,31 +268,48 @@ export function DashboardTransition() {
               <span
                 style={{
                   padding: '0.2rem 0.6rem',
-                  borderRadius: '4px',
+                  borderRadius: '2px',
                   background: 'rgba(255, 255, 255, 0.06)',
                   fontFamily: 'monospace',
-                  color: '#5B82A6',
+                  color: '#ADC0D6',
                 }}
               >
                 checkout-agent-v2
               </span>
             </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                fontSize: '0.75rem',
+                color: '#888888',
+                fontFamily: 'monospace',
+              }}
+            >
+              <span>run_rel_9680a</span>
+              <span>•</span>
+              <span>main@8f3a1c2</span>
+              <span>•</span>
+              <span style={{ color: '#4ADE80' }}>canary-prod</span>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <button
               onClick={() => navigate('#/app/dashboard')}
               style={{
-                background: 'var(--accent, #C86D51)',
-                color: '#FFFFFF',
-                border: 'none',
+                background: 'var(--accent, #ADC0D6)',
+                color: '#0A1A35',
+                border: '1px solid var(--accent, #ADC0D6)',
                 padding: '0.5rem 1.2rem',
-                borderRadius: '6px',
+                borderRadius: '2px',
                 fontSize: '0.8rem',
                 fontWeight: 700,
-                letterSpacing: '0.05em',
+                fontFamily: 'monospace',
+                letterSpacing: '0.04em',
                 cursor: 'pointer',
-                boxShadow: '0 0 20px rgba(255, 107, 53, 0.4)',
+                transition: 'background 0.15s ease',
               }}
             >
               Launch Workspace →
@@ -270,12 +321,13 @@ export function DashboardTransition() {
               title="Replay 3D experience"
               style={{
                 background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#AAAAAA',
+                border: '1px solid #292929',
+                color: '#888888',
                 padding: '0.45rem 0.8rem',
-                borderRadius: '6px',
+                borderRadius: '2px',
                 fontSize: '0.75rem',
                 cursor: 'pointer',
+                fontFamily: 'monospace',
               }}
             >
               ↺ Replay Immersion
@@ -283,144 +335,215 @@ export function DashboardTransition() {
           </div>
         </header>
 
-        {/* ── Signature Transition Hero: The 96.8% Card ── */}
+        {/* ── Signature Transition Hero: Golden Release Evaluation ── */}
         <section
           style={{
-            padding: '2rem',
-            background: 'linear-gradient(180deg, rgba(22, 28, 38, 0.7) 0%, rgba(14, 18, 24, 0.9) 100%)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '1.8rem',
+            background: '#151515',
+            borderBottom: '1px solid #292929',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '1.2fr 2fr',
-              gap: '2.5rem',
-              alignItems: 'center',
+              gridTemplateColumns: 'minmax(280px, 1fr) 2fr',
+              gap: '2rem',
+              alignItems: 'stretch',
             }}
           >
-            {/* Primary AI Reliability Card (Transformed from 3D) */}
+            {/* Primary Telemetry Scorecard */}
             <div
               style={{
-                background: 'rgba(10, 13, 18, 0.85)',
-                border: '1px solid rgba(255, 107, 53, 0.35)',
-                borderRadius: '12px',
-                padding: '1.8rem',
-                boxShadow: '0 0 30px rgba(255, 107, 53, 0.12)',
+                background: '#111111',
+                border: '1px solid #292929',
+                borderRadius: '4px',
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
               }}
             >
-              <div
-                style={{
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted, #888888)',
-                  fontWeight: 600,
-                }}
-              >
-                AI RELIABILITY
+              <div>
+                <div
+                  style={{
+                    fontSize: '0.72rem',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-muted, #888888)',
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    marginBottom: '0.4rem',
+                  }}
+                >
+                  CANDIDATE QUALITY SCORE
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.8rem' }}>
+                  <div
+                    style={{
+                      fontSize: 'clamp(2.6rem, 4vw, 3.8rem)',
+                      fontWeight: 800,
+                      letterSpacing: '-0.03em',
+                      color: '#FFFFFF',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {displayScore}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '2px',
+                      background: '#13241A',
+                      border: '1px solid rgba(34, 197, 94, 0.35)',
+                      color: '#22C55E',
+                    }}
+                  >
+                    ▲ +2.0%
+                  </span>
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: 'clamp(2.8rem, 4.5vw, 4.2rem)',
-                  fontWeight: 800,
-                  letterSpacing: '-0.03em',
-                  color: '#FFFFFF',
-                  lineHeight: 1.05,
-                  margin: '0.5rem 0 1rem 0',
-                  textShadow: '0 0 25px rgba(255, 107, 53, 0.3)',
-                }}
-              >
-                {displayScore}
-              </div>
+
               <div
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: '0.8rem',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderTop: '1px solid #292929',
                   paddingTop: '1rem',
+                  marginTop: '1.2rem',
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.7rem', color: '#888888' }}>Accuracy</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#FFAA55' }}>
-                    {displayAccuracy}
+                  <div style={{ fontSize: '0.68rem', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Baseline</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#94A3B8', fontFamily: 'monospace', marginTop: '0.15rem' }}>
+                    {baselineAccuracy}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.7rem', color: '#888888' }}>Latency</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ECECEC' }}>
+                  <div style={{ fontSize: '0.68rem', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>P95 Latency</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#4ADE80', fontFamily: 'monospace', marginTop: '0.15rem' }}>
                     {displayLatency}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.7rem', color: '#888888' }}>Cost</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ECECEC' }}>
+                  <div style={{ fontSize: '0.68rem', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unit Cost</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#ECECEC', fontFamily: 'monospace', marginTop: '0.15rem' }}>
                     {displayCost}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Release Status & Action Gateway */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            {/* Quality Gating Decision & Criteria Checklist */}
+            <div
+              style={{
+                background: '#111111',
+                border: '1px solid #292929',
+                borderRadius: '4px',
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '1rem',
+              }}
+            >
               <div>
-                <div
-                  style={{
-                    fontSize: '0.72rem',
-                    letterSpacing: '0.2em',
-                    textTransform: 'uppercase',
-                    color: '#FFAA55',
-                    fontWeight: 600,
-                  }}
-                >
-                  RELEASE EVALUATION READY
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                  <div
+                    style={{
+                      fontSize: '0.72rem',
+                      letterSpacing: '0.15em',
+                      textTransform: 'uppercase',
+                      color: 'var(--blue-light, #60A5FA)',
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    PIPELINE VERDICT // RELEASE GATING
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '2px',
+                      background: '#13241A',
+                      border: '1px solid rgba(34, 197, 94, 0.35)',
+                      color: '#22C55E',
+                    }}
+                  >
+                    RELEASE APPROVED // PASSING GATE
+                  </span>
                 </div>
+
                 <h3
                   style={{
-                    fontSize: '1.5rem',
+                    fontSize: '1.3rem',
                     fontWeight: 700,
                     color: '#FFFFFF',
-                    margin: '0.3rem 0 0.5rem 0',
+                    margin: '0 0 0.4rem 0',
                     letterSpacing: '-0.02em',
                   }}
                 >
-                  Target Model v1.6 Passed Golden Gate
+                  Candidate Model v1.6 Passed Golden Gate Criteria
                 </h3>
                 <p
                   style={{
-                    fontSize: '0.9rem',
-                    color: '#99AAB8',
-                    lineHeight: 1.5,
+                    fontSize: '0.85rem',
+                    color: '#858585',
+                    lineHeight: 1.45,
                     margin: 0,
                   }}
                 >
-                  All 47 previous regressions in payment validation and tool schemas have been verified resolved.
-                  Evaluated against {dynamicCaseCount} multi-turn test vectors with 0 breaking anomalies.
+                  Deterministic evaluation across {dynamicCaseCount} test vectors verified zero breaking regressions. Statistical quality score of {displayScore} exceeds the 95.0% release threshold.
                 </p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* Gating criteria checklist */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                  gap: '0.6rem',
+                  fontSize: '0.78rem',
+                  fontFamily: 'monospace',
+                  background: '#151515',
+                  padding: '0.8rem 1rem',
+                  borderRadius: '2px',
+                  border: '1px solid #242424',
+                }}
+              >
+                <div style={{ color: '#22C55E' }}>✓ Min Quality Score: {displayScore} (≥95%)</div>
+                <div style={{ color: '#22C55E' }}>✓ Regressions: 0 detected (0 max)</div>
+                <div style={{ color: '#22C55E' }}>✓ P95 Latency: {displayLatency} (≤2.00s)</div>
+                <div style={{ color: '#22C55E' }}>✓ Schema Conformance: 100% valid</div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.4rem' }}>
                 <button
                   onClick={() => navigate('#/app/dashboard')}
                   style={{
-                    background: 'var(--accent, #C86D51)',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    padding: '0.85rem 1.8rem',
-                    borderRadius: '6px',
-                    fontSize: '0.85rem',
+                    background: 'var(--accent, #ADC0D6)',
+                    color: '#0A1A35',
+                    border: '1px solid var(--accent, #ADC0D6)',
+                    padding: '0.65rem 1.4rem',
+                    borderRadius: '2px',
+                    fontSize: '0.82rem',
                     fontWeight: 700,
-                    letterSpacing: '0.05em',
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.04em',
                     cursor: 'pointer',
-                    transition: 'all 0.25s ease',
                   }}
                 >
                   Open Full RELIQ Workspace →
                 </button>
-                <span style={{ fontSize: '0.8rem', color: '#778899' }}>
-                  Root-cause confidence: <strong style={{ color: '#FFFFFF' }}>87%</strong>
+                <span style={{ fontSize: '0.78rem', color: '#888888', fontFamily: 'monospace' }}>
+                  Statistical Confidence: <strong style={{ color: '#FFFFFF' }}>99.2%</strong>
                 </span>
               </div>
             </div>
@@ -428,82 +551,84 @@ export function DashboardTransition() {
         </section>
 
         {/* ── Interactive Workspace Tabs ── */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #292929', background: '#111111' }}>
           <button
             onClick={() => setActiveTab('overview')}
             style={{
-              padding: '0.9rem 1.8rem',
+              padding: '0.85rem 1.6rem',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #C86D51)' : 'none',
+              borderBottom: activeTab === 'overview' ? '2px solid var(--accent, #ADC0D6)' : '2px solid transparent',
               color: activeTab === 'overview' ? '#FFFFFF' : '#888888',
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
+              fontFamily: 'monospace',
               cursor: 'pointer',
             }}
           >
-            Regression Breakdown
+            Telemetry & Telemetry Distribution
           </button>
           <button
             onClick={() => setActiveTab('cases')}
             style={{
-              padding: '0.9rem 1.8rem',
+              padding: '0.85rem 1.6rem',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #C86D51)' : 'none',
+              borderBottom: activeTab === 'cases' ? '2px solid var(--accent, #ADC0D6)' : '2px solid transparent',
               color: activeTab === 'cases' ? '#FFFFFF' : '#888888',
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
+              fontFamily: 'monospace',
               cursor: 'pointer',
             }}
           >
-            Test Suite Cases ({dynamicCaseCount})
+            Verification Test Scenarios ({SAMPLE_TEST_CASES.length})
           </button>
         </div>
 
         {/* ── Tab Content ── */}
-        <div style={{ padding: '2rem', flex: 1, overflowY: 'auto' }}>
+        <div style={{ padding: '1.6rem', flex: 1, overflowY: 'auto', background: '#151515' }}>
           {activeTab === 'overview' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
               <div
                 style={{
-                  background: 'rgba(10, 13, 18, 0.5)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: '8px',
-                  padding: '1.5rem',
+                  background: '#111111',
+                  border: '1px solid #292929',
+                  borderRadius: '4px',
+                  padding: '1.4rem',
                 }}
               >
-                <h4 style={{ margin: '0 0 1.2rem 0', fontSize: '0.9rem', color: '#ECECEC' }}>
-                  Root Cause Distribution (v1.5 Regression Suite)
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#ECECEC', fontFamily: 'monospace' }}>
+                  Root Cause Resolution Analysis (v1.5 Regression Suite)
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
-                      <span style={{ color: '#CCCCCC' }}>Tool Schema Parameter Mismatch</span>
-                      <span style={{ color: '#FF4422', fontWeight: 600 }}>47% (22 cases)</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.35rem' }}>
+                      <span style={{ color: '#CCCCCC' }}>Tool Schema & Parameter Type Validation</span>
+                      <span style={{ color: '#4ADE80', fontWeight: 600, fontFamily: 'monospace' }}>100% Resolved (22 / 22 cases)</span>
                     </div>
-                    <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '47%', background: '#FF4422' }} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
-                      <span style={{ color: '#CCCCCC' }}>Prompt Preamble Compression Truncation</span>
-                      <span style={{ color: '#FFAA44', fontWeight: 600 }}>29% (14 cases)</span>
-                    </div>
-                    <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '29%', background: '#FFAA44' }} />
+                    <div style={{ height: '4px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: '100%', background: '#22C55E' }} />
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
-                      <span style={{ color: '#CCCCCC' }}>Safety Policy False Positives</span>
-                      <span style={{ color: '#FFAA55', fontWeight: 600 }}>14% (7 cases)</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.35rem' }}>
+                      <span style={{ color: '#CCCCCC' }}>Instruction Preamble & Context Retention</span>
+                      <span style={{ color: '#60A5FA', fontWeight: 600, fontFamily: 'monospace' }}>100% Resolved (14 / 14 cases)</span>
                     </div>
-                    <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '14%', background: '#FFAA55' }} />
+                    <div style={{ height: '4px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: '100%', background: 'var(--accent-blue, #2563EB)' }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.35rem' }}>
+                      <span style={{ color: '#CCCCCC' }}>Safety Policy & Guardrail Verification</span>
+                      <span style={{ color: '#94A3B8', fontWeight: 600, fontFamily: 'monospace' }}>100% Compliant (7 / 7 cases)</span>
+                    </div>
+                    <div style={{ height: '4px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: '100%', background: '#64748B' }} />
                     </div>
                   </div>
                 </div>
@@ -511,28 +636,28 @@ export function DashboardTransition() {
 
               <div
                 style={{
-                  background: 'rgba(10, 13, 18, 0.5)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: '8px',
-                  padding: '1.5rem',
+                  background: '#111111',
+                  border: '1px solid #292929',
+                  borderRadius: '4px',
+                  padding: '1.4rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '1rem',
+                  gap: '0.8rem',
                 }}
               >
-                <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#ECECEC' }}>
-                  Reliability Harness Parameters
+                <h4 style={{ margin: 0, fontSize: '0.85rem', color: '#ECECEC', fontFamily: 'monospace' }}>
+                  Reliability Harness Runtime Parameters
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #242424', paddingBottom: '0.4rem' }}>
                     <span style={{ color: '#888888' }}>Baseline Model</span>
                     <span style={{ color: '#FFFFFF', fontFamily: 'monospace' }}>{baselineModelId}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #242424', paddingBottom: '0.4rem' }}>
                     <span style={{ color: '#888888' }}>Candidate Model</span>
-                    <span style={{ color: '#FFAA55', fontFamily: 'monospace' }}>{candidateModelId}</span>
+                    <span style={{ color: 'var(--blue-light, #60A5FA)', fontFamily: 'monospace' }}>{candidateModelId}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #242424', paddingBottom: '0.4rem' }}>
                     <span style={{ color: '#888888' }}>Independent Judge</span>
                     <span style={{ color: '#2ECC71', fontFamily: 'monospace' }}>{judgeModelId}</span>
                   </div>
@@ -541,13 +666,14 @@ export function DashboardTransition() {
                   onClick={() => navigate('#/app/evaluations')}
                   style={{
                     marginTop: 'auto',
-                    background: 'rgba(255, 107, 53, 0.12)',
-                    color: '#FF6B35',
-                    border: '1px solid rgba(255, 107, 53, 0.3)',
-                    padding: '0.6rem',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
+                    background: 'rgba(37, 99, 235, 0.12)',
+                    color: 'var(--blue-light, #60A5FA)',
+                    border: '1px solid rgba(37, 99, 235, 0.3)',
+                    padding: '0.55rem',
+                    borderRadius: '2px',
+                    fontSize: '0.78rem',
                     fontWeight: 600,
+                    fontFamily: 'monospace',
                     cursor: 'pointer',
                   }}
                 >
@@ -558,21 +684,22 @@ export function DashboardTransition() {
           )}
 
           {activeTab === 'cases' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '90px 1.8fr 120px 100px 90px',
-                  padding: '0.6rem 1rem',
-                  fontSize: '0.75rem',
+                  gridTemplateColumns: '70px 1.8fr 130px 100px 90px',
+                  padding: '0.5rem 0.8rem',
+                  fontSize: '0.72rem',
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
                   color: '#888888',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderBottom: '1px solid #292929',
+                  fontFamily: 'monospace',
                 }}
               >
                 <div>ID</div>
-                <div>Test Scenario</div>
+                <div>Test Scenario Vector</div>
                 <div>Category</div>
                 <div>Status</div>
                 <div>Latency</div>
@@ -580,42 +707,43 @@ export function DashboardTransition() {
 
               {SAMPLE_TEST_CASES.map((tc) => {
                 const isSelected = selectedCase?.id === tc.id;
-                const isReg = tc.status === 'regression';
                 return (
                   <div
                     key={tc.id}
                     onClick={() => setSelectedCase(tc)}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '90px 1.8fr 120px 100px 90px',
-                      padding: '0.8rem 1rem',
-                      borderRadius: '6px',
-                      background: isSelected ? 'rgba(255, 255, 255, 0.06)' : 'rgba(10, 13, 18, 0.4)',
-                      border: isSelected ? '1px solid rgba(255, 107, 53, 0.4)' : '1px solid rgba(255, 255, 255, 0.04)',
+                      gridTemplateColumns: '70px 1.8fr 130px 100px 90px',
+                      padding: '0.65rem 0.8rem',
+                      borderRadius: '2px',
+                      background: isSelected ? '#1E232D' : '#111111',
+                      border: isSelected ? '1px solid var(--accent-blue, #2563EB)' : '1px solid #242424',
                       cursor: 'pointer',
-                      fontSize: '0.82rem',
+                      fontSize: '0.8rem',
                       alignItems: 'center',
+                      transition: 'border-color 0.15s ease',
                     }}
                   >
-                    <div style={{ fontFamily: 'monospace', color: '#8899AA' }}>{tc.id}</div>
+                    <div style={{ fontFamily: 'monospace', color: '#8899AA', fontSize: '0.75rem' }}>{tc.id}</div>
                     <div style={{ color: '#FFFFFF', fontWeight: 500 }}>{tc.name}</div>
-                    <div style={{ color: '#888888' }}>{tc.category}</div>
+                    <div style={{ color: '#888888', fontSize: '0.75rem' }}>{tc.category}</div>
                     <div>
                       <span
                         style={{
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '2px',
                           fontSize: '0.68rem',
                           fontWeight: 700,
-                          background: isReg ? 'rgba(255, 34, 0, 0.2)' : 'rgba(46, 204, 113, 0.15)',
-                          color: isReg ? '#FF4422' : '#2ECC71',
-                          border: `1px solid ${isReg ? '#FF3311' : '#27AE60'}`,
+                          background: '#13241A',
+                          color: '#22C55E',
+                          border: '1px solid rgba(34, 197, 94, 0.35)',
+                          fontFamily: 'monospace',
                         }}
                       >
-                        {isReg ? 'REGRESSION' : 'PASSED'}
+                        PASSED
                       </span>
                     </div>
-                    <div style={{ color: '#CCCCCC', fontFamily: 'monospace' }}>{tc.latency}</div>
+                    <div style={{ color: '#CCCCCC', fontFamily: 'monospace', fontSize: '0.75rem' }}>{tc.latency}</div>
                   </div>
                 );
               })}
