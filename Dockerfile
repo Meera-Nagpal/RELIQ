@@ -1,4 +1,4 @@
-﻿FROM node:22-slim AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-RUN npm run typecheck && npm run build
+RUN npm run typecheck && npm run build && npm run build:backend
 
 FROM node:22-slim AS runner
 
@@ -27,6 +27,7 @@ COPY package*.json ./
 RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/data ./data
 COPY --from=builder /app/tsconfig*.json ./
