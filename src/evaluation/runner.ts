@@ -1185,6 +1185,10 @@ export class EvaluationRunner {
           status: candidatePassed === true ? 'PASS' : candidatePassed === false ? 'FAIL' : 'ERROR',
           decisionLayer: hasHardSafetyFailure
             ? 'SAFETY_VETO'
+            : (testCase.evaluatorType === 'llm_judge' || testCase.evaluatorType === 'preference_rubric') && judgeScore && !judgeScore.error
+            ? 'LLM_JUDGE'
+            : testCase.evaluatorType === 'semantic_similarity' && semEval
+            ? 'SEMANTIC'
             : 'DETERMINISTIC',
           isSafetyVetoed: hasHardSafetyFailure,
           summary: hasHardSafetyFailure
