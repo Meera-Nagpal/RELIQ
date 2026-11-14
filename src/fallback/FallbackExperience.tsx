@@ -37,18 +37,18 @@ const styles = `
   background:
     radial-gradient(
       ellipse 60% 50% at 50% 50%,
-      rgba(255, 107, 53, 0.08) 0%,
-      rgba(255, 107, 53, 0.03) 40%,
+      rgba(37, 99, 235, 0.08) 0%,
+      rgba(37, 99, 235, 0.03) 40%,
       transparent 70%
     ),
     radial-gradient(
       ellipse 80% 60% at 30% 70%,
-      rgba(255, 140, 90, 0.04) 0%,
+      rgba(96, 165, 250, 0.04) 0%,
       transparent 60%
     ),
     radial-gradient(
       ellipse 90% 80% at 70% 30%,
-      rgba(255, 107, 53, 0.03) 0%,
+      rgba(37, 99, 235, 0.03) 0%,
       transparent 50%
     );
   animation: fallback-gradient-drift 12s ease-in-out infinite alternate;
@@ -93,7 +93,7 @@ const styles = `
 .fallback-orb--1 {
   width: clamp(200px, 30vw, 500px);
   height: clamp(200px, 30vw, 500px);
-  background: rgba(255, 107, 53, 0.06);
+  background: rgba(37, 99, 235, 0.06);
   top: 15%;
   left: 60%;
   animation-delay: 0s;
@@ -103,7 +103,7 @@ const styles = `
 .fallback-orb--2 {
   width: clamp(150px, 25vw, 400px);
   height: clamp(150px, 25vw, 400px);
-  background: rgba(255, 140, 90, 0.04);
+  background: rgba(96, 165, 250, 0.04);
   top: 60%;
   left: 20%;
   animation-delay: -6s;
@@ -113,7 +113,7 @@ const styles = `
 .fallback-orb--3 {
   width: clamp(100px, 20vw, 300px);
   height: clamp(100px, 20vw, 300px);
-  background: rgba(255, 107, 53, 0.05);
+  background: rgba(37, 99, 235, 0.05);
   top: 40%;
   left: 40%;
   animation-delay: -12s;
@@ -142,7 +142,7 @@ const styles = `
 /* Geometric lines — subtle decorative accents */
 .fallback-line {
   position: absolute;
-  background: linear-gradient(90deg, transparent, rgba(255, 107, 53, 0.12), transparent);
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.12), transparent);
   height: 1px;
   animation: fallback-line-sweep 10s ease-in-out infinite;
 }
@@ -182,7 +182,7 @@ const styles = `
   position: absolute;
   width: 2px;
   height: 2px;
-  background: rgba(255, 107, 53, 0.3);
+  background: rgba(37, 99, 235, 0.3);
   border-radius: 50%;
   animation: fallback-particle-rise linear infinite;
 }
@@ -235,7 +235,7 @@ const styles = `
   text-align: center;
   margin-bottom: 2rem;
   /* Subtle text shadow for depth */
-  text-shadow: 0 0 80px rgba(255, 107, 53, 0.15);
+  text-shadow: none;
   animation: fallback-title-entrance 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
   opacity: 0;
 }
@@ -278,7 +278,7 @@ const styles = `
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: #FF6B35;
+  color: var(--blue-light, #60A5FA);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -305,38 +305,26 @@ const styles = `
 .fallback-cta {
   margin-top: 3rem;
   padding: 0.875rem 2.5rem;
-  background: transparent;
-  border: 1px solid rgba(255, 107, 53, 0.4);
-  color: #FF6B35;
+  background: #151515;
+  border: 1px solid #292929;
+  color: #ADC0D6;
+  border-radius: 2px;
   font-family: inherit;
   font-size: clamp(0.625rem, 0.8vw, 0.75rem);
-  font-weight: 500;
-  letter-spacing: 0.2em;
+  font-weight: 600;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition: all 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
   animation: fallback-metric-entrance 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) 1s forwards;
   opacity: 0;
 }
 
-.fallback-cta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 107, 53, 0.08);
-  transform: translateX(-100%);
-  transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
 .fallback-cta:hover {
-  border-color: rgba(255, 107, 53, 0.8);
-  box-shadow: 0 0 30px rgba(255, 107, 53, 0.1);
-}
-
-.fallback-cta:hover::before {
-  transform: translateX(0);
+  background: #1B1B1B;
+  border-color: #ADC0D6;
 }
 
 .fallback-cta:active {

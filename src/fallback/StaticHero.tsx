@@ -19,7 +19,7 @@ const containerStyle: React.CSSProperties = {
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
-  background: 'radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.09) 0%, #0A0A0A 70%)',
+  background: 'radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08) 0%, #0F0F0F 70%)',
   zIndex: 0,
 };
 
@@ -45,8 +45,8 @@ const dotBaseStyle: React.CSSProperties = {
   width: '5px',
   height: '5px',
   borderRadius: '50%',
-  background: '#FF6B35',
-  boxShadow: '0 0 8px #FF6B35',
+  background: '#2563EB',
+  boxShadow: 'none',
 };
 
 const keyframesCSS = `
@@ -91,7 +91,7 @@ export const StaticHero: React.FC = () => {
             fontSize: '0.72rem',
             letterSpacing: '0.24em',
             textTransform: 'uppercase',
-            color: 'var(--reliq-accent, #FF6B35)',
+            color: 'var(--blue-light, #60A5FA)',
             fontWeight: 700,
             opacity: 0.9,
           }}
