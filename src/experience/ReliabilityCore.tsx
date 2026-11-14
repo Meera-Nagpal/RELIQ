@@ -125,13 +125,13 @@ export function ReliabilityCore() {
     // Shell color & emissive reactivity
     if (shellMaterialRef.current) {
       const targetShellColor = new THREE.Color(
-        healthStatus === 'regression' ? '#FF2200' : '#FF6B35'
+        healthStatus === 'regression' ? '#FF2200' : '#2563EB'
       );
       shellMaterialRef.current.color.lerp(targetShellColor, delta * 3);
       shellMaterialRef.current.emissive.lerp(targetShellColor, delta * 3);
       shellMaterialRef.current.emissiveIntensity = THREE.MathUtils.lerp(
-        0.3,
-        1.2,
+        0.25,
+        1.0,
         instability
       );
     }
@@ -139,7 +139,7 @@ export function ReliabilityCore() {
     // Ring material color
     if (ringMaterialRef.current) {
       const targetRingColor = new THREE.Color(
-        healthStatus === 'regression' ? '#FF3B14' : '#E07A5F'
+        healthStatus === 'regression' ? '#FF3B14' : '#3B82F6'
       );
       ringMaterialRef.current.color.lerp(targetRingColor, delta * 3);
     }
@@ -170,12 +170,12 @@ export function ReliabilityCore() {
         <icosahedronGeometry args={[1, 1]} />
         <meshStandardMaterial
           ref={shellMaterialRef}
-          color="#FF6B35"
+          color="#2563EB"
           wireframe={true}
           transparent={true}
           opacity={0.35}
-          emissive="#FF6B35"
-          emissiveIntensity={0.4}
+          emissive="#1E3A8A"
+          emissiveIntensity={0.3}
         />
       </mesh>
 
@@ -185,7 +185,7 @@ export function ReliabilityCore() {
           <torusGeometry args={[1.7, 0.008, 16, 100]} />
           <meshBasicMaterial
             ref={ringMaterialRef}
-            color="#E07A5F"
+            color="#3B82F6"
             transparent={true}
             opacity={0.45}
           />
@@ -197,7 +197,7 @@ export function ReliabilityCore() {
         <mesh>
           <torusGeometry args={[1.9, 0.006, 16, 100]} />
           <meshBasicMaterial
-            color="#FF6B35"
+            color="#2563EB"
             transparent={true}
             opacity={0.3}
           />
@@ -209,7 +209,7 @@ export function ReliabilityCore() {
         <mesh>
           <torusGeometry args={[2.2, 0.005, 16, 100]} />
           <meshBasicMaterial
-            color="#FFAA55"
+            color="#60A5FA"
             transparent={true}
             opacity={0.25}
           />
@@ -222,7 +222,7 @@ export function ReliabilityCore() {
           <mesh key={index} position={[sat.radius, sat.y, 0]}>
             <sphereGeometry args={[sat.size, 16, 16]} />
             <meshBasicMaterial
-              color={index % 2 === 0 ? '#FF6B35' : '#FFAA55'}
+              color={index % 2 === 0 ? '#2563EB' : '#60A5FA'}
               transparent={true}
               opacity={0.8}
             />
