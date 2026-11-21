@@ -36,7 +36,7 @@ import { RegressionsView } from './views/RegressionsView';
 import { SettingsView } from './views/SettingsView';
 
 export const ReliqApp: React.FC = () => {
-  const { appView, navigate } = useRouter();
+  const { appView, subId, navigate, navigateToResource } = useRouter();
 
   // Optimistic SWR state initialization from localStorage cache for 0ms initial render
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -140,6 +140,17 @@ export const ReliqApp: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Synchronize deep-link subId with active run / dataset selection
+  useEffect(() => {
+    if (subId) {
+      if (appView === 'evaluations' && subId !== activeRunId) {
+        setActiveRunId(subId);
+      } else if (appView === 'datasets' && subId !== activeDatasetId) {
+        setActiveDatasetId(subId);
+      }
+    }
+  }, [appView, subId, activeRunId, activeDatasetId]);
 
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0] || null;
   const activeDataset = datasets.find((d) => d.id === activeDatasetId) || datasets[0] || null;
