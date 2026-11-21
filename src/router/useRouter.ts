@@ -1,14 +1,12 @@
 /* ============================================================
-   RELIQ — Lightweight Client Router Hook with Global Ripple Transitions
+   RELIQ — Client Router Hook with Global Ripple Transitions & Deep-Linking
    
-   Supports / for the 3D marketing landing page and #/app/*
-   for the functional RELIQ product workspace.
-   
-   Orchestrates:
+   Supports:
+   - Full-route navigation across 3D landing ("/") and workspace ("#/app/*")
+   - Sub-resource ID navigation (e.g. #/app/evaluations/:runId, #/app/datasets/:datasetId)
+   - Dynamic query parameter synchronization (e.g. ?filter=regression&severity=critical)
    - Synchronized 3-ring ripple page transitions on route changes
-   - Protection against double-click multiple overlays
    - prefers-reduced-motion immediate navigation support
-   - Zero-overhead subscriber model across all components
    ============================================================ */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -30,15 +28,20 @@ export type AppView =
 export interface RouteState {
   isApp: boolean;
   appView: AppView;
+  subId?: string;
+  queryParams: Record<string, string>;
   fullPath: string;
 }
 
 function parseHash(hash: string): RouteState {
-  const cleanHash = hash.replace(/^#\/?/, ''); // e.g. "app/dashboard" or ""
+  const cleanHash = hash.replace(/^#\/?/, ''); // e.g. "app/dashboard/run-123?filter=all"
 
   if (cleanHash.startsWith('app')) {
-    const parts = cleanHash.split('/');
+    const [pathPart, queryPart] = cleanHash.split('?');
+    const parts = pathPart.split('/');
     const view = (parts[1] as AppView) || 'overview';
+    const subId = parts[2] ? decodeURIComponent(parts[2]) : undefined;
+
     const validViews: AppView[] = [
       'overview',
       'dashboard',
@@ -54,16 +57,31 @@ function parseHash(hash: string): RouteState {
       'projects',
     ];
     const resolvedView = validViews.includes(view) ? view : 'overview';
+
+    const queryParams: Record<string, string> = {};
+    if (queryPart) {
+      const searchParams = new URLSearchParams(queryPart);
+      searchParams.forEach((val, key) => {
+        queryParams[key] = val;
+      });
+    }
+
+    const subPath = subId ? `/${encodeURIComponent(subId)}` : '';
+    const queryString = queryPart ? `?${queryPart}` : '';
+
     return {
       isApp: true,
       appView: resolvedView,
-      fullPath: `#/app/${resolvedView}`,
+      subId,
+      queryParams,
+      fullPath: `#/app/${resolvedView}${subPath}${queryString}`,
     };
   }
 
   return {
     isApp: false,
     appView: 'overview',
+    queryParams: {},
     fullPath: '#/',
   };
 }
@@ -109,13 +127,11 @@ export function triggerGlobalTransition(
     return;
   }
 
-  // Clear any dangling timers
   if (routeChangeTimer) clearTimeout(routeChangeTimer);
   if (transitionCleanupTimer) clearTimeout(transitionCleanupTimer);
 
   notifyTransitionListeners(true);
 
-  // Perform callback / route shift at midpoint of ripple expansion (~1300ms for 2500ms duration)
   const midpoint = Math.max(50, Math.floor(durationMs * 0.52));
   routeChangeTimer = setTimeout(() => {
     if (callback) {
@@ -127,7 +143,6 @@ export function triggerGlobalTransition(
     }
   }, midpoint);
 
-  // Complete and remove overlay (2500ms deliberate, cinematic transition)
   transitionCleanupTimer = setTimeout(() => {
     notifyTransitionListeners(false);
   }, durationMs);
@@ -161,24 +176,45 @@ export function useRouter() {
       target = target.startsWith('/') ? `#${target}` : `#/${target}`;
     }
 
-    // If destination is identical to current hash, do nothing
     if (typeof window !== 'undefined' && window.location.hash === target) {
       return;
     }
 
-    // Skip animation if explicitly requested or already in transition
     if (options?.skipTransition || globalIsTransitioning) {
       if (typeof window !== 'undefined') window.location.hash = target;
       return;
     }
 
-    // Execute with global ripple transition calibrated to 2500ms for deliberate, smooth page transition
     triggerGlobalTransition(() => {
       if (typeof window !== 'undefined') {
         window.location.hash = target;
       }
     }, 2500);
   }, []);
+
+  const setQueryParam = useCallback((key: string, value: string | null) => {
+    const current = parseHash(typeof window !== 'undefined' ? window.location.hash : '');
+    if (!current.isApp) return;
+
+    const params = new URLSearchParams();
+    Object.entries(current.queryParams).forEach(([k, v]) => {
+      if (k !== key) params.set(k, v);
+    });
+    if (value !== null && value !== undefined && value !== '') {
+      params.set(key, value);
+    }
+
+    const subPath = current.subId ? `/${encodeURIComponent(current.subId)}` : '';
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    window.location.hash = `#/app/${current.appView}${subPath}${qs}`;
+  }, []);
+
+  const navigateToResource = useCallback((view: AppView, subId?: string, query?: Record<string, string>) => {
+    const subPath = subId ? `/${encodeURIComponent(subId)}` : '';
+    const params = new URLSearchParams(query || {});
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    navigate(`app/${view}${subPath}${qs}`);
+  }, [navigate]);
 
   const triggerTransition = useCallback((action: () => void) => {
     triggerGlobalTransition(action, 2500);
@@ -188,6 +224,8 @@ export function useRouter() {
     ...route,
     isTransitioning,
     navigate,
+    setQueryParam,
+    navigateToResource,
     triggerTransition,
   };
 }
