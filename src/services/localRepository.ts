@@ -31,6 +31,29 @@ const STORAGE_KEYS = {
 };
 
 export class LocalStorageRepository implements StorageRepository {
+  private safeSetItem(key: string, value: string): void {
+    try {
+      this.safeSetItem(key, value);
+    } catch (e: any) {
+      if (e?.name === 'QuotaExceededError' || e?.code === 22 || e?.code === 1014) {
+        console.warn(`[RELIQ Storage] LocalStorage quota exceeded on "${key}". Pruning older runs...`);
+        if (key === STORAGE_KEYS.RUNS) {
+          try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed) && parsed.length > 5) {
+              const pruned = parsed.slice(0, 5);
+              this.safeSetItem(key, JSON.stringify(pruned));
+              return;
+            }
+          } catch {
+            // ignore JSON parse error
+          }
+        }
+      }
+      console.error(`[RELIQ Storage] Failed to persist data to key "${key}":`, e);
+    }
+  }
+
   private ensureInitialized() {
     if (!localStorage.getItem(STORAGE_KEYS.PROJECTS)) {
       this.initSeedData();
@@ -38,20 +61,20 @@ export class LocalStorageRepository implements StorageRepository {
   }
 
   private initSeedData() {
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify([SEED_PROJECT]));
-    localStorage.setItem(
+    this.safeSetItem(STORAGE_KEYS.PROJECTS, JSON.stringify([SEED_PROJECT]));
+    this.safeSetItem(
       STORAGE_KEYS.DATASETS,
       JSON.stringify([SEED_DATASET, SEED_DATASET_100, SEED_DATASET_500, SEED_DATASET_1000])
     );
-    localStorage.setItem(
+    this.safeSetItem(
       STORAGE_KEYS.VERSIONS,
       JSON.stringify([SEED_BASELINE_VERSION, SEED_CANDIDATE_VERSION])
     );
-    localStorage.setItem(
+    this.safeSetItem(
       STORAGE_KEYS.RUNS,
       JSON.stringify([REAL_GROQ_BENCHMARK_RUN, REAL_BENCHMARK_RUN, SEED_GOLDEN_RUN])
     );
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, SEED_PROJECT.id);
+    this.safeSetItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, SEED_PROJECT.id);
   }
 
   async resetToSeedData(): Promise<void> {
@@ -82,13 +105,13 @@ export class LocalStorageRepository implements StorageRepository {
     } else {
       projects.push({ ...project, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     }
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    this.safeSetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
   }
 
   async deleteProject(id: string): Promise<void> {
     const projects = await this.getProjects();
     const filtered = projects.filter((p) => p.id !== id);
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(filtered));
+    this.safeSetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(filtered));
   }
 
   // ── Datasets ──────────────────────────────────────────────
@@ -120,13 +143,13 @@ export class LocalStorageRepository implements StorageRepository {
     } else {
       datasets.push({ ...dataset, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     }
-    localStorage.setItem(STORAGE_KEYS.DATASETS, JSON.stringify(datasets));
+    this.safeSetItem(STORAGE_KEYS.DATASETS, JSON.stringify(datasets));
   }
 
   async deleteDataset(id: string): Promise<void> {
     const datasets = await this.getDatasets();
     const filtered = datasets.filter((d) => d.id !== id);
-    localStorage.setItem(STORAGE_KEYS.DATASETS, JSON.stringify(filtered));
+    this.safeSetItem(STORAGE_KEYS.DATASETS, JSON.stringify(filtered));
   }
 
   // ── Versions ──────────────────────────────────────────────
@@ -153,7 +176,7 @@ export class LocalStorageRepository implements StorageRepository {
     } else {
       versions.push(version);
     }
-    localStorage.setItem(STORAGE_KEYS.VERSIONS, JSON.stringify(versions));
+    this.safeSetItem(STORAGE_KEYS.VERSIONS, JSON.stringify(versions));
   }
 
   private activeSessionLiveRunIds: Set<string> = new Set();
@@ -187,7 +210,7 @@ export class LocalStorageRepository implements StorageRepository {
                   existingRuns.push(serverRun);
                 }
               }
-              localStorage.setItem(STORAGE_KEYS.RUNS, JSON.stringify(existingRuns));
+              this.safeSetItem(STORAGE_KEYS.RUNS, JSON.stringify(existingRuns));
             }
           }
         }
@@ -201,7 +224,7 @@ export class LocalStorageRepository implements StorageRepository {
       if (!runs.some((r) => r.id === REAL_GROQ_BENCHMARK_RUN.id)) {
         runs.unshift(REAL_GROQ_BENCHMARK_RUN);
         try {
-          localStorage.setItem(STORAGE_KEYS.RUNS, JSON.stringify(runs));
+          this.safeSetItem(STORAGE_KEYS.RUNS, JSON.stringify(runs));
         } catch {}
       }
 
@@ -329,7 +352,7 @@ export class LocalStorageRepository implements StorageRepository {
   }
 
   setStoreRawOutputs(enabled: boolean): void {
-    localStorage.setItem(STORAGE_KEYS.PRIVACY_STORE_RAW_OUTPUTS, enabled ? 'true' : 'false');
+    this.safeSetItem(STORAGE_KEYS.PRIVACY_STORE_RAW_OUTPUTS, enabled ? 'true' : 'false');
   }
 
   async saveEvaluationRun(run: EvaluationRun): Promise<void> {
@@ -358,14 +381,14 @@ export class LocalStorageRepository implements StorageRepository {
     } else {
       runs.unshift(runToSave);
     }
-    localStorage.setItem(STORAGE_KEYS.RUNS, JSON.stringify(runs));
+    this.safeSetItem(STORAGE_KEYS.RUNS, JSON.stringify(runs));
   }
 
   async deleteEvaluationRun(id: string): Promise<void> {
     this.activeSessionLiveRunIds.delete(id);
     const runs = await this.getEvaluationRuns();
     const filtered = runs.filter((r) => r.id !== id);
-    localStorage.setItem(STORAGE_KEYS.RUNS, JSON.stringify(filtered));
+    this.safeSetItem(STORAGE_KEYS.RUNS, JSON.stringify(filtered));
   }
 
   // Active Project ID helper
@@ -375,7 +398,7 @@ export class LocalStorageRepository implements StorageRepository {
   }
 
   setActiveProjectId(id: string): void {
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, id);
+    this.safeSetItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, id);
   }
 }
 
